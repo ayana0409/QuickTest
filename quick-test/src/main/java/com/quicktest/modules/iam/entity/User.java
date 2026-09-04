@@ -67,4 +67,49 @@ public class User {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    /**
+     * Domain factory method: Create a new locally authenticated user.
+     */
+    public static User createLocalUser(String username, String email, String encodedPassword, String fullName, Role role) {
+        return User.builder()
+                .username(username)
+                .email(email)
+                .password(encodedPassword)
+                .fullName(fullName)
+                .role(role)
+                .authProvider(AuthProvider.LOCAL)
+                .isActive(true)
+                .build();
+    }
+
+    /**
+     * Domain method: Record a successful login timestamp.
+     */
+    public void recordLogin() {
+        this.lastLoginAt = LocalDateTime.now();
+    }
+
+    /**
+     * Domain method: Update profile details.
+     */
+    public void updateProfile(String fullName) {
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            this.fullName = fullName.trim();
+        }
+    }
+
+    /**
+     * Domain method: Deactivate user account.
+     */
+    public void deactivate() {
+        this.isActive = false;
+    }
+
+    /**
+     * Domain method: Activate user account.
+     */
+    public void activate() {
+        this.isActive = true;
+    }
 }
