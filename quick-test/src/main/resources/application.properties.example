@@ -1,0 +1,67 @@
+# ===================================================================
+# Quick Test Application - Configuration Template (Example)
+# Copy this file to application.properties or customize the values below.
+# ===================================================================
+
+# -------------------------------------------------------------------
+# Server Settings
+# -------------------------------------------------------------------
+server.port=8080
+server.servlet.context-path=/api
+
+# -------------------------------------------------------------------
+# PostgreSQL Database Configuration
+# -------------------------------------------------------------------
+spring.datasource.url=jdbc:postgresql://localhost:5432/quick_test_db
+spring.datasource.username=postgres
+spring.datasource.password=your_postgres_password
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# HikariCP Connection Pool Settings
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.connection-timeout=20000
+
+# -------------------------------------------------------------------
+# JPA & Hibernate Configuration
+# -------------------------------------------------------------------
+# ddl-auto options: none, validate, update, create, create-drop
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.open-in-view=false
+
+# -------------------------------------------------------------------
+# Redis Configuration (Exam session state, timer, question cache)
+# -------------------------------------------------------------------
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+spring.data.redis.password=
+spring.data.redis.timeout=60000ms
+# spring.data.redis.database=0
+
+# -------------------------------------------------------------------
+# RabbitMQ Configuration (High load messaging & async AI grading)
+# -------------------------------------------------------------------
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+# spring.rabbitmq.virtual-host=/
+
+# -------------------------------------------------------------------
+# JWT Security Configuration (IAM & Authentication)
+# -------------------------------------------------------------------
+# Secret key must be a base64 or secure 256-bit+ string for HMAC-SHA256
+app.jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+# Expiration time in milliseconds (e.g., 86400000 ms = 24 hours)
+app.jwt.expiration-ms=86400000
+
+# -------------------------------------------------------------------
+# Logging Configuration
+# -------------------------------------------------------------------
+logging.level.root=INFO
+logging.level.com.quicktest=DEBUG
+logging.level.org.springframework.security=INFO
