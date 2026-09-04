@@ -60,6 +60,13 @@ app.jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
 app.jwt.expiration-ms=86400000
 
 # -------------------------------------------------------------------
+# OAuth2 Resource Server / SSO (QuickBite / ABP Framework Identity Server)
+# -------------------------------------------------------------------
+# Uncomment when connecting to QuickBite OpenIddict / Identity Server
+# spring.security.oauth2.resourceserver.jwt.issuer-uri=https://quickbite-auth.example.com
+# spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://quickbite-auth.example.com/.well-known/openid-configuration/jwks
+
+# -------------------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------------------
 logging.level.root=INFO
