@@ -4,6 +4,7 @@ import com.quicktest.modules.session.entity.CandidateAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,5 +13,8 @@ import java.util.UUID;
  */
 @Repository
 public interface CandidateAnswerRepository extends JpaRepository<CandidateAnswer, UUID> {
+
+    List<CandidateAnswer> findByExamAttemptId(UUID attemptId);
+
     Optional<CandidateAnswer> findByExamAttemptIdAndQuestionId(UUID attemptId, UUID questionId);
 }

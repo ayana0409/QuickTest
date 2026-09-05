@@ -80,8 +80,8 @@ public class SecurityConfig {
                 "http://127.0.0.1:5173"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
-        configuration.setExposedHeaders(Collections.singletonList("Authorization"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin", "X-Guest-Identifier"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Guest-Identifier"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
@@ -106,9 +106,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Configure route authorization
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints: Auth and Guest exam session
+                        // Public endpoints: Auth and candidate exam sessions (guest + authenticated)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/session/guest/**").permitAll()
+                        .requestMatchers("/api/session/**").permitAll()
                         // Public Swagger / OpenAPI documentation
                         .requestMatchers(
                                 "/v3/api-docs/**",

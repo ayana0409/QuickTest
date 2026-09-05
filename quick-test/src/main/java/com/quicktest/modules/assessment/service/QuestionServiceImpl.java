@@ -225,7 +225,10 @@ public class QuestionServiceImpl implements QuestionService {
                     throw new AppException("Numeric question requires a valid sample answer");
                 }
                 try {
-                    Double.parseDouble(sampleAnswer.trim());
+                    double parsed = Double.parseDouble(sampleAnswer.trim());
+                    if (Double.isNaN(parsed) || Double.isInfinite(parsed)) {
+                        throw new AppException("Sample answer for numeric question must be a finite number");
+                    }
                 } catch (NumberFormatException ex) {
                     throw new AppException("Sample answer for numeric question must be a valid number (e.g. 42 or 3.14)");
                 }
