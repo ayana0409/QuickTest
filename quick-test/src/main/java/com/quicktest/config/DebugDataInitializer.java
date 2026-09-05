@@ -14,13 +14,13 @@ import java.util.Objects;
 
 /**
  * Development / Debug Data Initializer.
- * Automatically seeds default test accounts for Teacher and Student when running with 'dev' profile.
+ * Automatically seeds default test accounts for Teacher and Student when
+ * running with 'dev' profile.
  */
 @Slf4j
 @Component
-@Profile({"dev", "debug"})
+@Profile({ "dev", "debug" })
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class DebugDataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -38,8 +38,7 @@ public class DebugDataInitializer implements CommandLineRunner {
                     teacherEmail,
                     passwordEncoder.encode("Teacher@123"),
                     "Debug Teacher",
-                    Role.TEACHER
-            );
+                    Role.TEACHER);
             userRepository.save(Objects.requireNonNull(teacher));
             log.info("[DEBUG SEEDER] Created test Teacher: {} / 'Teacher@123'", teacherEmail);
         }
@@ -52,8 +51,7 @@ public class DebugDataInitializer implements CommandLineRunner {
                     studentEmail,
                     passwordEncoder.encode("Student@123"),
                     "Debug Student",
-                    Role.STUDENT
-            );
+                    Role.STUDENT);
             userRepository.save(Objects.requireNonNull(student));
             log.info("[DEBUG SEEDER] Created test Student: {} / 'Student@123'", studentEmail);
         }

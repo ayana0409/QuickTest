@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
 /**
- * Service interface governing candidate exam sessions (start, resume, auto-save, submit).
+ * Service interface governing candidate exam sessions (start, resume, auto-save, async submit, result polling).
  */
 public interface ExamSessionService {
 
@@ -27,7 +27,13 @@ public interface ExamSessionService {
     ResumeExamResponse resumeExam(UUID attemptId, User currentUser, String guestIdentifier);
 
     /**
-     * Conclude and submit the exam attempt, transferring Redis drafts to PostgreSQL with auto-grading.
+     * Conclude and submit exam attempt asynchronously via RabbitMQ without blocking DB transactions.
+     * Returns HTTP 202 Accepted payload (< 10ms).
      */
-    SubmitResultResponse submitExam(UUID attemptId, SubmitExamRequest request, User currentUser, String guestIdentifier);
+    SubmitAcceptedResponse submitExam(UUID attemptId, SubmitExamRequest request, User currentUser, String guestIdentifier);
+
+    /**
+     * Retrieve the finalized or in-progress grading result for a submitted exam attempt.
+     */
+    SubmitResultResponse getSubmissionResult(UUID attemptId, User currentUser, String guestIdentifier);
 }

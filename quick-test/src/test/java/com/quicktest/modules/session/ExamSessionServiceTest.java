@@ -12,9 +12,9 @@ import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.session.dto.*;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.entity.ExamAttempt;
-import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import com.quicktest.modules.session.service.ExamSessionServiceImpl;
+import com.quicktest.modules.session.service.ExamSubmissionProducer;
 import com.quicktest.modules.session.service.RedisExamSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,10 +51,10 @@ class ExamSessionServiceTest {
     private ExamAttemptRepository examAttemptRepository;
 
     @Mock
-    private CandidateAnswerRepository candidateAnswerRepository;
+    private RedisExamSessionService redisExamSessionService;
 
     @Mock
-    private RedisExamSessionService redisExamSessionService;
+    private ExamSubmissionProducer examSubmissionProducer;
 
     @Mock
     private HttpServletRequest servletRequest;
@@ -468,98 +468,36 @@ class ExamSessionServiceTest {
                 .textAnswer("3.1415")
                 .build());
 
+        when(redisExamSessionService.acquireSubmissionLock(attemptId, 300L)).thenReturn(true);
         when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
-        when(questionRepository.findByExamIdWithOptions(objectiveExam.getId()))
-                .thenReturn(List.of(singleChoiceQ, multiChoiceQ, numericQ));
         when(redisExamSessionService.getDraftAnswers(attemptId)).thenReturn(draftAnswers);
 
-        SubmitResultResponse response = examSessionService.submitExam(attemptId, null, studentUser, null);
+        SubmitAcceptedResponse response = examSessionService.submitExam(attemptId, null, studentUser, null);
 
         assertNotNull(response);
-        assertEquals(AttemptStatus.SUBMITTED, response.getStatus());
-        assertEquals(7.5, response.getTotalScore()); // 2.0 + 3.0 + 2.5 = 7.5
-        assertEquals("Objective Test", response.getExamTitle());
+        assertEquals(attemptId, response.getAttemptId());
+        assertEquals("PROCESSING", response.getStatus());
         assertNotNull(response.getSubmitTime());
+        assertTrue(response.getMessage().contains("accepted"));
 
-        verify(candidateAnswerRepository, times(1)).saveAll(anyList());
-        verify(redisExamSessionService, times(1)).clearDraftAnswers(attemptId);
+        verify(examSubmissionProducer, times(1)).sendSubmissionMessage(argThat(msg ->
+                msg.getAttemptId().equals(attemptId) &&
+                msg.getAnswers().size() == 3 &&
+                msg.getExamId().equals(objectiveExam.getId())
+        ));
     }
 
     @Test
-    @DisplayName("submitExam should set AWAITING_MANUAL_GRADING when exam contains essay questions")
-    void submitExam_Success_EssayQuestionSetsAwaitingManualGrading() {
+    @DisplayName("submitExam should throw CONFLICT when submission lock is already acquired")
+    void submitExam_ThrowsConflict_WhenLockAlreadyAcquired() {
         UUID attemptId = UUID.randomUUID();
-        ExamAttempt attempt = ExamAttempt.builder()
-                .id(attemptId)
-                .exam(publishedExam) // contains single, multi, numeric, AND essay
-                .user(studentUser)
-                .status(AttemptStatus.IN_PROGRESS)
-                .startTime(LocalDateTime.now().minusMinutes(20))
-                .expireAt(LocalDateTime.now().plusMinutes(25))
-                .build();
+        when(redisExamSessionService.acquireSubmissionLock(attemptId, 300L)).thenReturn(false);
 
-        Map<UUID, SaveAnswerRequest> draftAnswers = new HashMap<>();
-        draftAnswers.put(essayQ.getId(), SaveAnswerRequest.builder()
-                .questionId(essayQ.getId())
-                .textAnswer("The square of hypotenuse equals sum of squares of legs.")
-                .build());
+        AppException ex = assertThrows(AppException.class, () ->
+                examSessionService.submitExam(attemptId, null, studentUser, null));
 
-        when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
-        when(questionRepository.findByExamIdWithOptions(publishedExam.getId()))
-                .thenReturn(List.of(singleChoiceQ, multiChoiceQ, numericQ, essayQ));
-        when(redisExamSessionService.getDraftAnswers(attemptId)).thenReturn(draftAnswers);
-
-        SubmitResultResponse response = examSessionService.submitExam(attemptId, null, studentUser, null);
-
-        assertNotNull(response);
-        assertEquals(AttemptStatus.AWAITING_MANUAL_GRADING, response.getStatus());
-        assertNull(response.getTotalScore()); // Score not finalized until teacher reviews essay
-        assertTrue(response.getMessage().contains("awaiting manual grading"));
-
-        // Verifies that all 4 questions (1 answered essay + 3 unanswered) are saved
-        verify(candidateAnswerRepository, times(1)).saveAll(argThat(list -> {
-            List<?> ansList = (List<?>) list;
-            return ansList.size() == 4;
-        }));
-        verify(redisExamSessionService, times(1)).clearDraftAnswers(attemptId);
-    }
-
-    @Test
-    @DisplayName("submitExam should persist zero-score records for all unanswered questions")
-    void submitExam_Success_WithUnansweredQuestions_PersistsZeroScoreCandidateAnswers() {
-        UUID attemptId = UUID.randomUUID();
-        ExamAttempt attempt = ExamAttempt.builder()
-                .id(attemptId)
-                .exam(publishedExam)
-                .user(studentUser)
-                .status(AttemptStatus.IN_PROGRESS)
-                .startTime(LocalDateTime.now().minusMinutes(10))
-                .expireAt(LocalDateTime.now().plusMinutes(35))
-                .build();
-
-        // Candidate only answered singleChoiceQ, leaving other 3 questions empty
-        Map<UUID, SaveAnswerRequest> draftAnswers = new HashMap<>();
-        draftAnswers.put(singleChoiceQ.getId(), SaveAnswerRequest.builder()
-                .questionId(singleChoiceQ.getId())
-                .selectedOptionIds(Set.of(optionB.getId()))
-                .build());
-
-        when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
-        when(questionRepository.findByExamIdWithOptions(publishedExam.getId()))
-                .thenReturn(List.of(singleChoiceQ, multiChoiceQ, numericQ, essayQ));
-        when(redisExamSessionService.getDraftAnswers(attemptId)).thenReturn(draftAnswers);
-
-        SubmitResultResponse response = examSessionService.submitExam(attemptId, null, studentUser, null);
-
-        assertNotNull(response);
-        assertEquals(AttemptStatus.SUBMITTED, response.getStatus());
-        assertEquals(2.0, response.getTotalScore()); // only singleChoiceQ awarded 2.0
-
-        // Verifies all 4 questions were saved to database
-        verify(candidateAnswerRepository, times(1)).saveAll(argThat(list -> {
-            List<?> ansList = (List<?>) list;
-            return ansList.size() == 4;
-        }));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        verify(examSubmissionProducer, never()).sendSubmissionMessage(any());
     }
 
     @Test
@@ -575,13 +513,14 @@ class ExamSessionServiceTest {
                 .expireAt(LocalDateTime.now().minusSeconds(20)) // Expired beyond 15s grace period
                 .build();
 
+        when(redisExamSessionService.acquireSubmissionLock(attemptId, 300L)).thenReturn(true);
         when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
 
         assertThrows(SessionExpiredException.class, () ->
                 examSessionService.submitExam(attemptId, null, studentUser, null));
 
-        verify(candidateAnswerRepository, never()).saveAll(any());
-        verify(redisExamSessionService, never()).clearDraftAnswers(any());
+        verify(redisExamSessionService, times(1)).releaseSubmissionLock(attemptId);
+        verify(examSubmissionProducer, never()).sendSubmissionMessage(any());
     }
 
     @Test
@@ -595,11 +534,57 @@ class ExamSessionServiceTest {
                 .status(AttemptStatus.SUBMITTED)
                 .build();
 
+        when(redisExamSessionService.acquireSubmissionLock(attemptId, 300L)).thenReturn(true);
         when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
 
         assertThrows(AppException.class, () ->
                 examSessionService.submitExam(attemptId, null, studentUser, null));
 
-        verify(redisExamSessionService, never()).clearDraftAnswers(any());
+        verify(redisExamSessionService, times(1)).releaseSubmissionLock(attemptId);
+        verify(examSubmissionProducer, never()).sendSubmissionMessage(any());
+    }
+
+    @Test
+    @DisplayName("getSubmissionResult should return cached result directly without hitting database")
+    void getSubmissionResult_ReturnsFromRedisCache_WhenAvailable() {
+        UUID attemptId = UUID.randomUUID();
+        SubmitResultResponse cachedResult = SubmitResultResponse.builder()
+                .attemptId(attemptId)
+                .examTitle("Cached Exam")
+                .status(AttemptStatus.SUBMITTED)
+                .totalScore(8.5)
+                .build();
+
+        when(redisExamSessionService.getCachedSubmissionResult(attemptId)).thenReturn(cachedResult);
+
+        SubmitResultResponse result = examSessionService.getSubmissionResult(attemptId, studentUser, null);
+
+        assertNotNull(result);
+        assertEquals(8.5, result.getTotalScore());
+        assertEquals("Cached Exam", result.getExamTitle());
+        verify(examAttemptRepository, never()).findByIdWithExam(any());
+    }
+
+    @Test
+    @DisplayName("getSubmissionResult should fallback to database and cache result when Redis cache misses")
+    void getSubmissionResult_FallbackToDb_WhenCacheMiss() {
+        UUID attemptId = UUID.randomUUID();
+        ExamAttempt attempt = ExamAttempt.builder()
+                .id(attemptId)
+                .exam(publishedExam)
+                .user(studentUser)
+                .status(AttemptStatus.SUBMITTED)
+                .totalScore(9.0)
+                .submitTime(LocalDateTime.now())
+                .build();
+
+        when(redisExamSessionService.getCachedSubmissionResult(attemptId)).thenReturn(null);
+        when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
+
+        SubmitResultResponse result = examSessionService.getSubmissionResult(attemptId, studentUser, null);
+
+        assertNotNull(result);
+        assertEquals(9.0, result.getTotalScore());
+        assertEquals(AttemptStatus.SUBMITTED, result.getStatus());
     }
 }

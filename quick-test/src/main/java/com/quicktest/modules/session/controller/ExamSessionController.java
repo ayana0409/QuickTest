@@ -24,6 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/session")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class ExamSessionController {
 
     private final ExamSessionService examSessionService;
@@ -84,11 +85,11 @@ public class ExamSessionController {
     }
 
     /**
-     * Finalize and submit the exam attempt.
-     * Synchronizes Redis draft answers to PostgreSQL, executes auto-grading, and clears cache.
+     * Finalize and submit the exam attempt asynchronously via RabbitMQ queue.
+     * Returns HTTP 202 Accepted immediately without locking database transactions.
      */
     @PostMapping("/{attemptId}/submit")
-    public ResponseEntity<ApiResponse<SubmitResultResponse>> submitExam(
+    public ResponseEntity<ApiResponse<SubmitAcceptedResponse>> submitExam(
             @PathVariable("attemptId") UUID attemptId,
             @RequestBody(required = false) SubmitExamRequest request,
             @AuthenticationPrincipal UserDetailsImpl currentUser,
@@ -98,9 +99,29 @@ public class ExamSessionController {
         User userEntity = resolveUser(currentUser);
         String resolvedGuestId = resolveGuestIdentifier(guestIdentifier, guestHeader);
 
-        SubmitResultResponse response = examSessionService.submitExam(attemptId, request, userEntity, resolvedGuestId);
+        SubmitAcceptedResponse response = examSessionService.submitExam(attemptId, request, userEntity, resolvedGuestId);
 
-        return ResponseEntity.ok(ApiResponse.success(response, "Exam submitted successfully"));
+        return ResponseEntity
+                .status(org.springframework.http.HttpStatus.ACCEPTED)
+                .body(ApiResponse.success(response, "Exam submission accepted and queued for background grading"));
+    }
+
+    /**
+     * Poll submission and grading result (checks Redis Cache first, then PostgreSQL).
+     */
+    @GetMapping("/{attemptId}/result")
+    public ResponseEntity<ApiResponse<SubmitResultResponse>> getSubmissionResult(
+            @PathVariable("attemptId") UUID attemptId,
+            @AuthenticationPrincipal UserDetailsImpl currentUser,
+            @RequestParam(value = "guestIdentifier", required = false) String guestIdentifier,
+            @RequestHeader(value = "X-Guest-Identifier", required = false) String guestHeader) {
+
+        User userEntity = resolveUser(currentUser);
+        String resolvedGuestId = resolveGuestIdentifier(guestIdentifier, guestHeader);
+
+        SubmitResultResponse response = examSessionService.getSubmissionResult(attemptId, userEntity, resolvedGuestId);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "Submission result retrieved successfully"));
     }
 
     /**

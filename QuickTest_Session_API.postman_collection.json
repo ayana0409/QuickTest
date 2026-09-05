@@ -1,0 +1,174 @@
+{
+  "info": {
+    "_postman_id": "8b9e6f3b-6e21-4f92-91f5-1b4e05b38d4e",
+    "name": "Quick Test - Module Session & High-Throughput Async Submission",
+    "description": "API collection for Phase 3 Module Session: Candidate flow (Start Exam, Auto-save Redis, Async Submission with RabbitMQ 202 Accepted, and Result Polling).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Start Exam Session (Student / Guest)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{quick-test-access-token}}",
+            "description": "Optional for Guest, required for authenticated Student"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accessCode\": \"MATH10A\",\n  \"guestName\": \"Nguyen Van A\"\n}"
+        },
+        "url": {
+          "raw": "{{Url}}/session/start",
+          "host": [
+            "{{Url}}"
+          ],
+          "path": [
+            "session",
+            "start"
+          ]
+        },
+        "description": "Starts an exam session, initializes server-side countdown timer and Redis draft storage, and returns the Exam Paper without answer keys."
+      }
+    },
+    {
+      "name": "2. Resume Exam Paper & Saved Answers",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{quick-test-access-token}}"
+          },
+          {
+            "key": "X-Guest-Identifier",
+            "value": "{{guestIdentifier}}",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "{{Url}}/session/{{attemptId}}/resume",
+          "host": [
+            "{{Url}}"
+          ],
+          "path": [
+            "session",
+            "{{attemptId}}",
+            "resume"
+          ]
+        },
+        "description": "Retrieves the masked exam paper questions along with any previously auto-saved draft answers stored in Redis."
+      }
+    },
+    {
+      "name": "3. Auto-save Answer Draft (Redis Hash)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{quick-test-access-token}}"
+          },
+          {
+            "key": "X-Guest-Identifier",
+            "value": "{{guestIdentifier}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"questionId\": \"{{questionId}}\",\n  \"selectedOptionIds\": [\n    \"{{optionId}}\"\n  ],\n  \"textAnswer\": null\n}"
+        },
+        "url": {
+          "raw": "{{Url}}/session/{{attemptId}}/save",
+          "host": [
+            "{{Url}}"
+          ],
+          "path": [
+            "session",
+            "{{attemptId}}",
+            "save"
+          ]
+        },
+        "description": "Instantly saves draft answers into Redis Hash (0 DB writes). Response time < 5ms."
+      }
+    },
+    {
+      "name": "4. Submit Exam (Async Fast Ingestion - HTTP 202 Accepted)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{quick-test-access-token}}"
+          },
+          {
+            "key": "X-Guest-Identifier",
+            "value": "{{guestIdentifier}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"answers\": []\n}"
+        },
+        "url": {
+          "raw": "{{Url}}/session/{{attemptId}}/submit",
+          "host": [
+            "{{Url}}"
+          ],
+          "path": [
+            "session",
+            "{{attemptId}}",
+            "submit"
+          ]
+        },
+        "description": "Fast ingestion (< 10ms, 0 DB transaction): Acquires Redis atomic lock, gathers draft answers, pushes SubmissionMessage to RabbitMQ, and immediately responds with HTTP 202 Accepted."
+      }
+    },
+    {
+      "name": "5. Poll Exam Submission Result (Redis Cache First)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{quick-test-access-token}}"
+          },
+          {
+            "key": "X-Guest-Identifier",
+            "value": "{{guestIdentifier}}",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "{{Url}}/session/{{attemptId}}/result",
+          "host": [
+            "{{Url}}"
+          ],
+          "path": [
+            "session",
+            "{{attemptId}}",
+            "result"
+          ]
+        },
+        "description": "Client polls this endpoint after receiving 202 Accepted. Retrieves result from Redis Cache (< 1ms, 0 DB query) or fallback to PostgreSQL."
+      }
+    }
+  ]
+}

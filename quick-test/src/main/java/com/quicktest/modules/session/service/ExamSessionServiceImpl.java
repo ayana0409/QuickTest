@@ -14,14 +14,12 @@ import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.session.dto.*;
 import com.quicktest.modules.session.entity.AttemptStatus;
-import com.quicktest.modules.session.entity.CandidateAnswer;
 import com.quicktest.modules.session.entity.ExamAttempt;
-import com.quicktest.modules.session.entity.GradingStatus;
-import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service implementation orchestrating student and guest exam sessions,
@@ -46,8 +43,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
     private final ExamAttemptRepository examAttemptRepository;
-    private final CandidateAnswerRepository candidateAnswerRepository;
     private final RedisExamSessionService redisExamSessionService;
+    private final ExamSubmissionProducer examSubmissionProducer;
 
     @Override
     @Transactional
@@ -176,152 +173,103 @@ public class ExamSessionServiceImpl implements ExamSessionService {
     }
 
     @Override
-    @Transactional
-    public SubmitResultResponse submitExam(UUID attemptId, SubmitExamRequest request, User currentUser, String guestIdentifier) {
-        log.info("Submitting exam attempt ID: {}", attemptId);
+    public SubmitAcceptedResponse submitExam(UUID attemptId, SubmitExamRequest request, User currentUser, String guestIdentifier) {
+        log.info("Ingesting asynchronous exam submission for attempt ID: {}", attemptId);
 
+        // 1. Acquire atomic submission lock on Redis to prevent concurrent/duplicate submissions
+        boolean lockAcquired = redisExamSessionService.acquireSubmissionLock(attemptId, 300L);
+        if (!lockAcquired) {
+            throw new AppException("Exam attempt is already being submitted or finalized", HttpStatus.CONFLICT);
+        }
+
+        try {
+            // 2. Validate attempt existence and access without opening a DB write transaction
+            ExamAttempt attempt = examAttemptRepository.findByIdWithExam(attemptId)
+                    .orElseThrow(() -> new ResourceNotFoundException("ExamAttempt", "id", attemptId));
+
+            verifyCandidateAccess(attempt, currentUser, guestIdentifier);
+
+            if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
+                throw new AppException("Exam attempt has already been submitted or finalized (Status: " + attempt.getStatus() + ")");
+            }
+
+            // Validate submission deadline with network grace period (15s)
+            if (isExpiredWithGrace(attempt)) {
+                throw new SessionExpiredException("Exam duration has expired. Submissions are no longer accepted.");
+            }
+
+            // 3. Gather candidate answers (Redis drafts + optional direct payload merge)
+            Map<UUID, SaveAnswerRequest> answersMap = new HashMap<>(redisExamSessionService.getDraftAnswers(attemptId));
+            if (request != null && request.getAnswers() != null) {
+                for (SaveAnswerRequest ans : request.getAnswers()) {
+                    if (ans.getQuestionId() != null && !answersMap.containsKey(ans.getQuestionId())) {
+                        answersMap.put(ans.getQuestionId(), ans);
+                    }
+                }
+            }
+
+            // 4. Package submission message and dispatch to RabbitMQ queue (< 5ms)
+            LocalDateTime submitTime = LocalDateTime.now();
+            SubmissionMessage message = SubmissionMessage.builder()
+                    .attemptId(attemptId)
+                    .examId(attempt.getExam().getId())
+                    .examTitle(attempt.getExam().getTitle())
+                    .userId(currentUser != null ? currentUser.getId() : null)
+                    .guestIdentifier(guestIdentifier)
+                    .submitTime(submitTime)
+                    .answers(answersMap)
+                    .build();
+
+            examSubmissionProducer.sendSubmissionMessage(message);
+
+            // 5. Return immediate HTTP 202 Accepted response without holding DB connections
+            return SubmitAcceptedResponse.builder()
+                    .attemptId(attemptId)
+                    .status("PROCESSING")
+                    .submitTime(submitTime)
+                    .message("Exam submission accepted and queued for background grading")
+                    .build();
+
+        } catch (Exception ex) {
+            redisExamSessionService.releaseSubmissionLock(attemptId);
+            throw ex;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SubmitResultResponse getSubmissionResult(UUID attemptId, User currentUser, String guestIdentifier) {
+        log.debug("Polling submission result for attempt ID: {}", attemptId);
+
+        // 1. Check Redis Cache first (< 1ms response, 0 DB query)
+        SubmitResultResponse cachedResult = redisExamSessionService.getCachedSubmissionResult(attemptId);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+
+        // 2. Fallback to PostgreSQL if cache miss
         ExamAttempt attempt = examAttemptRepository.findByIdWithExam(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("ExamAttempt", "id", attemptId));
 
         verifyCandidateAccess(attempt, currentUser, guestIdentifier);
 
-        // Optimistic locking & duplicate submission guard
-        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
-            throw new AppException("Exam attempt has already been submitted or finalized (Status: " + attempt.getStatus() + ")");
-        }
-
-        // Validate submission deadline with network grace period (15s)
-        if (isExpiredWithGrace(attempt)) {
-            throw new SessionExpiredException("Exam duration has expired. Submissions are no longer accepted.");
-        }
-
-        // 1. Gather all candidate answers (prioritize Redis draft cache, fallback to direct request payload)
-        Map<UUID, SaveAnswerRequest> answersMap = new HashMap<>(redisExamSessionService.getDraftAnswers(attemptId));
-        if (request != null && request.getAnswers() != null) {
-            for (SaveAnswerRequest ans : request.getAnswers()) {
-                if (ans.getQuestionId() != null && !answersMap.containsKey(ans.getQuestionId())) {
-                    answersMap.put(ans.getQuestionId(), ans);
-                }
-            }
-        }
-
-        // 2. Load complete questions with options from database
-        List<Question> questions = questionRepository.findByExamIdWithOptions(attempt.getExam().getId());
-
-        // 3. Transform and grade answers
-        double totalScore = 0.0;
-        boolean hasPendingManualGrading = false;
-        List<CandidateAnswer> candidateAnswers = new ArrayList<>();
-
-        for (Question question : questions) {
-            SaveAnswerRequest answerDraft = answersMap.get(question.getId());
-
-            // Handle unanswered questions: persist empty zero-score entry for complete reporting/reviewing
-            if (answerDraft == null) {
-                CandidateAnswer unanswered = CandidateAnswer.builder()
-                        .examAttempt(attempt)
-                        .question(question)
-                        .selectedOptions(Collections.emptySet())
-                        .textAnswer(null)
-                        .awardedScore(0.0)
-                        .gradingStatus(GradingStatus.AUTO_GRADED)
-                        .build();
-                candidateAnswers.add(unanswered);
-                continue;
-            }
-
-            CandidateAnswer candidateAnswer = CandidateAnswer.builder()
-                    .examAttempt(attempt)
-                    .question(question)
+        if (attempt.getStatus() == AttemptStatus.IN_PROGRESS) {
+            return SubmitResultResponse.builder()
+                    .attemptId(attemptId)
+                    .examTitle(attempt.getExam().getTitle())
+                    .status(AttemptStatus.IN_PROGRESS)
+                    .submitTime(attempt.getSubmitTime())
+                    .message("Exam submission is currently being processed and graded.")
                     .build();
-
-            switch (question.getQuestionType()) {
-                case SINGLE_CHOICE, MULTIPLE_CHOICE -> {
-                    Set<UUID> chosenOptionIds = answerDraft.getSelectedOptionIds() != null
-                            ? answerDraft.getSelectedOptionIds()
-                            : Collections.emptySet();
-
-                    Set<AnswerOption> chosenOptions = question.getOptions().stream()
-                            .filter(opt -> chosenOptionIds.contains(opt.getId()))
-                            .collect(Collectors.toSet());
-                    candidateAnswer.setSelectedOptions(chosenOptions);
-
-                    // Auto-grade: match selected options with correct options
-                    Set<UUID> correctOptionIds = question.getOptions().stream()
-                            .filter(opt -> Boolean.TRUE.equals(opt.getIsCorrect()))
-                            .map(AnswerOption::getId)
-                            .collect(Collectors.toSet());
-
-                    if (!correctOptionIds.isEmpty() && correctOptionIds.equals(chosenOptionIds)) {
-                        candidateAnswer.setAwardedScore(question.getPoints());
-                    } else {
-                        candidateAnswer.setAwardedScore(0.0);
-                    }
-                    candidateAnswer.setGradingStatus(GradingStatus.AUTO_GRADED);
-                    totalScore += candidateAnswer.getAwardedScore();
-                }
-                case NUMERIC -> {
-                    String inputVal = answerDraft.getTextAnswer() != null ? answerDraft.getTextAnswer().trim() : "";
-                    candidateAnswer.setTextAnswer(inputVal);
-                    candidateAnswer.setGradingStatus(GradingStatus.AUTO_GRADED);
-
-                    String sample = question.getSampleAnswer();
-                    if (sample == null || sample.trim().isEmpty()) {
-                        log.warn("Question ID {} has missing sampleAnswer for NUMERIC question", question.getId());
-                        candidateAnswer.setAwardedScore(0.0);
-                    } else {
-                        try {
-                            double candidateNumber = Double.parseDouble(inputVal);
-                            double targetNumber = Double.parseDouble(sample.trim());
-                            double tolerance = question.getNumericTolerance() != null ? question.getNumericTolerance() : 0.0;
-
-                            if (Math.abs(candidateNumber - targetNumber) <= tolerance) {
-                                candidateAnswer.setAwardedScore(question.getPoints());
-                            } else {
-                                candidateAnswer.setAwardedScore(0.0);
-                            }
-                        } catch (NumberFormatException ex) {
-                            // Candidate entered non-numeric value
-                            candidateAnswer.setAwardedScore(0.0);
-                        }
-                    }
-                    totalScore += candidateAnswer.getAwardedScore();
-                }
-                case ESSAY_TEXT -> {
-                    String text = answerDraft.getTextAnswer() != null ? answerDraft.getTextAnswer().trim() : "";
-                    candidateAnswer.setTextAnswer(text);
-                    candidateAnswer.setAwardedScore(0.0);
-                    candidateAnswer.setGradingStatus(GradingStatus.PENDING_MANUAL);
-                    hasPendingManualGrading = true;
-                }
-            }
-
-            candidateAnswers.add(candidateAnswer);
         }
-
-        // 4. Persist answers to PostgreSQL
-        candidateAnswerRepository.saveAll(candidateAnswers);
-
-        // 5. Finalize attempt state (Dirty checking handles update automatically within @Transactional)
-        AttemptStatus finalStatus = hasPendingManualGrading
-                ? AttemptStatus.AWAITING_MANUAL_GRADING
-                : AttemptStatus.SUBMITTED;
-
-        attempt.setStatus(finalStatus);
-        attempt.setSubmitTime(LocalDateTime.now());
-        attempt.setTotalScore(hasPendingManualGrading ? null : totalScore);
-
-        // 6. Clear Redis cache
-        redisExamSessionService.clearDraftAnswers(attemptId);
-        log.info("Exam attempt ID: {} successfully finalized with status: {}", attemptId, finalStatus);
 
         return SubmitResultResponse.builder()
-                .attemptId(attempt.getId())
+                .attemptId(attemptId)
                 .examTitle(attempt.getExam().getTitle())
-                .status(finalStatus)
-                .totalScore(hasPendingManualGrading ? null : totalScore)
+                .status(attempt.getStatus())
+                .totalScore(attempt.getTotalScore())
                 .submitTime(attempt.getSubmitTime())
-                .message(hasPendingManualGrading
+                .message(attempt.getStatus() == AttemptStatus.AWAITING_MANUAL_GRADING
                         ? "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher."
                         : "Exam submitted and graded successfully.")
                 .build();
