@@ -28,9 +28,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Object>> handleAppException(AppException ex) {
         log.warn("Application exception occurred: {}", ex.getMessage());
+        HttpStatus status = ex.getStatus() != null ? ex.getStatus() : HttpStatus.BAD_REQUEST;
         return ResponseEntity
-                .status(ex.getStatus())
-                .body(ApiResponse.error(ex.getStatus().value(), ex.getMessage()));
+                .status(java.util.Objects.requireNonNull(status))
+                .body(ApiResponse.error(status.value(), ex.getMessage()));
     }
 
     /**
@@ -65,9 +66,47 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
+        String message = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equalsIgnoreCase("Access is denied"))
+                ? ex.getMessage()
+                : "You do not have permission to access this resource";
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(), "You do not have permission to access this resource"));
+                .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(), message));
+    }
+
+    /**
+     * Handle unsupported media type (e.g. sending text/plain instead of application/json).
+     */
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpMediaTypeNotSupported(org.springframework.web.HttpMediaTypeNotSupportedException ex) {
+        log.warn("Unsupported Media Type: {}", ex.getMessage());
+        String msg = String.format("Content-Type '%s' is not supported. Please set 'Content-Type: application/json'", ex.getContentType());
+        return ResponseEntity
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiResponse.error(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), msg));
+    }
+
+    /**
+     * Handle unreadable/malformed JSON body.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn("Malformed JSON request body: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Malformed JSON request body or missing required request body"));
+    }
+
+    /**
+     * Handle unsupported HTTP method (e.g. GET instead of POST).
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpRequestMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        log.warn("Method not allowed: {}", ex.getMessage());
+        String msg = String.format("Request method '%s' is not supported for this endpoint", ex.getMethod());
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiResponse.error(HttpStatus.METHOD_NOT_ALLOWED.value(), msg));
     }
 
     /**

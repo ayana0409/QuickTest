@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;

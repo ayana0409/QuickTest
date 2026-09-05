@@ -97,7 +97,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // Disable CSRF for stateless REST APIs using JWT
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.disable())
                 // Enable CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 // Custom 401 unauthorized entry point
