@@ -1,0 +1,30 @@
+meta {
+  name: 6.07 Disqualify Attempt - Forbidden Student
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/disqualify
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "reason": "Forbidden student attempt"
+  }
+}
+
+assert {
+  res.status: in [401, 403]
+}

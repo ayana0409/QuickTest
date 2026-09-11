@@ -1,0 +1,30 @@
+meta {
+  name: 6.01 Get Exam Monitoring List - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/proctoring/exams/{{examId}}/attempts?page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

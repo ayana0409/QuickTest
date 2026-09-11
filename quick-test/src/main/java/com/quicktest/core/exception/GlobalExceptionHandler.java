@@ -49,7 +49,8 @@ public class GlobalExceptionHandler {
      * Handle DTO validation failures (@Valid).
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
+            MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
@@ -61,13 +62,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle path variable or request parameter type conversion failures (e.g. invalid UUID format or missing ID).
+     * Handle path variable or request parameter type conversion failures (e.g.
+     * invalid UUID format or missing ID).
      */
     @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
         log.warn("Type mismatch error for parameter '{}': {}", ex.getName(), ex.getMessage());
         String msg = String.format("Parameter '%s' has invalid value '%s'. Expected format: %s",
-                ex.getName(), ex.getValue(), ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "valid parameter");
+                ex.getName(), ex.getValue(),
+                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "valid parameter");
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), msg));
@@ -76,7 +80,7 @@ public class GlobalExceptionHandler {
     /**
      * Handle authentication credentials failure.
      */
-    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    @ExceptionHandler({ BadCredentialsException.class, UsernameNotFoundException.class })
     public ResponseEntity<ApiResponse<Object>> handleBadCredentialsException(Exception ex) {
         log.warn("Authentication failed: {}", ex.getMessage());
         return ResponseEntity
@@ -90,21 +94,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
-        String message = (ex.getMessage() != null && !ex.getMessage().isBlank() && !ex.getMessage().equalsIgnoreCase("Access is denied"))
-                ? ex.getMessage()
-                : "You do not have permission to access this resource";
+        String message = (ex.getMessage() != null && !ex.getMessage().isBlank()
+                && !ex.getMessage().equalsIgnoreCase("Access is denied"))
+                        ? ex.getMessage()
+                        : "You do not have permission to access this resource";
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(), message));
     }
 
     /**
-     * Handle unsupported media type (e.g. sending text/plain instead of application/json).
+     * Handle unsupported media type (e.g. sending text/plain instead of
+     * application/json).
      */
     @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleHttpMediaTypeNotSupported(org.springframework.web.HttpMediaTypeNotSupportedException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleHttpMediaTypeNotSupported(
+            org.springframework.web.HttpMediaTypeNotSupportedException ex) {
         log.warn("Unsupported Media Type: {}", ex.getMessage());
-        String msg = String.format("Content-Type '%s' is not supported. Please set 'Content-Type: application/json'", ex.getContentType());
+        String msg = String.format("Content-Type '%s' is not supported. Please set 'Content-Type: application/json'",
+                ex.getContentType());
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(ApiResponse.error(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), msg));
@@ -114,18 +122,21 @@ public class GlobalExceptionHandler {
      * Handle unreadable/malformed JSON body.
      */
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
         log.warn("Malformed JSON request body: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Malformed JSON request body or missing required request body"));
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(),
+                        "Malformed JSON request body or missing required request body"));
     }
 
     /**
      * Handle unsupported HTTP method (e.g. GET instead of POST).
      */
     @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleHttpRequestMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleHttpRequestMethodNotSupported(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex) {
         log.warn("Method not allowed: {}", ex.getMessage());
         String msg = String.format("Request method '%s' is not supported for this endpoint", ex.getMethod());
         return ResponseEntity
@@ -141,6 +152,7 @@ public class GlobalExceptionHandler {
         log.error("Internal server error: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected server error occurred. Please try again later."));
+                .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "An unexpected server error occurred. Please try again later."));
     }
 }

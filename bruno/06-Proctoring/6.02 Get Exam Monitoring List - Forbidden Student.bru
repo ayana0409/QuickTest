@@ -1,0 +1,23 @@
+meta {
+  name: 6.02 Get Exam Monitoring List - Forbidden Student
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/proctoring/exams/{{examId}}/attempts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: in [401, 403]
+}

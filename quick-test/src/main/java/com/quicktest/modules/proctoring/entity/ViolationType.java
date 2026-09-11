@@ -9,5 +9,6 @@ public enum ViolationType {
     DEVTOOLS_OPEN,      // DevTools/Inspect attempted
     NO_FACE_DETECTED,   // No face detected via webcam
     MULTIPLE_FACES,     // Multiple faces detected in frame
-    COPY_PASTE_ATTEMPT  // Copy/paste attempt detected
+    COPY_PASTE_ATTEMPT, // Copy/paste attempt detected
+    TEACHER_DISQUALIFY  // Manually disqualified by teacher/proctor
 }

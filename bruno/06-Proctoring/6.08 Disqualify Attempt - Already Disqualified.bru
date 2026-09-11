@@ -1,0 +1,30 @@
+meta {
+  name: 6.08 Disqualify Attempt - Already Disqualified
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/disqualify
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "reason": "Duplicate disqualification attempt"
+  }
+}
+
+assert {
+  res.status: eq 400
+}

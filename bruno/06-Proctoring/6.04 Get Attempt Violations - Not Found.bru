@@ -1,0 +1,23 @@
+meta {
+  name: 6.04 Get Attempt Violations - Not Found
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/proctoring/attempts/00000000-0000-0000-0000-000000000000/violations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}

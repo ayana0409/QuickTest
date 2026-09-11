@@ -1,0 +1,25 @@
+meta {
+  name: 6.03 Get Attempt Violations - Success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/violations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

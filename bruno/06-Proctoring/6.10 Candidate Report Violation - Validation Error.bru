@@ -1,0 +1,26 @@
+meta {
+  name: 6.10 Candidate Report Violation - Validation Error
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/session/proctoring/violations
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "description": "Missing required attemptId and violationType"
+  }
+}
+
+assert {
+  res.status: eq 400
+}

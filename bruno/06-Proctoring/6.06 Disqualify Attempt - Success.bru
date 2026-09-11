@@ -1,0 +1,31 @@
+meta {
+  name: 6.06 Disqualify Attempt - Success
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/disqualify
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "reason": "Repeated unauthorized tab switches and DevTools detected"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+}

@@ -113,6 +113,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/session/**").permitAll()
+                        .requestMatchers("/ws-exam/**").permitAll()
                         // Public Swagger / OpenAPI documentation
                         .requestMatchers(
                                 "/v3/api-docs/**",
