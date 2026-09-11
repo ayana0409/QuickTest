@@ -119,8 +119,11 @@ public class ExamSubmissionConsumer {
                         candidateAnswer.setAwardedScore(0.0);
                     } else {
                         try {
-                            double candidateNumber = Double.parseDouble(inputVal);
-                            double targetNumber = Double.parseDouble(sample.trim());
+                            // Support both dot '.' and comma ',' decimal separators (e.g. 78.5 and 78,5)
+                            String normalizedInput = inputVal.replace(" ", "").replace(',', '.');
+                            String normalizedSample = sample.trim().replace(" ", "").replace(',', '.');
+                            double candidateNumber = Double.parseDouble(normalizedInput);
+                            double targetNumber = Double.parseDouble(normalizedSample);
                             double tolerance = qDto.getNumericTolerance() != null ? qDto.getNumericTolerance() : 0.0;
 
                             if (Math.abs(candidateNumber - targetNumber) <= tolerance) {

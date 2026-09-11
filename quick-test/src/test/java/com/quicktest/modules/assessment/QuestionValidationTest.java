@@ -120,6 +120,9 @@ class QuestionValidationTest {
                     QuestionType.NUMERIC, "3.14159", 0.01, null, null));
             assertDoesNotThrow(() -> QuestionServiceImpl.validateQuestionBusinessRules(
                     QuestionType.NUMERIC, "-42.5", null, null, Collections.emptyList()));
+            // Support comma decimal separator (e.g. 78,5)
+            assertDoesNotThrow(() -> QuestionServiceImpl.validateQuestionBusinessRules(
+                    QuestionType.NUMERIC, "78,5", 0.1, null, null));
         }
 
         @Test

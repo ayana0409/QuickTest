@@ -35,6 +35,17 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle illegal argument or business validation failures.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
+    }
+
+    /**
      * Handle DTO validation failures (@Valid).
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -47,6 +58,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Validation failed", errors));
+    }
+
+    /**
+     * Handle path variable or request parameter type conversion failures (e.g. invalid UUID format or missing ID).
+     */
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+        log.warn("Type mismatch error for parameter '{}': {}", ex.getName(), ex.getMessage());
+        String msg = String.format("Parameter '%s' has invalid value '%s'. Expected format: %s",
+                ex.getName(), ex.getValue(), ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "valid parameter");
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), msg));
     }
 
     /**

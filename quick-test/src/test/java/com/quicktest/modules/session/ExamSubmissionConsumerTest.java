@@ -150,6 +150,51 @@ class ExamSubmissionConsumerTest {
         }
 
         @Test
+        @DisplayName("processSubmission should accurately grade numeric question when candidate uses comma decimal separator (e.g. 78,5)")
+        void processSubmission_NumericWithComma_GradesSuccessfully() {
+                // Arrange: question sample is 78.5 with tolerance 0.1
+                UUID commaNumericQId = UUID.randomUUID();
+                List<QuestionGradingDto> numericKey = List.of(
+                                QuestionGradingDto.builder()
+                                                .questionId(commaNumericQId)
+                                                .questionType(QuestionType.NUMERIC)
+                                                .points(2.0)
+                                                .sampleAnswer("78.5")
+                                                .numericTolerance(0.1)
+                                                .build());
+
+                when(redisExamSessionService.getExamGradingKey(examId)).thenReturn(numericKey);
+
+                Map<UUID, SaveAnswerRequest> answers = new HashMap<>();
+                answers.put(commaNumericQId, SaveAnswerRequest.builder()
+                                .questionId(commaNumericQId)
+                                .textAnswer("78,5") // Candidate enters Vietnamese comma notation
+                                .build());
+
+                SubmissionMessage message = SubmissionMessage.builder()
+                                .attemptId(attemptId)
+                                .examId(examId)
+                                .examTitle("Comma Numeric Test")
+                                .submitTime(LocalDateTime.now())
+                                .answers(answers)
+                                .build();
+
+                // Act
+                examSubmissionConsumer.processSubmission(message);
+
+                // Assert: Full score 2.0 must be awarded
+                verify(examPersistenceService, times(1)).persistGradedAnswersAndStatus(
+                                eq(attemptId),
+                                argThat((List<CandidateAnswer> list) -> list != null
+                                                && list.size() == 1
+                                                && list.get(0).getAwardedScore() == 2.0
+                                                && list.get(0).getGradingStatus() == GradingStatus.AUTO_GRADED),
+                                eq(AttemptStatus.SUBMITTED),
+                                eq(2.0),
+                                any(LocalDateTime.class));
+        }
+
+        @Test
         @DisplayName("processSubmission should award zero score for incorrect and out-of-tolerance answers")
         void processSubmission_WrongAnswers_AwardsZero() {
                 when(redisExamSessionService.getExamGradingKey(examId)).thenReturn(cachedGradingKey);

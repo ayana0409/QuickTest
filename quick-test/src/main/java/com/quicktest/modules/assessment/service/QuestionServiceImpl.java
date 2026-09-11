@@ -65,13 +65,18 @@ public class QuestionServiceImpl implements QuestionService {
             numericTolerance = request.getNumericTolerance() != null ? request.getNumericTolerance() : 0.0;
         }
 
+        String sampleAnswer = request.getSampleAnswer() != null ? request.getSampleAnswer().trim() : null;
+        if (request.getQuestionType() == QuestionType.NUMERIC && sampleAnswer != null) {
+            sampleAnswer = sampleAnswer.replace(" ", "").replace(',', '.');
+        }
+
         Question question = Question.builder()
                 .exam(exam)
                 .content(request.getContent().trim())
                 .questionType(request.getQuestionType())
                 .points(request.getPoints())
                 .orderIndex(nextOrderIndex)
-                .sampleAnswer(request.getSampleAnswer() != null ? request.getSampleAnswer().trim() : null)
+                .sampleAnswer(sampleAnswer)
                 .numericTolerance(numericTolerance)
                 .gradingRubric(request.getGradingRubric() != null ? request.getGradingRubric().trim() : null)
                 .options(new ArrayList<>())
@@ -124,7 +129,10 @@ public class QuestionServiceImpl implements QuestionService {
 
         // Configure type-specific attributes
         if (request.getQuestionType() == QuestionType.NUMERIC) {
-            question.setSampleAnswer(request.getSampleAnswer().trim());
+            String sampleAnswer = request.getSampleAnswer() != null
+                    ? request.getSampleAnswer().trim().replace(" ", "").replace(',', '.')
+                    : null;
+            question.setSampleAnswer(sampleAnswer);
             question.setNumericTolerance(request.getNumericTolerance() != null ? request.getNumericTolerance() : 0.0);
             question.setGradingRubric(null);
             question.getOptions().clear();
@@ -225,12 +233,14 @@ public class QuestionServiceImpl implements QuestionService {
                     throw new AppException("Numeric question requires a valid sample answer");
                 }
                 try {
-                    double parsed = Double.parseDouble(sampleAnswer.trim());
+                    // Support both dot '.' and comma ',' decimal separators
+                    String normalizedSample = sampleAnswer.trim().replace(" ", "").replace(',', '.');
+                    double parsed = Double.parseDouble(normalizedSample);
                     if (Double.isNaN(parsed) || Double.isInfinite(parsed)) {
                         throw new AppException("Sample answer for numeric question must be a finite number");
                     }
                 } catch (NumberFormatException ex) {
-                    throw new AppException("Sample answer for numeric question must be a valid number (e.g. 42 or 3.14)");
+                    throw new AppException("Sample answer for numeric question must be a valid number (e.g. 42 or 3.14 or 3,14)");
                 }
                 if (numericTolerance != null && numericTolerance < 0.0) {
                     throw new AppException("Numeric tolerance cannot be negative");

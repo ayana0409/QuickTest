@@ -1,5 +1,6 @@
 package com.quicktest.config;
 
+import com.quicktest.core.security.JwtAccessDeniedHandler;
 import com.quicktest.core.security.JwtAuthenticationEntryPoint;
 import com.quicktest.core.security.JwtAuthenticationFilter;
 import com.quicktest.core.security.UserDetailsServiceImpl;
@@ -35,6 +36,7 @@ public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     /**
@@ -98,13 +100,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 // Enable CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Custom 401 unauthorized entry point
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                // Custom 401 and 403 error handlers
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                )
                 // Stateless session management
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Configure route authorization
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints: Auth and candidate exam sessions (guest + authenticated)
+                        // Public error dispatcher and endpoints
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/session/**").permitAll()
                         // Public Swagger / OpenAPI documentation
