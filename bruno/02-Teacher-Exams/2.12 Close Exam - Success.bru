@@ -1,0 +1,23 @@
+meta {
+  name: 2.12 Close Exam - Success
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{disposableExamId}}/close
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 3.12 Publish Exam - Already Published Error
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/publish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 400
+}

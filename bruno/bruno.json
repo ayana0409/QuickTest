@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "name": "QuickTest",
+  "type": "collection",
+  "defaultEnv": "Local",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

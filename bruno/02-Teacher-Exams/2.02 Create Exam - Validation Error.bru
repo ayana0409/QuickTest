@@ -1,0 +1,32 @@
+meta {
+  name: 2.02 Create Exam - Validation Error
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "",
+    "durationMinutes": 0,
+    "maxAttempts": 0
+  }
+}
+
+assert {
+  res.status: eq 400
+}

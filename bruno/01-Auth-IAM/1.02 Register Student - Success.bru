@@ -1,0 +1,38 @@
+meta {
+  name: 1.02 Register Student - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "student_bruno",
+    "email": "student_bruno@quicktest.com",
+    "password": "Student@123",
+    "fullName": "Bruno Student",
+    "role": "STUDENT"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  let token = res.body?.data?.accessToken || res.body?.data?.token;
+  if (token) {
+    bru.setVar("studentToken", token);
+    bru.setEnvVar("studentToken", token);
+  }
+}

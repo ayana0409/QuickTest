@@ -1,0 +1,29 @@
+meta {
+  name: 5.10 Get Attempts to Grade - Submitted
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?status=SUBMITTED&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  status: SUBMITTED
+  page: 0
+  size: 10
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

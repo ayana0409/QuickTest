@@ -1,0 +1,54 @@
+meta {
+  name: 2.01 Create Exam - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+script:pre-request {
+  let rand = Math.floor(1000 + Math.random() * 9000);
+  bru.setVar("uniqueCode", "TOAN" + rand);
+}
+
+body:json {
+  {
+    "title": "Kỳ thi thử THPT Quốc Gia môn Toán 2026",
+    "accessCode": "{{uniqueCode}}",
+    "description": "Đề thi khảo sát chất lượng môn Toán với 4 dạng câu hỏi",
+    "durationMinutes": 45,
+    "maxAttempts": 2,
+    "shuffleQuestions": true,
+    "shuffleOptions": true
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  if (res.body && res.body.data) {
+    if (res.body.data.id) {
+      bru.setVar("examId", res.body.data.id);
+      bru.setEnvVar("examId", res.body.data.id);
+    }
+    if (res.body.data.accessCode) {
+      bru.setVar("accessCode", res.body.data.accessCode);
+      bru.setEnvVar("accessCode", res.body.data.accessCode);
+    }
+  }
+}

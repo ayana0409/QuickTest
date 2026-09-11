@@ -1,0 +1,44 @@
+meta {
+  name: 3.05 Add Question - Error Choice No Correct
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "content": "Câu hỏi trắc nghiệm không có đáp án đúng",
+    "questionType": "SINGLE_CHOICE",
+    "points": 1.0,
+    "options": [
+      {
+        "orderIndex": 1,
+        "content": "Đáp án A",
+        "isCorrect": false
+      },
+      {
+        "orderIndex": 2,
+        "content": "Đáp án B",
+        "isCorrect": false
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}

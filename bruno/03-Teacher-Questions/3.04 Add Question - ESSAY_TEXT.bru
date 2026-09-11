@@ -1,0 +1,42 @@
+meta {
+  name: 3.04 Add Question - ESSAY_TEXT
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 4,
+    "content": "Hãy phát biểu định lý Pytago và nêu một ví dụ ứng dụng thực tế.",
+    "questionType": "ESSAY_TEXT",
+    "points": 2.5,
+    "sampleAnswer": "Trong tam giác vuông, bình phương cạnh huyền bằng tổng bình phương hai cạnh góc vuông: a^2 + b^2 = c^2.",
+    "gradingRubric": "1.0đ: Phát biểu đúng. 1.0đ: Công thức chính xác. 0.5đ: Ví dụ thực tế hợp lý."
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.id) {
+    bru.setVar("essayQId", res.body.data.id);
+    bru.setEnvVar("essayQId", res.body.data.id);
+  }
+}

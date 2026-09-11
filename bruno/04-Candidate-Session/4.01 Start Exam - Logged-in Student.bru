@@ -1,0 +1,76 @@
+meta {
+  name: 4.01 Start Exam - Logged-in Student
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/session/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "accessCode": "{{accessCode}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  let body = res.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {}
+  }
+  if (body && body.data) {
+    if (body.data.attemptId) {
+      bru.setVar("attemptId", body.data.attemptId);
+      bru.setEnvVar("attemptId", body.data.attemptId);
+    }
+    let questions = body.data.questions;
+    if (questions && questions.length > 0) {
+      let sc = questions.find(q => q.questionType === 'SINGLE_CHOICE');
+      if (sc) {
+        bru.setVar("singleChoiceQId", sc.id);
+        bru.setEnvVar("singleChoiceQId", sc.id);
+        let optParis = sc.options?.find(o => o.content === 'Paris') || sc.options?.[1] || sc.options?.[0];
+        if (optParis) {
+          bru.setVar("singleChoiceOptionId", optParis.id);
+          bru.setEnvVar("singleChoiceOptionId", optParis.id);
+        }
+      }
+      let mc = questions.find(q => q.questionType === 'MULTIPLE_CHOICE');
+      if (mc) {
+        bru.setVar("multiChoiceQId", mc.id);
+        bru.setEnvVar("multiChoiceQId", mc.id);
+        let primeOpts = mc.options?.filter(o => ['2', '3', '5'].includes(o.content)).map(o => o.id);
+        if (primeOpts && primeOpts.length > 0) {
+          bru.setVar("multiChoiceOptionIds", JSON.stringify(primeOpts));
+          bru.setEnvVar("multiChoiceOptionIds", JSON.stringify(primeOpts));
+        }
+      }
+      let num = questions.find(q => q.questionType === 'NUMERIC');
+      if (num) {
+        bru.setVar("numericQId", num.id);
+        bru.setEnvVar("numericQId", num.id);
+      }
+      let ess = questions.find(q => q.questionType === 'ESSAY_TEXT');
+      if (ess) {
+        bru.setVar("essayQId", ess.id);
+        bru.setEnvVar("essayQId", ess.id);
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+meta {
+  name: 4.06 Auto-save Draft - NUMERIC Comma 78,5
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/session/{{attemptId}}/save
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "questionId": "{{numericQId}}",
+    "textAnswer": "78,5"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

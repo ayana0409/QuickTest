@@ -1,0 +1,23 @@
+meta {
+  name: 1.09 Get Profile - Success
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

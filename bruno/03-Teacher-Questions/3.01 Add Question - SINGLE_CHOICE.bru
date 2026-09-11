@@ -1,0 +1,71 @@
+meta {
+  name: 3.01 Add Question - SINGLE_CHOICE
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 1,
+    "content": "Thủ đô của nước Pháp là thành phố nào?",
+    "questionType": "SINGLE_CHOICE",
+    "points": 1.0,
+    "options": [
+      {
+        "orderIndex": 1,
+        "content": "London",
+        "isCorrect": false
+      },
+      {
+        "orderIndex": 2,
+        "content": "Paris",
+        "isCorrect": true
+      },
+      {
+        "orderIndex": 3,
+        "content": "Berlin",
+        "isCorrect": false
+      },
+      {
+        "orderIndex": 4,
+        "content": "Madrid",
+        "isCorrect": false
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  if (res.body && res.body.data) {
+    if (res.body.data.id) {
+      bru.setVar("singleChoiceQId", res.body.data.id);
+      bru.setEnvVar("singleChoiceQId", res.body.data.id);
+    }
+    if (res.body.data.options) {
+      let opt = res.body.data.options.find(o => o.isCorrect);
+      if (opt) {
+        bru.setVar("singleChoiceOptionId", opt.id);
+        bru.setEnvVar("singleChoiceOptionId", opt.id);
+      }
+    }
+  }
+}

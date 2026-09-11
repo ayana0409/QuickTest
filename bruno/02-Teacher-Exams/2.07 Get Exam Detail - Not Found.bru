@@ -1,0 +1,23 @@
+meta {
+  name: 2.07 Get Exam Detail - Not Found
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/exams/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}

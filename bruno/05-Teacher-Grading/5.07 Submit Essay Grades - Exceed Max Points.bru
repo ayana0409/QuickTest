@@ -1,0 +1,37 @@
+meta {
+  name: 5.07 Submit Essay Grades - Exceed Max Points
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/grading/attempts/submit-grades
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptId": "{{attemptId}}",
+    "grades": [
+      {
+        "candidateAnswerId": "{{candidateAnswerId}}",
+        "awardedScore": 99.0,
+        "teacherFeedback": "Điểm chấm vượt quá giới hạn"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}

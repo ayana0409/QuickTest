@@ -1,0 +1,31 @@
+meta {
+  name: 2.03 Create Exam - Forbidden Student
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Học sinh cố tình tạo đề thi",
+    "durationMinutes": 30
+  }
+}
+
+assert {
+  res.status: in [401, 403]
+}

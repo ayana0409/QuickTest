@@ -1,0 +1,31 @@
+meta {
+  name: 2.09 Update Exam - Validation Error
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "   ",
+    "durationMinutes": 60
+  }
+}
+
+assert {
+  res.status: eq 400
+}

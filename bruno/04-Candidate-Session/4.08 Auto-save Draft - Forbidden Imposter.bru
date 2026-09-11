@@ -1,0 +1,31 @@
+meta {
+  name: 4.08 Auto-save Draft - Forbidden Imposter
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/session/{{attemptId}}/save?guestIdentifier=hacker_999
+  body: json
+  auth: none
+}
+
+params:query {
+  guestIdentifier: hacker_999
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "questionId": "{{numericQId}}",
+    "textAnswer": "0"
+  }
+}
+
+assert {
+  res.status: eq 403
+}

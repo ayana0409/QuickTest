@@ -1,0 +1,23 @@
+meta {
+  name: 2.10 Publish Exam - Error Empty Exam
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/publish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 400
+}

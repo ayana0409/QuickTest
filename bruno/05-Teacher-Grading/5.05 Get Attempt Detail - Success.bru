@@ -1,0 +1,31 @@
+meta {
+  name: 5.05 Get Attempt Detail - Success
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/attempts/{{attemptId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  if (res.body?.data?.essayQuestions && res.body.data.essayQuestions.length > 0) {
+    let caId = res.body.data.essayQuestions[0].candidateAnswerId;
+    bru.setVar("candidateAnswerId", caId);
+    bru.setEnvVar("candidateAnswerId", caId);
+  }
+}

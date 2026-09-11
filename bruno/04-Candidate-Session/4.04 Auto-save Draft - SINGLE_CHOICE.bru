@@ -1,0 +1,31 @@
+meta {
+  name: 4.04 Auto-save Draft - SINGLE_CHOICE
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/session/{{attemptId}}/save
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "questionId": "{{singleChoiceQId}}",
+    "selectedOptionIds": ["{{singleChoiceOptionId}}"]
+  }
+}
+
+assert {
+  res.status: eq 200
+}

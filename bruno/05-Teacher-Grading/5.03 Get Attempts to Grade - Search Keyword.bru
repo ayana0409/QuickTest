@@ -1,0 +1,29 @@
+meta {
+  name: 5.03 Get Attempts to Grade - Search Keyword
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?search=student&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  search: student
+  page: 0
+  size: 10
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

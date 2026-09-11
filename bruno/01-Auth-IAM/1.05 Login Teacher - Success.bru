@@ -1,0 +1,35 @@
+meta {
+  name: 1.05 Login Teacher - Success
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "usernameOrEmail": "teacher@quicktest.com",
+    "password": "Teacher@123"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  let token = res.body?.data?.accessToken || res.body?.data?.token;
+  if (token) {
+    bru.setVar("teacherToken", token);
+    bru.setEnvVar("teacherToken", token);
+  }
+}

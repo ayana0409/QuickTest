@@ -1,0 +1,35 @@
+meta {
+  name: 2.08 Update Exam - Success
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Kỳ thi thử THPT Quốc Gia môn Toán 2026 (Cập nhật)",
+    "description": "Thời gian làm bài điều chỉnh lên 60 phút",
+    "durationMinutes": 60,
+    "maxAttempts": 3,
+    "shuffleQuestions": false,
+    "shuffleOptions": false
+  }
+}
+
+assert {
+  res.status: eq 200
+}

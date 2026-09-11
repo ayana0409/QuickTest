@@ -1,0 +1,23 @@
+meta {
+  name: 2.13 Delete Exam - Forbidden Closed
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/api/teacher/exams/{{disposableExamId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 400
+}

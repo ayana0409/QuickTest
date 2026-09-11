@@ -1,0 +1,31 @@
+meta {
+  name: 4.07 Auto-save Draft - ESSAY_TEXT
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/session/{{attemptId}}/save
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "questionId": "{{essayQId}}",
+    "textAnswer": "Trong tam giác vuông ABC vuông tại A, BC^2 = AB^2 + AC^2. Ứng dụng: đo chiều cao cây, tính đường chéo tivi."
+  }
+}
+
+assert {
+  res.status: eq 200
+}

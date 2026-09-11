@@ -1,0 +1,28 @@
+meta {
+  name: 5.01 Get Attempts to Grade - All
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 4.09 Resume Session - Success
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/session/{{attemptId}}/resume
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

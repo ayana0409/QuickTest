@@ -1,0 +1,3586 @@
+{
+  "info": {
+    "_postman_id": "quicktest-collection-v4",
+    "name": "QuickTest",
+    "description": "Full collection of QuickTest APIs with strictly padded 2-digit ordering (01..14), dual Thunder Client + Postman variable chaining, and end-to-end lifecycle integrity.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "teacherToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "studentToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "examId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "disposableExamId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "singleChoiceQId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "singleChoiceOptionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "multiChoiceQId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "multiChoiceOptionIds",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "numericQId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "essayQId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tempQuestionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "attemptId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "candidateAnswerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "guestIdentifier",
+      "value": "guest_student_01",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01-Auth-IAM",
+      "item": [
+        {
+          "name": "1.01 Register Teacher - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"teacher_bruno\",\r\n    \"email\": \"teacher_bruno@quicktest.com\",\r\n    \"password\": \"Teacher@123\",\r\n    \"fullName\": \"Bruno Teacher\",\r\n    \"role\": \"TEACHER\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "let token = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.accessToken || (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.token;",
+                  "  if (token) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"teacherToken\", token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"teacherToken\", token);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.02 Register Student - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"student_bruno\",\r\n    \"email\": \"student_bruno@quicktest.com\",\r\n    \"password\": \"Student@123\",\r\n    \"fullName\": \"Bruno Student\",\r\n    \"role\": \"STUDENT\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "let token = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.accessToken || (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.token;",
+                  "  if (token) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"studentToken\", token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"studentToken\", token);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.03 Register - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"ab\",\r\n    \"email\": \"not-an-email\",\r\n    \"password\": \"123\",\r\n    \"fullName\": \"\",\r\n    \"role\": \"STUDENT\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.04 Register - Duplicate Conflict",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"teacher_bruno\",\r\n    \"email\": \"teacher_bruno@quicktest.com\",\r\n    \"password\": \"Teacher@123\",\r\n    \"fullName\": \"Duplicate User\",\r\n    \"role\": \"TEACHER\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 409\", function () {",
+                  "        pm.response.to.have.status(409);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.05 Login Teacher - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"usernameOrEmail\": \"teacher@quicktest.com\",\r\n    \"password\": \"Teacher@123\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "let token = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.accessToken || (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.token;",
+                  "  if (token) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"teacherToken\", token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"teacherToken\", token);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.06 Login Student - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"usernameOrEmail\": \"student@quicktest.com\",\r\n    \"password\": \"Student@123\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "let token = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.accessToken || (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.token;",
+                  "  if (token) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"studentToken\", token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"studentToken\", token);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.07 Login - Bad Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"usernameOrEmail\": \"teacher@quicktest.com\",\r\n    \"password\": \"WrongPassword@999\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 401\", function () {",
+                  "        pm.response.to.have.status(401);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.08 Login - Blank Fields Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"usernameOrEmail\": \"\",\r\n    \"password\": \"\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.09 Get Profile - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.10 Get Profile - Unauthorized",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 401\", function () {",
+                  "        pm.response.to.have.status(401);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02-Teacher-Exams",
+      "item": [
+        {
+          "name": "2.01 Create Exam - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026\",\n    \"accessCode\": \"{{uniqueCode}}\",\n    \"description\": \"Đề thi khảo sát chất lượng môn Toán với 4 dạng câu hỏi\",\n    \"durationMinutes\": 45,\n    \"maxAttempts\": 2,\n    \"shuffleQuestions\": true,\n    \"shuffleOptions\": true\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let rand = Math.floor(1000 + Math.random() * 9000);",
+                  "  ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"uniqueCode\", \"TOAN\" + rand);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"uniqueCode\", \"TOAN\" + rand);",
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data) {",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"examId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"examId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "      ",
+                  "    }",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.accessCode) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"accessCode\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.accessCode);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"accessCode\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.accessCode);",
+                  "",
+                  "      ",
+                  "    }",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.02 Create Exam - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"\",\r\n    \"durationMinutes\": 0,\r\n    \"maxAttempts\": 0\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.03 Create Exam - Forbidden Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"Học sinh cố tình tạo đề thi\",\r\n    \"durationMinutes\": 30\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [401, 403]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.04 Get Teacher Exams - Page 0",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams?page=0&size=10&sort=createdAt,desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.05 Get Teacher Exams - Custom Size 5",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams?page=0&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.06 Get Exam Detail - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.07 Get Exam Detail - Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.08 Update Exam - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026 (Cập nhật)\",\r\n    \"description\": \"Thời gian làm bài điều chỉnh lên 60 phút\",\r\n    \"durationMinutes\": 60,\r\n    \"maxAttempts\": 3,\r\n    \"shuffleQuestions\": false,\r\n    \"shuffleOptions\": false\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.09 Update Exam - Validation Error",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"   \",\r\n    \"durationMinutes\": 60\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.10 Publish Exam - Error Empty Exam",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "publish"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.11 Create Disposable Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"Kỳ thi tạm để kiểm tra đóng và xóa đề\",\r\n    \"durationMinutes\": 30\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data) {",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"disposableExamId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"disposableExamId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "      ",
+                  "    }",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.12 Close Exam - Success",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{disposableExamId}}/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{disposableExamId}}",
+                "close"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.13 Delete Exam - Forbidden Closed",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{disposableExamId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{disposableExamId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.14 Delete Exam - Not Found",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03-Teacher-Questions",
+      "item": [
+        {
+          "name": "3.01 Add Question - SINGLE_CHOICE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 1,\n    \"content\": \"Thủ đô của nước Pháp là thành phố nào?\",\n    \"questionType\": \"SINGLE_CHOICE\",\n    \"points\": 1.0,\n    \"options\": [\n      {\n        \"orderIndex\": 1,\n        \"content\": \"London\",\n        \"isCorrect\": false\n      },\n      {\n        \"orderIndex\": 2,\n        \"content\": \"Paris\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 3,\n        \"content\": \"Berlin\",\n        \"isCorrect\": false\n      },\n      {\n        \"orderIndex\": 4,\n        \"content\": \"Madrid\",\n        \"isCorrect\": false\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data) {",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"singleChoiceQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"singleChoiceQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "      ",
+                  "    }",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.options) {",
+                  "      let opt = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.options.find(o => o.isCorrect);",
+                  "      if (opt) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"singleChoiceOptionId\", opt.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"singleChoiceOptionId\", opt.id);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    }",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.02 Add Question - MULTIPLE_CHOICE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 2,\n    \"content\": \"Các số nào sau đây là số nguyên tố nhỏ hơn 6?\",\n    \"questionType\": \"MULTIPLE_CHOICE\",\n    \"points\": 1.5,\n    \"options\": [\n      {\n        \"orderIndex\": 1,\n        \"content\": \"2\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 2,\n        \"content\": \"3\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 3,\n        \"content\": \"4\",\n        \"isCorrect\": false\n      },\n      {\n        \"orderIndex\": 4,\n        \"content\": \"5\",\n        \"isCorrect\": true\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data) {",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"multiChoiceQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"multiChoiceQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "      ",
+                  "    }",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.options) {",
+                  "      let opts = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.options.filter(o => o.isCorrect).map(o => o.id);",
+                  "      bru.setVar(\"multiChoiceOptionIds\", JSON.stringify(opts));",
+                  "      ",
+                  "    }",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.03 Add Question - NUMERIC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"orderIndex\": 3,\r\n    \"content\": \"Tính diện tích hình tròn bán kính r = 5 (lấy pi = 3.14): S = pi * r^2\",\r\n    \"questionType\": \"NUMERIC\",\r\n    \"points\": 2.0,\r\n    \"sampleAnswer\": \"78,5\",\r\n    \"numericTolerance\": 0.1\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"numericQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"numericQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.04 Add Question - ESSAY_TEXT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"orderIndex\": 4,\r\n    \"content\": \"Hãy phát biểu định lý Pytago và nêu một ví dụ ứng dụng thực tế.\",\r\n    \"questionType\": \"ESSAY_TEXT\",\r\n    \"points\": 2.5,\r\n    \"sampleAnswer\": \"Trong tam giác vuông, bình phương cạnh huyền bằng tổng bình phương hai cạnh góc vuông: a^2 + b^2 = c^2.\",\r\n    \"gradingRubric\": \"1.0đ: Phát biểu đúng. 1.0đ: Công thức chính xác. 0.5đ: Ví dụ thực tế hợp lý.\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"essayQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"essayQId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.05 Add Question - Error Choice No Correct",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"content\": \"Câu hỏi trắc nghiệm không có đáp án đúng\",\r\n    \"questionType\": \"SINGLE_CHOICE\",\r\n    \"points\": 1.0,\r\n    \"options\": [\r\n      {\r\n        \"orderIndex\": 1,\r\n        \"content\": \"Đáp án A\",\r\n        \"isCorrect\": false\r\n      },\r\n      {\r\n        \"orderIndex\": 2,\r\n        \"content\": \"Đáp án B\",\r\n        \"isCorrect\": false\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.06 Add Question - Error Numeric With Options",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"content\": \"Câu hỏi điền số nhưng lại gửi kèm options\",\r\n    \"questionType\": \"NUMERIC\",\r\n    \"points\": 1.0,\r\n    \"sampleAnswer\": \"10\",\r\n    \"options\": [\r\n      {\r\n        \"orderIndex\": 1,\r\n        \"content\": \"10\",\r\n        \"isCorrect\": true\r\n      }\r\n    ]\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.07 Update Question - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/questions/{{numericQId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "questions",
+                "{{numericQId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"orderIndex\": 3,\r\n    \"content\": \"Tính diện tích hình tròn bán kính r = 5 (pi = 3.14). Cập nhật điểm lên 2.5\",\r\n    \"questionType\": \"NUMERIC\",\r\n    \"points\": 2.5,\r\n    \"sampleAnswer\": \"78.5\",\r\n    \"numericTolerance\": 0.1\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.08 Update Question - Not Found",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/questions/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "questions",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"content\": \"Câu hỏi không tồn tại\",\r\n    \"questionType\": \"NUMERIC\",\r\n    \"points\": 1.0,\r\n    \"sampleAnswer\": \"1\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.09 Add Question To Delete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 99,\n    \"content\": \"Câu hỏi tạm thời dùng để kiểm tra tính năng xóa câu hỏi\",\n    \"questionType\": \"NUMERIC\",\n    \"points\": 1.0,\n    \"sampleAnswer\": \"100\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"tempQuestionId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"tempQuestionId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.10 Delete Question - Success",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/questions/{{tempQuestionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "questions",
+                "{{tempQuestionId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.11 Publish Exam - Success",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "publish"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.12 Publish Exam - Already Published Error",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "publish"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04-Candidate-Session",
+      "item": [
+        {
+          "name": "4.01 Start Exam - Logged-in Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "start"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"accessCode\": \"{{accessCode}}\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "let body = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}));",
+                  "  if (typeof body === 'string') {",
+                  "    try { body = JSON.parse(body); } catch (e) {}",
+                  "  }",
+                  "  if (body && body.data) {",
+                  "    if (body.data.attemptId) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"attemptId\", body.data.attemptId);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"attemptId\", body.data.attemptId);",
+                  "",
+                  "      ",
+                  "    }",
+                  "    let questions = body.data.questions;",
+                  "    if (questions && questions.length > 0) {",
+                  "      let sc = questions.find(q => q.questionType === 'SINGLE_CHOICE');",
+                  "      if (sc) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"singleChoiceQId\", sc.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"singleChoiceQId\", sc.id);",
+                  "",
+                  "        ",
+                  "        let optParis = sc.options?.find(o => o.content === 'Paris') || sc.options?.[1] || sc.options?.[0];",
+                  "        if (optParis) {",
+                  "          ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"singleChoiceOptionId\", optParis.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"singleChoiceOptionId\", optParis.id);",
+                  "",
+                  "          ",
+                  "        }",
+                  "      }",
+                  "      let mc = questions.find(q => q.questionType === 'MULTIPLE_CHOICE');",
+                  "      if (mc) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"multiChoiceQId\", mc.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"multiChoiceQId\", mc.id);",
+                  "",
+                  "        ",
+                  "        let primeOpts = mc.options?.filter(o => ['2', '3', '5'].includes(o.content)).map(o => o.id);",
+                  "        if (primeOpts && primeOpts.length > 0) {",
+                  "          bru.setVar(\"multiChoiceOptionIds\", JSON.stringify(primeOpts));",
+                  "          ",
+                  "        }",
+                  "      }",
+                  "      let num = questions.find(q => q.questionType === 'NUMERIC');",
+                  "      if (num) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"numericQId\", num.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"numericQId\", num.id);",
+                  "",
+                  "        ",
+                  "      }",
+                  "      let ess = questions.find(q => q.questionType === 'ESSAY_TEXT');",
+                  "      if (ess) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"essayQId\", ess.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"essayQId\", ess.id);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    }",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.02 Start Exam - Anonymous Guest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "start"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"accessCode\": \"{{accessCode}}\",\r\n    \"guestName\": \"Khách Vãng Lai\",\r\n    \"guestIdentifier\": \"{{guestIdentifier}}\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.03 Start Exam - Invalid Access Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "start"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"accessCode\": \"INVALID_CODE_999\"\r\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.04 Auto-save Draft - SINGLE_CHOICE",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "save"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"questionId\": \"{{singleChoiceQId}}\",\n    \"selectedOptionIds\": [\"{{singleChoiceOptionId}}\"]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.05 Auto-save Draft - MULTIPLE_CHOICE",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "save"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"questionId\": \"{{multiChoiceQId}}\",\n    \"selectedOptionIds\": {{parsedOptionIds}}\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let ids = (typeof tc !== \"undefined\" ? tc.getVar(\"multiChoiceOptionIds\") : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get(\"multiChoiceOptionIds\") : null)) || (typeof tc !== \"undefined\" ? tc.getVar(\"multiChoiceOptionIds\") : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get(\"multiChoiceOptionIds\") : null));",
+                  "  if (typeof ids === 'string' && ids.startsWith('[')) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"parsedOptionIds\", ids);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"parsedOptionIds\", ids);",
+                  "",
+                  "  } else {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"parsedOptionIds\", \"[]\");",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"parsedOptionIds\", \"[]\");",
+                  "",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.06 Auto-save Draft - NUMERIC Comma 78,5",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "save"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"questionId\": \"{{numericQId}}\",\n    \"textAnswer\": \"78,5\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.07 Auto-save Draft - ESSAY_TEXT",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "save"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"questionId\": \"{{essayQId}}\",\n    \"textAnswer\": \"Trong tam giác vuông ABC vuông tại A, BC^2 = AB^2 + AC^2. Ứng dụng: đo chiều cao cây, tính đường chéo tivi.\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.08 Auto-save Draft - Forbidden Imposter",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/save?guestIdentifier=hacker_999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "save"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"questionId\": \"{{numericQId}}\",\n    \"textAnswer\": \"0\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 403\", function () {",
+                  "        pm.response.to.have.status(403);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.09 Resume Session - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/resume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "resume"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.10 Resume Session - Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/00000000-0000-0000-0000-000000000000/resume",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "00000000-0000-0000-0000-000000000000",
+                "resume"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.11 Submit Exam - Fast Ingestion Async",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "submit"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 202\", function () {",
+                  "        pm.response.to.have.status(202);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.12 Submit Exam - Duplicate Lock Rejection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "submit"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [400, 409]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.13 Get Submission Result - Polling",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/{{attemptId}}/result",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "{{attemptId}}",
+                "result"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05-Teacher-Grading",
+      "item": [
+        {
+          "name": "5.01 Get Attempts to Grade - All",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.02 Get Attempts to Grade - Awaiting Manual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?status=AWAITING_MANUAL_GRADING&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.03 Get Attempts to Grade - Search Keyword",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?search=student&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.04 Get Attempts to Grade - Forbidden Student",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [401, 403]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.05 Get Attempt Detail - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/attempts/{{attemptId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "attempts",
+                "{{attemptId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.essayQuestions && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.essayQuestions.length > 0) {",
+                  "    let caId = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.essayQuestions[0].candidateAnswerId;",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"candidateAnswerId\", caId);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"candidateAnswerId\", caId);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.06 Get Attempt Detail - Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/attempts/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "attempts",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.07 Submit Essay Grades - Exceed Max Points",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/attempts/submit-grades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "attempts",
+                "submit-grades"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"attemptId\": \"{{attemptId}}\",\n    \"grades\": [\n      {\n        \"candidateAnswerId\": \"{{candidateAnswerId}}\",\n        \"awardedScore\": 99.0,\n        \"teacherFeedback\": \"Điểm chấm vượt quá giới hạn\"\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.08 Submit Essay Grades - Negative Score",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/attempts/submit-grades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "attempts",
+                "submit-grades"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"attemptId\": \"{{attemptId}}\",\n    \"grades\": [\n      {\n        \"candidateAnswerId\": \"{{candidateAnswerId}}\",\n        \"awardedScore\": -1.0,\n        \"teacherFeedback\": \"Điểm âm không hợp lệ\"\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.09 Submit Essay Grades - Full Finalize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/attempts/submit-grades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "attempts",
+                "submit-grades"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"attemptId\": \"{{attemptId}}\",\n    \"grades\": [\n      {\n        \"candidateAnswerId\": \"{{candidateAnswerId}}\",\n        \"awardedScore\": 2.5,\n        \"teacherFeedback\": \"Bài làm xuất sắc, lập luận chặt chẽ và ví dụ thực tế chính xác.\"\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.10 Get Attempts to Grade - Submitted",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?status=SUBMITTED&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

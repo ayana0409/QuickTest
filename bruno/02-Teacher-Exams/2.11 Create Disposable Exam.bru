@@ -1,0 +1,40 @@
+meta {
+  name: 2.11 Create Disposable Exam
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Kỳ thi tạm để kiểm tra đóng và xóa đề",
+    "durationMinutes": 30
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  if (res.body && res.body.data) {
+    if (res.body.data.id) {
+      bru.setVar("disposableExamId", res.body.data.id);
+      bru.setEnvVar("disposableExamId", res.body.data.id);
+    }
+  }
+}

@@ -1,0 +1,37 @@
+meta {
+  name: 5.08 Submit Essay Grades - Negative Score
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/grading/attempts/submit-grades
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptId": "{{attemptId}}",
+    "grades": [
+      {
+        "candidateAnswerId": "{{candidateAnswerId}}",
+        "awardedScore": -1.0,
+        "teacherFeedback": "Điểm âm không hợp lệ"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}

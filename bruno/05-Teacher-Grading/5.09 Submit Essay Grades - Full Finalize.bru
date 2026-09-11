@@ -1,0 +1,37 @@
+meta {
+  name: 5.09 Submit Essay Grades - Full Finalize
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/grading/attempts/submit-grades
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptId": "{{attemptId}}",
+    "grades": [
+      {
+        "candidateAnswerId": "{{candidateAnswerId}}",
+        "awardedScore": 2.5,
+        "teacherFeedback": "Bài làm xuất sắc, lập luận chặt chẽ và ví dụ thực tế chính xác."
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}

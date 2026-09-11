@@ -1,0 +1,33 @@
+meta {
+  name: 3.08 Update Question - Not Found
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/teacher/questions/00000000-0000-0000-0000-000000000000
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "content": "Câu hỏi không tồn tại",
+    "questionType": "NUMERIC",
+    "points": 1.0,
+    "sampleAnswer": "1"
+  }
+}
+
+assert {
+  res.status: eq 404
+}

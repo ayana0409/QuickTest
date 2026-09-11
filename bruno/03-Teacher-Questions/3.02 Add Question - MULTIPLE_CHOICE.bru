@@ -1,0 +1,69 @@
+meta {
+  name: 3.02 Add Question - MULTIPLE_CHOICE
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 2,
+    "content": "Các số nào sau đây là số nguyên tố nhỏ hơn 6?",
+    "questionType": "MULTIPLE_CHOICE",
+    "points": 1.5,
+    "options": [
+      {
+        "orderIndex": 1,
+        "content": "2",
+        "isCorrect": true
+      },
+      {
+        "orderIndex": 2,
+        "content": "3",
+        "isCorrect": true
+      },
+      {
+        "orderIndex": 3,
+        "content": "4",
+        "isCorrect": false
+      },
+      {
+        "orderIndex": 4,
+        "content": "5",
+        "isCorrect": true
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  if (res.body && res.body.data) {
+    if (res.body.data.id) {
+      bru.setVar("multiChoiceQId", res.body.data.id);
+      bru.setEnvVar("multiChoiceQId", res.body.data.id);
+    }
+    if (res.body.data.options) {
+      let opts = res.body.data.options.filter(o => o.isCorrect).map(o => o.id);
+      bru.setVar("multiChoiceOptionIds", JSON.stringify(opts));
+      bru.setEnvVar("multiChoiceOptionIds", JSON.stringify(opts));
+    }
+  }
+}

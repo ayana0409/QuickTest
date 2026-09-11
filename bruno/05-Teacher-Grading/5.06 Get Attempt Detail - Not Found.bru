@@ -1,0 +1,23 @@
+meta {
+  name: 5.06 Get Attempt Detail - Not Found
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/attempts/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}

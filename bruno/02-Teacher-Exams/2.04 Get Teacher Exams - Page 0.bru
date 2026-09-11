@@ -1,0 +1,29 @@
+meta {
+  name: 2.04 Get Teacher Exams - Page 0
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/exams?page=0&size=10&sort=createdAt,desc
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+  sort: createdAt,desc
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

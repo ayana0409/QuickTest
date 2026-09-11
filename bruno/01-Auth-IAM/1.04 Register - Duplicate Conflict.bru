@@ -1,0 +1,30 @@
+meta {
+  name: 1.04 Register - Duplicate Conflict
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "teacher_bruno",
+    "email": "teacher_bruno@quicktest.com",
+    "password": "Teacher@123",
+    "fullName": "Duplicate User",
+    "role": "TEACHER"
+  }
+}
+
+assert {
+  res.status: eq 409
+}

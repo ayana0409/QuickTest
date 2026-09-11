@@ -1,0 +1,27 @@
+meta {
+  name: 1.08 Login - Blank Fields Error
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "usernameOrEmail": "",
+    "password": ""
+  }
+}
+
+assert {
+  res.status: eq 400
+}

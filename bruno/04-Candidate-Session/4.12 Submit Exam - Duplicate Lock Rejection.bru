@@ -1,0 +1,28 @@
+meta {
+  name: 4.12 Submit Exam - Duplicate Lock Rejection
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/session/{{attemptId}}/submit
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: in [400, 409]
+}

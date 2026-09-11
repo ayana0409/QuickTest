@@ -1,0 +1,42 @@
+meta {
+  name: 3.03 Add Question - NUMERIC
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 3,
+    "content": "Tính diện tích hình tròn bán kính r = 5 (lấy pi = 3.14): S = pi * r^2",
+    "questionType": "NUMERIC",
+    "points": 2.0,
+    "sampleAnswer": "78,5",
+    "numericTolerance": 0.1
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.id) {
+    bru.setVar("numericQId", res.body.data.id);
+    bru.setEnvVar("numericQId", res.body.data.id);
+  }
+}

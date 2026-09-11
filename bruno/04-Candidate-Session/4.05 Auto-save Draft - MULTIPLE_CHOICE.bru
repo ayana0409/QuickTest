@@ -1,0 +1,40 @@
+meta {
+  name: 4.05 Auto-save Draft - MULTIPLE_CHOICE
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/session/{{attemptId}}/save
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+script:pre-request {
+  let ids = bru.getVar("multiChoiceOptionIds") || bru.getEnvVar("multiChoiceOptionIds");
+  if (typeof ids === 'string' && ids.startsWith('[')) {
+    bru.setVar("parsedOptionIds", ids);
+  } else {
+    bru.setVar("parsedOptionIds", "[]");
+  }
+}
+
+body:json {
+  {
+    "questionId": "{{multiChoiceQId}}",
+    "selectedOptionIds": {{parsedOptionIds}}
+  }
+}
+
+assert {
+  res.status: eq 200
+}

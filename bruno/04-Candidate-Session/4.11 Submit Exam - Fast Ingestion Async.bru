@@ -1,0 +1,28 @@
+meta {
+  name: 4.11 Submit Exam - Fast Ingestion Async
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/session/{{attemptId}}/submit
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 202
+}

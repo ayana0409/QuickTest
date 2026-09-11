@@ -1,0 +1,23 @@
+meta {
+  name: 4.13 Get Submission Result - Polling
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/session/{{attemptId}}/result
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

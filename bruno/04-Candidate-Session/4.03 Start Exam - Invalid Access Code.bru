@@ -1,0 +1,30 @@
+meta {
+  name: 4.03 Start Exam - Invalid Access Code
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/session/start
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "accessCode": "INVALID_CODE_999"
+  }
+}
+
+assert {
+  res.status: eq 404
+}

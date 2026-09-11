@@ -1,0 +1,23 @@
+meta {
+  name: 5.04 Get Attempts to Grade - Forbidden Student
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: in [401, 403]
+}

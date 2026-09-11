@@ -1,0 +1,40 @@
+meta {
+  name: 3.06 Add Question - Error Numeric With Options
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "content": "Câu hỏi điền số nhưng lại gửi kèm options",
+    "questionType": "NUMERIC",
+    "points": 1.0,
+    "sampleAnswer": "10",
+    "options": [
+      {
+        "orderIndex": 1,
+        "content": "10",
+        "isCorrect": true
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}

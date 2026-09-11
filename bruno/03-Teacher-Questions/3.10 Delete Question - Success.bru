@@ -1,0 +1,23 @@
+meta {
+  name: 3.10 Delete Question - Success
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/api/teacher/questions/{{tempQuestionId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

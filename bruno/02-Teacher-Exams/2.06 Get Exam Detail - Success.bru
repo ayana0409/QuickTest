@@ -1,0 +1,23 @@
+meta {
+  name: 2.06 Get Exam Detail - Success
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

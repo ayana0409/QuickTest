@@ -1,0 +1,29 @@
+meta {
+  name: 5.02 Get Attempts to Grade - Awaiting Manual
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?status=AWAITING_MANUAL_GRADING&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  status: AWAITING_MANUAL_GRADING
+  page: 0
+  size: 10
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}

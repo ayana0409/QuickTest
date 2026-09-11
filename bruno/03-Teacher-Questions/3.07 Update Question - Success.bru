@@ -1,0 +1,35 @@
+meta {
+  name: 3.07 Update Question - Success
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/teacher/questions/{{numericQId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 3,
+    "content": "Tính diện tích hình tròn bán kính r = 5 (pi = 3.14). Cập nhật điểm lên 2.5",
+    "questionType": "NUMERIC",
+    "points": 2.5,
+    "sampleAnswer": "78.5",
+    "numericTolerance": 0.1
+  }
+}
+
+assert {
+  res.status: eq 200
+}
