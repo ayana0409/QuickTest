@@ -24,6 +24,8 @@ public class QuestionResponse {
     private UUID id;
     private Integer orderIndex;
     private String content;
+    private String imageUrl;
+    private String imagePublicId;
     private QuestionType questionType;
     private Double points;
     private String sampleAnswer;
@@ -49,6 +51,8 @@ public class QuestionResponse {
                 .id(question.getId())
                 .orderIndex(question.getOrderIndex())
                 .content(question.getContent())
+                .imageUrl(question.getImageUrl())
+                .imagePublicId(question.getImagePublicId())
                 .questionType(question.getQuestionType())
                 .points(question.getPoints())
                 .sampleAnswer(question.getSampleAnswer())

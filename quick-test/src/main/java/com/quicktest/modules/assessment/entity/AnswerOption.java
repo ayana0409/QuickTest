@@ -30,8 +30,14 @@ public class AnswerOption {
     @Builder.Default
     private Integer orderIndex = 0; // Display order (A, B, C, D)
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
+
+    @Column(name = "image_public_id", length = 255)
+    private String imagePublicId;
 
     @Column(nullable = false)
     @Builder.Default

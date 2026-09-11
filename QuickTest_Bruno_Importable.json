@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "quicktest-collection-v4",
+    "_postman_id": "quicktest-collection-v5",
     "name": "QuickTest",
-    "description": "Full collection of QuickTest APIs with strictly padded 2-digit ordering (01..14), dual Thunder Client + Postman variable chaining, and end-to-end lifecycle integrity.",
+    "description": "Full collection of QuickTest APIs including IAM, Exams, Questions, Candidate Session, Grading, Proctoring & Telemetry, and Cloudinary Media Upload.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -84,6 +84,26 @@
     {
       "key": "guestIdentifier",
       "value": "guest_student_01",
+      "type": "string"
+    },
+    {
+      "key": "uploadedImageUrl",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "uploadedImagePublicId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mediaBatchId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "imageQuestionId",
+      "value": "",
       "type": "string"
     }
   ],
@@ -3565,6 +3585,1563 @@
             }
           },
           "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06-Proctoring",
+      "item": [
+        {
+          "name": "6.01 Get Exam Monitoring List - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/exams/{{examId}}/attempts?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.02 Get Exam Monitoring List - Forbidden Student",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/exams/{{examId}}/attempts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [401, 403]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.03 Get Attempt Violations - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/violations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "attempts",
+                "{{attemptId}}",
+                "violations"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.04 Get Attempt Violations - Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/attempts/00000000-0000-0000-0000-000000000000/violations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "attempts",
+                "00000000-0000-0000-0000-000000000000",
+                "violations"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.05 Get Attempt Status - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "attempts",
+                "{{attemptId}}",
+                "status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.06 Disqualify Attempt - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/disqualify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "attempts",
+                "{{attemptId}}",
+                "disqualify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Repeated unauthorized tab switches and DevTools detected\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.07 Disqualify Attempt - Forbidden Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/disqualify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "attempts",
+                "{{attemptId}}",
+                "disqualify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Forbidden student attempt\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [401, 403]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.08 Disqualify Attempt - Already Disqualified",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/disqualify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "proctoring",
+                "attempts",
+                "{{attemptId}}",
+                "disqualify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Duplicate disqualification attempt\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.09 Candidate Heartbeat - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/proctoring/heartbeat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "proctoring",
+                "heartbeat"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"attemptId\": \"{{attemptId}}\",\n    \"clientTimestamp\": \"2026-09-11T12:00:00\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.10 Candidate Report Violation - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/proctoring/violations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "proctoring",
+                "violations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"description\": \"Missing required attemptId and violationType\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.11 Candidate Report Violation - Not Found",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/session/proctoring/violations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "session",
+                "proctoring",
+                "violations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"attemptId\": \"00000000-0000-0000-0000-000000000000\",\n    \"violationType\": \"TAB_SWITCH\",\n    \"description\": \"Tab switch reported for non-existent attempt\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07-Media-Upload",
+      "item": [
+        {
+          "name": "7.01 Upload Single Question Image - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/media/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "media",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "folderType",
+                  "value": "questions",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/sample.png"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [200, 503]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "    });",
+                  "}",
+                  "if (res.status === 200 && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data) {",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.url) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"uploadedImageUrl\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.url);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"uploadedImageUrl\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.url);",
+                  "",
+                  "      ",
+                  "    }",
+                  "    if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.publicId) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"uploadedImagePublicId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.publicId);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"uploadedImagePublicId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.publicId);",
+                  "",
+                  "      ",
+                  "    }",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.02 Upload Single - Forbidden Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/media/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "media",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "folderType",
+                  "value": "questions",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/sample.png"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('studentToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('studentToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'student@quicktest.com',",
+                  "        password: 'Student@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('studentToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('studentToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 403\", function () {",
+                  "        pm.response.to.have.status(403);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.03 Upload Single - Invalid Format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/media/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "media",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "folderType",
+                  "value": "questions",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/sample.txt"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.04 Upload Single - Empty File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/media/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "media",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "folderType",
+                  "value": "questions",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.05 Batch Upload Images Async - Accepted",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/media/batch-upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "media",
+                "batch-upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "folderType",
+                  "value": "questions",
+                  "type": "text"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "fixtures/sample.png"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "fixtures/sample2.png"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 202\", function () {",
+                  "        pm.response.to.have.status(202);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.batchId) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"mediaBatchId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.batchId);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"mediaBatchId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.batchId);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.06 Get Batch Upload Status - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/media/batch/{{mediaBatchId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "media",
+                "batch",
+                "{{mediaBatchId}}",
+                "status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [200, 404]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.07 Create Question With Image URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 10,\n    \"content\": \"Quan sát sơ đồ sau và cho biết đây là cấu trúc gì?\",\n    \"imageUrl\": \"{{uploadedImageUrl}}\",\n    \"imagePublicId\": \"{{uploadedImagePublicId}}\",\n    \"questionType\": \"SINGLE_CHOICE\",\n    \"points\": 2.0,\n    \"options\": [\n      {\n        \"orderIndex\": 1,\n        \"content\": \"Lục lạp\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 2,\n        \"content\": \"Ty thể\",\n        \"isCorrect\": false\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"imageQuestionId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"imageQuestionId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.08 Create Option With Image URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 11,\n    \"content\": \"Hình nào dưới đây mô tả đúng phân tử ADN?\",\n    \"questionType\": \"SINGLE_CHOICE\",\n    \"points\": 2.0,\n    \"options\": [\n      {\n        \"orderIndex\": 1,\n        \"content\": \"Hình A\",\n        \"imageUrl\": \"{{uploadedImageUrl}}\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 2,\n        \"content\": \"Hình B\",\n        \"imageUrl\": \"{{uploadedImageUrl}}\",\n        \"isCorrect\": false\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.09 Create Question Image Only - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 12,\n    \"imageUrl\": \"{{uploadedImageUrl}}\",\n    \"questionType\": \"SINGLE_CHOICE\",\n    \"points\": 1.5,\n    \"options\": [\n      {\n        \"orderIndex\": 1,\n        \"content\": \"A\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 2,\n        \"content\": \"B\",\n        \"isCorrect\": false\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.10 Create Question Neither Content Nor Image - Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 13,\n    \"questionType\": \"SINGLE_CHOICE\",\n    \"points\": 1.0,\n    \"options\": [\n      {\n        \"orderIndex\": 1,\n        \"content\": \"Option 1\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 2,\n        \"content\": \"Option 2\",\n        \"isCorrect\": false\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.11 Update Question Image - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/questions/{{imageQuestionId}}/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "questions",
+                "{{imageQuestionId}}",
+                "image"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/sample2.png"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.12 Delete Question With Image - Success",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/questions/{{imageQuestionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "questions",
+                "{{imageQuestionId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {

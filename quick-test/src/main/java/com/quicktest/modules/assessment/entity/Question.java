@@ -32,8 +32,14 @@ public class Question {
     @Builder.Default
     private Integer orderIndex = 0; // Default display order
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
+
+    @Column(name = "image_public_id", length = 255)
+    private String imagePublicId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

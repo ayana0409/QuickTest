@@ -1,0 +1,52 @@
+meta {
+  name: 7.05 Batch Upload Images Async - Accepted
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/media/batch-upload
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+body:multipart-form {
+  folderType: questions
+  files: @file(fixtures/sample.png)
+  files: @file(fixtures/sample2.png)
+}
+
+assert {
+  res.status: eq 202
+  res.body.status: eq 200
+  res.body.data.batchId: isDefined
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.batchId) {
+    bru.setVar("mediaBatchId", res.body.data.batchId);
+    bru.setEnvVar("mediaBatchId", res.body.data.batchId);
+  }
+}

@@ -26,4 +26,9 @@ public interface QuestionService {
      * Delete a question from an exam in DRAFT status.
      */
     void deleteQuestion(UUID questionId, User teacher);
+
+    /**
+     * Upload and update an image directly for a specific question.
+     */
+    QuestionResponse updateQuestionImage(UUID questionId, org.springframework.web.multipart.MultipartFile file, User teacher);
 }

@@ -24,6 +24,7 @@ public class QuestionInPaperDto {
     private UUID id;
     private Integer orderIndex;
     private String content;
+    private String imageUrl;
     private QuestionType questionType;
     private Double points;
     private List<OptionInPaperDto> options;
@@ -36,6 +37,7 @@ public class QuestionInPaperDto {
                 .id(question.getId())
                 .orderIndex(question.getOrderIndex())
                 .content(question.getContent())
+                .imageUrl(question.getImageUrl())
                 .questionType(question.getQuestionType())
                 .points(question.getPoints())
                 .options(options != null ? options : Collections.emptyList())

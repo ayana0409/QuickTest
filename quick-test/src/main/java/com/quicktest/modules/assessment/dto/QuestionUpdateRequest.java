@@ -23,8 +23,11 @@ public class QuestionUpdateRequest {
 
     private Integer orderIndex;
 
-    @NotBlank(message = "Question content must not be blank")
     private String content;
+
+    private String imageUrl;
+
+    private String imagePublicId;
 
     @NotNull(message = "Question type is required (SINGLE_CHOICE, MULTIPLE_CHOICE, NUMERIC, ESSAY_TEXT)")
     private QuestionType questionType;

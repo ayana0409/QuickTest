@@ -61,6 +61,19 @@ public class QuestionController {
     }
 
     /**
+     * Directly upload and update the image of a question.
+     */
+    @PutMapping("/questions/{questionId}/image")
+    public ResponseEntity<ApiResponse<QuestionResponse>> updateQuestionImage(
+            @PathVariable("questionId") UUID questionId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        User teacher = getAuthenticatedTeacher(currentUser);
+        QuestionResponse response = questionService.updateQuestionImage(questionId, file, teacher);
+        return ResponseEntity.ok(ApiResponse.success(response, "Question image updated successfully"));
+    }
+
+    /**
      * Delete a question from an exam.
      */
     @DeleteMapping("/questions/{questionId}")

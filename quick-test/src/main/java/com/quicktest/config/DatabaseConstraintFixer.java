@@ -35,5 +35,13 @@ public class DatabaseConstraintFixer implements ApplicationRunner {
         } catch (Exception e) {
             log.warn("[DB CONSTRAINT] Could not verify/update database constraints: {}", e.getMessage());
         }
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE questions ALTER COLUMN content DROP NOT NULL;");
+            jdbcTemplate.execute("ALTER TABLE answer_options ALTER COLUMN content DROP NOT NULL;");
+            log.info("[DB CONSTRAINT] questions and answer_options content columns verified as nullable.");
+        } catch (Exception e) {
+            log.warn("[DB CONSTRAINT] Could not alter content columns to nullable: {}", e.getMessage());
+        }
     }
 }

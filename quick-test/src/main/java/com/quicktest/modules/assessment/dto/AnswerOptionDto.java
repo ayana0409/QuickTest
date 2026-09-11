@@ -17,8 +17,11 @@ public class AnswerOptionDto {
 
     private Integer orderIndex;
 
-    @NotBlank(message = "Option content must not be blank")
     private String content;
+
+    private String imageUrl;
+
+    private String imagePublicId;
 
     @Builder.Default
     private Boolean isCorrect = false;

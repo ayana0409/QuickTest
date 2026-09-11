@@ -20,6 +20,8 @@ public class AnswerOptionResponse {
     private UUID id;
     private Integer orderIndex;
     private String content;
+    private String imageUrl;
+    private String imagePublicId;
     private Boolean isCorrect;
 
     /**
@@ -33,6 +35,8 @@ public class AnswerOptionResponse {
                 .id(option.getId())
                 .orderIndex(option.getOrderIndex())
                 .content(option.getContent())
+                .imageUrl(option.getImageUrl())
+                .imagePublicId(option.getImagePublicId())
                 .isCorrect(option.getIsCorrect())
                 .build();
     }

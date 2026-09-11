@@ -26,6 +26,34 @@ public class RabbitMQConfig {
     public static final String SUBMISSION_DLQ = "exam.submission.dlq";
     public static final String SUBMISSION_DLQ_ROUTING_KEY = "exam.submission.dlq.routing-key";
 
+    public static final String MEDIA_UPLOAD_EXCHANGE = "media.upload.exchange";
+    public static final String MEDIA_UPLOAD_QUEUE = "media.upload.queue";
+    public static final String MEDIA_UPLOAD_ROUTING_KEY = "media.upload.routing-key";
+
+    /**
+     * Durable queue for asynchronous media batch upload tasks.
+     */
+    @Bean
+    public Queue mediaUploadQueue() {
+        return QueueBuilder.durable(MEDIA_UPLOAD_QUEUE).build();
+    }
+
+    /**
+     * Direct exchange for media upload tasks.
+     */
+    @Bean
+    public DirectExchange mediaUploadExchange() {
+        return new DirectExchange(MEDIA_UPLOAD_EXCHANGE);
+    }
+
+    /**
+     * Binding media upload queue to direct media exchange.
+     */
+    @Bean
+    public Binding mediaUploadBinding(Queue mediaUploadQueue, DirectExchange mediaUploadExchange) {
+        return BindingBuilder.bind(mediaUploadQueue).to(mediaUploadExchange).with(MEDIA_UPLOAD_ROUTING_KEY);
+    }
+
     /**
      * Primary durable queue for exam submissions with Dead Letter Exchange (DLX) routing.
      */

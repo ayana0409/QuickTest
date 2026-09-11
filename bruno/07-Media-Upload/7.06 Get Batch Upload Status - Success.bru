@@ -1,0 +1,41 @@
+meta {
+  name: 7.06 Get Batch Upload Status - Success
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/media/batch/{{mediaBatchId}}/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+assert {
+  res.status: in [200, 404]
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+  if (!bru.getEnvVar('mediaBatchId') || bru.getEnvVar('mediaBatchId').startsWith('{{')) {
+    bru.setVar('mediaBatchId', '00000000-0000-0000-0000-000000000000');
+    bru.setEnvVar('mediaBatchId', '00000000-0000-0000-0000-000000000000');
+  }
+}

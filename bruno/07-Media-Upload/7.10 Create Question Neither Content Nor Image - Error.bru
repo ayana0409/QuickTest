@@ -1,0 +1,80 @@
+meta {
+  name: 7.10 Create Question Neither Content Nor Image - Error
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 13,
+    "questionType": "SINGLE_CHOICE",
+    "points": 1.0,
+    "options": [
+      {
+        "orderIndex": 1,
+        "content": "Option 1",
+        "isCorrect": true
+      },
+      {
+        "orderIndex": 2,
+        "content": "Option 2",
+        "isCorrect": false
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+  if (!bru.getEnvVar('examId') || bru.getEnvVar('examId').startsWith('{{')) {
+    try {
+      const token = bru.getEnvVar('teacherToken');
+      const res = await axios.post(`${baseUrl}/api/teacher/exams`, {
+        title: 'Media Upload Test Exam',
+        accessCode: 'MEDIA' + Math.floor(1000 + Math.random() * 9000),
+        description: 'Auto-created exam for media testing',
+        durationMinutes: 60,
+        maxAttempts: 2
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data?.data?.id) {
+        bru.setVar('examId', res.data.data.id);
+        bru.setEnvVar('examId', res.data.data.id);
+      }
+    } catch (e) {}
+  }
+}

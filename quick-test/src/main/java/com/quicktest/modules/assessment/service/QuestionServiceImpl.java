@@ -2,6 +2,7 @@ package com.quicktest.modules.assessment.service;
 
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.service.CloudinaryStorageService;
 import com.quicktest.modules.assessment.dto.AnswerOptionDto;
 import com.quicktest.modules.assessment.dto.QuestionCreateRequest;
 import com.quicktest.modules.assessment.dto.QuestionResponse;
@@ -36,6 +37,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     @Override
     @Transactional
@@ -55,6 +57,13 @@ public class QuestionServiceImpl implements QuestionService {
                 request.getOptions()
         );
 
+        // Validate question must have either text content or an image URL
+        boolean hasContent = request.getContent() != null && !request.getContent().trim().isEmpty();
+        boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty();
+        if (!hasContent && !hasImage) {
+            throw new AppException("Question must have either text content or an image URL");
+        }
+
         // Resolve order index
         int nextOrderIndex = request.getOrderIndex() != null
                 ? request.getOrderIndex()
@@ -72,7 +81,9 @@ public class QuestionServiceImpl implements QuestionService {
 
         Question question = Question.builder()
                 .exam(exam)
-                .content(request.getContent().trim())
+                .content(hasContent ? request.getContent().trim() : null)
+                .imageUrl(hasImage ? request.getImageUrl().trim() : null)
+                .imagePublicId(request.getImagePublicId() != null ? request.getImagePublicId().trim() : null)
                 .questionType(request.getQuestionType())
                 .points(request.getPoints())
                 .orderIndex(nextOrderIndex)
@@ -86,9 +97,16 @@ public class QuestionServiceImpl implements QuestionService {
         if (isChoiceQuestion(request.getQuestionType()) && request.getOptions() != null) {
             int optionIndex = 1;
             for (AnswerOptionDto optionDto : request.getOptions()) {
+                boolean hasOptContent = optionDto.getContent() != null && !optionDto.getContent().trim().isEmpty();
+                boolean hasOptImage = optionDto.getImageUrl() != null && !optionDto.getImageUrl().trim().isEmpty();
+                if (!hasOptContent && !hasOptImage) {
+                    throw new AppException("Answer option must have either text content or an image URL");
+                }
                 AnswerOption option = AnswerOption.builder()
                         .question(question)
-                        .content(optionDto.getContent().trim())
+                        .content(hasOptContent ? optionDto.getContent().trim() : null)
+                        .imageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null)
+                        .imagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
                         .isCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()))
                         .orderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : optionIndex++)
                         .build();
@@ -120,7 +138,28 @@ public class QuestionServiceImpl implements QuestionService {
                 request.getOptions()
         );
 
-        question.setContent(request.getContent().trim());
+        boolean hasContent = request.getContent() != null && !request.getContent().trim().isEmpty();
+        boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty();
+        if (!hasContent && !hasImage) {
+            throw new AppException("Question must have either text content or an image URL");
+        }
+
+        // Cleanup old image if replaced or removed
+        boolean imageChanged = false;
+        if (question.getImagePublicId() != null) {
+            imageChanged = request.getImagePublicId() == null
+                    || !question.getImagePublicId().equals(request.getImagePublicId().trim());
+        } else if (question.getImageUrl() != null) {
+            imageChanged = request.getImageUrl() == null
+                    || !question.getImageUrl().equals(request.getImageUrl().trim());
+        }
+        if (imageChanged) {
+            deleteMediaIfPresent(question.getImagePublicId(), question.getImageUrl());
+        }
+
+        question.setContent(hasContent ? request.getContent().trim() : null);
+        question.setImageUrl(hasImage ? request.getImageUrl().trim() : null);
+        question.setImagePublicId(request.getImagePublicId() != null ? request.getImagePublicId().trim() : null);
         question.setQuestionType(request.getQuestionType());
         question.setPoints(request.getPoints());
         if (request.getOrderIndex() != null) {
@@ -147,14 +186,43 @@ public class QuestionServiceImpl implements QuestionService {
             question.setNumericTolerance(null);
             question.setGradingRubric(null);
 
+            // Cleanup old option images that are not retained in new options
+            if (question.getOptions() != null) {
+                for (AnswerOption oldOpt : question.getOptions()) {
+                    boolean retained = false;
+                    if (request.getOptions() != null) {
+                        for (AnswerOptionDto newOpt : request.getOptions()) {
+                            if (oldOpt.getImagePublicId() != null && oldOpt.getImagePublicId().equals(newOpt.getImagePublicId())) {
+                                retained = true;
+                                break;
+                            }
+                            if (oldOpt.getImageUrl() != null && oldOpt.getImageUrl().equals(newOpt.getImageUrl())) {
+                                retained = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!retained) {
+                        deleteMediaIfPresent(oldOpt.getImagePublicId(), oldOpt.getImageUrl());
+                    }
+                }
+            }
+
             // Synchronize options collection
             question.getOptions().clear();
             if (request.getOptions() != null) {
                 int optionIndex = 1;
                 for (AnswerOptionDto optionDto : request.getOptions()) {
+                    boolean hasOptContent = optionDto.getContent() != null && !optionDto.getContent().trim().isEmpty();
+                    boolean hasOptImage = optionDto.getImageUrl() != null && !optionDto.getImageUrl().trim().isEmpty();
+                    if (!hasOptContent && !hasOptImage) {
+                        throw new AppException("Answer option must have either text content or an image URL");
+                    }
                     AnswerOption option = AnswerOption.builder()
                             .question(question)
-                            .content(optionDto.getContent().trim())
+                            .content(hasOptContent ? optionDto.getContent().trim() : null)
+                            .imageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null)
+                            .imagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
                             .isCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()))
                             .orderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : optionIndex++)
                             .build();
@@ -180,8 +248,50 @@ public class QuestionServiceImpl implements QuestionService {
         verifyOwnership(question.getExam(), teacher);
         verifyExamIsDraft(question.getExam());
 
+        // Cleanup question image and option images from Cloudinary
+        deleteMediaIfPresent(question.getImagePublicId(), question.getImageUrl());
+        if (question.getOptions() != null) {
+            for (AnswerOption opt : question.getOptions()) {
+                deleteMediaIfPresent(opt.getImagePublicId(), opt.getImageUrl());
+            }
+        }
+
         questionRepository.delete(question);
-        log.info("Question ID: {} successfully deleted", questionId);
+        log.info("Question ID: {} and associated Cloudinary media successfully deleted", questionId);
+    }
+
+    @Override
+    @Transactional
+    public QuestionResponse updateQuestionImage(UUID questionId, org.springframework.web.multipart.MultipartFile file, User teacher) {
+        log.info("Directly updating image for question ID: {} by teacher ID: {}", questionId, teacher.getId());
+
+        Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
+
+        verifyOwnership(question.getExam(), teacher);
+        verifyExamIsDraft(question.getExam());
+
+        // Upload new image to Cloudinary
+        com.quicktest.modules.assessment.dto.MediaUploadResponse uploadRes =
+                cloudinaryStorageService.uploadSingle(file, "questions");
+
+        // Delete old image from Cloudinary if previously present
+        deleteMediaIfPresent(question.getImagePublicId(), question.getImageUrl());
+
+        question.setImageUrl(uploadRes.getUrl());
+        question.setImagePublicId(uploadRes.getPublicId());
+
+        Question saved = questionRepository.save(question);
+        log.info("Question ID: {} image directly updated: newUrl={}", questionId, uploadRes.getUrl());
+        return QuestionResponse.fromEntity(saved);
+    }
+
+    private void deleteMediaIfPresent(String publicId, String imageUrl) {
+        if (publicId != null && !publicId.isBlank()) {
+            cloudinaryStorageService.deleteMedia(publicId);
+        } else if (imageUrl != null && !imageUrl.isBlank()) {
+            cloudinaryStorageService.deleteMedia(imageUrl);
+        }
     }
 
     // ==========================================

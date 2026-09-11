@@ -21,6 +21,7 @@ public class OptionInPaperDto {
     private UUID id;
     private Integer orderIndex;
     private String content;
+    private String imageUrl;
 
     public static OptionInPaperDto fromEntity(AnswerOption option) {
         if (option == null) {
@@ -30,6 +31,7 @@ public class OptionInPaperDto {
                 .id(option.getId())
                 .orderIndex(option.getOrderIndex())
                 .content(option.getContent())
+                .imageUrl(option.getImageUrl())
                 .build();
     }
 }

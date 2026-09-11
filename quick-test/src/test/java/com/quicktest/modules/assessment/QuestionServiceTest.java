@@ -45,6 +45,9 @@ class QuestionServiceTest {
     @Mock
     private QuestionRepository questionRepository;
 
+    @Mock
+    private com.quicktest.core.service.CloudinaryStorageService cloudinaryStorageService;
+
     @InjectMocks
     private QuestionServiceImpl questionService;
 

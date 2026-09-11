@@ -1,0 +1,87 @@
+meta {
+  name: 7.09 Create Question Image Only - Success
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 12,
+    "imageUrl": "{{uploadedImageUrl}}",
+    "questionType": "SINGLE_CHOICE",
+    "points": 1.5,
+    "options": [
+      {
+        "orderIndex": 1,
+        "content": "A",
+        "isCorrect": true
+      },
+      {
+        "orderIndex": 2,
+        "content": "B",
+        "isCorrect": false
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq 200
+  res.body.data.imageUrl: isDefined
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+  if (!bru.getEnvVar('examId') || bru.getEnvVar('examId').startsWith('{{')) {
+    try {
+      const token = bru.getEnvVar('teacherToken');
+      const res = await axios.post(`${baseUrl}/api/teacher/exams`, {
+        title: 'Media Upload Test Exam',
+        accessCode: 'MEDIA' + Math.floor(1000 + Math.random() * 9000),
+        description: 'Auto-created exam for media testing',
+        durationMinutes: 60,
+        maxAttempts: 2
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data?.data?.id) {
+        bru.setVar('examId', res.data.data.id);
+        bru.setEnvVar('examId', res.data.data.id);
+      }
+    } catch (e) {}
+  }
+  if (!bru.getEnvVar("uploadedImageUrl")) {
+    bru.setVar("uploadedImageUrl", "https://res.cloudinary.com/rg1alnza/image/upload/quick-test/questions/geometry_diagram.png");
+    bru.setEnvVar("uploadedImageUrl", "https://res.cloudinary.com/rg1alnza/image/upload/quick-test/questions/geometry_diagram.png");
+  }
+}

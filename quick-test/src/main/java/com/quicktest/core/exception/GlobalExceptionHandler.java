@@ -104,18 +104,30 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle unsupported media type (e.g. sending text/plain instead of
-     * application/json).
+     * Handle unsupported media type.
      */
     @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ApiResponse<Object>> handleHttpMediaTypeNotSupported(
             org.springframework.web.HttpMediaTypeNotSupportedException ex) {
         log.warn("Unsupported Media Type: {}", ex.getMessage());
-        String msg = String.format("Content-Type '%s' is not supported. Please set 'Content-Type: application/json'",
-                ex.getContentType());
+        String msg = String.format("Content-Type '%s' is not supported", ex.getContentType());
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(ApiResponse.error(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), msg));
+    }
+
+    /**
+     * Handle missing multipart part or missing request parameter.
+     */
+    @ExceptionHandler({
+            org.springframework.web.multipart.support.MissingServletRequestPartException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ApiResponse<Object>> handleMissingRequestPart(Exception ex) {
+        log.warn("Missing request part or parameter: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }
 
     /**
@@ -142,6 +154,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.error(HttpStatus.METHOD_NOT_ALLOWED.value(), msg));
+    }
+
+    /**
+     * Handle multipart file size exceeded limit.
+     */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMaxUploadSizeExceeded(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        log.warn("Max upload size exceeded: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "File size exceeds maximum permitted limit"));
     }
 
     /**
