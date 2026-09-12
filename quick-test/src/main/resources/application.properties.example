@@ -72,3 +72,26 @@ app.jwt.expiration-ms=86400000
 logging.level.root=INFO
 logging.level.com.quicktest=DEBUG
 logging.level.org.springframework.security=INFO
+
+# Cloudinary Configuration
+cloudinary.cloud-name=xxx
+cloudinary.api-key=xxx
+cloudinary.api-secret=xxx
+cloudinary.storage.upload-dir=uploads
+cloudinary.storage.question-folder=quick-test/questions
+cloudinary.storage.option-folder=quick-test/options
+cloudinary.storage.image-base-url=https://res.cloudinary.com/xxx/image/upload/quick-test/questions/
+cloudinary.upload.max-file-size-bytes=3145728
+cloudinary.upload.allowed-formats=jpg,jpeg,png,webp,gif
+
+# Multipart File Upload Configuration
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=100MB
+
+# Google Gemini AI Configuration
+gemini.api-key=xxx
+gemini.model=gemini-3.5-flash-lite
+gemini.base-url=https://generativelanguage.googleapis.com/v1beta/models
+gemini.batch-size=5
+gemini.max-tokens=4000
+gemini.timeout-seconds=60
