@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@org.springframework.core.annotation.Order(1)
 @RequiredArgsConstructor
 public class DatabaseConstraintFixer implements ApplicationRunner {
 
@@ -32,6 +33,17 @@ public class DatabaseConstraintFixer implements ApplicationRunner {
                 "END $$;"
             );
             log.info("[DB CONSTRAINT] violation_logs_violation_type_check verified and updated.");
+
+            jdbcTemplate.execute(
+                "DO $$ BEGIN " +
+                "  ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check; " +
+                "  ALTER TABLE users ADD CONSTRAINT users_role_check " +
+                "    CHECK (role IN ('TEACHER', 'STUDENT', 'ADMIN')); " +
+                "EXCEPTION WHEN OTHERS THEN " +
+                "  NULL; " +
+                "END $$;"
+            );
+            log.info("[DB CONSTRAINT] users_role_check verified and updated.");
         } catch (Exception e) {
             log.warn("[DB CONSTRAINT] Could not verify/update database constraints: {}", e.getMessage());
         }

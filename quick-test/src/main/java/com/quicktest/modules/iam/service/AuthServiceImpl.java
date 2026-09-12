@@ -9,6 +9,7 @@ import com.quicktest.modules.iam.dto.AuthResponse;
 import com.quicktest.modules.iam.dto.LoginRequest;
 import com.quicktest.modules.iam.dto.RegisterRequest;
 import com.quicktest.modules.iam.dto.UserSummaryDto;
+import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,9 @@ public class AuthServiceImpl implements AuthService {
         }
         if (userRepository.existsByEmail(email)) {
             throw new UserAlreadyExistsException("Email '" + email + "' is already registered");
+        }
+        if (request.getRole() == Role.ADMIN) {
+            throw new AppException("Registration with ADMIN role is not permitted", HttpStatus.FORBIDDEN);
         }
 
         // 2. Domain Entity Creation via Factory Method

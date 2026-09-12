@@ -1,0 +1,44 @@
+meta {
+  name: 9.03 List Users - All
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/admin/users?page=0&size=10&sort=createdAt,desc
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+  sort: createdAt,desc
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+vars:pre-request {
+  adminToken: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6ImI1OWI0OTQzLTIwODEtNDFiOS05MjJiLWRmNThlZWY1NjdiOSIsImVtYWlsIjoiYWRtaW5AcXVpY2t0ZXN0LmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4OTIxNzYwMCwiZXhwIjoxNzg5MzA0MDAwfQ.Qkb6BUcSPU6ZpInlUP6HSm7UI6mpzjNZG755u2Q-_a4
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+}
+
+script:post-response {
+  let users = res.body?.data?.content || [];
+  let nonAdmin = users.find(u => u.role !== 'ADMIN');
+  if (nonAdmin) {
+    bru.setVar("targetUserId", nonAdmin.id);
+    bru.setEnvVar("targetUserId", nonAdmin.id);
+  }
+}

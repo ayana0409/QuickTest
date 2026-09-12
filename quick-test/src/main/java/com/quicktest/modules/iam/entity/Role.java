@@ -5,5 +5,6 @@ package com.quicktest.modules.iam.entity;
  */
 public enum Role {
     TEACHER,
-    STUDENT
+    STUDENT,
+    ADMIN
 }

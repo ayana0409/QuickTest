@@ -1,0 +1,25 @@
+meta {
+  name: 9.06 Toggle User Status - Deactivate
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/users/{{targetUserId}}/toggle-status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.id: eq {{targetUserId}}
+}

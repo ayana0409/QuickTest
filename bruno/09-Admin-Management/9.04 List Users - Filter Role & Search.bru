@@ -1,0 +1,33 @@
+meta {
+  name: 9.04 List Users - Filter Role & Search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/admin/users?role=STUDENT&isActive=true&search=student&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  role: STUDENT
+  isActive: true
+  search: student
+  page: 0
+  size: 10
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+}

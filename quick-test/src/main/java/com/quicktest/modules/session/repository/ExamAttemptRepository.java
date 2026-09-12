@@ -29,7 +29,17 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
 
     long countByGuestIdentifierAndExamId(String guestIdentifier, UUID examId);
 
+    long countByExamId(UUID examId);
+
+    long countByStatus(AttemptStatus status);
+
     long countByExamIdAndStatus(UUID examId, AttemptStatus status);
+
+    /**
+     * Batch count attempts grouped by exam ID to prevent N+1 queries.
+     */
+    @Query("SELECT ea.exam.id, COUNT(ea.id) FROM ExamAttempt ea WHERE ea.exam.id IN :examIds GROUP BY ea.exam.id")
+    List<Object[]> countAttemptsByExamIds(@Param("examIds") List<UUID> examIds);
 
     Optional<ExamAttempt> findFirstByExamIdAndGuestIdentifierAndStatus(UUID examId, String guestIdentifier, AttemptStatus status);
 

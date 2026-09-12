@@ -7,6 +7,8 @@ import com.quicktest.core.security.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -56,6 +58,16 @@ public class SecurityConfig {
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
+    }
+
+    /**
+     * Role hierarchy configuration enabling ADMIN to access all TEACHER and STUDENT resources.
+     */
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role("ADMIN").implies("TEACHER", "STUDENT")
+                .build();
     }
 
     /**
@@ -120,10 +132,12 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        // Teacher-only endpoints
-                        .requestMatchers("/api/teacher/**").hasRole("TEACHER")
-                        // Student-only endpoints
-                        .requestMatchers("/api/student/**").hasRole("STUDENT")
+                        // Admin-only endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Teacher endpoints (accessible by TEACHER or ADMIN)
+                        .requestMatchers("/api/teacher/**").hasAnyRole("TEACHER", "ADMIN")
+                        // Student endpoints (accessible by STUDENT or ADMIN)
+                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

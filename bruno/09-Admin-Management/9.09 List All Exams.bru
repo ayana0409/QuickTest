@@ -1,0 +1,39 @@
+meta {
+  name: 9.09 List All Exams
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/admin/exams?page=0&size=10&sort=createdAt,desc
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+  sort: createdAt,desc
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+}
+
+script:post-response {
+  let exams = res.body?.data?.content || [];
+  if (exams.length > 0) {
+    bru.setVar("adminExamId", exams[0].id);
+    bru.setEnvVar("adminExamId", exams[0].id);
+  }
+}

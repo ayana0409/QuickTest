@@ -1,0 +1,29 @@
+meta {
+  name: 9.10 Get Exam Detail
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/admin/exams/{{adminExamId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+vars:pre-request {
+  adminExamId: 14a8ddac-a72b-4e81-8fd2-748f7cb1423a
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.id: eq {{adminExamId}}
+}

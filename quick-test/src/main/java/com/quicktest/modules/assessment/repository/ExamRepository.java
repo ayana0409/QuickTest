@@ -2,6 +2,7 @@ package com.quicktest.modules.assessment.repository;
 
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.entity.Exam;
+import com.quicktest.modules.assessment.entity.ExamStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,4 +45,35 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
         countQuery = "SELECT COUNT(e) FROM Exam e WHERE e.createdBy.id = :teacherId"
     )
     Page<ExamSummaryResponse> findSummariesByTeacherId(@Param("teacherId") UUID teacherId, Pageable pageable);
+
+    long countByStatus(ExamStatus status);
+
+    @Query(
+        value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u WHERE e.status = :status",
+        countQuery = "SELECT COUNT(e) FROM Exam e WHERE e.status = :status"
+    )
+    Page<Exam> findAllByStatusWithCreatedBy(@Param("status") ExamStatus status, Pageable pageable);
+
+    @Query(
+        value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u",
+        countQuery = "SELECT COUNT(e) FROM Exam e"
+    )
+    Page<Exam> findAllWithCreatedBy(Pageable pageable);
+
+    @Query(
+        value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u " +
+                "WHERE (:status IS NULL OR e.status = :status) AND " +
+                "(LOWER(e.title) LIKE :pattern " +
+                " OR LOWER(e.accessCode) LIKE :pattern " +
+                " OR LOWER(u.fullName) LIKE :pattern)",
+        countQuery = "SELECT COUNT(e) FROM Exam e JOIN e.createdBy u " +
+                     "WHERE (:status IS NULL OR e.status = :status) AND " +
+                     "(LOWER(e.title) LIKE :pattern " +
+                     " OR LOWER(e.accessCode) LIKE :pattern " +
+                     " OR LOWER(u.fullName) LIKE :pattern)"
+    )
+    Page<Exam> searchExams(
+            @Param("status") ExamStatus status,
+            @Param("pattern") String pattern,
+            Pageable pageable);
 }

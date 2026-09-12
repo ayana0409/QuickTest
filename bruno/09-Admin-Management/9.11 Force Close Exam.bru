@@ -1,0 +1,25 @@
+meta {
+  name: 9.11 Force Close Exam
+  type: http
+  seq: 11
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/exams/{{adminExamId}}/close
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.message: eq Exam force-closed successfully
+}

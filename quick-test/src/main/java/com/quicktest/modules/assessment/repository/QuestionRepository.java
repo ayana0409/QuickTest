@@ -41,4 +41,10 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
      */
     @Query("SELECT COALESCE(SUM(q.points), 0.0) FROM Question q WHERE q.exam.id = :examId")
     Double sumPointsByExamId(@Param("examId") UUID examId);
+
+    /**
+     * Batch count questions grouped by exam ID to prevent N+1 queries.
+     */
+    @Query("SELECT q.exam.id, COUNT(q.id) FROM Question q WHERE q.exam.id IN :examIds GROUP BY q.exam.id")
+    List<Object[]> countQuestionsByExamIds(@Param("examIds") List<UUID> examIds);
 }

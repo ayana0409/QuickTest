@@ -1,0 +1,25 @@
+meta {
+  name: 9.05 Get User Detail
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/admin/users/{{targetUserId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.id: eq {{targetUserId}}
+}

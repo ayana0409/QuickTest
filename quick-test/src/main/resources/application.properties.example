@@ -95,3 +95,10 @@ gemini.base-url=https://generativelanguage.googleapis.com/v1beta/models
 gemini.batch-size=5
 gemini.max-tokens=4000
 gemini.timeout-seconds=60
+
+# Admin User Seed Configuration (auto-creates admin on startup if not present)
+app.admin.seed.enabled=${APP_ADMIN_SEED_ENABLED:true}
+app.admin.username=${APP_ADMIN_USERNAME:admin}
+app.admin.email=${APP_ADMIN_EMAIL:admin@quicktest.com}
+app.admin.password=${APP_ADMIN_PASSWORD:Admin@123}
+app.admin.full-name=${APP_ADMIN_FULL_NAME:System Administrator}

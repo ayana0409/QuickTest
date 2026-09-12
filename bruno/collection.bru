@@ -2,7 +2,14 @@ meta {
   name: QuickTest
 }
 
+auth {
+  mode: none
+}
+
 vars:pre-request {
   baseUrl: http://localhost:8080
   guestIdentifier: guest_student_01
+  adminToken: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6ImI1OWI0OTQzLTIwODEtNDFiOS05MjJiLWRmNThlZWY1NjdiOSIsImVtYWlsIjoiYWRtaW5AcXVpY2t0ZXN0LmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4OTIxNzYwMCwiZXhwIjoxNzg5MzA0MDAwfQ.Qkb6BUcSPU6ZpInlUP6HSm7UI6mpzjNZG755u2Q-_a4
+  targetUserId: 4cc960bd-df0d-4e5f-ac2d-a18362270885
+  adminExamId: 14a8ddac-a72b-4e81-8fd2-748f7cb1423a
 }

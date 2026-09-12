@@ -1,6 +1,6 @@
 # QuickTest Online Exam System - Comprehensive API Documentation
 
-Tài liệu đặc tả toàn bộ **35 RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL, Redis, RabbitMQ, Cloudinary, Google Gemini AI).
+Tài liệu đặc tả toàn bộ **44 RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL, Redis, RabbitMQ, Cloudinary, Google Gemini AI).
 
 ---
 
@@ -87,6 +87,15 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 33 | | `GET` | `/api/teacher/grading/questions/{questionId}/submissions` | `TEACHER` | Xem biểu điểm và bài làm học sinh theo câu hỏi |
 | 34 | | `POST` | `/api/teacher/grading/questions/{questionId}/manual` | `TEACHER` | Chấm tay hàng loạt/lẻ theo câu hỏi (tính điểm tự động) |
 | 35 | | `POST` | `/api/teacher/grading/trigger-ai` | `TEACHER` | Kích hoạt Google Gemini chấm tự động theo batch (202 Accepted) |
+| 36 | **Admin Dashboard** | `GET` | `/api/admin/dashboard` | `ADMIN` | Xem thống kê toàn hệ thống & nhật ký vi phạm gần nhất |
+| 37 | **Admin Users** | `GET` | `/api/admin/users` | `ADMIN` | Lấy danh sách tài khoản (lọc role, isActive, search) |
+| 38 | | `GET` | `/api/admin/users/{id}` | `ADMIN` | Xem chi tiết thông tin tài khoản |
+| 39 | | `PATCH` | `/api/admin/users/{id}/toggle-status` | `ADMIN` | Kích hoạt / Vô hiệu hóa tài khoản (chống tự khóa) |
+| 40 | | `PATCH` | `/api/admin/users/{id}/role` | `ADMIN` | Phân quyền vai trò người dùng (chống tự hạ quyền) |
+| 41 | **Admin Exams** | `GET` | `/api/admin/exams` | `ADMIN` | Quản lý danh sách toàn bộ đề thi của tất cả giáo viên |
+| 42 | | `GET` | `/api/admin/exams/{id}` | `ADMIN` | Xem chi tiết đề thi và câu hỏi |
+| 43 | | `PATCH` | `/api/admin/exams/{id}/close` | `ADMIN` | Đóng khẩn cấp đề thi đang mở |
+| 44 | | `DELETE` | `/api/admin/exams/{id}` | `ADMIN` | Xóa đề thi (chỉ DRAFT/CLOSED và chưa có lượt thi) |
 
 ---
 
@@ -706,6 +715,217 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
       "totalQuestionsScheduled": 1,
       "totalSubmissionsScheduled": 15
     },
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+---
+
+### Module 10: Quản Trị Hệ Thống (Admin Management & System Analytics)
+
+#### 10.1. Xem thống kê Dashboard toàn hệ thống (`GET /api/admin/dashboard`)
+- **Mô tả:** Trả về số liệu tổng quan hệ sinh thái: thống kê người dùng theo vai trò, trạng thái hoạt động; thống kê đề thi theo trạng thái vòng đời; số lượt thi nộp bài, chờ chấm, bị đình chỉ; và 10 nhật ký vi phạm gian lận mới nhất.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Admin dashboard statistics retrieved successfully",
+    "data": {
+      "totalUsers": 120,
+      "totalTeachers": 15,
+      "totalStudents": 103,
+      "totalAdmins": 2,
+      "activeUsers": 118,
+      "inactiveUsers": 2,
+      "totalExams": 24,
+      "draftExams": 4,
+      "publishedExams": 12,
+      "closedExams": 7,
+      "archivedExams": 1,
+      "totalAttempts": 450,
+      "inProgressAttempts": 30,
+      "submittedAttempts": 400,
+      "awaitingGradingAttempts": 15,
+      "disqualifiedAttempts": 5,
+      "totalViolations": 28,
+      "recentViolations": [
+        {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "attemptId": "e4b1752b-7c5e-4c74-8b1e-6adbc79bfb54",
+          "candidateName": "Nguyen Van A",
+          "candidateIdentifier": "student01@quicktest.com",
+          "examId": "7662cbf7-fffa-4da6-a6fe-4fbe9cf2bbf6",
+          "examTitle": "Midterm Examination",
+          "violationType": "TAB_SWITCH",
+          "description": "Candidate switched browser tab",
+          "timestamp": "2026-09-12T10:15:30"
+        }
+      ]
+    },
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.2. Danh sách người dùng hệ thống (`GET /api/admin/users`)
+- **Mô tả:** Phân trang và tìm kiếm danh sách người dùng toàn hệ sinh thái. Hỗ trợ lọc theo `role` (`TEACHER`, `STUDENT`, `ADMIN`), `isActive` (`true`, `false`), hoặc từ khóa `search`.
+- **Quyền hạn:** `ADMIN`
+- **Query Params:** `role`, `isActive`, `search`, `page`, `size`, `sort`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Users retrieved successfully",
+    "data": {
+      "content": [
+        {
+          "id": "e4b1752b-7c5e-4c74-8b1e-6adbc79bfb54",
+          "username": "teacher_alice",
+          "email": "alice@quicktest.com",
+          "fullName": "Alice Johnson",
+          "role": "TEACHER",
+          "isActive": true,
+          "createdAt": "2026-09-10T08:00:00",
+          "lastLoginAt": "2026-09-12T09:30:00"
+        }
+      ],
+      "page": 0,
+      "size": 20,
+      "totalElements": 1,
+      "totalPages": 1,
+      "isFirst": true,
+      "isLast": true,
+      "hasNext": false,
+      "hasPrevious": false
+    },
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.3. Chi tiết người dùng (`GET /api/admin/users/{id}`)
+- **Mô tả:** Lấy thông tin chi tiết một tài khoản người dùng theo UUID.
+- **Quyền hạn:** `ADMIN`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "User details retrieved successfully",
+    "data": {
+      "id": "e4b1752b-7c5e-4c74-8b1e-6adbc79bfb54",
+      "username": "teacher_alice",
+      "email": "alice@quicktest.com",
+      "fullName": "Alice Johnson",
+      "role": "TEACHER",
+      "isActive": true,
+      "createdAt": "2026-09-10T08:00:00",
+      "lastLoginAt": "2026-09-12T09:30:00"
+    },
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.4. Bật/Tắt trạng thái hoạt động người dùng (`PATCH /api/admin/users/{id}/toggle-status`)
+- **Mô tả:** Vô hiệu hóa hoặc kích hoạt lại tài khoản người dùng. Hệ thống tự động chặn quản trị viên tự vô hiệu hóa tài khoản của chính mình.
+- **Quyền hạn:** `ADMIN`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "User deactivated successfully",
+    "data": {
+      "id": "e4b1752b-7c5e-4c74-8b1e-6adbc79bfb54",
+      "username": "student_bob",
+      "role": "STUDENT",
+      "isActive": false
+    },
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.5. Cập nhật vai trò người dùng (`PATCH /api/admin/users/{id}/role`)
+- **Mô tả:** Phân quyền vai trò mới cho người dùng (`TEACHER`, `STUDENT`, `ADMIN`). Ngăn chặn admin tự hạ quyền mình hoặc tước quyền ADMIN của quản trị viên duy nhất còn lại trong hệ thống.
+- **Quyền hạn:** `ADMIN`
+- **Request Body:**
+  ```json
+  {
+    "role": "TEACHER"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "User role updated successfully to TEACHER",
+    "data": {
+      "id": "e4b1752b-7c5e-4c74-8b1e-6adbc79bfb54",
+      "role": "TEACHER"
+    },
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.6. Danh sách toàn bộ đề thi hệ thống (`GET /api/admin/exams`)
+- **Mô tả:** Xem danh sách toàn bộ đề thi của tất cả các giáo viên, kèm số lượt thi thực tế và thông tin người tạo. Hỗ trợ lọc theo `status` (`DRAFT`, `PUBLISHED`, `CLOSED`, `ARCHIVED`) hoặc từ khóa `search`.
+- **Quyền hạn:** `ADMIN`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Exams retrieved successfully",
+    "data": {
+      "content": [
+        {
+          "id": "7662cbf7-fffa-4da6-a6fe-4fbe9cf2bbf6",
+          "title": "Kỳ thi Cuối kỳ Java Spring Boot",
+          "accessCode": "JAVA2026",
+          "status": "PUBLISHED",
+          "durationMinutes": 60,
+          "maxAttempts": 1,
+          "totalQuestions": 25,
+          "totalAttempts": 48,
+          "createdById": "e4b1752b-7c5e-4c74-8b1e-6adbc79bfb54",
+          "createdByName": "Alice Johnson",
+          "createdByEmail": "alice@quicktest.com",
+          "createdAt": "2026-09-10T08:00:00"
+        }
+      ],
+      "page": 0,
+      "size": 20,
+      "totalElements": 1,
+      "totalPages": 1
+    },
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.7. Chi tiết đề thi (`GET /api/admin/exams/{id}`)
+- **Mô tả:** Xem chi tiết toàn bộ cấu hình, danh sách câu hỏi, đáp án của đề thi.
+- **Quyền hạn:** `ADMIN`
+- **Response (200 OK):** Tương tự cấu trúc chi tiết đề thi giáo viên (`ExamDetailResponse`).
+
+#### 10.8. Đóng khẩn cấp đề thi (`PATCH /api/admin/exams/{id}/close`)
+- **Mô tả:** Cưỡng chế chuyển trạng thái đề thi sang `CLOSED`, ngăn chặn thí sinh mới tiếp tục vào làm bài.
+- **Quyền hạn:** `ADMIN`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Exam force-closed successfully",
+    "data": null,
+    "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.9. Xóa đề thi (`DELETE /api/admin/exams/{id}`)
+- **Mô tả:** Xóa đề thi khỏi hệ thống. Chỉ cho phép xóa khi đề thi ở trạng thái `DRAFT` hoặc `CLOSED` và chưa có bất kỳ bài nộp (attempt) nào của thí sinh nhằm bảo vệ toàn vẹn dữ liệu điểm số.
+- **Quyền hạn:** `ADMIN`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Exam deleted successfully",
+    "data": null,
     "timestamp": "2026-09-12T12:00:00"
   }
   ```
