@@ -1,0 +1,105 @@
+meta {
+  name: 8.03 Save Manual Grades
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/grading/questions/{{essayQuestionId}}/manual
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "candidateAnswerId": "{{candidateAnswerId}}",
+        "awardedScore": 2.5,
+        "teacherFeedback": "Giải thích chính xác các ý chính trong rubric."
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+
+  // Ensure candidateAnswerId exists; if not, create an attempt and submit an essay answer
+  if (!bru.getEnvVar('candidateAnswerId') || bru.getEnvVar('candidateAnswerId').startsWith('{{')) {
+    try {
+      const studRes = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'student@quicktest.com',
+        password: 'Student@123'
+      });
+      const studentToken = studRes.data?.data?.accessToken || studRes.data?.data?.token;
+      const examId = bru.getEnvVar('examId');
+
+      if (studentToken && examId) {
+        // Publish exam first so student can take it
+        const teacherToken = bru.getEnvVar('teacherToken');
+        try {
+          await axios.put(`${baseUrl}/api/teacher/exams/${examId}/publish`, {}, {
+            headers: { Authorization: `Bearer ${teacherToken}` }
+          });
+        } catch (e) {}
+
+        const startRes = await axios.post(`${baseUrl}/api/candidate/exams/${examId}/start`, {}, {
+          headers: { Authorization: `Bearer ${studentToken}` }
+        });
+        const attemptId = startRes.data?.data?.attemptId;
+        const essayQId = bru.getEnvVar('essayQuestionId');
+
+        if (attemptId && essayQId) {
+          const subRes = await axios.post(`${baseUrl}/api/candidate/attempts/${attemptId}/submit`, {
+            answers: [
+              {
+                questionId: essayQId,
+                textAnswer: "Quang hợp là quá trình lá cây thu nhận ánh sáng mặt trời để tổng hợp chất hữu cơ và giải phóng O2."
+              }
+            ]
+          }, {
+            headers: { Authorization: `Bearer ${studentToken}` }
+          });
+
+          // Fetch the submissions for this question to get candidateAnswerId
+          const listRes = await axios.get(`${baseUrl}/api/teacher/grading/questions/${essayQId}/submissions`, {
+            headers: { Authorization: `Bearer ${teacherToken}` }
+          });
+          const content = listRes.data?.data?.submissions?.content;
+          if (content && content.length > 0) {
+            bru.setVar('candidateAnswerId', content[0].candidateAnswerId);
+            bru.setEnvVar('candidateAnswerId', content[0].candidateAnswerId);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+}

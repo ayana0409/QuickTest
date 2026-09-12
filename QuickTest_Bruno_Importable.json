@@ -105,6 +105,11 @@
       "key": "imageQuestionId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "essayQuestionId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -5150,6 +5155,397 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is 200\", function () {",
                   "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08-Question-Centric-Grading",
+      "item": [
+        {
+          "name": "8.01 Get Questions For Grading",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "questions"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && Array.isArray((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.length > 0) {",
+                  "    const q = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data[0];",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar('essayQuestionId', q.questionId);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('essayQuestionId', q.questionId);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.02 Get Question Submissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/questions/{{essayQuestionId}}/submissions?status=PENDING_MANUAL&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "questions",
+                "{{essayQuestionId}}",
+                "submissions"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.submissions && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.submissions.content) {",
+                  "    const list = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.submissions.content;",
+                  "    if (list.length > 0) {",
+                  "      ",
+                  "if (typeof tc !== 'undefined') tc.setVar('candidateAnswerId', list[0].candidateAnswerId);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('candidateAnswerId', list[0].candidateAnswerId);",
+                  "",
+                  "      ",
+                  "    }",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.03 Save Manual Grades",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/questions/{{essayQuestionId}}/manual",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "questions",
+                "{{essayQuestionId}}",
+                "manual"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"items\": [\n      {\n        \"candidateAnswerId\": \"{{candidateAnswerId}}\",\n        \"awardedScore\": 2.5,\n        \"teacherFeedback\": \"Giải thích chính xác các ý chính trong rubric.\"\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.04 Trigger AI Grading Single Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/trigger-ai",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "trigger-ai"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"examId\": \"{{examId}}\",\n    \"questionId\": \"{{essayQuestionId}}\",\n    \"scope\": \"SINGLE_QUESTION\",\n    \"batchSize\": 5\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 202\", function () {",
+                  "        pm.response.to.have.status(202);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.05 Trigger AI Grading Entire Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/trigger-ai",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "trigger-ai"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"examId\": \"{{examId}}\",\n    \"scope\": \"ENTIRE_EXAM\",\n    \"batchSize\": 5\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 202\", function () {",
+                  "        pm.response.to.have.status(202);",
                   "    });",
                   "}"
                 ]

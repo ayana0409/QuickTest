@@ -16,12 +16,16 @@ params:query {
   sort: createdAt,desc
 }
 
+headers {
+  Accept: application/json
+}
+
 auth:bearer {
   token: {{teacherToken}}
 }
 
-headers {
-  Accept: application/json
+vars:pre-request {
+  teacherToken: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZWFjaGVyX2RlYnVnIiwidXNlcklkIjoiOGVmZjZkYjItMmFjNy00NzlhLTkwYmUtNTg0MzNkNzBjZjI1IiwiZW1haWwiOiJ0ZWFjaGVyQHF1aWNrdGVzdC5jb20iLCJyb2xlIjoiVEVBQ0hFUiIsImlhdCI6MTc4OTE5MTM4MCwiZXhwIjoxNzg5Mjc3NzgwfQ.ZV60L_728acx29OySe04Xyk1pJYaJFKVgblgh7AwTEc
 }
 
 assert {

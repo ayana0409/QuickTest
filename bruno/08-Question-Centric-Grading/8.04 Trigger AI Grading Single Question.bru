@@ -1,0 +1,57 @@
+meta {
+  name: 8.04 Trigger AI Grading Single Question
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/grading/trigger-ai
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+body:json {
+  {
+    "examId": "{{examId}}",
+    "questionId": "{{essayQuestionId}}",
+    "scope": "SINGLE_QUESTION",
+    "batchSize": 5
+  }
+}
+
+vars:pre-request {
+  essayQuestionId: d117207f-b56a-468a-adf6-8bdae0aca4f7
+  examId: f80e7c6a-b493-4f74-a53f-db9907522c38
+}
+
+assert {
+  res.status: eq 202
+  res.body.status: eq 200
+  res.body.data.status: eq "ACCEPTED"
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+}

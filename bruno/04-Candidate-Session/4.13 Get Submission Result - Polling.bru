@@ -10,12 +10,16 @@ get {
   auth: bearer
 }
 
+headers {
+  Accept: application/json
+}
+
 auth:bearer {
   token: {{studentToken}}
 }
 
-headers {
-  Accept: application/json
+vars:pre-request {
+  attemptId: a18c6c49-25fd-44f9-878f-320d2f747c35
 }
 
 assert {
