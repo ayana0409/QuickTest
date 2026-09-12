@@ -1,0 +1,15 @@
+{
+  "name": "quicktest-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QuickTest Monorepo Root",
+  "workspaces": [
+    "quicktest-frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=quicktest-frontend",
+    "build": "npm run build --workspace=quicktest-frontend",
+    "start": "npm run start --workspace=quicktest-frontend",
+    "lint": "npm run lint --workspace=quicktest-frontend"
+  }
+}
