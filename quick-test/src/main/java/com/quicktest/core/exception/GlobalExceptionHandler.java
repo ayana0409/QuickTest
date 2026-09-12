@@ -20,6 +20,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestControllerAdvice
+@SuppressWarnings("null")
 public class GlobalExceptionHandler {
 
     /**
@@ -69,9 +70,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(
             org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
         log.warn("Type mismatch error for parameter '{}': {}", ex.getName(), ex.getMessage());
+        Class<?> requiredType = ex.getRequiredType();
+        String typeName = requiredType != null ? requiredType.getSimpleName() : "valid parameter";
         String msg = String.format("Parameter '%s' has invalid value '%s'. Expected format: %s",
-                ex.getName(), ex.getValue(),
-                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "valid parameter");
+                ex.getName(), ex.getValue(), typeName);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), msg));

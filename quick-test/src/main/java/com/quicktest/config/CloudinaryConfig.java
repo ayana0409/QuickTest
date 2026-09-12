@@ -1,7 +1,6 @@
 package com.quicktest.config;
 
 import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,10 +25,10 @@ public class CloudinaryConfig {
      */
     @Bean
     public Cloudinary cloudinary() {
-        Map<String, Object> config = ObjectUtils.asMap(
-                "cloud_name", cloudinaryProperties.getCloudName(),
-                "api_key", cloudinaryProperties.getApiKey(),
-                "api_secret", cloudinaryProperties.getApiSecret(),
+        Map<String, Object> config = Map.of(
+                "cloud_name", cloudinaryProperties.getCloudName() != null ? cloudinaryProperties.getCloudName() : "",
+                "api_key", cloudinaryProperties.getApiKey() != null ? cloudinaryProperties.getApiKey() : "",
+                "api_secret", cloudinaryProperties.getApiSecret() != null ? cloudinaryProperties.getApiSecret() : "",
                 "secure", true
         );
         return new Cloudinary(config);

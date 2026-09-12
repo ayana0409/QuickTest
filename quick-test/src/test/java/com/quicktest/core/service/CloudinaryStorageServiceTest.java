@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
@@ -82,7 +81,6 @@ class CloudinaryStorageServiceTest {
 
     @Test
     @DisplayName("Should upload single image successfully when valid")
-    @SuppressWarnings("unchecked")
     void testUploadSingle_Success() throws IOException {
         MockMultipartFile validFile = new MockMultipartFile("file", "diagram.png", "image/png", new byte[]{10, 20, 30});
 
