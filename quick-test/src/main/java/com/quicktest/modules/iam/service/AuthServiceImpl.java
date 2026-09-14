@@ -68,18 +68,25 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(newUser);
         log.info("Successfully registered new user with id: {} and role: {}", savedUser.getId(), savedUser.getRole());
 
-        // 3. Generate JWT access token
+        // 3. Generate JWT access and refresh tokens
         String token = jwtTokenProvider.generateToken(
                 savedUser.getId(),
                 savedUser.getUsername(),
                 savedUser.getEmail(),
                 savedUser.getRole().name()
         );
+        String refreshToken = jwtTokenProvider.generateRefreshToken(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail()
+        );
 
         return AuthResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
                 .expiresIn(jwtTokenProvider.getExpirationMs())
+                .refreshToken(refreshToken)
+                .refreshExpiresIn(jwtTokenProvider.getRefreshExpirationMs())
                 .userInfo(UserSummaryDto.fromEntity(savedUser))
                 .build();
     }
@@ -105,14 +112,75 @@ public class AuthServiceImpl implements AuthService {
         user.recordLogin();
         userRepository.save(user);
 
-        // 3. Generate JWT access token
+        // 3. Generate JWT access and refresh tokens
         String token = jwtTokenProvider.generateToken(authentication);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail()
+        );
         log.info("User {} successfully logged in at {}", user.getUsername(), user.getLastLoginAt());
 
         return AuthResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
                 .expiresIn(jwtTokenProvider.getExpirationMs())
+                .refreshToken(refreshToken)
+                .refreshExpiresIn(jwtTokenProvider.getRefreshExpirationMs())
+                .userInfo(UserSummaryDto.fromEntity(user))
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse refreshToken(com.quicktest.modules.iam.dto.RefreshTokenRequest request) {
+        String token = request.getRefreshToken();
+        
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new AppException("Invalid or expired refresh token", HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            // Must have claim type="refresh"
+            String tokenType = jwtTokenProvider.extractAllClaims(token).get("type", String.class);
+            if (!"refresh".equals(tokenType)) {
+                throw new AppException("Provided token is not a refresh token", HttpStatus.UNAUTHORIZED);
+            }
+        } catch (Exception ex) {
+            throw new AppException("Invalid token payload", HttpStatus.UNAUTHORIZED);
+        }
+
+        java.util.UUID userId = jwtTokenProvider.getUserIdFromToken(token);
+        if (userId == null) {
+            throw new AppException("User ID not found in token", HttpStatus.UNAUTHORIZED);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new AppException("User is inactive", HttpStatus.FORBIDDEN);
+        }
+
+        // Generate new tokens
+        String newAccessToken = jwtTokenProvider.generateToken(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail()
+        );
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .tokenType("Bearer")
+                .expiresIn(jwtTokenProvider.getExpirationMs())
+                .refreshToken(newRefreshToken)
+                .refreshExpiresIn(jwtTokenProvider.getRefreshExpirationMs())
                 .userInfo(UserSummaryDto.fromEntity(user))
                 .build();
     }

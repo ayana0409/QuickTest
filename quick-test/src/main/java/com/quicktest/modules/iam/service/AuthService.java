@@ -25,4 +25,9 @@ public interface AuthService {
      * Retrieve the user profile summary of the currently authenticated user.
      */
     UserSummaryDto getCurrentUser(UserDetailsImpl currentUser);
+
+    /**
+     * Refresh access and refresh tokens using a valid refresh token.
+     */
+    AuthResponse refreshToken(com.quicktest.modules.iam.dto.RefreshTokenRequest request);
 }

@@ -5,6 +5,7 @@ import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.iam.dto.AuthResponse;
 import com.quicktest.modules.iam.dto.LoginRequest;
 import com.quicktest.modules.iam.dto.RegisterRequest;
+import com.quicktest.modules.iam.dto.RefreshTokenRequest;
 import com.quicktest.modules.iam.dto.UserSummaryDto;
 import com.quicktest.modules.iam.service.AuthService;
 import jakarta.validation.Valid;
@@ -51,5 +52,14 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserSummaryDto>> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl currentUser) {
         UserSummaryDto userProfile = authService.getCurrentUser(currentUser);
         return ResponseEntity.ok(ApiResponse.success(userProfile, "Profile retrieved successfully"));
+    }
+
+    /**
+     * Refresh access and refresh tokens.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        AuthResponse response = authService.refreshToken(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Token refreshed successfully"));
     }
 }

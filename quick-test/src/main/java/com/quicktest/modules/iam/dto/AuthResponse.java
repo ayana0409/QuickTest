@@ -21,5 +21,9 @@ public class AuthResponse {
 
     private Long expiresIn;
 
+    private String refreshToken;
+
+    private Long refreshExpiresIn;
+
     private UserSummaryDto userInfo;
 }

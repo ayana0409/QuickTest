@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -25,7 +26,7 @@ public class UserSummaryDto {
     private String username;
     private String email;
     private String fullName;
-    private Role role;
+    private List<String> roles;
     private AuthProvider authProvider;
     private Boolean isActive;
 
@@ -42,12 +43,16 @@ public class UserSummaryDto {
         if (user == null) {
             return null;
         }
+        List<String> roles = user.getRole() != null
+                ? List.of("ROLE_" + user.getRole().name())
+                : List.of();
+
         return UserSummaryDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .role(user.getRole())
+                .roles(roles)
                 .authProvider(user.getAuthProvider())
                 .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt())

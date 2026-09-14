@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -23,13 +24,16 @@ public class JwtTokenProvider {
 
     private final String jwtSecret;
     private final long jwtExpirationMs;
+    private final long jwtRefreshExpirationMs;
 
     public JwtTokenProvider(
             @Value("${app.jwt.secret}") String jwtSecret,
-            @Value("${app.jwt.expiration-ms}") long jwtExpirationMs
+            @Value("${app.jwt.expiration-ms}") long jwtExpirationMs,
+            @Value("${app.jwt.refresh-expiration-ms:604800000}") long jwtRefreshExpirationMs
     ) {
         this.jwtSecret = jwtSecret;
         this.jwtExpirationMs = jwtExpirationMs;
+        this.jwtRefreshExpirationMs = jwtRefreshExpirationMs;
     }
 
     /**
@@ -53,11 +57,17 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
+        String roleName = userPrincipal.getRole() != null ? userPrincipal.getRole().name() : "";
+        List<String> roles = userPrincipal.getRole() != null
+                ? List.of("ROLE_" + roleName)
+                : List.of();
+
         return Jwts.builder()
                 .subject(userPrincipal.getUsername())
                 .claim("userId", userPrincipal.getId().toString())
                 .claim("email", userPrincipal.getEmail())
-                .claim("role", userPrincipal.getRole().name())
+                .claim("roles", roles)
+                .claim("role", roleName)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
@@ -71,10 +81,15 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
+        List<String> roles = role != null
+                ? List.of(role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                : List.of();
+
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId.toString())
                 .claim("email", email)
+                .claim("roles", roles)
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -95,6 +110,22 @@ public class JwtTokenProvider {
     public UUID getUserIdFromToken(String token) {
         String userIdStr = extractAllClaims(token).get("userId", String.class);
         return userIdStr != null ? UUID.fromString(userIdStr) : null;
+    }
+
+    /**
+     * Extract roles list from token.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getRolesFromToken(String token) {
+        Object rolesObj = extractAllClaims(token).get("roles");
+        if (rolesObj instanceof List<?>) {
+            return (List<String>) rolesObj;
+        }
+        String singleRole = extractAllClaims(token).get("role", String.class);
+        if (singleRole != null) {
+            return List.of(singleRole.startsWith("ROLE_") ? singleRole : "ROLE_" + singleRole);
+        }
+        return List.of();
     }
 
     /**
@@ -135,5 +166,30 @@ public class JwtTokenProvider {
      */
     public long getExpirationMs() {
         return jwtExpirationMs;
+    }
+
+    /**
+     * Get configured token expiration time in milliseconds.
+     */
+    public long getRefreshExpirationMs() {
+        return jwtRefreshExpirationMs;
+    }
+
+    /**
+     * Generate JWT refresh token directly from user properties.
+     */
+    public String generateRefreshToken(UUID userId, String username, String email) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtRefreshExpirationMs);
+
+        return Jwts.builder()
+                .subject(username)
+                .claim("userId", userId.toString())
+                .claim("email", email)
+                .claim("type", "refresh") // Specify token type for extra safety
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey(), Jwts.SIG.HS256)
+                .compact();
     }
 }
