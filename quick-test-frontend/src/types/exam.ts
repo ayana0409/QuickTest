@@ -111,7 +111,7 @@ export interface ExamCreateRequest {
  */
 export interface ExamUpdateRequest {
   title?: string;
-  description?: string;
+  description?: string | null;
   durationMinutes?: number;
   maxAttempts?: number;
   shuffleQuestions?: boolean;
@@ -214,3 +214,19 @@ export interface SubmitResultResponse {
   message: string;
   gradingStatus?: GradingStatus;
 }
+
+/**
+ * Standardized pagination wrapper returned from backend PageResponse<T>.
+ */
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  isFirst: boolean;
+  isLast: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+

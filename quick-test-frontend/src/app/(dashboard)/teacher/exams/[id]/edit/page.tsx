@@ -1,0 +1,520 @@
+'use client';
+
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Copy,
+  Check,
+  Globe,
+  Lock,
+  Trash2,
+  Settings,
+  Layers,
+  Sparkles,
+  AlertTriangle,
+  Info,
+} from 'lucide-react';
+import { Button } from '@/components/common/Button';
+import { Badge } from '@/components/common/Badge';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/common/Card';
+import { Tabs } from '@/components/common/Tabs';
+import { Modal } from '@/components/common/Modal';
+import { QuestionBuilder } from '@/components/exam/QuestionBuilder';
+import { examService } from '@/services/exam.service';
+import { formatDateTimeForPayload } from '@/lib/utils';
+import type { ExamDetailResponse, ExamUpdateRequest } from '@/types/exam';
+import toast from 'react-hot-toast';
+
+interface SettingsFormData {
+  title: string;
+  description?: string;
+  durationMinutes: number;
+  maxAttempts: number;
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
+  startTime?: string;
+  endTime?: string;
+}
+
+export default function EditExamPage() {
+  const params = useParams();
+  const router = useRouter();
+  const examId = params?.id as string;
+
+  const [exam, setExam] = useState<ExamDetailResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'questions' | 'settings'>('questions');
+  const [isCopied, setIsCopied] = useState(false);
+
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<SettingsFormData>();
+
+  // Fetch full exam details
+  const fetchExamDetail = useCallback(async () => {
+    if (!examId) return;
+    try {
+      const data = await examService.getExamDetail(examId);
+      setExam(data);
+      reset({
+        title: data.title,
+        description: data.description || '',
+        durationMinutes: data.durationMinutes,
+        maxAttempts: data.maxAttempts || 1,
+        shuffleQuestions: data.shuffleQuestions,
+        shuffleOptions: data.shuffleOptions,
+        startTime: data.startTime ? data.startTime.slice(0, 16) : '',
+        endTime: data.endTime ? data.endTime.slice(0, 16) : '',
+      });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Không thể tải thông tin đề thi.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [examId, reset]);
+
+  useEffect(() => {
+    fetchExamDetail();
+  }, [fetchExamDetail]);
+
+  // Copy access code to clipboard
+  const handleCopyAccessCode = () => {
+    if (!exam?.accessCode) return;
+    navigator.clipboard.writeText(exam.accessCode);
+    setIsCopied(true);
+    toast.success(`Đã sao chép mã đề: ${exam.accessCode}`);
+    setTimeout(() => setIsCopied(false), 2500);
+  };
+
+  // Publish exam
+  const handlePublish = async () => {
+    if (!exam) return;
+    if (!exam.questions || exam.questions.length === 0) {
+      toast.error('Đề thi cần có ít nhất 1 câu hỏi trước khi xuất bản.');
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      const updated = await examService.publishExam(exam.id);
+      setExam(updated);
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  // Close exam
+  const handleClose = async () => {
+    if (!exam) return;
+    setIsClosing(true);
+    try {
+      const updated = await examService.closeExam(exam.id);
+      setExam(updated);
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  // Delete draft exam
+  const handleDeleteExam = async () => {
+    if (!exam) return;
+    setIsDeleting(true);
+    try {
+      await examService.deleteExam(exam.id);
+      router.push('/teacher/exams');
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  // Save Settings
+  const onSaveSettings = async (data: SettingsFormData) => {
+    if (!exam) return;
+    setIsSavingSettings(true);
+    try {
+      const payload: ExamUpdateRequest = {
+        title: data.title.trim(),
+        description: data.description?.trim() || null,
+        durationMinutes: Number(data.durationMinutes),
+        maxAttempts: Number(data.maxAttempts) || 1,
+        shuffleQuestions: Boolean(data.shuffleQuestions),
+        shuffleOptions: Boolean(data.shuffleOptions),
+        startTime: formatDateTimeForPayload(data.startTime),
+        endTime: formatDateTimeForPayload(data.endTime),
+      };
+      const updated = await examService.updateExam(exam.id, payload);
+      setExam(updated);
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto py-16 space-y-4 text-center">
+        <div className="w-10 h-10 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-sm text-zinc-500">Đang tải chi tiết đề thi...</p>
+      </div>
+    );
+  }
+
+  if (!exam) {
+    return (
+      <div className="max-w-xl mx-auto py-16 text-center space-y-4">
+        <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+          Không tìm thấy đề thi
+        </h2>
+        <p className="text-sm text-zinc-500">
+          Đề thi không tồn tại hoặc bạn không có quyền truy cập quản trị đề thi này.
+        </p>
+        <Link href="/teacher/exams">
+          <Button variant="outline">Quay lại danh sách</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const isDraft = exam.status === 'DRAFT';
+  const isPublished = exam.status === 'PUBLISHED';
+  const isClosed = exam.status === 'CLOSED';
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 pb-16">
+      {/* Top Breadcrumbs and Action Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <Link
+              href="/teacher/exams"
+              className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Quản lý Đề thi</span>
+            </Link>
+            <span>/</span>
+            <span className="font-medium text-zinc-900 dark:text-zinc-100 line-clamp-1">
+              {exam.title}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              {exam.title}
+            </h1>
+            <Badge variant={exam.status} dot>
+              {exam.status === 'PUBLISHED'
+                ? 'Đang mở (Published)'
+                : exam.status === 'CLOSED'
+                ? 'Đã đóng (Closed)'
+                : 'Bản nháp (Draft)'}
+            </Badge>
+          </div>
+
+          {/* Metadata quick stats */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{exam.durationMinutes} phút</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              <span>{exam.totalQuestions} câu hỏi ({exam.totalPoints} điểm)</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+              <span>Mã đề:</span>
+              <strong className="text-indigo-600 dark:text-indigo-400">{exam.accessCode}</strong>
+              <button
+                type="button"
+                onClick={handleCopyAccessCode}
+                className="ml-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                title="Sao chép mã đề"
+              >
+                {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
+          {isDraft && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30"
+                onClick={() => setIsDeleteModalOpen(true)}
+                leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+              >
+                Xóa đề
+              </Button>
+              <Button
+                size="sm"
+                variant="success"
+                isLoading={isPublishing}
+                onClick={handlePublish}
+                leftIcon={<Globe className="w-3.5 h-3.5" />}
+              >
+                Xuất bản đề thi
+              </Button>
+            </>
+          )}
+
+          {isPublished && (
+            <Button
+              variant="outline"
+              size="sm"
+              isLoading={isClosing}
+              onClick={handleClose}
+              leftIcon={<Lock className="w-3.5 h-3.5" />}
+            >
+              Đóng đề thi
+            </Button>
+          )}
+
+          {isClosed && (
+            <span className="text-xs text-zinc-400 italic">
+              Đề thi đã kết thúc và được lưu trữ
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs Navigation */}
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+        <Tabs
+          items={[
+            {
+              id: 'questions',
+              label: 'Soạn thảo câu hỏi',
+              icon: <Layers className="w-4 h-4" />,
+              badge: (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold">
+                  {exam.questions?.length || 0}
+                </span>
+              ),
+            },
+            {
+              id: 'settings',
+              label: 'Cài đặt đề thi',
+              icon: <Settings className="w-4 h-4" />,
+            },
+          ]}
+          activeId={activeTab}
+          onChange={(id) => setActiveTab(id as 'questions' | 'settings')}
+        />
+
+        {!isDraft && (
+          <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+            <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Đề thi đã xuất bản, chế độ xem câu hỏi chỉ đọc để đảm bảo tính công bằng.</span>
+          </div>
+        )}
+      </div>
+
+      {/* Tab 1: Question Builder Canvas */}
+      {activeTab === 'questions' && (
+        <QuestionBuilder
+          examId={exam.id}
+          questions={exam.questions || []}
+          isLocked={!isDraft}
+          onQuestionsChange={fetchExamDetail}
+        />
+      )}
+
+      {/* Tab 2: Settings Form */}
+      {activeTab === 'settings' && (
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Cập nhật cài đặt đề thi</CardTitle>
+              <CardDescription>
+                Thay đổi tiêu đề, thời lượng và các thiết lập an toàn cho kỳ thi
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSaveSettings)} className="space-y-6">
+              <div className="space-y-4">
+                {/* Title */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+                    Tên đề thi *
+                  </label>
+                  <input
+                    type="text"
+                    {...register('title', { required: 'Tên đề thi là bắt buộc' })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                  {errors.title && (
+                    <p className="text-xs text-rose-500 mt-1">{errors.title.message}</p>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+                    Mô tả & Hướng dẫn thí sinh
+                  </label>
+                  <textarea
+                    rows={4}
+                    {...register('description')}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Duration & Attempts */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                      Thời lượng làm bài (Phút) *
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      {...register('durationMinutes', {
+                        required: 'Thời lượng là bắt buộc',
+                        min: { value: 1, message: 'Tối thiểu 1 phút' },
+                      })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+                      Số lần làm bài tối đa
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      {...register('maxAttempts')}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Schedule Window */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                      Bắt đầu mở thi
+                    </label>
+                    <input
+                      type="datetime-local"
+                      {...register('startTime')}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-rose-500" />
+                      Kết thúc đóng thi
+                    </label>
+                    <input
+                      type="datetime-local"
+                      {...register('endTime')}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Shuffling Options */}
+                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      {...register('shuffleQuestions')}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                      Tự động đảo thứ tự câu hỏi cho từng thí sinh
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      {...register('shuffleOptions')}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                      Tự động đảo thứ tự các phương án lựa chọn trắc nghiệm
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <Button
+                  type="submit"
+                  isLoading={isSavingSettings}
+                >
+                  Lưu thay đổi cài đặt
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Xóa đề thi bản nháp"
+        description="Hành động này sẽ xóa vĩnh viễn đề thi và toàn bộ câu hỏi liên quan."
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="danger"
+              isLoading={isDeleting}
+              onClick={handleDeleteExam}
+            >
+              Xác nhận xóa
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Chỉ những đề thi ở trạng thái <strong>Bản nháp (DRAFT)</strong> mới có thể xóa. Dữ liệu sau khi xóa sẽ không thể phục hồi.
+        </p>
+      </Modal>
+    </div>
+  );
+}

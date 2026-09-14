@@ -120,6 +120,7 @@ export interface QuestionUpdateRequest {
   content?: string;
   imageUrl?: string | null;
   imagePublicId?: string | null;
+  questionType?: QuestionType;
   points?: number;
   sampleAnswer?: string | null;
   numericTolerance?: number | null;

@@ -50,3 +50,16 @@ export function formatDateTime(isoString?: string | null): string {
     return isoString;
   }
 }
+
+/**
+ * Format HTML datetime-local input string (YYYY-MM-DDTHH:mm) into backend LocalDateTime string (YYYY-MM-DDTHH:mm:ss).
+ */
+export function formatDateTimeForPayload(dt?: string | null): string | null {
+  if (!dt) return null;
+  const trimmed = dt.trim();
+  if (!trimmed) return null;
+  if (trimmed.length === 16) {
+    return `${trimmed}:00`;
+  }
+  return trimmed;
+}
