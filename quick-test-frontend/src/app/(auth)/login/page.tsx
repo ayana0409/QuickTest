@@ -109,7 +109,7 @@ function LoginForm() {
         } else if (normalizedRoles.includes('TEACHER')) {
           router.push('/teacher/exams');
         } else {
-          router.push('/');
+          router.push('/student');
         }
       }
     } catch {

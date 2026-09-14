@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 const AUTH_COOKIE_NAME = 'access_token';
 
 // Protected routes requiring authentication
-const PROTECTED_PREFIXES = ['/admin', '/teacher', '/exam'];
+const PROTECTED_PREFIXES = ['/admin', '/teacher', '/student', '/exam'];
 
 // Guest-only auth routes
 const AUTH_ROUTES = ['/login', '/register'];
@@ -30,14 +30,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Redirect authenticated users away from guest-only auth pages
-  const isAuthRoute = AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-
-  if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
+  // 2. Auth routes (/login, /register): Allow access so users can switch accounts
+  // or re-authenticate even if a stale token exists in cookies.
 
   return NextResponse.next();
 }
@@ -49,6 +43,7 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/teacher/:path*',
+    '/student/:path*',
     '/exam/:path*',
     '/login',
     '/register',

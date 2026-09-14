@@ -50,34 +50,18 @@ export default function TeacherGradingPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
-      {/* Navbar */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/teacher/exams" className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 text-sm">
-              <ArrowLeft className="w-4 h-4" />
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Link
+              href="/teacher/exams"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
               <span>Quay lại Quản lý đề</span>
             </Link>
-            <span className="text-zinc-300 dark:text-zinc-700">|</span>
-            <span className="font-bold text-base">Cổng Chấm Bài Tự Luận</span>
           </div>
-
-          <Button
-            size="sm"
-            variant="primary"
-            isLoading={isTriggeringAi}
-            onClick={handleTriggerAiGrading}
-            leftIcon={<Sparkles className="w-4 h-4" />}
-          >
-            Chấm AI Tự Động
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             Chấm Điểm & Phê Duyệt Tự Luận
           </h1>
@@ -86,6 +70,19 @@ export default function TeacherGradingPage() {
           </p>
         </div>
 
+        <Button
+          size="sm"
+          variant="primary"
+          isLoading={isTriggeringAi}
+          onClick={handleTriggerAiGrading}
+          leftIcon={<Sparkles className="w-4 h-4" />}
+        >
+          Chấm AI Tự Động
+        </Button>
+      </div>
+
+      {/* Main Container */}
+      <div>
         {aiMessage && (
           <div className="flex items-start gap-3 p-4 mb-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
             <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
@@ -178,7 +175,7 @@ export default function TeacherGradingPage() {
             </div>
           ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -8,6 +9,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  href?: string;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -22,6 +24,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       leftIcon,
       rightIcon,
       type = 'button',
+      href,
       ...props
     },
     ref
@@ -50,14 +53,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'text-base px-6 py-2.5 gap-2.5',
     };
 
-    return (
-      <button
-        ref={ref}
-        type={type}
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
-        disabled={disabled || isLoading}
-        {...props}
-      >
+    const content = (
+      <>
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin shrink-0" />
@@ -70,6 +67,28 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             {rightIcon && <span className="shrink-0">{rightIcon}</span>}
           </>
         )}
+      </>
+    );
+
+    const mergedClassName = cn(baseStyles, variants[variant], sizes[size], className);
+
+    if (href) {
+      return (
+        <Link href={href} className={mergedClassName}>
+          {content}
+        </Link>
+      );
+    }
+
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={mergedClassName}
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {content}
       </button>
     );
   }

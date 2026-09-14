@@ -9,6 +9,7 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  activeRole: string | null;
 
   // Actions
   login: (token: string, refreshToken: string, user: User) => void;
@@ -18,7 +19,23 @@ interface AuthState {
   setRefreshToken: (refreshToken: string) => void;
   initializeAuth: () => void;
   hasRole: (role: Role | string) => boolean;
+  setActiveRole: (role: string) => void;
+  getUserRoles: () => string[];
 }
+
+const resolveDefaultRole = (user: User | null): string | null => {
+  if (!user) return null;
+  const rawRoles: string[] = Array.isArray(user.roles) && user.roles.length > 0
+    ? user.roles
+    : user.role
+    ? [user.role]
+    : [];
+  const normalized = rawRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+  if (normalized.includes('ADMIN')) return 'ADMIN';
+  if (normalized.includes('TEACHER')) return 'TEACHER';
+  if (normalized.includes('STUDENT')) return 'STUDENT';
+  return normalized[0] || null;
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -28,6 +45,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
+      activeRole: null,
 
       login: (token: string, refreshToken: string, user: User) => {
         // Dual-Storage: persist token in both Cookie (for Next.js Middleware) and localStorage
@@ -40,10 +58,13 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem('refreshToken', refreshToken);
         }
 
+        const activeRole = resolveDefaultRole(user);
+
         set({
           token,
           refreshToken,
           user,
+          activeRole,
           isAuthenticated: true,
           isLoading: false,
         });
@@ -65,13 +86,33 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           token: null,
           refreshToken: null,
+          activeRole: null,
           isAuthenticated: false,
           isLoading: false,
         });
       },
 
       setUser: (user: User) => {
-        set({ user });
+        const activeRole = get().activeRole || resolveDefaultRole(user);
+        set({ user, activeRole });
+      },
+
+      setActiveRole: (role: string) => {
+        const normalized = role.replace(/^ROLE_/, '').toUpperCase();
+        set({ activeRole: normalized });
+      },
+
+      getUserRoles: () => {
+        const currentUser = get().user;
+        if (!currentUser) return [];
+
+        const rawRoles: string[] = Array.isArray(currentUser.roles) && currentUser.roles.length > 0
+          ? currentUser.roles
+          : currentUser.role
+          ? [currentUser.role]
+          : [];
+
+        return rawRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
       },
 
       setToken: (token: string) => {
@@ -121,12 +162,17 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const currentToken = get().token;
+          const currentUser = get().user;
+          const currentActiveRole = get().activeRole || resolveDefaultRole(currentUser);
+
           if (!currentToken) {
-            set({ token, refreshToken, isAuthenticated: true });
+            set({ token, refreshToken, activeRole: currentActiveRole, isAuthenticated: true });
+          } else if (!get().activeRole && currentUser) {
+            set({ activeRole: currentActiveRole });
           }
         } else if (get().isAuthenticated) {
           // Token vanished from both storages
-          set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
+          set({ user: null, token: null, refreshToken: null, activeRole: null, isAuthenticated: false });
         }
       },
 
@@ -165,6 +211,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
+        activeRole: state.activeRole,
         isAuthenticated: state.isAuthenticated,
       }),
     }

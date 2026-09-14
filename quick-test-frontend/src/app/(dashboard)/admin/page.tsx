@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
     const fetchDashboardStats = async () => {
       setIsLoading(true);
       try {
-        const res = await apiClient.get('/admin/analytics/overview');
+        const res = await apiClient.get('/admin/dashboard', { silent: true });
         if (res.data?.data) {
           setStats(res.data.data);
         }
@@ -56,70 +56,30 @@ export default function AdminDashboardPage() {
     fetchDashboardStats();
   }, [isAuthenticated, router]);
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
-      {/* Admin Top Navbar */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold">
-                Q
-              </div>
-              <span className="font-bold text-lg">QuickTest</span>
-            </Link>
-            <span className="text-zinc-300 dark:text-zinc-700">|</span>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-              <Shield className="w-3.5 h-3.5" />
-              Admin Portal
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <div className="text-sm font-semibold">{user?.fullName || 'Administrator'}</div>
-              <div className="text-xs text-zinc-500">{user?.email || 'admin@quicktest.com'}</div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              leftIcon={<LogOut className="w-3.5 h-3.5" />}
-            >
-              Đăng xuất
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              Tổng quan Hệ thống
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Quản trị người dùng, điều phối kỳ thi và giám sát dữ liệu toàn hệ thống
-            </p>
-          </div>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => window.location.reload()}
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-          >
-            Làm mới
-          </Button>
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Top Header Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Tổng quan Hệ thống
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Quản trị người dùng, điều phối kỳ thi và giám sát dữ liệu toàn hệ thống
+          </p>
         </div>
 
-        {/* Stats Grid */}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => window.location.reload()}
+          leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+        >
+          Làm mới
+        </Button>
+      </div>
+
+      {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <div className="flex items-center justify-between mb-3">
@@ -198,7 +158,6 @@ export default function AdminDashboardPage() {
             </Button>
           </div>
         </div>
-      </main>
-    </div>
-  );
-}
+      </div>
+    );
+  }
