@@ -125,7 +125,8 @@ public class AdminServiceImpl implements AdminService {
 
         user.setRole(request.getRole());
         User updatedUser = userRepository.save(user);
-        log.info("User {} (ID: {}) role updated to {} by admin ID: {}", user.getUsername(), userId, request.getRole(), currentAdminId);
+        log.info("User {} (ID: {}) role updated to {} by admin ID: {}", user.getUsername(), userId, request.getRole(),
+                currentAdminId);
         return AdminUserSummaryResponse.fromEntity(updatedUser);
     }
 
@@ -199,12 +200,16 @@ public class AdminServiceImpl implements AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
 
         if (exam.getStatus() == ExamStatus.PUBLISHED) {
-            throw new AppException("Cannot delete a PUBLISHED exam. Please force-close it first.", HttpStatus.BAD_REQUEST);
+            throw new AppException("Cannot delete a PUBLISHED exam. Please force-close it first.",
+                    HttpStatus.BAD_REQUEST);
         }
 
         long attemptCount = examAttemptRepository.countByExamId(examId);
         if (attemptCount > 0) {
-            throw new AppException("Cannot delete exam with " + attemptCount + " existing candidate attempts. Delete or archive attempts first.", HttpStatus.BAD_REQUEST);
+            throw new AppException(
+                    "Cannot delete exam with " + attemptCount
+                            + " existing candidate attempts. Delete or archive attempts first.",
+                    HttpStatus.BAD_REQUEST);
         }
 
         examRepository.delete(exam);

@@ -1,7 +1,6 @@
 package com.quicktest.modules.admin;
 
 import com.quicktest.core.exception.AppException;
-import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.modules.admin.dto.AdminDashboardResponse;
 import com.quicktest.modules.admin.dto.AdminExamSummaryResponse;
 import com.quicktest.modules.admin.dto.AdminUserSummaryResponse;
@@ -14,8 +13,6 @@ import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
-import com.quicktest.modules.proctoring.entity.ViolationLog;
-import com.quicktest.modules.proctoring.entity.ViolationType;
 import com.quicktest.modules.proctoring.repository.ViolationLogRepository;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
@@ -42,7 +39,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for AdminServiceImpl covering user governance, exam lifecycle control,
+ * Unit tests for AdminServiceImpl covering user governance, exam lifecycle
+ * control,
  * and dashboard statistics generation.
  */
 @ExtendWith(MockitoExtension.class)
@@ -236,8 +234,8 @@ class AdminServiceTest {
         Page<Exam> examPage = new PageImpl<>(List.of(sampleExam), pageable, 1);
 
         when(examRepository.findAllWithCreatedBy(eq(pageable))).thenReturn(examPage);
-        List<Object[]> attemptRows = Collections.singletonList(new Object[]{sampleExam.getId(), 5L});
-        List<Object[]> questionRows = Collections.singletonList(new Object[]{sampleExam.getId(), 10L});
+        List<Object[]> attemptRows = Collections.singletonList(new Object[] { sampleExam.getId(), 5L });
+        List<Object[]> questionRows = Collections.singletonList(new Object[] { sampleExam.getId(), 10L });
         when(examAttemptRepository.countAttemptsByExamIds(anyList())).thenReturn(attemptRows);
         when(questionRepository.countQuestionsByExamIds(anyList())).thenReturn(questionRows);
 
@@ -257,8 +255,8 @@ class AdminServiceTest {
         Page<Exam> examPage = new PageImpl<>(List.of(sampleExam), pageable, 1);
 
         when(examRepository.searchExams(isNull(), eq("%midterm%"), eq(pageable))).thenReturn(examPage);
-        List<Object[]> attemptRows = Collections.singletonList(new Object[]{sampleExam.getId(), 5L});
-        List<Object[]> questionRows = Collections.singletonList(new Object[]{sampleExam.getId(), 10L});
+        List<Object[]> attemptRows = Collections.singletonList(new Object[] { sampleExam.getId(), 5L });
+        List<Object[]> questionRows = Collections.singletonList(new Object[] { sampleExam.getId(), 10L });
         when(examAttemptRepository.countAttemptsByExamIds(anyList())).thenReturn(attemptRows);
         when(questionRepository.countQuestionsByExamIds(anyList())).thenReturn(questionRows);
 

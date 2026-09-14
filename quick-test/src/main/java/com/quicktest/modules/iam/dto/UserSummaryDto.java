@@ -2,7 +2,6 @@ package com.quicktest.modules.iam.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quicktest.modules.iam.entity.AuthProvider;
-import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

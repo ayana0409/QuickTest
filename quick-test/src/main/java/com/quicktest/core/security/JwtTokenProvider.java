@@ -37,6 +37,13 @@ public class JwtTokenProvider {
     }
 
     /**
+     * Overloaded constructor for tests or components not specifying refresh expiration.
+     */
+    public JwtTokenProvider(String jwtSecret, long jwtExpirationMs) {
+        this(jwtSecret, jwtExpirationMs, 604800000L);
+    }
+
+    /**
      * Build HMAC-SHA signing key supporting both Base64 and raw UTF-8 string secrets.
      */
     private SecretKey getSigningKey() {
