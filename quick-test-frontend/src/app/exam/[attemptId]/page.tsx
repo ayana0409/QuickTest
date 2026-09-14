@@ -214,11 +214,13 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
 
     setSubmitting(true);
     try {
-      await apiClient.post('/session/submit', { attemptId });
-      alert('Nộp bài thành công!');
+      await apiClient.post(
+        '/session/submit',
+        { attemptId },
+        { successMessage: 'Nộp bài thi thành công!' }
+      );
       router.push('/');
     } catch {
-      alert('Nộp bài thành công (hoàn tất phiên kiểm tra)!');
       router.push('/');
     } finally {
       setSubmitting(false);

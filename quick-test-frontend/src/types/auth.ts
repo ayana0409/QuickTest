@@ -16,7 +16,8 @@ export interface User {
   username: string;
   email: string;
   fullName: string;
-  role: Role;
+  roles: string[];
+  role?: Role; // Optional backward compatibility helper
   authProvider: AuthProvider;
   isActive: boolean;
   createdAt: string;
@@ -30,6 +31,8 @@ export interface LoginResponse {
   accessToken: string;
   tokenType: string;
   expiresIn: number;
+  refreshToken: string;
+  refreshExpiresIn: number;
   userInfo: User;
 }
 

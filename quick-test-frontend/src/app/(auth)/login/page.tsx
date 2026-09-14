@@ -3,11 +3,12 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LogIn, Lock, User as UserIcon, AlertCircle, Loader2 } from 'lucide-react';
-import { Button } from '@/components/common/Button';
+import { LogIn, Lock, User as UserIcon, Loader2 } from 'lucide-react';
 import { Input } from '@/components/common/Input';
+import { Button } from '@/components/common/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/lib/axios';
+import toast from 'react-hot-toast';
 import type { ApiResponse, LoginResponse } from '@/types/auth';
 
 interface FormErrors {
@@ -18,14 +19,13 @@ interface FormErrors {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect');
+  const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect');
 
   const { login } = useAuthStore();
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -58,7 +58,6 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
 
     // Run custom validations without using browser default validation
     if (!validateForm()) {
@@ -68,34 +67,53 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', {
-        usernameOrEmail: usernameOrEmail.trim(),
-        password,
-      });
+      const response = await apiClient.post<ApiResponse<LoginResponse>>(
+        '/auth/login',
+        {
+          usernameOrEmail: usernameOrEmail.trim(),
+          password,
+        },
+        {
+          successMessage: 'Đăng nhập thành công!',
+        }
+      );
 
       if (response.data && response.data.data) {
-        const { accessToken, userInfo } = response.data.data;
-        login(accessToken, userInfo);
+        const { accessToken, refreshToken, userInfo } = response.data.data;
 
-        if (redirectUrl) {
-          router.push(redirectUrl);
+        // Check if account is deactivated or locked
+        if (userInfo.isActive === false) {
+          toast.error('Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt. Vui lòng liên hệ quản trị viên.');
           return;
         }
 
-        const role = userInfo.role.replace('ROLE_', '');
-        if (role === 'ADMIN') {
+        login(accessToken, refreshToken, userInfo);
+
+        if (callbackUrl) {
+          router.push(callbackUrl);
+          return;
+        }
+
+        // Determine destination by assigned roles
+        const userRoles: string[] =
+          Array.isArray(userInfo.roles) && userInfo.roles.length > 0
+            ? userInfo.roles
+            : userInfo.role
+            ? [userInfo.role]
+            : [];
+
+        const normalizedRoles = userRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+
+        if (normalizedRoles.includes('ADMIN')) {
           router.push('/admin');
-        } else if (role === 'TEACHER') {
+        } else if (normalizedRoles.includes('TEACHER')) {
           router.push('/teacher/exams');
         } else {
           router.push('/');
         }
       }
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setErrorMessage(
-        error.response?.data?.message || 'Đăng nhập không thành công. Vui lòng kiểm tra lại tài khoản và mật khẩu.'
-      );
+    } catch {
+      // Error notifications are handled automatically by the Axios interceptor
     } finally {
       setIsLoading(false);
     }
@@ -103,13 +121,6 @@ function LoginForm() {
 
   return (
     <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-      {errorMessage && (
-        <div className="flex items-start gap-3 p-3.5 mb-5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <Input
           label="Tên đăng nhập hoặc Email"

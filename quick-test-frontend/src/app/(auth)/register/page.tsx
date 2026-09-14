@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { UserPlus, User, Mail, Lock, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { apiClient } from '@/lib/axios';
@@ -31,8 +31,6 @@ export default function RegisterPage() {
 
   const [errors, setErrors] = useState<RegisterFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Custom validation logic without using browser default validation
   const validateForm = (): boolean => {
@@ -106,8 +104,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
 
     // Run custom validations
     if (!validateForm()) {
@@ -125,26 +121,29 @@ export default function RegisterPage() {
         role: formData.role,
       };
 
-      const response = await apiClient.post<ApiResponse<unknown>>('/auth/register', payload);
+      const response = await apiClient.post<ApiResponse<unknown>>(
+        '/auth/register',
+        payload,
+        {
+          successMessage: 'Đăng ký tài khoản thành công! Đang chuyển hướng...',
+        }
+      );
 
-      if (response.data?.success) {
-        setSuccessMessage('Đăng ký tài khoản thành công! Đang chuyển hướng sang trang đăng nhập...');
+      if (response.data?.success || response.status === 201 || response.status === 200) {
         setTimeout(() => {
           router.push('/login');
         }, 1500);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      const serverMsg = error.response?.data?.message || 'Đăng ký không thành công. Vui lòng thử lại.';
+      const serverMsg = error.response?.data?.message || '';
 
-      // Map server error to specific field if applicable
+      // Map server error to specific form fields if applicable
       const lowerMsg = serverMsg.toLowerCase();
       if (lowerMsg.includes('username') || lowerMsg.includes('tên đăng nhập')) {
         setErrors((prev) => ({ ...prev, username: serverMsg }));
       } else if (lowerMsg.includes('email')) {
         setErrors((prev) => ({ ...prev, email: serverMsg }));
-      } else {
-        setErrorMessage(serverMsg);
       }
     } finally {
       setIsLoading(false);
@@ -174,20 +173,6 @@ export default function RegisterPage() {
 
         {/* Card Form */}
         <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-          {errorMessage && (
-            <div className="flex items-start gap-3 p-3.5 mb-5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
-              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="flex items-start gap-3 p-3.5 mb-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
-              <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <Input
               label="Họ và tên"

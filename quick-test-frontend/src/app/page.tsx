@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { ShieldCheck, BookOpen, UserCheck, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 
+import { AuthNav } from '@/components/common/AuthNav';
+
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
@@ -17,18 +19,7 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">
-                Đăng nhập
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button variant="primary" size="sm">
-                Đăng ký ngay
-              </Button>
-            </Link>
-          </div>
+          <AuthNav />
         </div>
       </header>
 
