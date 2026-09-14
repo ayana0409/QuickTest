@@ -30,6 +30,10 @@ public class RabbitMQConfig {
     public static final String MEDIA_UPLOAD_QUEUE = "media.upload.queue";
     public static final String MEDIA_UPLOAD_ROUTING_KEY = "media.upload.routing-key";
 
+    public static final String MEDIA_DELETE_EXCHANGE = "media.delete.exchange";
+    public static final String MEDIA_DELETE_QUEUE = "media.delete.queue";
+    public static final String MEDIA_DELETE_ROUTING_KEY = "media.delete.routing-key";
+
     /**
      * Durable queue for asynchronous media batch upload tasks.
      */
@@ -52,6 +56,30 @@ public class RabbitMQConfig {
     @Bean
     public Binding mediaUploadBinding(Queue mediaUploadQueue, DirectExchange mediaUploadExchange) {
         return BindingBuilder.bind(mediaUploadQueue).to(mediaUploadExchange).with(MEDIA_UPLOAD_ROUTING_KEY);
+    }
+
+    /**
+     * Durable queue for asynchronous media batch deletion tasks.
+     */
+    @Bean
+    public Queue mediaDeleteQueue() {
+        return QueueBuilder.durable(MEDIA_DELETE_QUEUE).build();
+    }
+
+    /**
+     * Direct exchange for media deletion tasks.
+     */
+    @Bean
+    public DirectExchange mediaDeleteExchange() {
+        return new DirectExchange(MEDIA_DELETE_EXCHANGE);
+    }
+
+    /**
+     * Binding media delete queue to direct media delete exchange.
+     */
+    @Bean
+    public Binding mediaDeleteBinding(Queue mediaDeleteQueue, DirectExchange mediaDeleteExchange) {
+        return BindingBuilder.bind(mediaDeleteQueue).to(mediaDeleteExchange).with(MEDIA_DELETE_ROUTING_KEY);
     }
 
     /**

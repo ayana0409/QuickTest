@@ -10,8 +10,10 @@ import com.quicktest.modules.assessment.dto.QuestionResponse;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.assessment.entity.Question;
+import com.quicktest.modules.assessment.repository.AnswerOptionRepository;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
+import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.iam.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +32,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service implementation managing exam authoring, access codes, lifecycle transitions,
+ * Service implementation managing exam authoring, access codes, lifecycle
+ * transitions,
  * and teacher ownership checks.
  */
 @Slf4j
@@ -44,6 +47,8 @@ public class ExamServiceImpl implements ExamService {
 
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
+    private final AnswerOptionRepository answerOptionRepository;
+    private final MediaDeleteProducer mediaDeleteProducer;
 
     @Override
     @Transactional
@@ -73,7 +78,8 @@ public class ExamServiceImpl implements ExamService {
                 .build();
 
         Exam savedExam = examRepository.save(exam);
-        log.info("Exam created successfully with ID: {} and accessCode: {}", savedExam.getId(), savedExam.getAccessCode());
+        log.info("Exam created successfully with ID: {} and accessCode: {}", savedExam.getId(),
+                savedExam.getAccessCode());
 
         return ExamDetailResponse.fromEntity(savedExam);
     }
@@ -127,11 +133,26 @@ public class ExamServiceImpl implements ExamService {
 
         // Only DRAFT exams can be deleted
         if (exam.getStatus() != ExamStatus.DRAFT) {
-            throw new AppException("Cannot delete an exam that has been " + exam.getStatus() + ". Only DRAFT exams can be deleted.");
+            throw new AppException(
+                    "Cannot delete an exam that has been " + exam.getStatus() + ". Only DRAFT exams can be deleted.");
         }
 
-        examRepository.delete(exam);
-        log.info("Exam ID: {} successfully deleted", examId);
+        // 1. Gather all media identifiers (questions & answer options) in fast lightweight queries
+        List<String> mediaIdentifiers = new ArrayList<>();
+        mediaIdentifiers.addAll(questionRepository.findImageIdentifiersByExamId(examId));
+        mediaIdentifiers.addAll(answerOptionRepository.findImageIdentifiersByExamId(examId));
+
+        // 2. Offload media deletions to RabbitMQ in small batches (3-7 items)
+        if (!mediaIdentifiers.isEmpty()) {
+            mediaDeleteProducer.sendDeleteBatches(examId, mediaIdentifiers, "EXAM_DELETION");
+        }
+
+        // 3. Fast bulk deletion in DB: AnswerOptions -> Questions -> Exam
+        answerOptionRepository.deleteByExamId(examId);
+        questionRepository.deleteByExamId(examId);
+        examRepository.deleteExamById(examId);
+
+        log.info("Exam ID: {} and all associated entities successfully deleted", examId);
     }
 
     @Override
@@ -168,7 +189,8 @@ public class ExamServiceImpl implements ExamService {
         // Business rule: Must contain at least one question
         long questionCount = questionRepository.countByExamId(examId);
         if (questionCount == 0) {
-            throw new AppException("Cannot publish an exam without any questions. Please add at least one question first.");
+            throw new AppException(
+                    "Cannot publish an exam without any questions. Please add at least one question first.");
         }
 
         exam.setStatus(ExamStatus.PUBLISHED);
@@ -232,7 +254,8 @@ public class ExamServiceImpl implements ExamService {
     }
 
     /**
-     * Generate unique random alphanumeric access code (6-8 chars) using SecureRandom.
+     * Generate unique random alphanumeric access code (6-8 chars) using
+     * SecureRandom.
      */
     private String generateUniqueAccessCode() {
         // Attempt 6-character code generation
@@ -249,7 +272,8 @@ public class ExamServiceImpl implements ExamService {
                 return code;
             }
         }
-        throw new AppException("Failed to generate a unique access code. Please specify a custom code.", HttpStatus.INTERNAL_SERVER_ERROR);
+        throw new AppException("Failed to generate a unique access code. Please specify a custom code.",
+                HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private String generateRandomCode(int length) {
@@ -262,7 +286,8 @@ public class ExamServiceImpl implements ExamService {
     }
 
     /**
-     * Load questions along with options in a single SQL query via QuestionRepository.
+     * Load questions along with options in a single SQL query via
+     * QuestionRepository.
      */
     private List<QuestionResponse> fetchQuestionsWithOptions(UUID examId) {
         List<Question> questions = questionRepository.findByExamIdWithOptions(examId);

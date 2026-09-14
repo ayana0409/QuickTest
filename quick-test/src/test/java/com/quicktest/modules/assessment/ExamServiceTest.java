@@ -6,6 +6,8 @@ import com.quicktest.modules.assessment.dto.ExamDetailResponse;
 import com.quicktest.modules.assessment.dto.ExamUpdateRequest;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
+import com.quicktest.core.service.MediaDeleteProducer;
+import com.quicktest.modules.assessment.repository.AnswerOptionRepository;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.assessment.service.ExamServiceImpl;
@@ -22,6 +24,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,6 +45,12 @@ class ExamServiceTest {
 
     @Mock
     private QuestionRepository questionRepository;
+
+    @Mock
+    private AnswerOptionRepository answerOptionRepository;
+
+    @Mock
+    private MediaDeleteProducer mediaDeleteProducer;
 
     @InjectMocks
     private ExamServiceImpl examService;
@@ -157,7 +166,28 @@ class ExamServiceTest {
         AppException ex = assertThrows(AppException.class, () ->
                 examService.deleteExam(sampleExam.getId(), teacher));
         assertTrue(ex.getMessage().contains("Only DRAFT exams can be deleted"));
-        verify(examRepository, never()).delete(any());
+        verify(examRepository, never()).deleteExamById(any());
+    }
+
+    @Test
+    @DisplayName("Delete exam should succeed, trigger media deletion batches, and bulk delete in database")
+    void shouldDeleteExamSuccessfullyAndPublishMediaBatches() {
+        when(examRepository.findByIdWithCreatedBy(sampleExam.getId())).thenReturn(Optional.of(sampleExam));
+        when(questionRepository.findImageIdentifiersByExamId(sampleExam.getId()))
+                .thenReturn(List.of("q_img_1", "q_img_2"));
+        when(answerOptionRepository.findImageIdentifiersByExamId(sampleExam.getId()))
+                .thenReturn(List.of("opt_img_1"));
+
+        examService.deleteExam(sampleExam.getId(), teacher);
+
+        verify(mediaDeleteProducer).sendDeleteBatches(
+                eq(sampleExam.getId()),
+                argThat(list -> list.containsAll(List.of("q_img_1", "q_img_2", "opt_img_1"))),
+                eq("EXAM_DELETION")
+        );
+        verify(answerOptionRepository).deleteByExamId(sampleExam.getId());
+        verify(questionRepository).deleteByExamId(sampleExam.getId());
+        verify(examRepository).deleteExamById(sampleExam.getId());
     }
 
     @Test

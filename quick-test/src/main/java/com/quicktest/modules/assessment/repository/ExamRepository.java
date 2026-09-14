@@ -6,6 +6,7 @@ import com.quicktest.modules.assessment.entity.ExamStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -76,4 +77,11 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
             @Param("status") ExamStatus status,
             @Param("pattern") String pattern,
             Pageable pageable);
+
+    /**
+     * Bulk delete exam entity by ID in a single query.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Exam e WHERE e.id = :id")
+    void deleteExamById(@Param("id") UUID id);
 }

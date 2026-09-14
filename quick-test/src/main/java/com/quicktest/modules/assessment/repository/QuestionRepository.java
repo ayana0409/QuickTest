@@ -2,6 +2,7 @@ package com.quicktest.modules.assessment.repository;
 
 import com.quicktest.modules.assessment.entity.Question;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -47,4 +48,18 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
      */
     @Query("SELECT q.exam.id, COUNT(q.id) FROM Question q WHERE q.exam.id IN :examIds GROUP BY q.exam.id")
     List<Object[]> countQuestionsByExamIds(@Param("examIds") List<UUID> examIds);
+
+    /**
+     * Retrieve all non-null media identifiers (publicId or imageUrl) for questions in an exam.
+     */
+    @Query("SELECT COALESCE(q.imagePublicId, q.imageUrl) FROM Question q " +
+           "WHERE q.exam.id = :examId AND (q.imagePublicId IS NOT NULL OR q.imageUrl IS NOT NULL)")
+    List<String> findImageIdentifiersByExamId(@Param("examId") UUID examId);
+
+    /**
+     * Bulk delete all questions belonging to an exam in a single query.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Question q WHERE q.exam.id = :examId")
+    void deleteByExamId(@Param("examId") UUID examId);
 }
