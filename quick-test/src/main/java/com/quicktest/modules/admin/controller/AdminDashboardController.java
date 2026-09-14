@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Requires ROLE_ADMIN authority.
  */
 @RestController
-@RequestMapping("/api/admin/dashboard")
+@RequestMapping({"/api/admin/dashboard", "/api/admin/analytics"})
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminDashboardController {
@@ -25,7 +25,7 @@ public class AdminDashboardController {
     /**
      * Get system-wide analytics, user/exam/attempt counters, and recent proctoring violation logs.
      */
-    @GetMapping
+    @GetMapping({"", "/overview"})
     public ResponseEntity<ApiResponse<AdminDashboardResponse>> getDashboard() {
         AdminDashboardResponse response = adminService.getDashboard();
         return ResponseEntity.ok(ApiResponse.success(response, "Admin dashboard statistics retrieved successfully"));
