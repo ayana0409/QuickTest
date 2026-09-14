@@ -1,15 +1,17 @@
-/**
- * Supported question types in Quick Test.
- */
-export type QuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'NUMERIC' | 'ESSAY_TEXT';
+import type { Question, QuestionInPaper, QuestionResponse } from './question';
+import type { CandidateAnswer, SaveAnswerRequest, GradingStatus } from './candidateAnswer';
+
+// Re-export question and candidateAnswer types for seamless backward compatibility
+export * from './question';
+export * from './candidateAnswer';
 
 /**
- * Exam lifecycle states.
+ * Exam lifecycle states matching backend ExamStatus enum.
  */
 export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'CLOSED';
 
 /**
- * Candidate exam attempt progression status.
+ * Candidate exam attempt progression status matching backend AttemptStatus enum.
  */
 export type AttemptStatus =
   | 'IN_PROGRESS'
@@ -21,64 +23,7 @@ export type AttemptStatus =
   | 'DISQUALIFIED';
 
 /**
- * Grading status for individual candidate answers.
- */
-export type GradingStatus = 'AUTO_GRADED' | 'NEEDS_MANUAL_REVIEW' | 'GRADED';
-
-/**
- * Single answer option choice for SINGLE_CHOICE or MULTIPLE_CHOICE questions.
- */
-export interface AnswerOption {
-  id: string;
-  orderIndex: number;
-  content: string;
-  imageUrl?: string | null;
-  imagePublicId?: string | null;
-  isCorrect?: boolean;
-}
-
-/**
- * Answer option payload presented to candidate during exam taking.
- */
-export interface OptionInPaper {
-  id: string;
-  orderIndex: number;
-  content: string;
-  imageUrl?: string | null;
-}
-
-/**
- * Question entity with its options and grading configuration.
- */
-export interface Question {
-  id: string;
-  orderIndex: number;
-  content: string;
-  imageUrl?: string | null;
-  imagePublicId?: string | null;
-  questionType: QuestionType;
-  points: number;
-  sampleAnswer?: string | null;
-  numericTolerance?: number | null;
-  gradingRubric?: string | null;
-  options?: AnswerOption[];
-}
-
-/**
- * Question payload presented to candidate in exam paper.
- */
-export interface QuestionInPaper {
-  id: string;
-  orderIndex: number;
-  content: string;
-  imageUrl?: string | null;
-  questionType: QuestionType;
-  points: number;
-  options?: OptionInPaper[];
-}
-
-/**
- * Exam definition containing settings, scheduling, and questions.
+ * Exam definition containing core settings, scheduling, and questions list.
  */
 export interface Exam {
   id: string;
@@ -104,7 +49,80 @@ export interface Exam {
 }
 
 /**
- * Active exam paper returned when starting or resuming an exam session.
+ * Summary DTO for displaying exams in catalog or teacher lists without question payload.
+ */
+export interface ExamSummaryResponse {
+  id: string;
+  title: string;
+  accessCode: string;
+  description?: string | null;
+  status: ExamStatus;
+  durationMinutes: number;
+  maxAttempts: number;
+  startTime?: string | null;
+  endTime?: string | null;
+  createdAt: string;
+  createdByTeacherName?: string;
+  totalQuestions: number;
+  totalPoints: number;
+  published: boolean;
+}
+
+/**
+ * Detailed exam response for teacher management views, containing full questions hierarchy.
+ */
+export interface ExamDetailResponse {
+  id: string;
+  title: string;
+  accessCode: string;
+  description?: string | null;
+  status: ExamStatus;
+  durationMinutes: number;
+  maxAttempts: number;
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+  createdAt: string;
+  createdByTeacherId: string;
+  createdByTeacherName: string;
+  totalQuestions: number;
+  totalPoints: number;
+  questions: QuestionResponse[];
+}
+
+/**
+ * Request payload for creating a new exam.
+ */
+export interface ExamCreateRequest {
+  title: string;
+  accessCode?: string;
+  description?: string;
+  durationMinutes: number;
+  maxAttempts?: number;
+  shuffleQuestions?: boolean;
+  shuffleOptions?: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+}
+
+/**
+ * Request payload for updating existing exam settings.
+ */
+export interface ExamUpdateRequest {
+  title?: string;
+  description?: string;
+  durationMinutes?: number;
+  maxAttempts?: number;
+  shuffleQuestions?: boolean;
+  shuffleOptions?: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+  status?: ExamStatus;
+}
+
+/**
+ * Active exam paper returned when starting or resuming an exam session for a candidate.
  */
 export interface ExamPaper {
   attemptId: string;
@@ -123,60 +141,68 @@ export interface ExamPaper {
 }
 
 /**
- * Candidate's single answer response state.
- */
-export interface CandidateAnswer {
-  id?: string;
-  attemptId: string;
-  questionId: string;
-  selectedOptionIds?: string[];
-  textAnswer?: string | null;
-  awardedScore?: number | null;
-  gradingStatus?: GradingStatus;
-  teacherFeedback?: string | null;
-  aiSimilarityScore?: number | null;
-  aiGradingExplanation?: string | null;
-}
-
-/**
- * Exam attempt record representing a student's session.
+ * Exam attempt record representing a student's or guest's session.
  */
 export interface ExamAttempt {
   id: string;
   examId: string;
   examTitle?: string;
+  userId?: string | null;
   candidateId?: string | null;
   candidateName?: string;
   candidateIdentifier?: string;
   status: AttemptStatus;
   startTime: string;
+  expireAt?: string | null;
   submittedTime?: string | null;
+  submitTime?: string | null;
   totalScore?: number | null;
   maxScore?: number | null;
   passed?: boolean | null;
   violationCount: number;
   disqualifiedReason?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  answers?: CandidateAnswer[];
 }
 
 /**
- * Payload sent by candidate to save or auto-save an answer for a question.
+ * Request payload to start an exam session.
  */
-export interface SaveAnswerRequest {
-  attemptId: string;
-  questionId: string;
-  selectedOptionIds?: string[];
-  textAnswer?: string | null;
+export interface StartExamRequest {
+  accessCode: string;
+  guestName?: string;
+  guestIdentifier?: string;
 }
 
 /**
- * Payload sent to submit the completed exam.
+ * Request payload to resume an interrupted exam session.
+ */
+export interface ResumeExamResponse {
+  attemptId: string;
+  examPaper: ExamPaper;
+  savedAnswers: Record<string, { selectedOptionIds?: string[]; textAnswer?: string }>;
+}
+
+/**
+ * Payload sent by candidate to submit the finished exam attempt.
  */
 export interface SubmitExamRequest {
   attemptId: string;
 }
 
 /**
- * Submission result response returned after exam submission.
+ * Submission response returned immediately upon submission acceptance.
+ */
+export interface SubmitAcceptedResponse {
+  attemptId: string;
+  status: AttemptStatus;
+  submittedAt: string;
+  message: string;
+}
+
+/**
+ * Submission result response returned after automated scoring.
  */
 export interface SubmitResultResponse {
   attemptId: string;
@@ -186,4 +212,5 @@ export interface SubmitResultResponse {
   passed?: boolean | null;
   submittedAt: string;
   message: string;
+  gradingStatus?: GradingStatus;
 }
