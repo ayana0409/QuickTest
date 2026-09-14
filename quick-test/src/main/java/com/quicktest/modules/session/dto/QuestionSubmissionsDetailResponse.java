@@ -18,7 +18,9 @@ import java.util.UUID;
 public class QuestionSubmissionsDetailResponse {
 
     private UUID questionId;
+    private UUID examId;
     private Integer orderIndex;
+
     private String content;
     private String imageUrl;
     private String sampleAnswer;

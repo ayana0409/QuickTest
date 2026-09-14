@@ -60,8 +60,9 @@ public class QuestionGradingController {
     public ResponseEntity<ApiResponse<QuestionSubmissionsDetailResponse>> getQuestionSubmissions(
             @PathVariable("questionId") UUID questionId,
             @RequestParam(value = "status", required = false) GradingStatus status,
-            @PageableDefault(size = 10, sort = "submitTime", direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(size = 10) Pageable pageable,
             @AuthenticationPrincipal UserDetailsImpl currentUser) {
+
 
         User teacher = getAuthenticatedTeacher(currentUser);
         QuestionSubmissionsDetailResponse response =

@@ -1,181 +1,285 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles, Check, CheckCircle2, AlertCircle, FileText, Award } from 'lucide-react';
+import {
+  GraduationCap,
+  Search,
+  BookOpen,
+  Clock,
+  ArrowRight,
+  CheckCircle2,
+  FolderX,
+  Layers,
+} from 'lucide-react';
+
+import { examService } from '@/services/exam.service';
 import { Button } from '@/components/common/Button';
+import { Badge } from '@/components/common/Badge';
+import { cn } from '@/lib/utils';
+import type { ExamSummaryResponse, ExamStatus } from '@/types/exam';
 
-interface PendingEssaySubmission {
-  id: string;
-  candidateName: string;
-  examTitle: string;
-  questionContent: string;
-  maxScore: number;
-  candidateTextAnswer: string;
-  rubric: string;
-  sampleAnswer?: string;
-  currentScore?: number;
-  feedback?: string;
-  isAiGraded?: boolean;
-}
+/**
+ * Teacher Grading Hub Page.
+ * Displays all exams created by the authenticated teacher and allows drilling down into question-centric grading.
+ */
+export default function TeacherGradingHubPage() {
+  const [exams, setExams] = useState<ExamSummaryResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<'ALL' | ExamStatus>('ALL');
 
-export default function TeacherGradingPage() {
-  const [submissions] = useState<PendingEssaySubmission[]>([
-    {
-      id: 'sub-1',
-      candidateName: 'Nguyễn Văn Minh (SV202601)',
-      examTitle: 'Kiểm tra Giữa kỳ Java & Spring Boot',
-      questionContent: 'Hãy phân tích sự khác nhau giữa @Component, @Service và @Repository trong Spring Framework.',
-      maxScore: 2.0,
-      candidateTextAnswer:
-        '@Component là annotation chung cho Spring Bean. @Service dùng cho tầng nghiệp vụ (Business Logic). @Repository đánh dấu tầng DAO/truy cập dữ liệu và hỗ trợ tự động dịch biệt lệ sang DataAccessException của Spring.',
-      rubric: 'Đúng bản chất 3 annotations: 1.0đ. Nêu được cơ chế DataAccessException translation của @Repository: 1.0đ.',
-      sampleAnswer: '@Component: Bean chung. @Service: Tầng dịch vụ. @Repository: Tầng dữ liệu có Exception Translation.',
-      currentScore: 2.0,
-      feedback: 'Giải thích chính xác và đầy đủ bản chất kỹ thuật.',
-      isAiGraded: true,
-    },
-  ]);
+  useEffect(() => {
+    let isMounted = true;
+    const loadExams = async () => {
+      try {
+        setIsLoading(true);
+        // Load exams from teacher management endpoint
+        const response = await examService.getTeacherExams({ size: 100, sort: 'createdAt,desc' });
+        if (isMounted) {
+          setExams(response.content || []);
+        }
+      } catch {
+        if (isMounted) {
+          setExams([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-  const [isTriggeringAi, setIsTriggeringAi] = useState(false);
-  const [aiMessage, setAiMessage] = useState<string | null>(null);
+    loadExams();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-  const handleTriggerAiGrading = () => {
-    setIsTriggeringAi(true);
-    setAiMessage(null);
-    setTimeout(() => {
-      setIsTriggeringAi(false);
-      setAiMessage('Đã kích hoạt tác vụ AI chấm tự luận background thành công! Kết quả sẽ được cập nhật.');
-    }, 1200);
-  };
+  // Filter exams according to search and status
+  const filteredExams = useMemo(() => {
+    return exams.filter((exam) => {
+      const matchesSearch =
+        exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (exam.description && exam.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesStatus = selectedStatus === 'ALL' || exam.status === selectedStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [exams, searchTerm, selectedStatus]);
+
+  // Aggregate metrics
+  const totalExams = exams.length;
+  const activeExams = exams.filter((e) => e.status === 'PUBLISHED').length;
+  const closedExams = exams.filter((e) => e.status === 'CLOSED').length;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8 pb-12">
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link
-              href="/teacher/exams"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quay lại Quản lý đề</span>
-            </Link>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-xs font-semibold mb-2 border border-indigo-200/60 dark:border-indigo-900/60">
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>Phân hệ Chấm Điểm & Đánh Giá</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Chấm Điểm & Phê Duyệt Tự Luận
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Trung Tâm Chấm Điểm Tự Luận
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Xem xét câu trả lời tự luận của thí sinh, đối chiếu rubric và xác nhận điểm số
+            Chọn bài thi để xem danh sách câu hỏi tự luận, chấm bài theo từng câu hỏi và kích hoạt trợ lý AI
           </p>
         </div>
 
-        <Button
-          size="sm"
-          variant="primary"
-          isLoading={isTriggeringAi}
-          onClick={handleTriggerAiGrading}
-          leftIcon={<Sparkles className="w-4 h-4" />}
-        >
-          Chấm AI Tự Động
-        </Button>
+        <div className="flex items-center gap-3">
+          <Link href="/teacher/exams">
+            <Button variant="outline" size="md">
+              Quản lý đề thi
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Main Container */}
-      <div>
-        {aiMessage && (
-          <div className="flex items-start gap-3 p-4 mb-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm">
-            <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
-            <span>{aiMessage}</span>
+      {/* Metrics Banner */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Tổng số đề thi
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <Layers className="w-4 h-4" />
+            </div>
           </div>
-        )}
+          <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
+            {totalExams}
+          </div>
+        </div>
 
-        <div className="space-y-6">
-          {submissions.map((item) => (
-            <div
-              key={item.id}
-              className="p-6 sm:p-8 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm"
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Đang hoạt động (Published)
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
+            {activeExams}
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+              Đã kết thúc (Closed)
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">
+            {closedExams}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
+        <div className="relative w-full sm:w-96">
+          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Tìm kiếm theo tiêu đề hoặc nội dung đề thi..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl text-sm border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-zinc-900 dark:text-zinc-100"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+          {(['ALL', 'PUBLISHED', 'CLOSED', 'DRAFT'] as const).map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => setSelectedStatus(status)}
+              className={cn(
+                'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0',
+                selectedStatus === status
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+              )}
             >
-              {/* Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-zinc-100 dark:border-zinc-800">
-                <div>
-                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">
-                    {item.examTitle}
+              {status === 'ALL'
+                ? 'Tất cả'
+                : status === 'PUBLISHED'
+                ? 'Đang mở'
+                : status === 'CLOSED'
+                ? 'Đã đóng'
+                : 'Bản nháp'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Exams Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((idx) => (
+            <div
+              key={idx}
+              className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs animate-pulse space-y-4"
+            >
+              <div className="h-5 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
+              <div className="h-4 w-1/2 bg-zinc-100 dark:bg-zinc-800/60 rounded-md" />
+              <div className="h-10 w-full bg-zinc-100 dark:bg-zinc-800/60 rounded-xl" />
+            </div>
+          ))}
+        </div>
+      ) : filteredExams.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto">
+            <FolderX className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+              Không tìm thấy đề thi phù hợp
+            </h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mt-1">
+              {searchTerm
+                ? 'Thử thay đổi từ khóa tìm kiếm hoặc bỏ lọc trạng thái để xem nhiều kết quả hơn.'
+                : 'Hiện bạn chưa có đề thi nào trong hệ thống.'}
+            </p>
+          </div>
+          {searchTerm && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedStatus('ALL');
+              }}
+            >
+              Đặt lại bộ lọc
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredExams.map((exam) => (
+            <div
+              key={exam.id}
+              className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/90 p-6 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-5 group"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant={exam.status} size="sm" dot>
+                    {exam.status === 'PUBLISHED'
+                      ? 'Đang diễn ra'
+                      : exam.status === 'CLOSED'
+                      ? 'Đã kết thúc'
+                      : 'Bản nháp'}
+                  </Badge>
+                  <span className="text-xs text-zinc-400">
+                    {exam.totalQuestions || 0} câu hỏi
                   </span>
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
-                    Thí sinh: {item.candidateName}
+                </div>
+
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+                    {exam.title}
                   </h3>
+                  {exam.description && (
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
+                      {exam.description}
+                    </p>
+                  )}
                 </div>
 
-                {item.isAiGraded && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-xs font-semibold">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Đã được AI đề xuất điểm
-                  </span>
-                )}
-              </div>
-
-              {/* Question & Rubric */}
-              <div className="mb-6 bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
-                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                  Đề bài (Tối đa {item.maxScore} điểm):
-                </div>
-                <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                  {item.questionContent}
-                </div>
-                <div className="text-xs text-zinc-500 pt-1 border-t border-zinc-200 dark:border-zinc-800">
-                  <strong>Rubric chấm:</strong> {item.rubric}
+                <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{exam.durationMinutes} phút</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Thang {exam.totalPoints}đ</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Candidate Answer */}
-              <div className="mb-6">
-                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-                  Bài làm của thí sinh:
-                </div>
-                <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap">
-                  {item.candidateTextAnswer}
-                </div>
-              </div>
-
-              {/* Scoring and Feedback Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 items-end">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                    Điểm số (0 - {item.maxScore}):
-                  </label>
-                  <input
-                    type="number"
-                    step="0.25"
-                    max={item.maxScore}
-                    min={0}
-                    defaultValue={item.currentScore}
-                    className="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-sm font-semibold"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                    Nhận xét của giáo viên:
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue={item.feedback}
-                    placeholder="Góp ý hoặc nhận xét cho thí sinh..."
-                    className="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <Button size="sm" variant="success" leftIcon={<Check className="w-4 h-4" />}>
-                  Lưu & Xác nhận điểm
-                </Button>
+              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <Link
+                  href={`/teacher/grading/exams/${exam.id}`}
+                  className="w-full inline-flex items-center justify-center font-medium rounded-xl text-sm px-4 py-2.5 transition-all duration-200 select-none bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white group-hover:shadow-md"
+                >
+                  <span>Vào chấm điểm tự luận</span>
+                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" />
+                </Link>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

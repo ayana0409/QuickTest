@@ -19,8 +19,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TriggerAiGradingRequest {
 
-    @NotNull(message = "Exam ID is required")
+    /**
+     * Target exam ID. Required if scope is ENTIRE_EXAM, optional if questionId is provided.
+     */
     private UUID examId;
+
 
     /**
      * Target question ID. Required if scope is SINGLE_QUESTION, optional if ENTIRE_EXAM.

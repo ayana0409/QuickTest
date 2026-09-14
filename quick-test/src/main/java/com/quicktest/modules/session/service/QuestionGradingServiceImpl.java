@@ -24,7 +24,9 @@ import com.quicktest.modules.session.entity.GradingStatus;
 import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,13 +119,17 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             throw new AppException("Only essay questions support submission grading view", HttpStatus.BAD_REQUEST);
         }
 
+        // Use un-sorted PageRequest because the JPQL query defines its own deterministic ORDER BY a.submitTime DESC NULLS LAST
+        Pageable safePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+
         Page<CandidateAnswer> answerPage;
         if (filterStatus != null) {
             answerPage = candidateAnswerRepository.findByQuestionIdAndGradingStatusWithAttemptAndUser(
-                    questionId, filterStatus, pageable);
+                    questionId, filterStatus, safePageable);
         } else {
-            answerPage = candidateAnswerRepository.findByQuestionIdWithAttemptAndUser(questionId, pageable);
+            answerPage = candidateAnswerRepository.findByQuestionIdWithAttemptAndUser(questionId, safePageable);
         }
+
 
         Page<CandidateSubmissionItemDto> dtoPage = answerPage.map(ca -> {
             ExamAttempt attempt = ca.getExamAttempt();
@@ -153,7 +159,9 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
 
         return QuestionSubmissionsDetailResponse.builder()
                 .questionId(question.getId())
+                .examId(question.getExam() != null ? question.getExam().getId() : null)
                 .orderIndex(question.getOrderIndex())
+
                 .content(question.getContent())
                 .imageUrl(question.getImageUrl())
                 .sampleAnswer(question.getSampleAnswer())
@@ -233,9 +241,24 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                     HttpStatus.BAD_REQUEST);
         }
 
-        Exam exam = examRepository.findByIdWithCreatedBy(request.getExamId())
-                .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", request.getExamId()));
+        // If examId is omitted but questionId is provided, resolve examId from target question
+        UUID resolvedExamId = request.getExamId();
+        if (resolvedExamId == null) {
+            if (request.getQuestionId() == null) {
+                throw new AppException("Exam ID is required when questionId is not specified", HttpStatus.BAD_REQUEST);
+            }
+            Question targetQ = questionRepository.findByIdWithOptionsAndExam(request.getQuestionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Question", "id", request.getQuestionId()));
+            resolvedExamId = targetQ.getExam().getId();
+            request.setExamId(resolvedExamId);
+        }
+
+        final UUID targetExamId = resolvedExamId;
+        Exam exam = examRepository.findByIdWithCreatedBy(targetExamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", targetExamId));
         verifyExamOwnership(exam, teacher);
+
+
 
         int batchSize = (request.getBatchSize() != null && request.getBatchSize() >= 1 && request.getBatchSize() <= 20)
                 ? request.getBatchSize() : 5;

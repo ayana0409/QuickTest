@@ -1,9 +1,12 @@
 import type { QuestionType } from './question';
+import type { PageResponse } from './exam';
 
 /**
  * Grading review status for individual candidate answers.
+ * Matches backend com.quicktest.modules.session.entity.GradingStatus enum.
  */
-export type GradingStatus = 'AUTO_GRADED' | 'NEEDS_MANUAL_REVIEW' | 'GRADED';
+export type GradingStatus = 'AUTO_GRADED' | 'PENDING_MANUAL' | 'GRADED' | 'PENDING_AI';
+
 
 /**
  * Candidate's single answer response entity or state.
@@ -30,6 +33,51 @@ export interface SaveAnswerRequest {
   textAnswer?: string | null;
   attemptId?: string;
   savedAt?: string;
+}
+
+/**
+ * Summary DTO for an essay question in the question-centric grading workflow.
+ */
+export interface QuestionGradingSummaryResponse {
+  questionId: string;
+  orderIndex: number;
+  content: string;
+  imageUrl?: string | null;
+  maxPoints: number;
+  pendingCount: number;
+  gradedCount: number;
+  totalSubmissions: number;
+}
+
+/**
+ * Detailed DTO for a candidate's essay response in the question-centric grading view.
+ */
+export interface CandidateSubmissionItemDto {
+  candidateAnswerId: string;
+  attemptId: string;
+  candidateName: string;
+  studentIdentifier?: string | null;
+  submittedAt: string;
+  textAnswer: string;
+  awardedScore?: number | null;
+  teacherFeedback?: string | null;
+  gradingStatus: GradingStatus;
+}
+
+/**
+ * Question detail and rubric along with paginated candidate submissions.
+ */
+export interface QuestionSubmissionsDetailResponse {
+  questionId: string;
+  examId?: string;
+  orderIndex: number;
+  content: string;
+
+  imageUrl?: string | null;
+  sampleAnswer?: string | null;
+  gradingRubric?: string | null;
+  maxPoints: number;
+  submissions: PageResponse<CandidateSubmissionItemDto>;
 }
 
 /**
@@ -120,20 +168,19 @@ export interface GradeEssaySubmissionRequest {
 }
 
 /**
- * Request payload for batch manual grading by question.
+ * Individual grade item submitted by the teacher for question-centric grading.
  */
 export interface ManualGradeItemRequest {
   candidateAnswerId: string;
   awardedScore: number;
-  feedback?: string;
+  teacherFeedback?: string;
 }
 
 /**
- * Request payload for batch grading multiple candidates at once.
+ * Request payload for batch grading multiple candidates on a question.
  */
 export interface ManualBatchGradeRequest {
-  questionId: string;
-  grades: ManualGradeItemRequest[];
+  items: ManualGradeItemRequest[];
 }
 
 /**
@@ -166,21 +213,23 @@ export interface AiBatchGradingResultDto {
 }
 
 /**
- * Request payload to trigger background AI grading for an exam or specific attempt.
+ * Request payload to trigger background AI grading for an essay question or entire exam.
  */
 export interface TriggerAiGradingRequest {
-  examId: string;
-  attemptId?: string;
+  examId?: string;
   questionId?: string;
-  overrideExistingScores?: boolean;
+  scope?: 'SINGLE_QUESTION' | 'ENTIRE_EXAM';
+  batchSize?: number;
 }
+
 
 /**
  * Response acknowledging triggering of AI grading background task.
  */
 export interface TriggerAiGradingResponse {
-  taskId: string;
-  status: 'QUEUED' | 'RUNNING' | 'FAILED';
-  queuedItemsCount: number;
+  status: string;
   message: string;
+  totalQuestionsScheduled: number;
+  totalSubmissionsScheduled: number;
 }
+

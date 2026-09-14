@@ -296,6 +296,12 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       return;
     }
 
+    if (data.questionType === 'ESSAY_TEXT' && !data.gradingRubric?.trim()) {
+      toast.error('Vui lòng nhập barem điểm chi tiết (Grading Rubric) cho câu hỏi tự luận.');
+      return;
+    }
+
+
     setIsSubmitting(true);
     try {
       let finalImageUrl: string | null = null;
@@ -935,17 +941,32 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1.5 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
-                  Barem điểm chi tiết (Grading Rubric cho GV hoặc AI chấm)
+                  Barem điểm chi tiết (Grading Rubric cho GV hoặc AI chấm) *
                 </label>
                 <textarea
                   rows={3}
                   placeholder="Ví dụ:&#10;- Trình bày đúng định nghĩa: +1.0đ&#10;- Nêu được 3 ưu điểm: +1.5đ&#10;- Có ví dụ minh họa: +0.5đ"
-                  {...register('gradingRubric')}
-                  className="w-full px-3.5 py-2 rounded-xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/20 dark:bg-indigo-950/20 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  {...register('gradingRubric', {
+                    validate: (val) => {
+                      if (selectedType === 'ESSAY_TEXT' && (!val || !val.trim())) {
+                        return 'Barem điểm chi tiết (Grading Rubric) là bắt buộc cho câu hỏi tự luận';
+                      }
+                      return true;
+                    },
+                  })}
+                  className={`w-full px-3.5 py-2 rounded-xl border ${
+                    errors.gradingRubric
+                      ? 'border-rose-500 focus:ring-rose-500'
+                      : 'border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500'
+                  } bg-indigo-50/20 dark:bg-indigo-950/20 text-sm focus:ring-2 focus:outline-none`}
                 />
+                {errors.gradingRubric && (
+                  <p className="text-xs text-rose-500 mt-1">{errors.gradingRubric.message}</p>
+                )}
               </div>
             </div>
           )}
+
 
           {/* Modal Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">

@@ -360,12 +360,11 @@ public class QuestionServiceImpl implements QuestionService {
                 if (options != null && !options.isEmpty()) {
                     throw new AppException("Essay question must not contain answer options");
                 }
-                boolean hasSample = sampleAnswer != null && !sampleAnswer.trim().isEmpty();
-                boolean hasRubric = gradingRubric != null && !gradingRubric.trim().isEmpty();
-                if (!hasSample && !hasRubric) {
-                    throw new AppException("Essay question requires either a sample answer or a grading rubric");
+                if (gradingRubric == null || gradingRubric.trim().isEmpty()) {
+                    throw new AppException("Essay question requires a grading rubric");
                 }
             }
+
         }
     }
 
