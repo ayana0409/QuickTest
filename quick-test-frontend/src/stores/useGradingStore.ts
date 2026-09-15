@@ -36,6 +36,7 @@ export interface GradingState {
 
   // Individual and batch saving indicators
   savingAnswerIds: Record<string, boolean>;
+  aiGradingAnswerIds: Record<string, boolean>;
   isBatchSaving: boolean;
   isTriggeringAi: boolean;
 
@@ -53,6 +54,7 @@ export interface GradingState {
   ) => void;
   saveSingleGrade: (questionId: string, candidateAnswerId: string) => Promise<boolean>;
   saveAllDrafts: (questionId: string) => Promise<boolean>;
+  gradeSingleWithAi: (candidateAnswerId: string) => Promise<boolean>;
   triggerAiGrading: (examId?: string, questionId?: string) => Promise<boolean>;
   resetStore: () => void;
 
@@ -71,6 +73,7 @@ export const useGradingStore = create<GradingState>((set, get) => ({
 
   drafts: {},
   savingAnswerIds: {},
+  aiGradingAnswerIds: {},
   isBatchSaving: false,
   isTriggeringAi: false,
 
@@ -350,6 +353,68 @@ export const useGradingStore = create<GradingState>((set, get) => ({
     }
   },
 
+  /**
+   * Evaluate a single candidate answer using AI directly.
+   */
+  gradeSingleWithAi: async (candidateAnswerId: string) => {
+    set((state) => ({
+      aiGradingAnswerIds: { ...state.aiGradingAnswerIds, [candidateAnswerId]: true },
+    }));
+
+    try {
+      const result = await gradingService.gradeSingleAnswerWithAi(candidateAnswerId);
+      const score = result.awardedScore ?? 0;
+      const feedback = result.feedback ?? '';
+
+      set((state) => {
+        const detail = state.currentQuestionDetail;
+        if (!detail || !detail.submissions) {
+          return {
+            aiGradingAnswerIds: { ...state.aiGradingAnswerIds, [candidateAnswerId]: false },
+          };
+        }
+
+        const updatedContent = detail.submissions.content.map((item) => {
+          if (item.candidateAnswerId === candidateAnswerId) {
+            return {
+              ...item,
+              awardedScore: score,
+              teacherFeedback: feedback,
+              gradingStatus: 'GRADED' as GradingStatus,
+            };
+          }
+          return item;
+        });
+
+        return {
+          currentQuestionDetail: {
+            ...detail,
+            submissions: {
+              ...detail.submissions,
+              content: updatedContent,
+            },
+          },
+          drafts: {
+            ...state.drafts,
+            [candidateAnswerId]: {
+              awardedScore: score,
+              teacherFeedback: feedback,
+              isDirty: false,
+            },
+          },
+          aiGradingAnswerIds: { ...state.aiGradingAnswerIds, [candidateAnswerId]: false },
+        };
+      });
+
+      return true;
+    } catch {
+      set((state) => ({
+        aiGradingAnswerIds: { ...state.aiGradingAnswerIds, [candidateAnswerId]: false },
+      }));
+      return false;
+    }
+  },
+
 
   /**
    * Reset store to initial state when navigating away.
@@ -365,6 +430,7 @@ export const useGradingStore = create<GradingState>((set, get) => ({
       currentPage: 0,
       drafts: {},
       savingAnswerIds: {},
+      aiGradingAnswerIds: {},
       isBatchSaving: false,
       isTriggeringAi: false,
     });

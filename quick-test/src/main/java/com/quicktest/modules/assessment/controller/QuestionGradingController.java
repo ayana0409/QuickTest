@@ -103,6 +103,21 @@ public class QuestionGradingController {
                 .body(ApiResponse.success(response, response.getMessage()));
     }
 
+    /**
+     * Evaluate an individual candidate's essay response using Google Gemini AI.
+     */
+    @PostMapping("/answers/{candidateAnswerId}/ai")
+    public ResponseEntity<ApiResponse<AiSingleGradeDto>> gradeSingleAnswerWithAi(
+            @PathVariable("candidateAnswerId") UUID candidateAnswerId,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+
+        User teacher = getAuthenticatedTeacher(currentUser);
+        AiSingleGradeDto response =
+                questionGradingService.gradeSingleAnswerWithAi(candidateAnswerId, teacher);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "Candidate answer evaluated by AI successfully"));
+    }
+
     private User getAuthenticatedTeacher(UserDetailsImpl currentUser) {
         if (currentUser == null || currentUser.getId() == null) {
             throw new AppException("User is not authenticated", HttpStatus.UNAUTHORIZED);

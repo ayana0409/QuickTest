@@ -197,10 +197,12 @@ export interface ManualBatchGradeResponse {
  */
 export interface AiSingleGradeDto {
   candidateAnswerId: string;
-  similarityScore: number;
-  suggestedScore: number;
-  explanation: string;
-  confidence: number;
+  awardedScore?: number;
+  feedback?: string;
+  similarityScore?: number;
+  suggestedScore?: number;
+  explanation?: string;
+  confidence?: number;
 }
 
 /**

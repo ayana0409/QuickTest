@@ -33,4 +33,10 @@ public interface QuestionGradingService {
      * Trigger asynchronous AI-powered batch grading using Google Gemini.
      */
     TriggerAiGradingResponse triggerAiGrading(TriggerAiGradingRequest request, User teacher);
+
+    /**
+     * Evaluate and grade a single candidate answer using Google Gemini AI immediately.
+     */
+    AiSingleGradeDto gradeSingleAnswerWithAi(UUID candidateAnswerId, User teacher);
 }
+

@@ -39,6 +39,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.quicktest.core.service.GeminiGradingService;
+import com.quicktest.modules.session.dto.AiBatchGradingResultDto;
+import com.quicktest.modules.session.dto.AiSingleGradeDto;
+
 /**
  * Implementation of QuestionGradingService providing question-centric grading
  * and delegating batch AI evaluation to QuestionGradingAsyncWorker for background execution.
@@ -53,19 +57,23 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     private final CandidateAnswerRepository candidateAnswerRepository;
     private final QuestionGradingAsyncWorker asyncWorker;
     private final GeminiProperties geminiProperties;
+    private final GeminiGradingService geminiGradingService;
 
     public QuestionGradingServiceImpl(
             ExamRepository examRepository,
             QuestionRepository questionRepository,
             CandidateAnswerRepository candidateAnswerRepository,
             QuestionGradingAsyncWorker asyncWorker,
-            GeminiProperties geminiProperties) {
+            GeminiProperties geminiProperties,
+            GeminiGradingService geminiGradingService) {
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.candidateAnswerRepository = candidateAnswerRepository;
         this.asyncWorker = asyncWorker;
         this.geminiProperties = geminiProperties;
+        this.geminiGradingService = geminiGradingService;
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -306,6 +314,43 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                 .totalQuestionsScheduled(totalQuestions)
                 .totalSubmissionsScheduled(totalSubmissions)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public AiSingleGradeDto gradeSingleAnswerWithAi(UUID candidateAnswerId, User teacher) {
+        log.info("Teacher {} requested AI grading for single candidate answer ID: {}", teacher.getId(), candidateAnswerId);
+
+        CandidateAnswer answer = candidateAnswerRepository.findById(candidateAnswerId)
+                .orElseThrow(() -> new ResourceNotFoundException("CandidateAnswer", "id", candidateAnswerId));
+
+        Exam exam = examRepository.findByIdWithCreatedBy(answer.getExamAttempt().getExam().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", answer.getExamAttempt().getExam().getId()));
+        verifyExamOwnership(exam, teacher);
+
+        Question question = answer.getQuestion();
+        if (question.getQuestionType() != QuestionType.ESSAY_TEXT) {
+            throw new AppException("Only essay questions can be evaluated by AI", HttpStatus.BAD_REQUEST);
+        }
+
+        AiBatchGradingResultDto batchResult = geminiGradingService.gradeBatch(question, List.of(answer));
+        if (batchResult == null || batchResult.getResults() == null || batchResult.getResults().isEmpty()) {
+            throw new AppException("AI evaluation failed to produce a score", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        AiSingleGradeDto singleResult = batchResult.getResults().get(0);
+        double awarded = singleResult.getAwardedScore() != null ? singleResult.getAwardedScore() : 0.0;
+        String feedback = singleResult.getFeedback() != null ? singleResult.getFeedback() : "AI Evaluated response.";
+
+        answer.setAwardedScore(awarded);
+        answer.setTeacherFeedback(feedback);
+        answer.setAiGradingExplanation(feedback);
+        answer.setGradingStatus(GradingStatus.GRADED);
+        candidateAnswerRepository.save(answer);
+
+        asyncWorker.finalizeAffectedAttempts(Set.of(answer.getExamAttempt().getId()));
+
+        return singleResult;
     }
 
     /**

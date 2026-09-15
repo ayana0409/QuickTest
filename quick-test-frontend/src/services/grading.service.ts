@@ -8,6 +8,7 @@ import type {
   TriggerAiGradingRequest,
   TriggerAiGradingResponse,
   GradingStatus,
+  AiSingleGradeDto,
 } from '@/types/candidateAnswer';
 
 /**
@@ -88,6 +89,23 @@ export const gradingService = {
       payload,
       {
         successMessage: 'Đã kích hoạt chấm AI tự động. Hệ thống đang tiến hành xử lý trong nền!',
+      }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Evaluate a single candidate essay response using AI.
+   *
+   * @param candidateAnswerId The unique identifier of the candidate's answer
+   * @returns AI grading result with awarded score and feedback
+   */
+  async gradeSingleAnswerWithAi(candidateAnswerId: string): Promise<AiSingleGradeDto> {
+    const response = await apiClient.post<ApiResponse<AiSingleGradeDto>>(
+      `/teacher/grading/answers/${candidateAnswerId}/ai`,
+      {},
+      {
+        successMessage: 'Đã hoàn tất chấm AI cho thí sinh!',
       }
     );
     return response.data.data;

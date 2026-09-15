@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Save,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 
 import toast from 'react-hot-toast';
@@ -21,8 +22,10 @@ interface CandidateSubmissionCardProps {
   maxPoints: number;
   draft?: AnswerDraft;
   isSaving?: boolean;
+  isAiGrading?: boolean;
   onDraftChange: (awardedScore: number, teacherFeedback: string) => void;
   onSave: () => void;
+  onAiGrade?: () => void;
 }
 
 /**
@@ -34,8 +37,10 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
   maxPoints,
   draft,
   isSaving = false,
+  isAiGrading = false,
   onDraftChange,
   onSave,
+  onAiGrade,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -227,7 +232,7 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
           </div>
 
           {/* Teacher Feedback Input */}
-          <div className="md:col-span-6">
+          <div className="md:col-span-5">
             <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1.5">
               Nhận xét của giáo viên
             </label>
@@ -235,20 +240,35 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
               type="text"
               value={currentFeedback}
               onChange={(e) => onDraftChange(currentScore, e.target.value)}
-              disabled={isSaving}
+              disabled={isSaving || isAiGrading}
               placeholder="Nhập góp ý, lý giải điểm số hoặc lời động viên..."
               className="w-full px-3.5 py-2 rounded-xl text-sm transition-colors border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
 
-          {/* Action Button */}
-          <div className="md:col-span-3 flex justify-end">
+          {/* Action Buttons */}
+          <div className="md:col-span-4 flex items-center justify-end gap-2">
+            {onAiGrade && (
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                className="w-full sm:w-auto text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                isLoading={isAiGrading}
+                disabled={isSaving || isAiGrading || !submission.textAnswer?.trim()}
+                onClick={onAiGrade}
+                title={!submission.textAnswer?.trim() ? 'Thí sinh không nộp câu trả lời' : 'Chấm AI bài này'}
+                leftIcon={<Sparkles className="w-4 h-4 text-indigo-500" />}
+              >
+                Chấm AI
+              </Button>
+            )}
             <Button
               variant={submission.gradingStatus === 'GRADED' && !isDirty ? 'secondary' : 'primary'}
               size="md"
-              className="w-full sm:w-auto min-w-[120px]"
+              className="w-full sm:w-auto min-w-[110px]"
               isLoading={isSaving}
-              disabled={!isScoreValid || isSaving}
+              disabled={!isScoreValid || isSaving || isAiGrading}
               onClick={onSave}
               leftIcon={
                 submission.gradingStatus === 'GRADED' && !isDirty ? (

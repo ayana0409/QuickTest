@@ -39,6 +39,7 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
     currentPage,
     drafts,
     savingAnswerIds,
+    aiGradingAnswerIds,
     isBatchSaving,
     isTriggeringAi,
     fetchQuestionSubmissions,
@@ -47,6 +48,7 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
     updateDraft,
     saveSingleGrade,
     saveAllDrafts,
+    gradeSingleWithAi,
     triggerAiGrading,
     resetStore,
   } = useGradingStore();
@@ -240,6 +242,7 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
                       maxPoints={currentQuestionDetail.maxPoints}
                       draft={drafts[submission.candidateAnswerId]}
                       isSaving={Boolean(savingAnswerIds[submission.candidateAnswerId])}
+                      isAiGrading={Boolean(aiGradingAnswerIds[submission.candidateAnswerId])}
                       onDraftChange={(score, feedback) =>
                         updateDraft(submission.candidateAnswerId, {
                           awardedScore: score,
@@ -248,6 +251,9 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
                       }
                       onSave={() =>
                         saveSingleGrade(questionId, submission.candidateAnswerId)
+                      }
+                      onAiGrade={() =>
+                        gradeSingleWithAi(submission.candidateAnswerId)
                       }
                     />
                   ))}

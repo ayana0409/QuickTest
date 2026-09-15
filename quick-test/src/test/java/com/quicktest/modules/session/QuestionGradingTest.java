@@ -59,6 +59,9 @@ class QuestionGradingTest {
     @Mock
     private GeminiProperties geminiProperties;
 
+    @Mock
+    private GeminiGradingService geminiGradingService;
+
     @InjectMocks
     private QuestionGradingServiceImpl questionGradingService;
 
@@ -314,5 +317,41 @@ class QuestionGradingTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         assertTrue(ex.getMessage().contains("Google Gemini API key is not configured"));
         verify(examRepository, never()).findByIdWithCreatedBy(any());
+    }
+
+    @Test
+    @DisplayName("Should successfully evaluate single candidate answer with AI")
+    void testGradeSingleAnswerWithAi_Success() {
+        UUID answerId = UUID.randomUUID();
+        CandidateAnswer candidateAnswer = CandidateAnswer.builder()
+                .id(answerId)
+                .examAttempt(ExamAttempt.builder().id(UUID.randomUUID()).exam(exam).build())
+                .question(essayQuestion)
+                .textAnswer("Democracy allows civic participation.")
+                .gradingStatus(GradingStatus.PENDING_MANUAL)
+                .build();
+
+        when(candidateAnswerRepository.findById(answerId)).thenReturn(Optional.of(candidateAnswer));
+        when(examRepository.findByIdWithCreatedBy(exam.getId())).thenReturn(Optional.of(exam));
+
+        AiSingleGradeDto mockResult = AiSingleGradeDto.builder()
+                .candidateAnswerId(answerId.toString())
+                .awardedScore(4.5)
+                .feedback("Clear and concise explanation.")
+                .build();
+        AiBatchGradingResultDto batchResult = AiBatchGradingResultDto.builder()
+                .results(List.of(mockResult))
+                .build();
+        when(geminiGradingService.gradeBatch(eq(essayQuestion), anyList())).thenReturn(batchResult);
+
+        AiSingleGradeDto result = questionGradingService.gradeSingleAnswerWithAi(answerId, teacher);
+
+        assertNotNull(result);
+        assertEquals(4.5, result.getAwardedScore());
+        assertEquals("Clear and concise explanation.", result.getFeedback());
+        assertEquals(GradingStatus.GRADED, candidateAnswer.getGradingStatus());
+        assertEquals(4.5, candidateAnswer.getAwardedScore());
+        verify(candidateAnswerRepository, times(1)).save(candidateAnswer);
+        verify(asyncWorker, times(1)).finalizeAffectedAttempts(anySet());
     }
 }
