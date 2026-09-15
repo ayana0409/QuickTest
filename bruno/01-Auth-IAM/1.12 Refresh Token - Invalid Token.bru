@@ -1,0 +1,27 @@
+meta {
+  name: 1.12 Refresh Token - Invalid Token
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "invalid.or.expired.token"
+  }
+}
+
+assert {
+  res.status: eq 401
+  res.body.status: eq 401
+}

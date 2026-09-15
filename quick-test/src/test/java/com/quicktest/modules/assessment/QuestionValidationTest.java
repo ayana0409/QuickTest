@@ -163,24 +163,25 @@ class QuestionValidationTest {
     class EssayRules {
 
         @Test
-        @DisplayName("Should pass when sampleAnswer or gradingRubric is present")
-        void shouldPassWithSampleOrRubric() {
-            assertDoesNotThrow(() -> QuestionServiceImpl.validateQuestionBusinessRules(
-                    QuestionType.ESSAY_TEXT, "Sample response", null, null, null));
-
+        @DisplayName("Should pass when gradingRubric is present (with or without sampleAnswer)")
+        void shouldPassWithGradingRubric() {
             assertDoesNotThrow(() -> QuestionServiceImpl.validateQuestionBusinessRules(
                     QuestionType.ESSAY_TEXT, null, null, "Grading rubric criteria", null));
 
             assertDoesNotThrow(() -> QuestionServiceImpl.validateQuestionBusinessRules(
-                    QuestionType.ESSAY_TEXT, "Sample", null, "Rubric", null));
+                    QuestionType.ESSAY_TEXT, "Optional sample answer", null, "Grading rubric criteria", null));
         }
 
         @Test
-        @DisplayName("Should fail when both sampleAnswer and gradingRubric are missing")
-        void shouldFailWhenBothMissing() {
-            AppException ex = assertThrows(AppException.class, () ->
-                    QuestionServiceImpl.validateQuestionBusinessRules(QuestionType.ESSAY_TEXT, "   ", null, "", null));
-            assertTrue(ex.getMessage().contains("either a sample answer or a grading rubric"));
+        @DisplayName("Should fail when gradingRubric is missing or blank")
+        void shouldFailWhenGradingRubricMissing() {
+            AppException ex1 = assertThrows(AppException.class, () ->
+                    QuestionServiceImpl.validateQuestionBusinessRules(QuestionType.ESSAY_TEXT, "Sample only", null, null, null));
+            assertTrue(ex1.getMessage().contains("requires a grading rubric"));
+
+            AppException ex2 = assertThrows(AppException.class, () ->
+                    QuestionServiceImpl.validateQuestionBusinessRules(QuestionType.ESSAY_TEXT, "Sample only", null, "   ", null));
+            assertTrue(ex2.getMessage().contains("requires a grading rubric"));
         }
 
         @Test

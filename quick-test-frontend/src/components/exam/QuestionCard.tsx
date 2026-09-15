@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import Image from 'next/image';
-import { HelpCircle, CheckSquare, Hash, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { HelpCircle, CheckSquare, Hash, FileText, X, Maximize2 } from 'lucide-react';
 import type { QuestionInPaper, QuestionType } from '@/types/exam';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +24,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   onTextChange,
   className,
 }) => {
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
   const isMultiple = question.questionType === 'MULTIPLE_CHOICE';
   const isSingle = question.questionType === 'SINGLE_CHOICE';
   const isNumeric = question.questionType === 'NUMERIC';
@@ -69,10 +70,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         className
       )}
     >
-      {/* Header with question number, points and type badge */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-zinc-100 dark:border-zinc-800/80">
+      {/* Question Header */}
+      <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-[#30363D]">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center justify-center bg-indigo-600 text-white font-bold text-sm px-3 py-1 rounded-lg shadow-sm shadow-indigo-500/20">
+          <span className="font-bold text-lg text-white font-mono">
             Câu {questionNumber}
           </span>
           <span
@@ -86,28 +87,37 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           </span>
         </div>
 
-        <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
-          {question.points} {question.points === 1 ? 'điểm' : 'điểm'}
+        <div className="text-xs font-semibold text-zinc-400 bg-zinc-800/80 px-3 py-1 rounded-full border border-zinc-700/60">
+          {question.points} điểm
         </div>
       </div>
 
       {/* Question Content */}
-      <div className="text-zinc-900 dark:text-zinc-100 text-base sm:text-lg leading-relaxed mb-6 font-normal whitespace-pre-wrap">
+      <div className="text-zinc-100 text-base sm:text-lg leading-relaxed mb-6 font-normal whitespace-pre-wrap">
         {question.content}
       </div>
 
       {/* Optional Question Image */}
       {question.imageUrl && (
-        <div className="mb-6 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 max-w-xl bg-zinc-50 dark:bg-zinc-950">
-          <Image
+        <div className="mb-6 rounded-xl overflow-hidden border border-zinc-800 max-w-xl bg-zinc-950/60 p-1 group relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={question.imageUrl}
             alt={`Ảnh minh họa câu hỏi ${questionNumber}`}
-            width={600}
-            height={400}
             draggable={false}
             onDragStart={(e) => e.preventDefault()}
-            className="w-full h-auto object-contain max-h-[360px] pointer-events-none select-none"
+            onClick={() => setZoomedImage(question.imageUrl!)}
+            className="w-full h-auto object-contain max-h-[380px] rounded-lg select-none cursor-zoom-in hover:opacity-95 transition-opacity"
+            title="Click để phóng to ảnh đề bài"
           />
+          <button
+            type="button"
+            onClick={() => setZoomedImage(question.imageUrl!)}
+            className="absolute bottom-3 right-3 flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md bg-black/70 hover:bg-black/90 text-zinc-300 hover:text-white backdrop-blur-sm border border-zinc-700 transition-colors cursor-pointer"
+          >
+            <Maximize2 className="w-3 h-3" />
+            <span>Phóng to</span>
+          </button>
         </div>
       )}
 
@@ -125,8 +135,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                 className={cn(
                   'flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition-all duration-150 select-none group',
                   isSelected
-                    ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-950 dark:text-indigo-100 ring-1 ring-indigo-600/30'
-                    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/60'
+                    ? 'border-indigo-500 bg-indigo-950/40 text-indigo-100 ring-1 ring-indigo-500/40'
+                    : 'border-[#30363D] hover:border-zinc-700 bg-zinc-900/50 hover:bg-zinc-850/60 text-zinc-300'
                 )}
               >
                 {/* Option Identifier Badge (A, B, C, D) */}
@@ -134,8 +144,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   className={cn(
                     'shrink-0 w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs transition-colors',
                     isSelected
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700 group-hover:text-zinc-200'
                   )}
                 >
                   {letterLabel}
@@ -143,19 +153,25 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
                 {/* Option text & optional option image */}
                 <div className="flex-1 min-w-0 pt-0.5">
-                  <div className="text-sm sm:text-base leading-snug break-words">
-                    {option.content}
-                  </div>
+                  {option.content && (
+                    <div className="text-sm sm:text-base leading-snug break-words">
+                      {option.content}
+                    </div>
+                  )}
                   {option.imageUrl && (
-                    <div className="mt-2 rounded-lg overflow-hidden max-w-sm border border-zinc-200 dark:border-zinc-700">
-                      <Image
+                    <div className="mt-2.5 rounded-lg overflow-hidden max-w-sm border border-zinc-700/80 bg-zinc-950/70 p-1 relative group/optImg">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={option.imageUrl}
                         alt={`Ảnh đáp án ${letterLabel}`}
-                        width={300}
-                        height={180}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
-                        className="w-full h-auto object-cover max-h-40 pointer-events-none select-none"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setZoomedImage(option.imageUrl!);
+                        }}
+                        className="w-full h-auto object-contain max-h-48 rounded select-none cursor-zoom-in hover:opacity-95 transition-opacity"
+                        title="Click để phóng to ảnh đáp án"
                       />
                     </div>
                   )}
@@ -203,6 +219,37 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           />
         </div>
       )}
+
+      {/* Image Lightbox Modal */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setZoomedImage(null)}
+              className="absolute -top-11 right-0 text-white/80 hover:text-white bg-zinc-800/90 hover:bg-zinc-700 p-2 rounded-full transition-colors cursor-pointer border border-zinc-700"
+              title="Đóng xem ảnh"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={zoomedImage}
+              alt="Ảnh phóng to"
+              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-zinc-700 select-none"
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

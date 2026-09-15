@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,23 +25,37 @@ class MediaDeleteConsumerTest {
     private MediaDeleteConsumer mediaDeleteConsumer;
 
     @Test
-    @DisplayName("processMediaDeleteBatch should delete all media in the batch even if one item throws exception")
-    void shouldDeleteAllMediaInBatchEvenIfExceptionOccurs() {
+    @DisplayName("processMediaDeleteBatch should delegate batch deletion to CloudinaryStorageService")
+    void shouldDeleteAllMediaInBatchViaBatchCall() {
+        List<String> images = List.of("img1", "img2", "img3");
         MediaBatchDeleteMessage message = MediaBatchDeleteMessage.builder()
                 .examId(UUID.randomUUID())
-                .publicIdsOrUrls(List.of("img1", "img2_error", "img3"))
+                .publicIdsOrUrls(images)
                 .source("EXAM_DELETION")
                 .build();
 
-        doNothing().when(cloudinaryStorageService).deleteMedia("img1");
-        doThrow(new RuntimeException("Cloudinary timeout")).when(cloudinaryStorageService).deleteMedia("img2_error");
-        doNothing().when(cloudinaryStorageService).deleteMedia("img3");
+        doNothing().when(cloudinaryStorageService).deleteMediaBatch(images);
 
         mediaDeleteConsumer.processMediaDeleteBatch(message);
 
-        verify(cloudinaryStorageService).deleteMedia("img1");
-        verify(cloudinaryStorageService).deleteMedia("img2_error");
-        verify(cloudinaryStorageService).deleteMedia("img3");
+        verify(cloudinaryStorageService, times(1)).deleteMediaBatch(images);
+    }
+
+    @Test
+    @DisplayName("processMediaDeleteBatch should gracefully catch exceptions during batch deletion")
+    void shouldNotPropagateExceptionWhenBatchDeleteFails() {
+        List<String> images = List.of("img1", "img2");
+        MediaBatchDeleteMessage message = MediaBatchDeleteMessage.builder()
+                .examId(UUID.randomUUID())
+                .publicIdsOrUrls(images)
+                .source("EXAM_DELETION")
+                .build();
+
+        doThrow(new RuntimeException("Cloudinary API unavailable"))
+                .when(cloudinaryStorageService).deleteMediaBatch(images);
+
+        assertDoesNotThrow(() -> mediaDeleteConsumer.processMediaDeleteBatch(message));
+        verify(cloudinaryStorageService, times(1)).deleteMediaBatch(images);
     }
 
     @Test

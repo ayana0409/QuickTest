@@ -339,6 +339,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                             .id(opt.getId())
                             .orderIndex(optionIndex++)
                             .content(opt.getContent())
+                            .imageUrl(opt.getImageUrl())
                             .build());
                 }
             }
@@ -347,6 +348,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                     .id(q.getId())
                     .orderIndex(questionIndex++)
                     .content(q.getContent())
+                    .imageUrl(q.getImageUrl())
                     .questionType(q.getQuestionType())
                     .points(q.getPoints())
                     .options(maskedOptions)

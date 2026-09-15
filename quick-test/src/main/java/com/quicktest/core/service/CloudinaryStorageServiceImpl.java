@@ -112,6 +112,44 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
         }
     }
 
+    @Override
+    public void deleteMediaBatch(List<String> publicIdsOrUrls) {
+        if (publicIdsOrUrls == null || publicIdsOrUrls.isEmpty()) {
+            return;
+        }
+
+        List<String> targetPublicIds = publicIdsOrUrls.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .map(item -> {
+                    String extracted = extractPublicId(item);
+                    return (extracted != null && !extracted.isBlank()) ? extracted : item.trim();
+                })
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+
+        if (targetPublicIds.isEmpty()) {
+            return;
+        }
+
+        try {
+            log.info("Batch deleting {} media resources from Cloudinary in a single API call: {}",
+                    targetPublicIds.size(), targetPublicIds);
+            cloudinary.api().deleteResources(targetPublicIds, ObjectUtils.emptyMap());
+            log.info("Successfully executed batch deletion for {} media resources", targetPublicIds.size());
+        } catch (Exception e) {
+            log.warn("Cloudinary batch delete via Admin API failed ({}), falling back to individual destroy calls", e.getMessage());
+            for (String pid : targetPublicIds) {
+                try {
+                    cloudinary.uploader().destroy(pid, ObjectUtils.emptyMap());
+                } catch (Exception ex) {
+                    log.warn("Fallback single delete failed for publicId [{}]: {}", pid, ex.getMessage());
+                }
+            }
+        }
+    }
+
+
     /**
      * Extracts Cloudinary publicId from a secure URL or returns null if not an URL.
      */

@@ -31,13 +31,13 @@ public class MediaDeleteConsumer {
         log.info("Processing media delete batch for examId={}, source={}, count={}",
                 message.getExamId(), message.getSource(), message.getPublicIdsOrUrls().size());
 
-        for (String idOrUrl : message.getPublicIdsOrUrls()) {
-            try {
-                cloudinaryStorageService.deleteMedia(idOrUrl);
-            } catch (Exception e) {
-                // Cloudinary deletion errors shouldn't halt remaining items in the batch
-                log.warn("Failed to delete media asynchronously [{}]: {}", idOrUrl, e.getMessage());
-            }
+        // Batch delete all images in this message in a SINGLE Cloudinary API call
+        try {
+            cloudinaryStorageService.deleteMediaBatch(message.getPublicIdsOrUrls());
+        } catch (Exception e) {
+            log.warn("Failed to process media delete batch asynchronously for examId={}: {}",
+                    message.getExamId(), e.getMessage());
         }
     }
 }
+

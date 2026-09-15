@@ -62,4 +62,12 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Question q WHERE q.exam.id = :examId")
     void deleteByExamId(@Param("examId") UUID examId);
+
+    /**
+     * Bulk delete a single question by its ID in a single query.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Question q WHERE q.id = :id")
+    void deleteQuestionById(@Param("id") UUID id);
 }
+

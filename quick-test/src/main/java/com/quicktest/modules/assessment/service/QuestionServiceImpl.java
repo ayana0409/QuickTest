@@ -3,6 +3,7 @@ package com.quicktest.modules.assessment.service;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.CloudinaryStorageService;
+import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.assessment.dto.AnswerOptionDto;
 import com.quicktest.modules.assessment.dto.QuestionCreateRequest;
 import com.quicktest.modules.assessment.dto.QuestionResponse;
@@ -12,6 +13,7 @@ import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
+import com.quicktest.modules.assessment.repository.AnswerOptionRepository;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.User;
@@ -20,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +41,9 @@ public class QuestionServiceImpl implements QuestionService {
 
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
+    private final AnswerOptionRepository answerOptionRepository;
     private final CloudinaryStorageService cloudinaryStorageService;
+    private final MediaDeleteProducer mediaDeleteProducer;
 
     @Override
     @Transactional
@@ -144,7 +150,10 @@ public class QuestionServiceImpl implements QuestionService {
             throw new AppException("Question must have either text content or an image URL");
         }
 
-        // Cleanup old image if replaced or removed
+        // Track media identifiers to delete asynchronously via RabbitMQ
+        List<String> mediaToDelete = new ArrayList<>();
+
+        // Cleanup old question image if replaced or removed
         boolean imageChanged = false;
         if (question.getImagePublicId() != null) {
             imageChanged = request.getImagePublicId() == null
@@ -154,7 +163,11 @@ public class QuestionServiceImpl implements QuestionService {
                     || !question.getImageUrl().equals(request.getImageUrl().trim());
         }
         if (imageChanged) {
-            deleteMediaIfPresent(question.getImagePublicId(), question.getImageUrl());
+            if (question.getImagePublicId() != null && !question.getImagePublicId().isBlank()) {
+                mediaToDelete.add(question.getImagePublicId());
+            } else if (question.getImageUrl() != null && !question.getImageUrl().isBlank()) {
+                mediaToDelete.add(question.getImageUrl());
+            }
         }
 
         question.setContent(hasContent ? request.getContent().trim() : null);
@@ -174,11 +187,15 @@ public class QuestionServiceImpl implements QuestionService {
             question.setSampleAnswer(sampleAnswer);
             question.setNumericTolerance(request.getNumericTolerance() != null ? request.getNumericTolerance() : 0.0);
             question.setGradingRubric(null);
+            // Bulk delete existing options in DB to avoid N+1 queries
+            answerOptionRepository.deleteByQuestionId(questionId);
             question.getOptions().clear();
         } else if (request.getQuestionType() == QuestionType.ESSAY_TEXT) {
             question.setSampleAnswer(request.getSampleAnswer() != null ? request.getSampleAnswer().trim() : null);
             question.setNumericTolerance(null);
             question.setGradingRubric(request.getGradingRubric() != null ? request.getGradingRubric().trim() : null);
+            // Bulk delete existing options in DB to avoid N+1 queries
+            answerOptionRepository.deleteByQuestionId(questionId);
             question.getOptions().clear();
         } else {
             // Choice types
@@ -203,16 +220,40 @@ public class QuestionServiceImpl implements QuestionService {
                         }
                     }
                     if (!retained) {
-                        deleteMediaIfPresent(oldOpt.getImagePublicId(), oldOpt.getImageUrl());
+                        if (oldOpt.getImagePublicId() != null && !oldOpt.getImagePublicId().isBlank()) {
+                            mediaToDelete.add(oldOpt.getImagePublicId());
+                        } else if (oldOpt.getImageUrl() != null && !oldOpt.getImageUrl().isBlank()) {
+                            mediaToDelete.add(oldOpt.getImageUrl());
+                        }
                     }
                 }
             }
 
-            // Synchronize options collection
-            question.getOptions().clear();
-            if (request.getOptions() != null) {
-                int optionIndex = 1;
-                for (AnswerOptionDto optionDto : request.getOptions()) {
+            // In-place synchronization of options collection to avoid N+1 deletes & re-inserts
+            List<AnswerOption> existingOptions = question.getOptions();
+            List<AnswerOptionDto> newOptionDtos = request.getOptions() != null ? request.getOptions() : new ArrayList<>();
+            int minSize = Math.min(existingOptions.size(), newOptionDtos.size());
+
+            // 1. Update existing options in-place (no deletes, no re-inserts)
+            for (int i = 0; i < minSize; i++) {
+                AnswerOptionDto optionDto = newOptionDtos.get(i);
+                boolean hasOptContent = optionDto.getContent() != null && !optionDto.getContent().trim().isEmpty();
+                boolean hasOptImage = optionDto.getImageUrl() != null && !optionDto.getImageUrl().trim().isEmpty();
+                if (!hasOptContent && !hasOptImage) {
+                    throw new AppException("Answer option must have either text content or an image URL");
+                }
+                AnswerOption existing = existingOptions.get(i);
+                existing.setContent(hasOptContent ? optionDto.getContent().trim() : null);
+                existing.setImageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null);
+                existing.setImagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null);
+                existing.setIsCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()));
+                existing.setOrderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : (i + 1));
+            }
+
+            // 2. Add new options if newOptionDtos has more items
+            if (newOptionDtos.size() > existingOptions.size()) {
+                for (int i = minSize; i < newOptionDtos.size(); i++) {
+                    AnswerOptionDto optionDto = newOptionDtos.get(i);
                     boolean hasOptContent = optionDto.getContent() != null && !optionDto.getContent().trim().isEmpty();
                     boolean hasOptImage = optionDto.getImageUrl() != null && !optionDto.getImageUrl().trim().isEmpty();
                     if (!hasOptContent && !hasOptImage) {
@@ -224,15 +265,23 @@ public class QuestionServiceImpl implements QuestionService {
                             .imageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null)
                             .imagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
                             .isCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()))
-                            .orderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : optionIndex++)
+                            .orderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : (i + 1))
                             .build();
-                    question.getOptions().add(option);
+                    existingOptions.add(option);
                 }
+            } else if (existingOptions.size() > newOptionDtos.size()) {
+                // 3. Remove excess options if newOptionDtos has fewer items
+                existingOptions.subList(minSize, existingOptions.size()).clear();
             }
         }
 
         Question updatedQuestion = questionRepository.save(question);
         log.info("Question ID: {} successfully updated", questionId);
+
+        // Schedule deletion of removed media strictly AFTER transaction commits
+        if (!mediaToDelete.isEmpty()) {
+            scheduleMediaDeletionAfterCommit(question.getExam().getId(), mediaToDelete, "QUESTION_UPDATE");
+        }
 
         return QuestionResponse.fromEntity(updatedQuestion);
     }
@@ -248,16 +297,35 @@ public class QuestionServiceImpl implements QuestionService {
         verifyOwnership(question.getExam(), teacher);
         verifyExamIsDraft(question.getExam());
 
-        // Cleanup question image and option images from Cloudinary
-        deleteMediaIfPresent(question.getImagePublicId(), question.getImageUrl());
+        // Collect question image and option images to delete asynchronously via RabbitMQ
+        List<String> mediaToDelete = new ArrayList<>();
+        if (question.getImagePublicId() != null && !question.getImagePublicId().isBlank()) {
+            mediaToDelete.add(question.getImagePublicId());
+        } else if (question.getImageUrl() != null && !question.getImageUrl().isBlank()) {
+            mediaToDelete.add(question.getImageUrl());
+        }
+
         if (question.getOptions() != null) {
             for (AnswerOption opt : question.getOptions()) {
-                deleteMediaIfPresent(opt.getImagePublicId(), opt.getImageUrl());
+                if (opt.getImagePublicId() != null && !opt.getImagePublicId().isBlank()) {
+                    mediaToDelete.add(opt.getImagePublicId());
+                } else if (opt.getImageUrl() != null && !opt.getImageUrl().isBlank()) {
+                    mediaToDelete.add(opt.getImageUrl());
+                }
             }
         }
 
-        questionRepository.delete(question);
-        log.info("Question ID: {} and associated Cloudinary media successfully deleted", questionId);
+        // 1. Bulk delete all answer options in 1 SQL query to avoid N+1 Hibernate deletes
+        answerOptionRepository.deleteByQuestionId(questionId);
+
+        // 2. Bulk delete question itself in 1 SQL query
+        questionRepository.deleteQuestionById(questionId);
+        log.info("Question ID: {} and its answer options successfully deleted from database via bulk queries", questionId);
+
+        // Schedule media deletion strictly AFTER transaction commit succeeds
+        if (!mediaToDelete.isEmpty()) {
+            scheduleMediaDeletionAfterCommit(question.getExam().getId(), mediaToDelete, "QUESTION_DELETION");
+        }
     }
 
     @Override
@@ -275,22 +343,59 @@ public class QuestionServiceImpl implements QuestionService {
         com.quicktest.modules.assessment.dto.MediaUploadResponse uploadRes =
                 cloudinaryStorageService.uploadSingle(file, "questions");
 
-        // Delete old image from Cloudinary if previously present
-        deleteMediaIfPresent(question.getImagePublicId(), question.getImageUrl());
+        // Collect old image to delete asynchronously
+        List<String> mediaToDelete = new ArrayList<>();
+        if (question.getImagePublicId() != null && !question.getImagePublicId().isBlank()) {
+            mediaToDelete.add(question.getImagePublicId());
+        } else if (question.getImageUrl() != null && !question.getImageUrl().isBlank()) {
+            mediaToDelete.add(question.getImageUrl());
+        }
 
         question.setImageUrl(uploadRes.getUrl());
         question.setImagePublicId(uploadRes.getPublicId());
 
         Question saved = questionRepository.save(question);
         log.info("Question ID: {} image directly updated: newUrl={}", questionId, uploadRes.getUrl());
+
+        // Schedule old media deletion strictly AFTER transaction commits
+        if (!mediaToDelete.isEmpty()) {
+            scheduleMediaDeletionAfterCommit(question.getExam().getId(), mediaToDelete, "QUESTION_IMAGE_UPDATE");
+        }
+
         return QuestionResponse.fromEntity(saved);
     }
 
-    private void deleteMediaIfPresent(String publicId, String imageUrl) {
-        if (publicId != null && !publicId.isBlank()) {
-            cloudinaryStorageService.deleteMedia(publicId);
-        } else if (imageUrl != null && !imageUrl.isBlank()) {
-            cloudinaryStorageService.deleteMedia(imageUrl);
+    /**
+     * Schedule media deletion batches to RabbitMQ strictly AFTER the current database transaction commits.
+     * If the transaction rolls back due to an error, this hook is never triggered, preventing data loss on Cloudinary.
+     */
+    private void scheduleMediaDeletionAfterCommit(UUID examId, List<String> mediaIdentifiers, String source) {
+        if (mediaIdentifiers == null || mediaIdentifiers.isEmpty()) {
+            return;
+        }
+
+        List<String> cleanMedia = mediaIdentifiers.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+
+        if (cleanMedia.isEmpty()) {
+            return;
+        }
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    log.info("Transaction committed. Dispatching {} media identifiers to RabbitMQ deletion queue for examId={}, source={}",
+                            cleanMedia.size(), examId, source);
+                    mediaDeleteProducer.sendDeleteBatches(examId, cleanMedia, source);
+                }
+            });
+        } else {
+            log.info("No active transaction. Directly dispatching {} media identifiers to RabbitMQ deletion queue for examId={}, source={}",
+                    cleanMedia.size(), examId, source);
+            mediaDeleteProducer.sendDeleteBatches(examId, cleanMedia, source);
         }
     }
 

@@ -32,4 +32,11 @@ script:post-response {
     bru.setVar("studentToken", token);
     bru.setEnvVar("studentToken", token);
   }
+  let refreshToken = res.body?.data?.refreshToken;
+  if (refreshToken) {
+    bru.setVar("studentRefreshToken", refreshToken);
+    bru.setEnvVar("studentRefreshToken", refreshToken);
+    bru.setVar("refreshToken", refreshToken);
+    bru.setEnvVar("refreshToken", refreshToken);
+  }
 }

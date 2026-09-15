@@ -46,7 +46,13 @@ class QuestionServiceTest {
     private QuestionRepository questionRepository;
 
     @Mock
+    private com.quicktest.modules.assessment.repository.AnswerOptionRepository answerOptionRepository;
+
+    @Mock
     private com.quicktest.core.service.CloudinaryStorageService cloudinaryStorageService;
+
+    @Mock
+    private com.quicktest.core.service.MediaDeleteProducer mediaDeleteProducer;
 
     @InjectMocks
     private QuestionServiceImpl questionService;
@@ -166,7 +172,8 @@ class QuestionServiceTest {
         AppException ex = assertThrows(AppException.class, () ->
                 questionService.deleteQuestion(sampleQuestion.getId(), teacher));
         assertTrue(ex.getMessage().contains("Only DRAFT exams can be modified"));
-        verify(questionRepository, never()).delete(any());
+        verify(questionRepository, never()).deleteQuestionById(any());
+        verify(answerOptionRepository, never()).deleteByQuestionId(any());
     }
 
     @Test
@@ -176,6 +183,7 @@ class QuestionServiceTest {
                 .thenReturn(Optional.of(sampleQuestion));
 
         questionService.deleteQuestion(sampleQuestion.getId(), teacher);
-        verify(questionRepository).delete(sampleQuestion);
+        verify(answerOptionRepository).deleteByQuestionId(sampleQuestion.getId());
+        verify(questionRepository).deleteQuestionById(sampleQuestion.getId());
     }
 }

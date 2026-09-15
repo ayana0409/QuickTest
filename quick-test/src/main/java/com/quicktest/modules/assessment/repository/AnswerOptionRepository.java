@@ -18,9 +18,13 @@ public interface AnswerOptionRepository extends JpaRepository<AnswerOption, UUID
 
     List<AnswerOption> findByQuestionIdOrderByOrderIndexAsc(UUID questionId);
 
-    @Modifying
+    /**
+     * Bulk delete all answer options belonging to a single question in a single query.
+     */
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM AnswerOption a WHERE a.question.id = :questionId")
     void deleteByQuestionId(@Param("questionId") UUID questionId);
+
 
     /**
      * Retrieve all non-null media identifiers (publicId or imageUrl) for answer options in an exam.

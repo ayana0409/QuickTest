@@ -33,9 +33,11 @@ import type {
 import toast from 'react-hot-toast';
 
 interface OptionItem {
+  id?: string;
   content: string;
   isCorrect: boolean;
   imageUrl?: string;
+  imagePublicId?: string;
 }
 
 interface QuestionFormData {
@@ -97,11 +99,17 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Temporary local image states (deferred upload until form is saved)
+  // Temporary local image states for Question (deferred upload until form is saved)
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [imagePublicId, setImagePublicId] = useState<string | null>(null);
   const [isImageRemoved, setIsImageRemoved] = useState(false);
+
+  // Temporary local image states for Answer Options
+  const [optionPendingFiles, setOptionPendingFiles] = useState<Record<number, File | null>>({});
+  const [optionPreviewUrls, setOptionPreviewUrls] = useState<Record<number, string | null>>({});
+  const [optionPublicIds, setOptionPublicIds] = useState<Record<number, string | null>>({});
+  const [optionImagesRemoved, setOptionImagesRemoved] = useState<Record<number, boolean>>({});
 
   const {
     register,
@@ -139,10 +147,22 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
     if (pendingImageFile && imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreviewUrl);
     }
+    // Clean any prior temporary object URLs
+    if (pendingImageFile && imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    Object.values(optionPreviewUrls).forEach((url) => {
+      if (url && url.startsWith('blob:')) URL.revokeObjectURL(url);
+    });
+
     setPendingImageFile(null);
     setImagePreviewUrl(null);
     setImagePublicId(null);
     setIsImageRemoved(false);
+    setOptionPendingFiles({});
+    setOptionPreviewUrls({});
+    setOptionPublicIds({});
+    setOptionImagesRemoved({});
     setEditingQuestion(null);
 
     reset({
@@ -172,11 +192,27 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
     if (pendingImageFile && imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreviewUrl);
     }
+    Object.values(optionPreviewUrls).forEach((url) => {
+      if (url && url.startsWith('blob:')) URL.revokeObjectURL(url);
+    });
+
     setPendingImageFile(null);
     setImagePreviewUrl(q.imageUrl || null);
     setImagePublicId(q.imagePublicId || null);
     setIsImageRemoved(false);
     setEditingQuestion(q);
+
+    // Initialize option preview URLs and public IDs from question options
+    const initialPreviews: Record<number, string | null> = {};
+    const initialPublicIds: Record<number, string | null> = {};
+    q.options?.forEach((opt, idx) => {
+      initialPreviews[idx] = opt.imageUrl || null;
+      initialPublicIds[idx] = opt.imagePublicId || null;
+    });
+    setOptionPreviewUrls(initialPreviews);
+    setOptionPublicIds(initialPublicIds);
+    setOptionPendingFiles({});
+    setOptionImagesRemoved({});
 
     reset({
       content: q.content || '',
@@ -189,9 +225,11 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       options:
         q.options && q.options.length > 0
           ? q.options.map((opt) => ({
+              id: opt.id,
               content: opt.content || '',
               isCorrect: Boolean(opt.isCorrect),
               imageUrl: opt.imageUrl || '',
+              imagePublicId: opt.imagePublicId || '',
             }))
           : [
               { content: '', isCorrect: true, imageUrl: '' },
@@ -201,15 +239,23 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
     setIsModalOpen(true);
   };
 
-  // Safely close modal and revoke temporary blob preview if user cancelled
+  // Safely close modal and revoke temporary blob previews if user cancelled
   const handleCloseModal = () => {
     if (pendingImageFile && imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreviewUrl);
     }
+    Object.values(optionPreviewUrls).forEach((url) => {
+      if (url && url.startsWith('blob:')) URL.revokeObjectURL(url);
+    });
+
     setPendingImageFile(null);
     setImagePreviewUrl(null);
     setImagePublicId(null);
     setIsImageRemoved(false);
+    setOptionPendingFiles({});
+    setOptionPreviewUrls({});
+    setOptionPublicIds({});
+    setOptionImagesRemoved({});
     setIsModalOpen(false);
   };
 
@@ -238,18 +284,16 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
     });
   };
 
-  // Select image file locally WITHOUT uploading to backend yet
+  // Select image file locally for Question WITHOUT uploading to backend yet
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate size (maximum 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Kích thước ảnh vượt quá giới hạn cho phép (tối đa 10MB).');
+      toast.error('Kích thước ảnh câu hỏi vượt quá giới hạn cho phép (tối đa 10MB).');
       return;
     }
 
-    // Revoke previous blob url
     if (pendingImageFile && imagePreviewUrl && imagePreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreviewUrl);
     }
@@ -274,6 +318,81 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
 
     const fileInput = document.getElementById('question-image-upload') as HTMLInputElement | null;
     if (fileInput) fileInput.value = '';
+  };
+
+  // Select image file locally for a specific Option
+  const handleOptionImageChange = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Kích thước ảnh đáp án vượt quá giới hạn cho phép (tối đa 10MB).');
+      return;
+    }
+
+    const oldUrl = optionPreviewUrls[idx];
+    if (oldUrl && oldUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(oldUrl);
+    }
+
+    const blobUrl = URL.createObjectURL(file);
+    setOptionPendingFiles((prev) => ({ ...prev, [idx]: file }));
+    setOptionPreviewUrls((prev) => ({ ...prev, [idx]: blobUrl }));
+    setOptionImagesRemoved((prev) => ({ ...prev, [idx]: false }));
+    setValue(`options.${idx}.imageUrl`, blobUrl, { shouldDirty: true });
+  };
+
+  // Remove image from a specific Option
+  const handleRemoveOptionImage = (idx: number) => {
+    const oldUrl = optionPreviewUrls[idx];
+    if (oldUrl && oldUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(oldUrl);
+    }
+
+    setOptionPendingFiles((prev) => ({ ...prev, [idx]: null }));
+    setOptionPreviewUrls((prev) => ({ ...prev, [idx]: null }));
+    setOptionPublicIds((prev) => ({ ...prev, [idx]: null }));
+    setOptionImagesRemoved((prev) => ({ ...prev, [idx]: true }));
+    setValue(`options.${idx}.imageUrl`, '', { shouldDirty: true });
+    setValue(`options.${idx}.imagePublicId`, '', { shouldDirty: true });
+
+    const input = document.getElementById(`option-image-upload-${idx}`) as HTMLInputElement | null;
+    if (input) input.value = '';
+  };
+
+  // Remove option row and re-index image states
+  const handleRemoveOption = (idx: number) => {
+    const oldUrl = optionPreviewUrls[idx];
+    if (oldUrl && oldUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(oldUrl);
+    }
+
+    const newPending: Record<number, File | null> = {};
+    const newPreviews: Record<number, string | null> = {};
+    const newPublicIds: Record<number, string | null> = {};
+    const newRemoved: Record<number, boolean> = {};
+
+    const currentKeys = Object.keys(optionPreviewUrls).map(Number);
+    currentKeys.forEach((k) => {
+      if (k < idx) {
+        newPending[k] = optionPendingFiles[k] || null;
+        newPreviews[k] = optionPreviewUrls[k] || null;
+        newPublicIds[k] = optionPublicIds[k] || null;
+        newRemoved[k] = optionImagesRemoved[k] || false;
+      } else if (k > idx) {
+        newPending[k - 1] = optionPendingFiles[k] || null;
+        newPreviews[k - 1] = optionPreviewUrls[k] || null;
+        newPublicIds[k - 1] = optionPublicIds[k] || null;
+        newRemoved[k - 1] = optionImagesRemoved[k] || false;
+      }
+    });
+
+    setOptionPendingFiles(newPending);
+    setOptionPreviewUrls(newPreviews);
+    setOptionPublicIds(newPublicIds);
+    setOptionImagesRemoved(newRemoved);
+
+    remove(idx);
   };
 
   // Submit form for Create or Edit question
@@ -301,47 +420,96 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       return;
     }
 
-
     setIsSubmitting(true);
     try {
       let finalImageUrl: string | null = null;
       let finalImagePublicId: string | null = null;
 
-      // STEP 1: If there is a pending local file, upload it to Cloudinary NOW upon saving!
+      // STEP 1: Execute media uploads in parallel (Promise.all) to prevent sequential waiting
+      type UploadTask = {
+        type: 'question' | 'option';
+        idx?: number;
+        file: File;
+        folder: string;
+      };
+
+      const tasks: UploadTask[] = [];
       if (pendingImageFile) {
+        tasks.push({ type: 'question', file: pendingImageFile, folder: 'questions' });
+      }
+
+      Object.entries(optionPendingFiles).forEach(([idxStr, file]) => {
+        if (file) {
+          tasks.push({ type: 'option', idx: Number(idxStr), file, folder: 'options' });
+        }
+      });
+
+      let uploadedResults: { type: 'question' | 'option'; idx?: number; url: string; publicId: string }[] = [];
+      if (tasks.length > 0) {
         try {
-          const uploadRes = await examService.uploadMedia(pendingImageFile, 'questions');
-          finalImageUrl = uploadRes.url;
-          finalImagePublicId = uploadRes.publicId;
+          uploadedResults = await Promise.all(
+            tasks.map((task) =>
+              examService.uploadMedia(task.file, task.folder).then((res) => ({
+                type: task.type,
+                idx: task.idx,
+                url: res.url,
+                publicId: res.publicId,
+              }))
+            )
+          );
         } catch {
-          // Cloudinary error already handled by Axios Interceptor
           setIsSubmitting(false);
           return;
         }
+      }
+
+      // STEP 2: Resolve Question Image
+      const qUpload = uploadedResults.find((r) => r.type === 'question');
+      if (qUpload) {
+        finalImageUrl = qUpload.url;
+        finalImagePublicId = qUpload.publicId;
       } else if (!isImageRemoved) {
-        // Retain previous image if not removed and not replaced
-        finalImageUrl = editingQuestion?.imageUrl || (data.imageUrl && !data.imageUrl.startsWith('blob:') ? data.imageUrl : null);
+        finalImageUrl =
+          editingQuestion?.imageUrl ||
+          (data.imageUrl && !data.imageUrl.startsWith('blob:') ? data.imageUrl : null);
         finalImagePublicId = imagePublicId || editingQuestion?.imagePublicId || null;
       } else {
-        // Explicitly removed by user: setting to null will trigger backend deletion of old Cloudinary media!
         finalImageUrl = null;
         finalImagePublicId = null;
       }
 
-      // STEP 2: Prepare options payload
+      // STEP 3: Prepare Options DTO with Images
       const optionsDto: AnswerOptionDto[] | undefined =
         data.questionType === 'SINGLE_CHOICE' || data.questionType === 'MULTIPLE_CHOICE'
-          ? data.options.map((opt, idx) => ({
-              orderIndex: idx + 1,
-              content: opt.content || '',
-              isCorrect: Boolean(opt.isCorrect),
-              imageUrl: opt.imageUrl || null,
-            }))
+          ? data.options.map((opt, idx) => {
+              const optUpload = uploadedResults.find((r) => r.type === 'option' && r.idx === idx);
+              let optImageUrl: string | null = null;
+              let optImagePublicId: string | null = null;
+
+              if (optUpload) {
+                optImageUrl = optUpload.url;
+                optImagePublicId = optUpload.publicId;
+              } else if (!optionImagesRemoved[idx]) {
+                const existingOpt = editingQuestion?.options?.[idx];
+                optImageUrl =
+                  existingOpt?.imageUrl ||
+                  (opt.imageUrl && !opt.imageUrl.startsWith('blob:') ? opt.imageUrl : null);
+                optImagePublicId = optionPublicIds[idx] || existingOpt?.imagePublicId || null;
+              }
+
+              return {
+                orderIndex: idx + 1,
+                content: opt.content || '',
+                isCorrect: Boolean(opt.isCorrect),
+                imageUrl: optImageUrl,
+                imagePublicId: optImagePublicId,
+              };
+            })
           : undefined;
 
-      // STEP 3: Save to backend
+      // STEP 4: Save to backend
       if (editingQuestion) {
-        // Update existing question (Backend automatically compares and deletes old Cloudinary media if changed)
+        // Update existing question
         const payload: QuestionUpdateRequest = {
           content: data.content,
           questionType: data.questionType,
@@ -874,11 +1042,46 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                         className="flex-1 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                       />
 
+                      {/* Option Image Attachment or Preview Thumbnail */}
+                      {optionPreviewUrls[idx] ? (
+                        <div className="relative group shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={optionPreviewUrls[idx]!}
+                            alt={`Ảnh đáp án ${String.fromCharCode(65 + idx)}`}
+                            className="w-9 h-9 rounded-lg object-cover border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOptionImage(idx)}
+                            className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm transition-transform hover:scale-110 cursor-pointer"
+                            title="Gỡ ảnh đáp án này"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label
+                          htmlFor={`option-image-upload-${idx}`}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer shrink-0"
+                          title="Đính kèm ảnh cho đáp án này"
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          <input
+                            id={`option-image-upload-${idx}`}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleOptionImageChange(idx, e)}
+                          />
+                        </label>
+                      )}
+
                       {fields.length > 2 && (
                         <button
                           type="button"
-                          onClick={() => remove(idx)}
-                          className="p-1.5 text-zinc-400 hover:text-rose-500 transition-colors shrink-0"
+                          onClick={() => handleRemoveOption(idx)}
+                          className="p-1.5 text-zinc-400 hover:text-rose-500 transition-colors shrink-0 cursor-pointer"
                           title="Xóa lựa chọn này"
                         >
                           <Trash2 className="w-4 h-4" />

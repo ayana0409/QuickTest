@@ -23,6 +23,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -142,18 +145,30 @@ public class ExamServiceImpl implements ExamService {
         mediaIdentifiers.addAll(questionRepository.findImageIdentifiersByExamId(examId));
         mediaIdentifiers.addAll(answerOptionRepository.findImageIdentifiersByExamId(examId));
 
-        // 2. Offload media deletions to RabbitMQ in small batches (3-7 items)
-        if (!mediaIdentifiers.isEmpty()) {
-            mediaDeleteProducer.sendDeleteBatches(examId, mediaIdentifiers, "EXAM_DELETION");
-        }
-
-        // 3. Fast bulk deletion in DB: AnswerOptions -> Questions -> Exam
+        // 2. Fast bulk deletion in DB: AnswerOptions -> Questions -> Exam
         answerOptionRepository.deleteByExamId(examId);
         questionRepository.deleteByExamId(examId);
         examRepository.deleteExamById(examId);
 
         log.info("Exam ID: {} and all associated entities successfully deleted", examId);
+
+        // 3. Offload media deletions to RabbitMQ strictly AFTER transaction commits
+        if (!mediaIdentifiers.isEmpty()) {
+            if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        log.info("Exam deletion transaction committed. Offloading {} media items to RabbitMQ for examId={}",
+                                mediaIdentifiers.size(), examId);
+                        mediaDeleteProducer.sendDeleteBatches(examId, mediaIdentifiers, "EXAM_DELETION");
+                    }
+                });
+            } else {
+                mediaDeleteProducer.sendDeleteBatches(examId, mediaIdentifiers, "EXAM_DELETION");
+            }
+        }
     }
+
 
     @Override
     @Transactional(readOnly = true)

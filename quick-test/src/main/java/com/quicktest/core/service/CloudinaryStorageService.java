@@ -34,4 +34,13 @@ public interface CloudinaryStorageService {
      * @param publicId Cloudinary public identifier
      */
     void deleteMedia(String publicId);
+
+    /**
+     * Batch deletes multiple media items from Cloudinary in a single API request,
+     * avoiding N+1 network calls.
+     *
+     * @param publicIdsOrUrls list of Cloudinary public identifiers or secure URLs
+     */
+    void deleteMediaBatch(java.util.List<String> publicIdsOrUrls);
 }
+

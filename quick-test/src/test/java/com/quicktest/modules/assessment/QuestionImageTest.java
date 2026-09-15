@@ -42,7 +42,13 @@ class QuestionImageTest {
     private QuestionRepository questionRepository;
 
     @Mock
+    private com.quicktest.modules.assessment.repository.AnswerOptionRepository answerOptionRepository;
+
+    @Mock
     private CloudinaryStorageService cloudinaryStorageService;
+
+    @Mock
+    private com.quicktest.core.service.MediaDeleteProducer mediaDeleteProducer;
 
     @InjectMocks
     private QuestionServiceImpl questionService;
@@ -205,8 +211,12 @@ class QuestionImageTest {
         assertEquals("https://res.cloudinary.com/test/new.png", response.getImageUrl());
         assertEquals("quick-test/questions/new_public_id", response.getImagePublicId());
 
-        // Verify old image was deleted from Cloudinary
-        verify(cloudinaryStorageService, times(1)).deleteMedia("quick-test/questions/old_public_id");
+        // Verify old image deletion was scheduled to mediaDeleteProducer
+        verify(mediaDeleteProducer, times(1)).sendDeleteBatches(
+                eq(draftExam.getId()),
+                eq(List.of("quick-test/questions/old_public_id")),
+                eq("QUESTION_IMAGE_UPDATE")
+        );
         verify(questionRepository, times(1)).save(existingQuestion);
     }
 
@@ -241,9 +251,15 @@ class QuestionImageTest {
 
         questionService.deleteQuestion(questionId, teacher);
 
-        // Verify media deletion called for question and option
-        verify(cloudinaryStorageService, times(1)).deleteMedia("quick-test/questions/q_public_id");
-        verify(cloudinaryStorageService, times(1)).deleteMedia("quick-test/options/opt_public_id");
-        verify(questionRepository, times(1)).delete(question);
+        // Verify bulk database deletions
+        verify(answerOptionRepository, times(1)).deleteByQuestionId(questionId);
+        verify(questionRepository, times(1)).deleteQuestionById(questionId);
+
+        // Verify media deletion scheduled to mediaDeleteProducer
+        verify(mediaDeleteProducer, times(1)).sendDeleteBatches(
+                eq(draftExam.getId()),
+                argThat(list -> list.containsAll(List.of("quick-test/questions/q_public_id", "quick-test/options/opt_public_id"))),
+                eq("QUESTION_DELETION")
+        );
     }
 }

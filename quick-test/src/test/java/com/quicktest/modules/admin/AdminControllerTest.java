@@ -246,4 +246,36 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.data.totalUsers").value(50))
                 .andExpect(jsonPath("$.data.totalExams").value(10));
     }
+
+    @Test
+    @DisplayName("GET /api/admin/analytics and aliases: Should return 200 with metrics")
+    void getDashboard_Aliases_ReturnsOk() throws Exception {
+        AdminDashboardResponse dashboard = AdminDashboardResponse.builder()
+                .totalUsers(50L)
+                .totalExams(10L)
+                .totalAttempts(150L)
+                .totalViolations(3L)
+                .recentViolations(Collections.emptyList())
+                .build();
+
+        when(adminService.getDashboard()).thenReturn(dashboard);
+
+        // Test /api/admin/analytics
+        dashboardMockMvc.perform(get("/api/admin/analytics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.totalUsers").value(50));
+
+        // Test /api/admin/dashboard/overview
+        dashboardMockMvc.perform(get("/api/admin/dashboard/overview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.totalExams").value(10));
+
+        // Test /api/admin/analytics/overview
+        dashboardMockMvc.perform(get("/api/admin/analytics/overview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.totalAttempts").value(150));
+    }
 }
