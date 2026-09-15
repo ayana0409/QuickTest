@@ -104,6 +104,7 @@ class TeacherGradingServiceTest {
                                 .exam(mathExam)
                                 .user(studentCandidate)
                                 .status(AttemptStatus.AWAITING_MANUAL_GRADING)
+                                .violationCount(2)
                                 .startTime(LocalDateTime.now().minusHours(1))
                                 .submitTime(LocalDateTime.now().minusMinutes(10))
                                 .build();
@@ -191,6 +192,7 @@ class TeacherGradingServiceTest {
                 assertEquals(AttemptStatus.AWAITING_MANUAL_GRADING, item.getStatus());
                 assertEquals(2L, item.getPendingEssayCount());
                 assertTrue(item.isHasPendingEssay());
+                assertEquals(2, item.getViolationCount());
         }
 
         @Test
@@ -246,6 +248,7 @@ class TeacherGradingServiceTest {
                 assertEquals(10.0, detail.getMaxTotalPoints()); // 2.0 + 5.0 + 3.0 = 10.0
                 assertEquals(2, detail.getEssayQuestions().size());
                 assertEquals(1, detail.getAutoGradedQuestions().size());
+                assertEquals(2, detail.getViolationCount());
 
                 EssayGradingItemDto essayItem1 = detail.getEssayQuestions().get(0);
                 assertEquals(essayAns1.getId(), essayItem1.getCandidateAnswerId());

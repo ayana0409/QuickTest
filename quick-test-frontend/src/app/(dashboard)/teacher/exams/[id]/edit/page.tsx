@@ -18,6 +18,7 @@ import {
   Sparkles,
   AlertTriangle,
   Info,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -25,6 +26,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Tabs } from '@/components/common/Tabs';
 import { Modal } from '@/components/common/Modal';
 import { QuestionBuilder } from '@/components/exam/QuestionBuilder';
+import { ExamAttemptsTab } from '@/components/exam/ExamAttemptsTab';
 import { examService } from '@/services/exam.service';
 import { formatDateTimeForPayload } from '@/lib/utils';
 import type { ExamDetailResponse, ExamUpdateRequest } from '@/types/exam';
@@ -48,7 +50,7 @@ export default function EditExamPage() {
 
   const [exam, setExam] = useState<ExamDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'questions' | 'settings'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'settings' | 'attempts'>('questions');
   const [isCopied, setIsCopied] = useState(false);
 
   const [isPublishing, setIsPublishing] = useState(false);
@@ -324,9 +326,14 @@ export default function EditExamPage() {
               label: 'Cài đặt đề thi',
               icon: <Settings className="w-4 h-4" />,
             },
+            {
+              id: 'attempts',
+              label: 'Phiên thi',
+              icon: <Users className="w-4 h-4" />,
+            },
           ]}
           activeId={activeTab}
-          onChange={(id) => setActiveTab(id as 'questions' | 'settings')}
+          onChange={(id) => setActiveTab(id as 'questions' | 'settings' | 'attempts')}
         />
 
         {!isDraft && (
@@ -484,6 +491,14 @@ export default function EditExamPage() {
             </form>
           </CardContent>
         </Card>
+      )}
+
+      {/* Tab 3: Candidate Attempts Sessions */}
+      {activeTab === 'attempts' && (
+        <ExamAttemptsTab
+          examId={exam.id}
+          totalPoints={exam.totalPoints}
+        />
       )}
 
       {/* Delete Confirmation Modal */}

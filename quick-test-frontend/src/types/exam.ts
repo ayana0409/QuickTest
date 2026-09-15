@@ -16,11 +16,30 @@ export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'CLOSED';
 export type AttemptStatus =
   | 'IN_PROGRESS'
   | 'SUBMITTED'
+  | 'AWAITING_MANUAL_GRADING'
+  | 'DISQUALIFIED'
   | 'AUTO_GRADED'
   | 'MANUAL_GRADING'
   | 'COMPLETED'
-  | 'EXPIRED'
-  | 'DISQUALIFIED';
+  | 'EXPIRED';
+
+/**
+ * Summary DTO of an exam candidate session / attempt for teacher management views.
+ */
+export interface AttemptSummaryDto {
+  attemptId: string;
+  examId: string;
+  candidateName: string;
+  candidateIdentifier?: string | null;
+  status: AttemptStatus;
+  totalScore?: number | null;
+  startTime?: string | null;
+  submitTime?: string | null;
+  totalQuestions: number;
+  pendingEssayCount: number;
+  hasPendingEssay: boolean;
+  violationCount: number;
+}
 
 /**
  * Exam definition containing core settings, scheduling, and questions list.

@@ -145,7 +145,9 @@ export interface AttemptGradingDetailResponse {
   currentTotalScore?: number | null;
   autoGradedScore?: number | null;
   maxTotalPoints: number;
+  startTime?: string | null;
   submitTime?: string | null;
+  violationCount?: number;
   essayQuestions: EssayGradingItem[];
   autoGradedQuestions: AutoGradedItem[];
 }
@@ -165,6 +167,17 @@ export interface GradeEssayItemRequest {
 export interface GradeEssaySubmissionRequest {
   attemptId: string;
   grades: GradeEssayItemRequest[];
+}
+
+/**
+ * Response returned after submitting manual essay grades for an attempt.
+ */
+export interface GradingResultResponse {
+  attemptId: string;
+  status: string;
+  totalScore?: number | null;
+  remainingPendingEssays: number;
+  message: string;
 }
 
 /**

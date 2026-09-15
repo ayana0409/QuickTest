@@ -9,7 +9,22 @@ import type {
   TriggerAiGradingResponse,
   GradingStatus,
   AiSingleGradeDto,
+  AttemptGradingDetailResponse,
+  GradeEssaySubmissionRequest,
+  GradingResultResponse,
 } from '@/types/candidateAnswer';
+import type { AttemptSummaryDto, AttemptStatus, PageResponse } from '@/types/exam';
+
+/**
+ * Filter parameters for querying candidate exam attempts.
+ */
+export interface GetExamAttemptsParams {
+  status?: AttemptStatus;
+  search?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
 
 /**
  * Filter parameters for querying question candidate submissions.
@@ -106,6 +121,58 @@ export const gradingService = {
       {},
       {
         successMessage: 'Đã hoàn tất chấm AI cho thí sinh!',
+      }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Fetch paginated list of candidate attempts for a specific exam.
+   *
+   * @param examId The unique identifier of the target exam
+   * @param params Filtering by status, search keyword, and pagination options
+   * @returns Paginated list of attempt summaries
+   */
+  async getExamAttempts(
+    examId: string,
+    params?: GetExamAttemptsParams
+  ): Promise<PageResponse<AttemptSummaryDto>> {
+    const response = await apiClient.get<ApiResponse<PageResponse<AttemptSummaryDto>>>(
+      `/teacher/grading/exams/${examId}/attempts`,
+      { params }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Retrieve full grading breakdown for an individual attempt.
+   *
+   * @param attemptId The unique identifier of the target attempt
+   * @returns Detailed candidate answers, rubric criteria, and auto-graded questions
+   */
+  async getAttemptDetailForGrading(
+    attemptId: string
+  ): Promise<AttemptGradingDetailResponse> {
+    const response = await apiClient.get<ApiResponse<AttemptGradingDetailResponse>>(
+      `/teacher/grading/attempts/${attemptId}`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Submit manual grades and optional feedback for essay questions in an attempt.
+   *
+   * @param payload Candidate answer grades and feedbacks
+   * @returns Updated attempt status and score confirmation
+   */
+  async submitEssayGrades(
+    payload: GradeEssaySubmissionRequest
+  ): Promise<GradingResultResponse> {
+    const response = await apiClient.post<ApiResponse<GradingResultResponse>>(
+      '/teacher/grading/attempts/submit-grades',
+      payload,
+      {
+        successMessage: 'Cập nhật điểm thành công!',
       }
     );
     return response.data.data;

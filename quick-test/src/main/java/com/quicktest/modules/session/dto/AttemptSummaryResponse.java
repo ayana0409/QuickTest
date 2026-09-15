@@ -29,4 +29,5 @@ public class AttemptSummaryResponse {
     private long totalQuestions;
     private long pendingEssayCount;
     private boolean hasPendingEssay;
+    private Integer violationCount;
 }

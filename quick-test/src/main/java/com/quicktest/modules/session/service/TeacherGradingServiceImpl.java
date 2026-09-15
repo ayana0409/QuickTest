@@ -100,6 +100,7 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
                     .totalQuestions(totalQuestions)
                     .pendingEssayCount(pendingEssayCount)
                     .hasPendingEssay(pendingEssayCount > 0)
+                    .violationCount(ea.getViolationCount() != null ? ea.getViolationCount() : 0)
                     .build();
         });
 
@@ -169,7 +170,9 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
                 .currentTotalScore(attempt.getTotalScore())
                 .autoGradedScore(autoGradedScore)
                 .maxTotalPoints(maxTotalPoints)
+                .startTime(attempt.getStartTime())
                 .submitTime(attempt.getSubmitTime())
+                .violationCount(attempt.getViolationCount() != null ? attempt.getViolationCount() : 0)
                 .essayQuestions(essayQuestions)
                 .autoGradedQuestions(autoGradedQuestions)
                 .build();

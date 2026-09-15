@@ -30,7 +30,9 @@ public class AttemptGradingDetailResponse {
     private Double currentTotalScore;
     private Double autoGradedScore;
     private Double maxTotalPoints;
+    private LocalDateTime startTime;
     private LocalDateTime submitTime;
+    private Integer violationCount;
 
     @Builder.Default
     private List<EssayGradingItemDto> essayQuestions = new ArrayList<>();
