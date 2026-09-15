@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { useAuthStore } from '@/stores/authStore';
+import { candidateSessionService } from '@/services/candidateSession.service';
 import toast from 'react-hot-toast';
 
 interface AvailableExam {
@@ -69,7 +70,7 @@ export default function StudentDashboardPage() {
     },
   ];
 
-  const handleJoinByCode = (e: React.FormEvent) => {
+  const handleJoinByCode = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = accessCode.trim().toUpperCase();
 
@@ -80,13 +81,19 @@ export default function StudentDashboardPage() {
 
     setIsSubmittingCode(true);
 
-    // Simulate looking up exam attempt or redirecting
-    setTimeout(() => {
+    try {
+      const paper = await candidateSessionService.startExam({ accessCode: cleanCode });
+      if (paper && paper.attemptId) {
+        toast.success(`Tham gia phòng thi: ${paper.examTitle}`);
+        router.push(`/exam/${paper.attemptId}`);
+      } else {
+        router.push(`/exam/${cleanCode.toLowerCase()}`);
+      }
+    } catch {
+      // Handled by axios interceptor
+    } finally {
       setIsSubmittingCode(false);
-      toast.success(`Đang xác thực mã phòng thi: ${cleanCode}`);
-      // Redirect to start exam attempt or exam room
-      router.push(`/exam/${cleanCode.toLowerCase()}`);
-    }, 800);
+    }
   };
 
   return (
@@ -251,7 +258,14 @@ export default function StudentDashboardPage() {
 
               <div className="pt-5 mt-4 border-t border-zinc-100 dark:border-zinc-800/80">
                 <Button
-                  onClick={() => router.push(`/exam/${exam.id}`)}
+                  onClick={async () => {
+                    try {
+                      const paper = await candidateSessionService.startExam({ accessCode: exam.code });
+                      router.push(`/exam/${paper.attemptId}`);
+                    } catch {
+                      router.push(`/exam/${exam.code.toLowerCase()}`);
+                    }
+                  }}
                   disabled={exam.status !== 'OPEN'}
                   size="sm"
                   className="w-full font-semibold"

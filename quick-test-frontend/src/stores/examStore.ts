@@ -19,6 +19,7 @@ interface ExamState {
   isDisqualified: boolean;
 
   // Actions
+  loadSavedAnswers: (savedAnswers: Record<string, CandidateAnswerState>) => void;
   initExam: (paper: ExamPaper) => void;
   setCurrentQuestionIndex: (index: number) => void;
   nextQuestion: () => void;
@@ -45,6 +46,15 @@ export const useExamStore = create<ExamState>((set, get) => ({
   isSubmitting: false,
   violationCount: 0,
   isDisqualified: false,
+
+  loadSavedAnswers: (savedAnswers: Record<string, CandidateAnswerState>) => {
+    set((state) => ({
+      answers: {
+        ...state.answers,
+        ...savedAnswers,
+      },
+    }));
+  },
 
   initExam: (paper: ExamPaper) => {
     set({

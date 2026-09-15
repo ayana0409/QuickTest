@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LogIn, Lock, User as UserIcon, Loader2 } from 'lucide-react';
+import { LogIn, Lock, User as UserIcon, Loader2, KeyRound } from 'lucide-react';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { useAuthStore } from '@/stores/authStore';
@@ -156,7 +156,17 @@ function LoginForm() {
         </Button>
       </form>
 
-      <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800 text-center text-xs text-zinc-500">
+      <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+        <Link
+          href="/exam"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/60 dark:hover:bg-indigo-950/40 text-xs font-semibold transition-all group"
+        >
+          <KeyRound className="w-4 h-4 text-indigo-500 group-hover:rotate-12 transition-transform" />
+          <span>Làm bài thi bằng mã phòng (Không cần tài khoản)</span>
+        </Link>
+      </div>
+
+      <div className="mt-4 text-center text-xs text-zinc-500">
         Chưa có tài khoản?{' '}
         <Link href="/register" className="text-indigo-600 hover:text-indigo-500 font-semibold">
           Đăng ký tài khoản mới

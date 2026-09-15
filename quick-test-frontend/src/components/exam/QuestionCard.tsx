@@ -63,8 +63,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   return (
     <div
+      style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
       className={cn(
-        'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-sm transition-all duration-200',
+        'bg-[#161B22] border border-[#30363D] rounded-2xl p-6 sm:p-8 shadow-xl transition-all duration-200 select-none',
         className
       )}
     >
@@ -103,7 +104,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             alt={`Ảnh minh họa câu hỏi ${questionNumber}`}
             width={600}
             height={400}
-            className="w-full h-auto object-contain max-h-[360px]"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+            className="w-full h-auto object-contain max-h-[360px] pointer-events-none select-none"
           />
         </div>
       )}
@@ -150,7 +153,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                         alt={`Ảnh đáp án ${letterLabel}`}
                         width={300}
                         height={180}
-                        className="w-full h-auto object-cover max-h-40"
+                        draggable={false}
+                        onDragStart={(e) => e.preventDefault()}
+                        className="w-full h-auto object-cover max-h-40 pointer-events-none select-none"
                       />
                     </div>
                   )}

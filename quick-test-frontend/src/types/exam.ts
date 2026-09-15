@@ -179,8 +179,9 @@ export interface StartExamRequest {
  * Request payload to resume an interrupted exam session.
  */
 export interface ResumeExamResponse {
-  attemptId: string;
-  examPaper: ExamPaper;
+  attemptId?: string;
+  examPaper?: ExamPaper;
+  paper?: ExamPaper;
   savedAnswers: Record<string, { selectedOptionIds?: string[]; textAnswer?: string }>;
 }
 

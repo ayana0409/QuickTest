@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 const AUTH_COOKIE_NAME = 'access_token';
 
 // Protected routes requiring authentication
-const PROTECTED_PREFIXES = ['/admin', '/teacher', '/student', '/exam'];
+const PROTECTED_PREFIXES = ['/admin', '/teacher', '/student'];
 
 // Guest-only auth routes
 const AUTH_ROUTES = ['/login', '/register'];

@@ -45,14 +45,14 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">
-              <Button href="/student" size="lg" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                Vào phòng thi
+              <Button href="/exam" size="lg" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                Vào phòng thi (Nhập mã)
               </Button>
-              <Button href="/teacher/exams" variant="outline" size="lg" leftIcon={<BookOpen className="w-4 h-4" />}>
+              <Button href="/student" variant="outline" size="lg" leftIcon={<UserCheck className="w-4 h-4" />}>
+                Cổng Học sinh
+              </Button>
+              <Button href="/teacher/exams" variant="secondary" size="lg" leftIcon={<BookOpen className="w-4 h-4" />}>
                 Cổng Giáo viên
-              </Button>
-              <Button href="/admin" variant="secondary" size="lg" leftIcon={<ShieldCheck className="w-4 h-4" />}>
-                Quản trị viên
               </Button>
             </div>
           </div>

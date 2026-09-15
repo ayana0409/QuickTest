@@ -11,7 +11,7 @@ export type ViolationType =
   | 'TEACHER_DISQUALIFY';
 
 /**
- * Incoming telemetry message sent from browser candidate client to WebSocket destination `/app/proctor/violation`.
+ * Incoming telemetry message sent from browser candidate client to WebSocket destination `/app/proctoring/violation`.
  */
 export interface ViolationTelemetryMessage {
   attemptId: string;
@@ -35,13 +35,14 @@ export interface ViolationAlertResponse {
 }
 
 /**
- * Proctoring periodic heartbeat payload sent to `/app/proctor/heartbeat`.
+ * Proctoring periodic heartbeat payload sent to `/app/proctoring/heartbeat`.
  */
 export interface HeartbeatMessage {
   attemptId: string;
-  timestamp: string;
-  tabActive: boolean;
-  fullscreenActive: boolean;
+  clientTimestamp: string;
+  timestamp?: string;
+  tabActive?: boolean;
+  fullscreenActive?: boolean;
 }
 
 /**
@@ -56,3 +57,23 @@ export interface AttemptRealtimeStatus {
   isDisqualified: boolean;
   lastHeartbeatAt?: string;
 }
+
+/**
+ * Customizable proctoring toggles for test session.
+ */
+export interface ProctoringSettings {
+  enabled: boolean;
+  detectTabSwitch: boolean;
+  detectFullscreenExit: boolean;
+  blockCopyPaste: boolean;
+  blockDevTools: boolean;
+}
+
+export const DEFAULT_PROCTORING_SETTINGS: ProctoringSettings = {
+  enabled: true,
+  detectTabSwitch: true,
+  detectFullscreenExit: true,
+  blockCopyPaste: true,
+  blockDevTools: true,
+};
+

@@ -149,6 +149,12 @@ apiClient.interceptors.request.use(
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+
+      // Attach guest candidate identifier header when present in localStorage
+      const guestIdentifier = localStorage.getItem('quicktest_guest_id');
+      if (guestIdentifier && config.headers) {
+        config.headers['X-Guest-Identifier'] = guestIdentifier;
+      }
     }
     return config;
   },
@@ -327,7 +333,11 @@ function handleLogout() {
     useAuthStore.getState().logout();
 
     const currentPath = window.location.pathname;
-    if (!currentPath.startsWith('/login') && !currentPath.startsWith('/register')) {
+    if (
+      !currentPath.startsWith('/login') &&
+      !currentPath.startsWith('/register') &&
+      !currentPath.startsWith('/exam')
+    ) {
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
     }
