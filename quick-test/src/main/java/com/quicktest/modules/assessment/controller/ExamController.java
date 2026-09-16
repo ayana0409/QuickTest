@@ -7,6 +7,7 @@ import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.assessment.dto.ExamCreateRequest;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
+import com.quicktest.modules.assessment.dto.ExamRepublishRequest;
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.dto.ExamUpdateRequest;
 import com.quicktest.modules.assessment.service.ExamService;
@@ -111,6 +112,19 @@ public class ExamController {
         User teacher = getAuthenticatedTeacher(currentUser);
         ExamDetailResponse response = examService.closeExam(id, teacher);
         return ResponseEntity.ok(ApiResponse.success(response, "Exam closed successfully"));
+    }
+
+    /**
+     * Republish an existing exam (transitions status to PUBLISHED), optionally updating time window.
+     */
+    @PatchMapping("/{id}/republish")
+    public ResponseEntity<ApiResponse<ExamDetailResponse>> republishExam(
+            @PathVariable("id") UUID id,
+            @RequestBody(required = false) @Valid ExamRepublishRequest request,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        User teacher = getAuthenticatedTeacher(currentUser);
+        ExamDetailResponse response = examService.republishExam(id, request, teacher);
+        return ResponseEntity.ok(ApiResponse.success(response, "Exam republished successfully"));
     }
 
     /**

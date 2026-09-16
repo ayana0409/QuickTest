@@ -1,0 +1,38 @@
+meta {
+  name: 5.11 Regrade Attempt - Update Score and Feedback
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/grading/attempts/submit-grades
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptId": "{{attemptId}}",
+    "grades": [
+      {
+        "candidateAnswerId": "{{candidateAnswerId}}",
+        "awardedScore": 2.0,
+        "teacherFeedback": "Đã chấm lại: Điểm điều chỉnh sau khi phúc khảo bài làm."
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.finalScore: isDefined
+}

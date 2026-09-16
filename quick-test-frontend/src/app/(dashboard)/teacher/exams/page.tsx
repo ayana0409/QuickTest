@@ -21,6 +21,8 @@ import {
   ChevronRight,
   AlertCircle,
   ExternalLink,
+  RotateCcw,
+  Calendar,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -28,7 +30,7 @@ import { Card, CardContent } from '@/components/common/Card';
 import { Modal } from '@/components/common/Modal';
 import { useAuthStore } from '@/stores/authStore';
 import { examService } from '@/services/exam.service';
-import { formatDateTime } from '@/lib/utils';
+import { formatDateTime, formatDateTimeForPayload } from '@/lib/utils';
 import type { ExamSummaryResponse, ExamStatus, PageResponse } from '@/types/exam';
 import toast from 'react-hot-toast';
 
@@ -51,6 +53,13 @@ export default function TeacherExamsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ExamSummaryResponse | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
+
+  // Republish Modal States
+  const [republishTarget, setRepublishTarget] = useState<ExamSummaryResponse | null>(null);
+  const [republishEndTime, setRepublishEndTime] = useState<string>('');
+  const [republishStartTime, setRepublishStartTime] = useState<string>('');
+  const [republishDuration, setRepublishDuration] = useState<number>(45);
+  const [isRepublishing, setIsRepublishing] = useState(false);
 
   // Fetch exams from real backend API
   const fetchExams = useCallback(
@@ -121,6 +130,50 @@ export default function TeacherExamsPage() {
       // Handled by Axios Interceptor
     } finally {
       setActionInProgressId(null);
+    }
+  };
+
+  // Open modal to configure and republish a closed exam
+  const handleOpenRepublishModal = (exam: ExamSummaryResponse) => {
+    setRepublishTarget(exam);
+    setRepublishDuration(exam.durationMinutes || 45);
+
+    // Suggest new end time 24 hours from now
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const tzOffset = tomorrow.getTimezoneOffset() * 60000;
+    const localISOTomorrow = new Date(tomorrow.getTime() - tzOffset).toISOString().slice(0, 16);
+    setRepublishEndTime(localISOTomorrow);
+
+    const now = new Date();
+    const localISONow = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+    setRepublishStartTime(localISONow);
+  };
+
+  // Confirm republish exam with updated schedule
+  const handleConfirmRepublish = async () => {
+    if (!republishTarget) return;
+
+    if (republishEndTime) {
+      const endTimestamp = new Date(republishEndTime).getTime();
+      if (endTimestamp <= Date.now()) {
+        toast.error('Thời gian kết thúc phải sau thời điểm hiện tại.');
+        return;
+      }
+    }
+
+    setIsRepublishing(true);
+    try {
+      await examService.republishExam(republishTarget.id, {
+        startTime: republishStartTime ? formatDateTimeForPayload(republishStartTime) : null,
+        endTime: republishEndTime ? formatDateTimeForPayload(republishEndTime) : null,
+        durationMinutes: Number(republishDuration) || undefined,
+      });
+      setRepublishTarget(null);
+      fetchExams(currentPage);
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsRepublishing(false);
     }
   };
 
@@ -411,6 +464,19 @@ export default function TeacherExamsPage() {
                       Đóng đề
                     </Button>
                   )}
+
+                  {exam.status === 'CLOSED' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      onClick={() => handleOpenRepublishModal(exam)}
+                      leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                      title="Mở lại đề thi cho đợt thi mới"
+                    >
+                      Mở lại đề
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -475,6 +541,90 @@ export default function TeacherExamsPage() {
         <p className="text-xs text-zinc-600 dark:text-zinc-400">
           Bạn có chắc chắn muốn xóa đề thi <strong>&quot;{deleteTarget?.title}&quot;</strong>?
         </p>
+      </Modal>
+
+      {/* Republish Closed Exam Modal */}
+      <Modal
+        isOpen={!!republishTarget}
+        onClose={() => setRepublishTarget(null)}
+        title="Mở lại Đề thi (Republish)"
+        description="Cho phép thí sinh tiếp tục tham gia làm bài thi với mã đề hiện tại."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setRepublishTarget(null)}
+              disabled={isRepublishing}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="success"
+              isLoading={isRepublishing}
+              onClick={handleConfirmRepublish}
+              leftIcon={<RotateCcw className="w-4 h-4" />}
+            >
+              Xác nhận mở lại
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
+            <p>
+              Đề thi: <strong className="text-zinc-900 dark:text-zinc-100">{republishTarget?.title}</strong>
+            </p>
+            <p>
+              Mã phòng thi: <strong className="text-indigo-600 dark:text-indigo-400">{republishTarget?.accessCode}</strong>
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                Thời gian mở đề (Bắt đầu)
+              </label>
+              <input
+                type="datetime-local"
+                value={republishStartTime}
+                onChange={(e) => setRepublishStartTime(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-rose-500" />
+                Thời gian đóng đề mới (Hạn chót thi) *
+              </label>
+              <input
+                type="datetime-local"
+                value={republishEndTime}
+                onChange={(e) => setRepublishEndTime(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                Lưu ý: Thời gian kết thúc phải ở tương lai để hệ thống không tự động đóng bài thi.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                Thời lượng làm bài (Phút)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={republishDuration}
+                onChange={(e) => setRepublishDuration(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );

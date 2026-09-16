@@ -1,0 +1,30 @@
+meta {
+  name: 2.24 Republish Exam - Already Published Error
+  type: http
+  seq: 24
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "durationMinutes": 60
+  }
+}
+
+assert {
+  res.status: eq 400
+}

@@ -232,4 +232,64 @@ class ExamServiceTest {
         assertEquals(ExamStatus.CLOSED, response.getStatus());
         verify(examSessionService).autoSubmitActiveAttemptsForExam(eq(sampleExam.getId()), anyString());
     }
+
+    @Test
+    @DisplayName("Update exam should succeed even when exam status is CLOSED")
+    void shouldAllowUpdatingClosedExam() {
+        sampleExam.setStatus(ExamStatus.CLOSED);
+        when(examRepository.findByIdWithCreatedBy(sampleExam.getId())).thenReturn(Optional.of(sampleExam));
+        when(examRepository.save(any(Exam.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(questionRepository.findByExamIdWithOptions(sampleExam.getId())).thenReturn(Collections.emptyList());
+
+        ExamUpdateRequest request = ExamUpdateRequest.builder()
+                .title("Updated Closed Exam Title")
+                .durationMinutes(60)
+                .build();
+
+        ExamDetailResponse response = examService.updateExam(sampleExam.getId(), request, teacher);
+
+        assertNotNull(response);
+        assertEquals("Updated Closed Exam Title", response.getTitle());
+        verify(examRepository).save(sampleExam);
+    }
+
+    @Test
+    @DisplayName("Republish exam should succeed when exam is CLOSED and endTime is in future")
+    void shouldRepublishClosedExamSuccessfully() {
+        sampleExam.setStatus(ExamStatus.CLOSED);
+        when(examRepository.findByIdWithCreatedBy(sampleExam.getId())).thenReturn(Optional.of(sampleExam));
+        when(questionRepository.countByExamId(sampleExam.getId())).thenReturn(5L);
+        when(examRepository.save(any(Exam.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(questionRepository.findByExamIdWithOptions(sampleExam.getId())).thenReturn(Collections.emptyList());
+
+        com.quicktest.modules.assessment.dto.ExamRepublishRequest request = com.quicktest.modules.assessment.dto.ExamRepublishRequest.builder()
+                .endTime(LocalDateTime.now().plusDays(2))
+                .durationMinutes(50)
+                .build();
+
+        ExamDetailResponse response = examService.republishExam(sampleExam.getId(), request, teacher);
+
+        assertNotNull(response);
+        assertEquals(ExamStatus.PUBLISHED, response.getStatus());
+        assertEquals(50, sampleExam.getDurationMinutes());
+        verify(examRepository).save(sampleExam);
+    }
+
+    @Test
+    @DisplayName("Republish exam should fail when endTime is in the past")
+    void shouldFailRepublishWhenEndTimeInPast() {
+        sampleExam.setStatus(ExamStatus.CLOSED);
+        when(examRepository.findByIdWithCreatedBy(sampleExam.getId())).thenReturn(Optional.of(sampleExam));
+        when(questionRepository.countByExamId(sampleExam.getId())).thenReturn(5L);
+
+        com.quicktest.modules.assessment.dto.ExamRepublishRequest request = com.quicktest.modules.assessment.dto.ExamRepublishRequest.builder()
+                .endTime(LocalDateTime.now().minusHours(1))
+                .build();
+
+        AppException ex = assertThrows(AppException.class, () ->
+                examService.republishExam(sampleExam.getId(), request, teacher));
+
+        assertTrue(ex.getMessage().contains("sau thời điểm hiện tại"));
+        verify(examRepository, never()).save(any());
+    }
 }

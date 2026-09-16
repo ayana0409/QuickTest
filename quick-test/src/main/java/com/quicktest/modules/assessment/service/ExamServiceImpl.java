@@ -4,6 +4,7 @@ import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.modules.assessment.dto.ExamCreateRequest;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
+import com.quicktest.modules.assessment.dto.ExamRepublishRequest;
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.dto.ExamUpdateRequest;
 import com.quicktest.modules.assessment.dto.QuestionResponse;
@@ -97,8 +98,8 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = findExamWithCreatorOrThrow(examId);
         verifyOwnership(exam, teacher);
 
-        // Disallow modifications when exam is closed or archived
-        if (exam.getStatus() == ExamStatus.CLOSED || exam.getStatus() == ExamStatus.ARCHIVED) {
+        // Disallow modifications only when exam is archived
+        if (exam.getStatus() == ExamStatus.ARCHIVED) {
             throw new AppException("Cannot update an exam with status " + exam.getStatus());
         }
 
@@ -199,8 +200,8 @@ public class ExamServiceImpl implements ExamService {
         if (exam.getStatus() == ExamStatus.PUBLISHED) {
             throw new AppException("Exam is already published");
         }
-        if (exam.getStatus() == ExamStatus.CLOSED || exam.getStatus() == ExamStatus.ARCHIVED) {
-            throw new AppException("Cannot publish an exam that is " + exam.getStatus());
+        if (exam.getStatus() == ExamStatus.ARCHIVED) {
+            throw new AppException("Cannot publish an archived exam");
         }
 
         // Business rule: Must contain at least one question
@@ -208,6 +209,11 @@ public class ExamServiceImpl implements ExamService {
         if (questionCount == 0) {
             throw new AppException(
                     "Cannot publish an exam without any questions. Please add at least one question first.");
+        }
+
+        if (exam.getEndTime() != null && exam.getEndTime().isBefore(LocalDateTime.now())) {
+            throw new AppException("Thời gian kết thúc của đề thi đã qua (" + exam.getEndTime()
+                    + "). Vui lòng cập nhật thời gian kết thúc trước khi mở lại đề thi.");
         }
 
         exam.setStatus(ExamStatus.PUBLISHED);
@@ -239,6 +245,58 @@ public class ExamServiceImpl implements ExamService {
 
         List<QuestionResponse> questions = fetchQuestionsWithOptions(examId);
         return ExamDetailResponse.fromEntityWithQuestions(closedExam, questions);
+    }
+
+    @Override
+    @Transactional
+    public ExamDetailResponse republishExam(UUID examId, ExamRepublishRequest request, User teacher) {
+        log.info("Republishing exam ID: {} by teacher ID: {}", examId, teacher.getId());
+
+        Exam exam = findExamWithCreatorOrThrow(examId);
+        verifyOwnership(exam, teacher);
+
+        if (exam.getStatus() == ExamStatus.PUBLISHED) {
+            throw new AppException("Exam is already published");
+        }
+        if (exam.getStatus() == ExamStatus.ARCHIVED) {
+            throw new AppException("Cannot republish an archived exam");
+        }
+
+        // Business rule: Must contain at least one question
+        long questionCount = questionRepository.countByExamId(examId);
+        if (questionCount == 0) {
+            throw new AppException(
+                    "Cannot publish an exam without any questions. Please add at least one question first.");
+        }
+
+        // Update optional schedule parameters
+        if (request != null) {
+            if (request.getStartTime() != null) {
+                exam.setStartTime(request.getStartTime());
+            }
+            if (request.getEndTime() != null) {
+                exam.setEndTime(request.getEndTime());
+            }
+            if (request.getDurationMinutes() != null) {
+                exam.setDurationMinutes(request.getDurationMinutes());
+            }
+            if (request.getMaxAttempts() != null) {
+                exam.setMaxAttempts(request.getMaxAttempts());
+            }
+        }
+
+        validateTimeWindow(exam.getStartTime(), exam.getEndTime());
+
+        if (exam.getEndTime() != null && exam.getEndTime().isBefore(LocalDateTime.now())) {
+            throw new AppException("Thời gian kết thúc của đề thi phải sau thời điểm hiện tại (" + LocalDateTime.now() + ")");
+        }
+
+        exam.setStatus(ExamStatus.PUBLISHED);
+        Exam republishedExam = examRepository.save(exam);
+        log.info("Exam ID: {} successfully republished", examId);
+
+        List<QuestionResponse> questions = fetchQuestionsWithOptions(examId);
+        return ExamDetailResponse.fromEntityWithQuestions(republishedExam, questions);
     }
 
     // ==========================================

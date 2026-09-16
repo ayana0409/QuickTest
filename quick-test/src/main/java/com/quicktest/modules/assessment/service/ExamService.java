@@ -50,4 +50,10 @@ public interface ExamService {
      * Close an exam, preventing further candidate submissions.
      */
     ExamDetailResponse closeExam(UUID examId, User teacher);
+
+    /**
+     * Republish an exam (transitions status from CLOSED to PUBLISHED),
+     * optionally updating the time window and attempt limits.
+     */
+    ExamDetailResponse republishExam(UUID examId, com.quicktest.modules.assessment.dto.ExamRepublishRequest request, User teacher);
 }

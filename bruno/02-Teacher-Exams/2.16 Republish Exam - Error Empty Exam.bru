@@ -1,0 +1,30 @@
+meta {
+  name: 2.16 Republish Exam - Error Empty Exam
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{disposableExamId}}/republish
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "durationMinutes": 60
+  }
+}
+
+assert {
+  res.status: eq 400
+}

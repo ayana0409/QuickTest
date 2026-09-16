@@ -1,6 +1,6 @@
 # QuickTest Online Exam System - Comprehensive API Documentation
 
-Tài liệu đặc tả toàn bộ **44 RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL, Redis, RabbitMQ, Cloudinary, Google Gemini AI).
+Tài liệu đặc tả toàn bộ **45 RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL, Redis, RabbitMQ, Cloudinary, Google Gemini AI).
 
 ---
 
@@ -58,10 +58,11 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 4 | **Teacher Exams** | `POST` | `/api/teacher/exams` | `TEACHER` | Tạo đề thi mới (DRAFT) |
 | 5 | | `GET` | `/api/teacher/exams` | `TEACHER` | Lấy danh sách đề thi của giáo viên |
 | 6 | | `GET` | `/api/teacher/exams/{id}` | `TEACHER` | Lấy chi tiết cấu hình đề thi |
-| 7 | | `PUT` | `/api/teacher/exams/{id}` | `TEACHER` | Cập nhật thông tin đề thi |
-| 8 | | `PATCH` | `/api/teacher/exams/{id}/publish` | `TEACHER` | Xuất bản đề thi (PUBLISHED) |
-| 9 | | `PATCH` | `/api/teacher/exams/{id}/close` | `TEACHER` | Đóng đề thi (CLOSED) |
-| 10 | | `DELETE` | `/api/teacher/exams/{id}` | `TEACHER` | Xóa đề thi (chỉ xóa DRAFT) |
+| 7 | | `PUT` | `/api/teacher/exams/{id}` | `TEACHER` | Cập nhật thông tin đề thi (cho phép cả khi CLOSED) |
+| 8 | | `PATCH` | `/api/teacher/exams/{id}/publish` | `TEACHER` | Xuất bản đề thi (từ DRAFT hoặc CLOSED -> PUBLISHED) |
+| 9 | | `PATCH` | `/api/teacher/exams/{id}/close` | `TEACHER` | Đóng đề thi (CLOSED) & tự động thu các bài dở dang |
+| 10 | | `PATCH` | `/api/teacher/exams/{id}/republish` | `TEACHER` | Mở lại đề thi đã đóng (cập nhật hạn chót, chuyển sang PUBLISHED) |
+| 11 | | `DELETE` | `/api/teacher/exams/{id}` | `TEACHER` | Xóa đề thi (chỉ xóa DRAFT) |
 | 11 | **Questions** | `POST` | `/api/teacher/exams/{examId}/questions` | `TEACHER` | Thêm câu hỏi vào đề thi |
 | 12 | | `PUT` | `/api/teacher/questions/{questionId}` | `TEACHER` | Cập nhật câu hỏi và đáp án |
 | 13 | | `PUT` | `/api/teacher/questions/{questionId}/image` | `TEACHER` | Cập nhật trực tiếp ảnh câu hỏi (xóa ảnh cũ Cloudinary) |
@@ -260,11 +261,28 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 - **Response (200 OK):** `ExamDetailResponse` (status = "PUBLISHED")
 
 #### 2.6. Đóng đề thi (`PATCH /api/teacher/exams/{id}/close`)
-- **Mô tả:** Chuyển trạng thái đề thi sang `CLOSED` (ngừng nhận thí sinh làm bài mới).
+- **Mô tả:** Chuyển trạng thái đề thi sang `CLOSED` (ngừng nhận thí sinh làm bài mới), đồng thời tự động thu và chấm tất cả các bài thi đang dở dang (`IN_PROGRESS`).
 - **Quyền hạn:** `TEACHER`
 - **Response (200 OK):** `ExamDetailResponse` (status = "CLOSED")
 
-#### 2.7. Xóa đề thi (`DELETE /api/teacher/exams/{id}`)
+#### 2.7. Mở lại đề thi đã đóng (`PATCH /api/teacher/exams/{id}/republish`)
+- **Mô tả:** Mở lại đề thi đã đóng (`CLOSED` -> `PUBLISHED`) để tiếp tục tổ chức thi hoặc gia hạn thời gian làm bài. Bảo lưu toàn bộ lịch sử các lượt thi cũ.
+- **Quyền hạn:** `TEACHER`
+- **Request Body (Tùy chọn):** `ExamRepublishRequest`
+  ```json
+  {
+    "startTime": "2026-10-01T08:00:00",
+    "endTime": "2026-10-05T23:59:59",
+    "durationMinutes": 60,
+    "maxAttempts": 2
+  }
+  ```
+- **Ràng buộc nghiệp vụ:**
+  - Đề thi phải có ít nhất 1 câu hỏi.
+  - Nếu có thiết lập `endTime`, hạn chót phải ở tương lai (`endTime > now`).
+- **Response (200 OK):** `ExamDetailResponse` (status = "PUBLISHED")
+
+#### 2.8. Xóa đề thi (`DELETE /api/teacher/exams/{id}`)
 - **Mô tả:** Xóa vĩnh viễn đề thi. Chỉ cho phép xóa khi đề thi đang ở trạng thái `DRAFT`.
 - **Quyền hạn:** `TEACHER`
 - **Response (200 OK):**

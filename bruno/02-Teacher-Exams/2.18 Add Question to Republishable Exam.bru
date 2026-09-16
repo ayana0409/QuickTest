@@ -1,0 +1,45 @@
+meta {
+  name: 2.18 Add Question to Republishable Exam
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{republishExamId}}/questions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "orderIndex": 1,
+    "content": "Tính năng mở lại đề thi (Republish) có bảo lưu kết quả bài làm cũ không?",
+    "questionType": "SINGLE_CHOICE",
+    "points": 10.0,
+    "options": [
+      {
+        "orderIndex": 1,
+        "content": "Có, giữ nguyên toàn bộ lịch sử bài làm",
+        "isCorrect": true
+      },
+      {
+        "orderIndex": 2,
+        "content": "Không, bị xóa hết",
+        "isCorrect": false
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+}

@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Info,
   Users,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -58,6 +59,13 @@ export default function EditExamPage() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Republish modal states
+  const [isRepublishModalOpen, setIsRepublishModalOpen] = useState(false);
+  const [republishStartTime, setRepublishStartTime] = useState<string>('');
+  const [republishEndTime, setRepublishEndTime] = useState<string>('');
+  const [republishDuration, setRepublishDuration] = useState<number>(45);
+  const [isRepublishing, setIsRepublishing] = useState(false);
 
   const {
     register,
@@ -147,6 +155,61 @@ export default function EditExamPage() {
     } finally {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
+    }
+  };
+
+  // Open modal to configure and republish a closed exam
+  const handleOpenRepublishModal = () => {
+    if (!exam) return;
+    setRepublishDuration(exam.durationMinutes || 45);
+
+    // Suggest new end time 24 hours from now
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const tzOffset = tomorrow.getTimezoneOffset() * 60000;
+    const localISOTomorrow = new Date(tomorrow.getTime() - tzOffset).toISOString().slice(0, 16);
+    setRepublishEndTime(localISOTomorrow);
+
+    const now = new Date();
+    const localISONow = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+    setRepublishStartTime(localISONow);
+    setIsRepublishModalOpen(true);
+  };
+
+  // Confirm republish exam with updated schedule
+  const handleConfirmRepublish = async () => {
+    if (!exam) return;
+
+    if (republishEndTime) {
+      const endTimestamp = new Date(republishEndTime).getTime();
+      if (endTimestamp <= Date.now()) {
+        toast.error('Thời gian kết thúc phải sau thời điểm hiện tại.');
+        return;
+      }
+    }
+
+    setIsRepublishing(true);
+    try {
+      const updated = await examService.republishExam(exam.id, {
+        startTime: republishStartTime ? formatDateTimeForPayload(republishStartTime) : null,
+        endTime: republishEndTime ? formatDateTimeForPayload(republishEndTime) : null,
+        durationMinutes: Number(republishDuration) || undefined,
+      });
+      setExam(updated);
+      reset({
+        title: updated.title,
+        description: updated.description || '',
+        durationMinutes: updated.durationMinutes,
+        maxAttempts: updated.maxAttempts || 1,
+        shuffleQuestions: updated.shuffleQuestions,
+        shuffleOptions: updated.shuffleOptions,
+        startTime: updated.startTime ? updated.startTime.slice(0, 16) : '',
+        endTime: updated.endTime ? updated.endTime.slice(0, 16) : '',
+      });
+      setIsRepublishModalOpen(false);
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsRepublishing(false);
     }
   };
 
@@ -300,9 +363,15 @@ export default function EditExamPage() {
           )}
 
           {isClosed && (
-            <span className="text-xs text-zinc-400 italic">
-              Đề thi đã kết thúc và được lưu trữ
-            </span>
+            <Button
+              size="sm"
+              variant="success"
+              isLoading={isRepublishing}
+              onClick={handleOpenRepublishModal}
+              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+            >
+              Mở lại đề thi
+            </Button>
           )}
         </div>
       </div>
@@ -339,7 +408,11 @@ export default function EditExamPage() {
         {!isDraft && (
           <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
             <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span>Đề thi đã xuất bản, chế độ xem câu hỏi chỉ đọc để đảm bảo tính công bằng.</span>
+            <span>
+              {isClosed
+                ? 'Đề thi đã đóng, câu hỏi ở chế độ chỉ đọc. Bạn có thể cập nhật cài đặt hoặc bấm Mở lại đề thi để học sinh tiếp tục thi.'
+                : 'Đề thi đã xuất bản, chế độ xem câu hỏi chỉ đọc để đảm bảo tính công bằng.'}
+            </span>
           </div>
         )}
       </div>
@@ -529,6 +602,90 @@ export default function EditExamPage() {
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           Chỉ những đề thi ở trạng thái <strong>Bản nháp (DRAFT)</strong> mới có thể xóa. Dữ liệu sau khi xóa sẽ không thể phục hồi.
         </p>
+      </Modal>
+
+      {/* Republish Modal */}
+      <Modal
+        isOpen={isRepublishModalOpen}
+        onClose={() => setIsRepublishModalOpen(false)}
+        title="Mở lại Đề thi (Republish)"
+        description="Cho phép thí sinh tiếp tục tham gia làm bài thi với mã đề hiện tại."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsRepublishModalOpen(false)}
+              disabled={isRepublishing}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="success"
+              isLoading={isRepublishing}
+              onClick={handleConfirmRepublish}
+              leftIcon={<RotateCcw className="w-4 h-4" />}
+            >
+              Xác nhận mở lại
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
+            <p>
+              Đề thi: <strong className="text-zinc-900 dark:text-zinc-100">{exam.title}</strong>
+            </p>
+            <p>
+              Mã phòng thi: <strong className="text-indigo-600 dark:text-indigo-400">{exam.accessCode}</strong>
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                Thời gian mở đề (Bắt đầu)
+              </label>
+              <input
+                type="datetime-local"
+                value={republishStartTime}
+                onChange={(e) => setRepublishStartTime(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-rose-500" />
+                Thời gian đóng đề mới (Hạn chót thi) *
+              </label>
+              <input
+                type="datetime-local"
+                value={republishEndTime}
+                onChange={(e) => setRepublishEndTime(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                Lưu ý: Thời gian kết thúc phải ở tương lai để hệ thống không tự động đóng bài thi.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                Thời lượng làm bài (Phút)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={republishDuration}
+                onChange={(e) => setRepublishDuration(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );

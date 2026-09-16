@@ -5,6 +5,7 @@ import type {
   ExamDetailResponse,
   ExamCreateRequest,
   ExamUpdateRequest,
+  ExamRepublishRequest,
   PageResponse,
 } from '@/types/exam';
 import type {
@@ -79,6 +80,20 @@ export const examService = {
       undefined,
       {
         successMessage: 'Đã đóng đề thi thành công.',
+      }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Republish a closed exam, transitioning status from CLOSED to PUBLISHED.
+   */
+  async republishExam(id: string, payload?: ExamRepublishRequest): Promise<ExamDetailResponse> {
+    const response = await apiClient.patch<ApiResponse<ExamDetailResponse>>(
+      `/teacher/exams/${id}/republish`,
+      payload || {},
+      {
+        successMessage: 'Mở lại đề thi thành công! Thí sinh có thể tiếp tục tham gia.',
       }
     );
     return response.data.data;

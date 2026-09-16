@@ -1,0 +1,30 @@
+meta {
+  name: 2.22 Republish Exam - Forbidden Student
+  type: http
+  seq: 22
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "durationMinutes": 60
+  }
+}
+
+assert {
+  res.status: eq 403
+}

@@ -37,6 +37,11 @@
       "type": "string"
     },
     {
+      "key": "republishExamId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "singleChoiceQId",
       "value": "",
       "type": "string"
@@ -404,6 +409,14 @@
                   "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"teacherToken\", token);",
                   "",
                   "    ",
+                  "  }",
+                  "  let refreshToken = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.refreshToken;",
+                  "  if (refreshToken) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"refreshToken\", refreshToken);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"refreshToken\", refreshToken);",
+                  "",
+                  "    ",
                   "  }"
                 ]
               }
@@ -461,6 +474,19 @@
                   "    ",
                   "if (typeof tc !== 'undefined') tc.setVar(\"studentToken\", token);",
                   "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"studentToken\", token);",
+                  "",
+                  "    ",
+                  "  }",
+                  "  let refreshToken = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.refreshToken;",
+                  "  if (refreshToken) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"studentRefreshToken\", refreshToken);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"studentRefreshToken\", refreshToken);",
+                  "",
+                  "    ",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"refreshToken\", refreshToken);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"refreshToken\", refreshToken);",
                   "",
                   "    ",
                   "  }"
@@ -639,6 +665,150 @@
                 "auth",
                 "me"
               ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 401\", function () {",
+                  "        pm.response.to.have.status(401);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.11 Refresh Token - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('refreshToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('refreshToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const rf = res.data?.data?.refreshToken;",
+                  "      if (rf) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('refreshToken', rf);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('refreshToken', rf);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "let token = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.accessToken;",
+                  "  if (token) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"teacherToken\", token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"teacherToken\", token);",
+                  "",
+                  "    ",
+                  "  }",
+                  "  let rf = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.refreshToken;",
+                  "  if (rf) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"refreshToken\", rf);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"refreshToken\", rf);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.12 Refresh Token - Invalid Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"invalid.or.expired.token\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "event": [
@@ -1453,6 +1623,714 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is 404\", function () {",
                   "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.15 Update Exam - Closed Exam Allowed",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{disposableExamId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{disposableExamId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Kỳ thi tạm đã đóng - Cập nhật cấu hình\",\n    \"durationMinutes\": 60,\n    \"maxAttempts\": 3,\n    \"shuffleQuestions\": true,\n    \"shuffleOptions\": false\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.16 Republish Exam - Error Empty Exam",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{disposableExamId}}/republish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{disposableExamId}}",
+                "republish"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"durationMinutes\": 60\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.17 Create Republishable Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Kỳ thi thử nghiệm Republish\",\n    \"durationMinutes\": 45,\n    \"maxAttempts\": 2,\n    \"shuffleQuestions\": false,\n    \"shuffleOptions\": false\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"republishExamId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"republishExamId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.18 Add Question to Republishable Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "questions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderIndex\": 1,\n    \"content\": \"Tính năng mở lại đề thi (Republish) có bảo lưu kết quả bài làm cũ không?\",\n    \"questionType\": \"SINGLE_CHOICE\",\n    \"points\": 10.0,\n    \"options\": [\n      {\n        \"orderIndex\": 1,\n        \"content\": \"Có, giữ nguyên toàn bộ lịch sử bài làm\",\n        \"isCorrect\": true\n      },\n      {\n        \"orderIndex\": 2,\n        \"content\": \"Không, bị xóa hết\",\n        \"isCorrect\": false\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.19 Publish Republishable Exam",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "publish"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.20 Close Republishable Exam",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "close"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.21 Republish Exam - Error EndTime In Past",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "republish"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"endTime\": \"2020-01-01T00:00:00\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.22 Republish Exam - Forbidden Student",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "republish"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"durationMinutes\": 60\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 403\", function () {",
+                  "        pm.response.to.have.status(403);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.23 Republish Exam - Success",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "republish"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"durationMinutes\": 50,\n    \"endTime\": \"2030-12-31T23:59:59\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.24 Republish Exam - Already Published Error",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "republish"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"durationMinutes\": 60\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.25 Close Republishable Exam Again",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "close"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.26 Publish Exam - Transition from Closed Success",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{republishExamId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{republishExamId}}",
+                "publish"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
                   "    });",
                   "}"
                 ]
@@ -3619,6 +4497,171 @@
               }
             }
           ]
+        },
+        {
+          "name": "5.11 Regrade Attempt - Update Score and Feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/attempts/submit-grades",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "attempts",
+                "submit-grades"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"attemptId\": \"{{attemptId}}\",\n    \"grades\": [\n      {\n        \"candidateAnswerId\": \"{{candidateAnswerId}}\",\n        \"awardedScore\": 2.0,\n        \"teacherFeedback\": \"Đã chấm lại: Điểm điều chỉnh sau khi phúc khảo bài làm.\"\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.12 Get Attempts - Filter By Status and Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?status=SUBMITTED&search=student&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.13 Get Attempts - Invalid Exam ID Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/00000000-0000-0000-0000-000000000000/attempts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "00000000-0000-0000-0000-000000000000",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -5567,6 +6610,83 @@
               }
             }
           ]
+        },
+        {
+          "name": "8.06 Grade Single Answer With AI",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/answers/{{candidateAnswerId}}/ai",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "answers",
+                "{{candidateAnswerId}}",
+                "ai"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const axios = require('axios');",
+                  "  const baseUrl = (typeof tc !== \"undefined\" ? tc.getVar('baseUrl') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('baseUrl') : null)) || 'http://localhost:8080';",
+                  "  if (!(typeof tc !== \"undefined\" ? tc.getVar('teacherToken') : (typeof pm !== \"undefined\" && pm.collectionVariables ? pm.collectionVariables.get('teacherToken') : null))) {",
+                  "    try {",
+                  "      const res = await axios.post(`${baseUrl}/api/auth/login`, {",
+                  "        usernameOrEmail: 'teacher@quicktest.com',",
+                  "        password: 'Teacher@123'",
+                  "      });",
+                  "      const token = res.data?.data?.accessToken || res.data?.data?.token;",
+                  "      if (token) {",
+                  "        ",
+                  "if (typeof tc !== 'undefined') tc.setVar('teacherToken', token);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set('teacherToken', token);",
+                  "",
+                  "        ",
+                  "      }",
+                  "    } catch (e) {}",
+                  "  }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -5651,6 +6771,55 @@
                 "api",
                 "admin",
                 "dashboard"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.02b Get Dashboard Analytics Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "analytics",
+                "overview"
               ]
             },
             "auth": {

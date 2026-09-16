@@ -250,3 +250,13 @@ export interface PageResponse<T> {
   hasPrevious: boolean;
 }
 
+/**
+ * Request payload to republish an existing closed exam.
+ */
+export interface ExamRepublishRequest {
+  startTime?: string | null;
+  endTime?: string | null;
+  durationMinutes?: number;
+  maxAttempts?: number;
+}
+

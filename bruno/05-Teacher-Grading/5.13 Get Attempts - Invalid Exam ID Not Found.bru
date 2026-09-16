@@ -1,0 +1,23 @@
+meta {
+  name: 5.13 Get Attempts - Invalid Exam ID Not Found
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/00000000-0000-0000-0000-000000000000/attempts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}

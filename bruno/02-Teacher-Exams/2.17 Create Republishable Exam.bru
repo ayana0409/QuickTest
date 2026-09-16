@@ -1,0 +1,41 @@
+meta {
+  name: 2.17 Create Republishable Exam
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Kỳ thi thử nghiệm Republish",
+    "durationMinutes": 45,
+    "maxAttempts": 2,
+    "shuffleQuestions": false,
+    "shuffleOptions": false
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.id) {
+    bru.setVar("republishExamId", res.body.data.id);
+    bru.setEnvVar("republishExamId", res.body.data.id);
+  }
+}

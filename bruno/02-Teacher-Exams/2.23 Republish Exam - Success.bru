@@ -1,0 +1,33 @@
+meta {
+  name: 2.23 Republish Exam - Success
+  type: http
+  seq: 23
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "durationMinutes": 50,
+    "endTime": "2030-12-31T23:59:59"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.status: eq PUBLISHED
+  res.body.data.durationMinutes: eq 50
+}

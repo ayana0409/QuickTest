@@ -1,0 +1,35 @@
+meta {
+  name: 2.15 Update Exam - Closed Exam Allowed
+  type: http
+  seq: 15
+}
+
+put {
+  url: {{baseUrl}}/api/teacher/exams/{{disposableExamId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Kỳ thi tạm đã đóng - Cập nhật cấu hình",
+    "durationMinutes": 60,
+    "maxAttempts": 3,
+    "shuffleQuestions": true,
+    "shuffleOptions": false
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.durationMinutes: eq 60
+}

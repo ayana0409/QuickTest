@@ -1,0 +1,30 @@
+meta {
+  name: 2.21 Republish Exam - Error EndTime In Past
+  type: http
+  seq: 21
+}
+
+patch {
+  url: {{baseUrl}}/api/teacher/exams/{{republishExamId}}/republish
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "endTime": "2020-01-01T00:00:00"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
