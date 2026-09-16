@@ -22,6 +22,7 @@ import { ExamDisqualifiedOverlay } from '@/components/exam/ExamDisqualifiedOverl
 import { SubmitConfirmModal } from '@/components/exam/SubmitConfirmModal';
 import { ProctoringSettingsModal } from '@/components/exam/ProctoringSettingsModal';
 import { GuestInfoModal } from '@/components/exam/GuestInfoModal';
+import toast from 'react-hot-toast';
 import type { ExamPaper, QuestionInPaper } from '@/types/exam';
 import type {
   ViolationType,
@@ -459,11 +460,31 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     }
   }, [attemptId, examPaper, isSubmitting, isDisqualified, router, setSubmitting]);
 
-  useEffect(() => {
-    if (!isLoadingPaper && examPaper && remainingSeconds === 0 && !isSubmitting) {
+  // 4b. Real-time auto-submit when exam is closed by teacher/admin or background scheduler
+  const handleExamClosed = useCallback(
+    async (reasonMessage?: string) => {
+      if (isSubmitting || isDisqualified) return;
+      toast.error(
+        reasonMessage || 'Đề thi đã đóng! Hệ thống đang tự động thu bài...',
+        { id: 'exam-closed-toast', duration: 4000, icon: '🛑' }
+      );
+      // Flush pending save draft immediately if any
+      if (pendingSavePayloadRef.current) {
+        const activeAttemptId = examPaper?.attemptId || attemptId;
+        try {
+          await candidateSessionService.autoSaveAnswer(
+            activeAttemptId,
+            pendingSavePayloadRef.current
+          );
+        } catch {
+          // Ignored
+        }
+        pendingSavePayloadRef.current = null;
+      }
       handleAutoSubmitOnExpire();
-    }
-  }, [isLoadingPaper, examPaper, remainingSeconds, isSubmitting, handleAutoSubmitOnExpire]);
+    },
+    [attemptId, examPaper?.attemptId, handleAutoSubmitOnExpire, isDisqualified, isSubmitting]
+  );
 
   // 5. Debounced Auto-Save Mechanism (800ms responsive debounce)
   const scheduleAutoSave = useCallback(
@@ -485,13 +506,22 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
             pendingSavePayloadRef.current
           );
           markSaved();
-        } catch (err) {
+        } catch (err: any) {
           console.warn('[AutoSave] Failed to save answer payload silently:', err);
           setSaving(false);
+          const errorMsg = err?.response?.data?.message || err?.message || '';
+          if (
+            typeof errorMsg === 'string' &&
+            (errorMsg.toLowerCase().includes('closed') ||
+              errorMsg.toLowerCase().includes('đã đóng') ||
+              errorMsg.toLowerCase().includes('kết thúc'))
+          ) {
+            handleExamClosed('Đề thi đã đóng! Hệ thống đang tự động thu bài...');
+          }
         }
       }, 800);
     },
-    [attemptId, examPaper, setSaving, markSaved]
+    [attemptId, examPaper, setSaving, markSaved, handleExamClosed]
   );
 
   // Sync answers state to localStorage backup
@@ -677,10 +707,12 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   return (
     <ProctoringShield
       attemptId={attemptId}
+      examId={examPaper?.examId}
       isExamActive={!isDisqualified}
       settings={proctoringSettings}
       onViolation={handleClientViolation}
       onServerAlert={handleServerAlert}
+      onExamClosed={handleExamClosed}
     >
       <div className="min-h-screen flex flex-col bg-[#0D1117] text-[#E6EDF3]">
         {/* Fixed Top Bar */}

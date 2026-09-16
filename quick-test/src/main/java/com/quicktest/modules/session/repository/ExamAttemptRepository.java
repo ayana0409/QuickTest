@@ -23,6 +23,10 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
 
     List<ExamAttempt> findByExamId(UUID examId);
 
+    List<ExamAttempt> findByExamIdAndStatus(UUID examId, AttemptStatus status);
+
+    List<ExamAttempt> findByStatusAndExpireAtBefore(AttemptStatus status, java.time.LocalDateTime dateTime);
+
     List<ExamAttempt> findByGuestIdentifierAndExamId(String guestIdentifier, UUID examId);
 
     long countByUserIdAndExamId(UUID userId, UUID examId);

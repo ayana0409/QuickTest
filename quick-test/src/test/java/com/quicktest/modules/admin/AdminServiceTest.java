@@ -62,6 +62,9 @@ class AdminServiceTest {
     @Mock
     private ViolationLogRepository violationLogRepository;
 
+    @Mock
+    private com.quicktest.modules.session.service.ExamSessionService examSessionService;
+
     @InjectMocks
     private AdminServiceImpl adminService;
 
@@ -279,6 +282,7 @@ class AdminServiceTest {
 
         assertEquals(ExamStatus.CLOSED, sampleExam.getStatus());
         verify(examRepository, times(1)).save(sampleExam);
+        verify(examSessionService, times(1)).autoSubmitActiveAttemptsForExam(eq(sampleExam.getId()), anyString());
     }
 
     @Test

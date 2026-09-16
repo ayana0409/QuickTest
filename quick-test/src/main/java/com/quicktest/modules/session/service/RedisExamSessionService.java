@@ -42,6 +42,11 @@ public interface RedisExamSessionService {
     void releaseSubmissionLock(UUID attemptId);
 
     /**
+     * Check if an attempt currently has an active submission lock (being submitted or graded).
+     */
+    boolean isSubmissionLocked(UUID attemptId);
+
+    /**
      * Cache master exam answer keys for fast RAM-based grading without DB queries.
      */
     void cacheExamGradingKey(UUID examId, List<QuestionGradingDto> questions, long ttlMinutes);

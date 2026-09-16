@@ -24,6 +24,8 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
 
     boolean existsByAccessCode(String accessCode);
 
+    java.util.List<Exam> findByStatusAndEndTimeBefore(ExamStatus status, java.time.LocalDateTime dateTime);
+
     Page<Exam> findByCreatedById(UUID teacherId, Pageable pageable);
 
     /**

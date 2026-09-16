@@ -15,6 +15,7 @@ import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.iam.entity.User;
+import com.quicktest.modules.session.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -52,6 +53,7 @@ public class ExamServiceImpl implements ExamService {
     private final QuestionRepository questionRepository;
     private final AnswerOptionRepository answerOptionRepository;
     private final MediaDeleteProducer mediaDeleteProducer;
+    private final ExamSessionService examSessionService;
 
     @Override
     @Transactional
@@ -231,6 +233,9 @@ public class ExamServiceImpl implements ExamService {
         exam.setStatus(ExamStatus.CLOSED);
         Exam closedExam = examRepository.save(exam);
         log.info("Exam ID: {} closed successfully", examId);
+
+        // Automatically collect and submit all active in-progress attempts for this closed exam
+        examSessionService.autoSubmitActiveAttemptsForExam(examId, "Exam closed by teacher");
 
         List<QuestionResponse> questions = fetchQuestionsWithOptions(examId);
         return ExamDetailResponse.fromEntityWithQuestions(closedExam, questions);

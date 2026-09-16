@@ -15,6 +15,7 @@ import com.quicktest.modules.proctoring.entity.ViolationLog;
 import com.quicktest.modules.proctoring.repository.ViolationLogRepository;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
+import com.quicktest.modules.session.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -45,6 +46,7 @@ public class AdminServiceImpl implements AdminService {
     private final QuestionRepository questionRepository;
     private final ExamAttemptRepository examAttemptRepository;
     private final ViolationLogRepository violationLogRepository;
+    private final ExamSessionService examSessionService;
 
     // =========================================================================
     // User Governance
@@ -191,6 +193,9 @@ public class AdminServiceImpl implements AdminService {
         exam.setStatus(ExamStatus.CLOSED);
         examRepository.save(exam);
         log.info("Exam ID: {} force-closed by administrator", examId);
+
+        // Automatically collect and submit all active in-progress attempts for this force-closed exam
+        examSessionService.autoSubmitActiveAttemptsForExam(examId, "Exam force-closed by administrator");
     }
 
     @Override

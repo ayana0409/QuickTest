@@ -18,9 +18,11 @@ import { cn } from '@/lib/utils';
 
 interface ProctoringShieldProps {
   attemptId: string;
+  examId?: string;
   children: React.ReactNode;
   onViolation: (type: ViolationType, description: string) => void;
   onServerAlert: (alert: ViolationAlertResponse) => void;
+  onExamClosed?: (message?: string) => void;
   isExamActive?: boolean;
   settings?: ProctoringSettings;
 }
@@ -37,14 +39,17 @@ interface ProctoringShieldProps {
  */
 export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   attemptId,
+  examId,
   children,
   onViolation,
   onServerAlert,
+  onExamClosed,
   isExamActive = true,
   settings = DEFAULT_PROCTORING_SETTINGS,
 }) => {
   const onViolationRef = useRef(onViolation);
   const onServerAlertRef = useRef(onServerAlert);
+  const onExamClosedRef = useRef(onExamClosed);
 
   const isMasterEnabled = isExamActive && settings.enabled;
 
@@ -52,7 +57,8 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   useEffect(() => {
     onViolationRef.current = onViolation;
     onServerAlertRef.current = onServerAlert;
-  }, [onViolation, onServerAlert]);
+    onExamClosedRef.current = onExamClosed;
+  }, [onViolation, onServerAlert, onExamClosed]);
 
   // Dispatch violation telemetry to WebSocket and parent handler
   const reportViolation = useCallback(
@@ -80,10 +86,19 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
 
     const handleIncomingAlert = (messageBody: string) => {
       try {
-        const alert = JSON.parse(messageBody) as ViolationAlertResponse;
+        const alert = JSON.parse(messageBody);
+
+        // Intercept exam closure / auto-submit broadcast
+        if (alert.eventType === 'EXAM_CLOSED' || alert.action === 'AUTO_SUBMIT') {
+          onExamClosedRef.current?.(
+            alert.message || alert.reason || 'Bài thi đã kết thúc hoặc đã bị đóng bởi giám thị.'
+          );
+          return;
+        }
+
         if (alert.attemptId === attemptId) {
           if (isMasterEnabled) {
-            onServerAlertRef.current(alert);
+            onServerAlertRef.current(alert as ViolationAlertResponse);
           }
         }
       } catch (err) {
@@ -94,6 +109,14 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     connectWebSocket(
       null,
       () => {
+        // 0. Single exam broadcast channel for all candidates in this exam room
+        if (examId) {
+          const examSub = subscribeTopic(`/topic/exams/${examId}/proctoring`, (message) => {
+            handleIncomingAlert(message.body);
+          });
+          if (examSub) subscriptions.push(examSub);
+        }
+
         // 1. Attempt broadcast channel: /topic/attempts/{attemptId}/proctoring
         const attemptSub = subscribeTopic(`/topic/attempts/${attemptId}/proctoring`, (message) => {
           handleIncomingAlert(message.body);
@@ -126,7 +149,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         }
       });
     };
-  }, [attemptId, isExamActive, isMasterEnabled]);
+  }, [attemptId, examId, isExamActive, isMasterEnabled]);
 
   // 2. Periodic Heartbeat (every 30 seconds)
   useEffect(() => {

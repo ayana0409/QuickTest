@@ -92,6 +92,12 @@ public class RedisExamSessionServiceImpl implements RedisExamSessionService {
     }
 
     @Override
+    public boolean isSubmissionLocked(UUID attemptId) {
+        String lockKey = buildLockKey(attemptId);
+        return Boolean.TRUE.equals(redisTemplate.hasKey(lockKey));
+    }
+
+    @Override
     public void cacheExamGradingKey(UUID examId, List<QuestionGradingDto> questions, long ttlMinutes) {
         String key = buildGradingKey(examId);
         try {

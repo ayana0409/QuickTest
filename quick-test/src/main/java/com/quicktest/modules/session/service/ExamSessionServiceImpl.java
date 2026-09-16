@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
     private final ExamAttemptRepository examAttemptRepository;
     private final RedisExamSessionService redisExamSessionService;
     private final ExamSubmissionProducer examSubmissionProducer;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional
@@ -79,7 +81,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             Optional<ExamAttempt> activeAttempt = examAttemptRepository.findFirstByUserIdAndExamIdAndStatus(
                     currentUser.getId(), exam.getId(), AttemptStatus.IN_PROGRESS);
 
-            if (activeAttempt.isPresent() && !isExpired(activeAttempt.get())) {
+            if (activeAttempt.isPresent() && !isExpired(activeAttempt.get()) && !redisExamSessionService.isSubmissionLocked(activeAttempt.get().getId())) {
                 log.info("Candidate has an active attempt in progress. Resuming attemptId: {}", activeAttempt.get().getId());
                 return buildMaskedPaper(activeAttempt.get(), exam);
             }
@@ -104,7 +106,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             Optional<ExamAttempt> activeAttempt = examAttemptRepository.findFirstByExamIdAndGuestIdentifierAndStatus(
                     exam.getId(), guestIdentifier, AttemptStatus.IN_PROGRESS);
 
-            if (activeAttempt.isPresent() && !isExpired(activeAttempt.get())) {
+            if (activeAttempt.isPresent() && !isExpired(activeAttempt.get()) && !redisExamSessionService.isSubmissionLocked(activeAttempt.get().getId())) {
                 log.info("Guest has an active attempt in progress. Resuming attemptId: {}", activeAttempt.get().getId());
                 return buildMaskedPaper(activeAttempt.get(), exam);
             }
@@ -133,8 +135,12 @@ public class ExamSessionServiceImpl implements ExamSessionService {
 
         verifyCandidateAccess(attempt, currentUser, guestIdentifier);
 
-        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
-            throw new AppException("Exam attempt is not active (Status: " + attempt.getStatus() + ")");
+        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS || redisExamSessionService.isSubmissionLocked(attemptId)) {
+            throw new AppException("Exam attempt is already submitted or being graded (Status: " + attempt.getStatus() + ")");
+        }
+
+        if (attempt.getExam().getStatus() == ExamStatus.CLOSED) {
+            throw new ExamClosedException("Exam is closed. Answers can no longer be saved.");
         }
 
         if (isExpiredWithGrace(attempt)) {
@@ -155,8 +161,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
 
         verifyCandidateAccess(attempt, currentUser, guestIdentifier);
 
-        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
-            throw new AppException("Exam attempt is already finalized with status: " + attempt.getStatus());
+        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS || redisExamSessionService.isSubmissionLocked(attemptId)) {
+            throw new AppException("Exam attempt is already finalized or being graded with status: " + attempt.getStatus());
         }
 
         if (isExpiredWithGrace(attempt)) {
@@ -190,12 +196,18 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             verifyCandidateAccess(attempt, currentUser, guestIdentifier);
 
             if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
-                throw new AppException("Exam attempt has already been submitted or finalized (Status: " + attempt.getStatus() + ")");
+                log.info("Exam attempt ID {} is already submitted or finalized (status: {})", attemptId, attempt.getStatus());
+                return SubmitAcceptedResponse.builder()
+                        .attemptId(attemptId)
+                        .status("PROCESSING")
+                        .submitTime(attempt.getSubmitTime() != null ? attempt.getSubmitTime() : LocalDateTime.now())
+                        .message("Exam attempt has already been submitted or finalized")
+                        .build();
             }
 
-            // Validate submission deadline with network grace period (15s)
+            // Note: If expired or exam is closed, we still gracefully accept the submission (auto-submit on expiration/close)
             if (isExpiredWithGrace(attempt)) {
-                throw new SessionExpiredException("Exam duration has expired. Submissions are no longer accepted.");
+                log.info("Accepting expired/late submission for attempt ID: {}", attemptId);
             }
 
             // 3. Gather candidate answers (Redis drafts + optional direct payload merge)
@@ -214,8 +226,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                     .attemptId(attemptId)
                     .examId(attempt.getExam().getId())
                     .examTitle(attempt.getExam().getTitle())
-                    .userId(currentUser != null ? currentUser.getId() : null)
-                    .guestIdentifier(guestIdentifier)
+                    .userId(currentUser != null ? currentUser.getId() : (attempt.getUser() != null ? attempt.getUser().getId() : null))
+                    .guestIdentifier(guestIdentifier != null ? guestIdentifier : attempt.getGuestIdentifier())
                     .submitTime(submitTime)
                     .answers(answersMap)
                     .build();
@@ -273,6 +285,105 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                         ? "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher."
                         : "Exam submitted and graded successfully.")
                 .build();
+    }
+
+    @Override
+    public void autoSubmitActiveAttemptsForExam(UUID examId, String reason) {
+        log.info("Auto-submitting all active in-progress attempts for examId: {}, reason: {}", examId, reason);
+
+        // 1. Broadcast single exam-level closed event via WebSocket immediately before processing attempts!
+        // All active candidates subscribed to /topic/exams/{examId}/proctoring will receive this in ~1ms
+        try {
+            ExamLifecycleMessage examMessage = ExamLifecycleMessage.builder()
+                    .eventType("EXAM_CLOSED")
+                    .action("AUTO_SUBMIT")
+                    .examId(examId)
+                    .reason(reason)
+                    .message("Đề thi đã kết thúc. Toàn bộ bài làm đang được hệ thống tự động thu.")
+                    .build();
+            messagingTemplate.convertAndSend("/topic/exams/" + examId + "/proctoring", examMessage);
+        } catch (Exception ex) {
+            log.warn("Failed to dispatch WebSocket exam-level event for examId: {}", examId, ex);
+        }
+
+        // 2. Fetch all in-progress attempts with 1 single query
+        List<ExamAttempt> inProgressAttempts = examAttemptRepository.findByExamIdAndStatus(examId, AttemptStatus.IN_PROGRESS);
+
+        if (inProgressAttempts.isEmpty()) {
+            log.info("No active in-progress attempts found for examId: {}", examId);
+            return;
+        }
+
+        log.info("Found {} in-progress attempt(s) to auto-submit for examId: {}. Submitting in parallel...",
+                inProgressAttempts.size(), examId);
+
+        // 3. Package and dispatch to RabbitMQ queue in PARALLEL without intermediate DB updates
+        // sendIndividualWs = false because we already dispatched a single broadcast to /topic/exams/{examId}/proctoring
+        inProgressAttempts.parallelStream().forEach(attempt -> {
+            autoSubmitSingleAttempt(attempt, reason, false);
+        });
+
+        log.info("Successfully queued {} attempt(s) in parallel for examId: {}", inProgressAttempts.size(), examId);
+    }
+
+    @Override
+    public void autoSubmitExpiredAttempt(UUID attemptId, String reason) {
+        examAttemptRepository.findByIdWithExam(attemptId).ifPresent(attempt -> {
+            if (attempt.getStatus() == AttemptStatus.IN_PROGRESS) {
+                autoSubmitSingleAttempt(attempt, reason, true);
+            }
+        });
+    }
+
+    private void autoSubmitSingleAttempt(ExamAttempt attempt, String reason, boolean sendIndividualWs) {
+        UUID attemptId = attempt.getId();
+        log.info("Auto-submitting single attemptId: {}, reason: {}", attemptId, reason);
+
+        // 1. Acquire submission lock to prevent duplicate submissions and disallow resuming
+        boolean lockAcquired = redisExamSessionService.acquireSubmissionLock(attemptId, 300L);
+        if (!lockAcquired) {
+            log.info("Submission lock already acquired for attemptId: {}, skipping duplicate auto-submit", attemptId);
+            return;
+        }
+
+        try {
+            // 2. Dispatch individual WebSocket event first if requested (for individual attempt expiration)
+            if (sendIndividualWs) {
+                try {
+                    ExamLifecycleMessage alert = ExamLifecycleMessage.builder()
+                            .eventType("EXAM_CLOSED")
+                            .action("AUTO_SUBMIT")
+                            .examId(attempt.getExam().getId())
+                            .attemptId(attemptId)
+                            .reason(reason)
+                            .message("Hết thời gian làm bài. Hệ thống đã tự động thu bài của bạn.")
+                            .build();
+                    messagingTemplate.convertAndSend("/topic/attempts/" + attemptId + "/proctoring", alert);
+                } catch (Exception wsEx) {
+                    log.warn("Failed to dispatch WebSocket alert for attemptId: {}", attemptId, wsEx);
+                }
+            }
+
+            // 3. Package answers from Redis drafts and dispatch to RabbitMQ for background grading
+            Map<UUID, SaveAnswerRequest> draftAnswers = redisExamSessionService.getDraftAnswers(attemptId);
+            LocalDateTime submitTime = LocalDateTime.now();
+
+            SubmissionMessage message = SubmissionMessage.builder()
+                    .attemptId(attemptId)
+                    .examId(attempt.getExam().getId())
+                    .examTitle(attempt.getExam().getTitle())
+                    .userId(attempt.getUser() != null ? attempt.getUser().getId() : null)
+                    .guestIdentifier(attempt.getGuestIdentifier())
+                    .submitTime(submitTime)
+                    .answers(draftAnswers)
+                    .build();
+
+            examSubmissionProducer.sendSubmissionMessage(message);
+
+        } catch (Exception ex) {
+            log.error("Failed to auto-submit attemptId: {}", attemptId, ex);
+            redisExamSessionService.releaseSubmissionLock(attemptId);
+        }
     }
 
     // ==========================================

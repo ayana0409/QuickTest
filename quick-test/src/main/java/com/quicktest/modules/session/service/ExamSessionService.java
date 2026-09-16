@@ -36,4 +36,14 @@ public interface ExamSessionService {
      * Retrieve the finalized or in-progress grading result for a submitted exam attempt.
      */
     SubmitResultResponse getSubmissionResult(UUID attemptId, User currentUser, String guestIdentifier);
+
+    /**
+     * Automatically collect and submit all in-progress attempts for an exam (e.g. when closed or deadline reached).
+     */
+    void autoSubmitActiveAttemptsForExam(UUID examId, String reason);
+
+    /**
+     * Automatically collect and submit an individual expired attempt.
+     */
+    void autoSubmitExpiredAttempt(UUID attemptId, String reason);
 }

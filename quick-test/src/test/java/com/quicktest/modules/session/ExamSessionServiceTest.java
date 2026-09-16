@@ -57,6 +57,9 @@ class ExamSessionServiceTest {
     private ExamSubmissionProducer examSubmissionProducer;
 
     @Mock
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
+    @Mock
     private HttpServletRequest servletRequest;
 
     @InjectMocks
@@ -501,8 +504,8 @@ class ExamSessionServiceTest {
     }
 
     @Test
-    @DisplayName("submitExam should throw SessionExpiredException when submitted after grace period")
-    void submitExam_ThrowsSessionExpiredException_WhenPastGracePeriod() {
+    @DisplayName("submitExam should gracefully accept submission even when submitted after grace period")
+    void submitExam_AcceptsSubmission_WhenPastGracePeriod() {
         UUID attemptId = UUID.randomUUID();
         ExamAttempt attempt = ExamAttempt.builder()
                 .id(attemptId)
@@ -510,37 +513,41 @@ class ExamSessionServiceTest {
                 .user(studentUser)
                 .status(AttemptStatus.IN_PROGRESS)
                 .startTime(LocalDateTime.now().minusMinutes(60))
-                .expireAt(LocalDateTime.now().minusSeconds(20)) // Expired beyond 15s grace period
+                .expireAt(LocalDateTime.now().minusSeconds(20)) // Expired beyond grace period
                 .build();
 
         when(redisExamSessionService.acquireSubmissionLock(attemptId, 300L)).thenReturn(true);
         when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
+        when(redisExamSessionService.getDraftAnswers(attemptId)).thenReturn(Map.of());
 
-        assertThrows(SessionExpiredException.class, () ->
-                examSessionService.submitExam(attemptId, null, studentUser, null));
+        SubmitAcceptedResponse response = examSessionService.submitExam(attemptId, null, studentUser, null);
 
-        verify(redisExamSessionService, times(1)).releaseSubmissionLock(attemptId);
-        verify(examSubmissionProducer, never()).sendSubmissionMessage(any());
+        assertNotNull(response);
+        assertEquals(attemptId, response.getAttemptId());
+        assertEquals("PROCESSING", response.getStatus());
+        verify(examSubmissionProducer, times(1)).sendSubmissionMessage(any());
     }
 
     @Test
-    @DisplayName("submitExam should throw AppException when attempt is already submitted")
-    void submitExam_ThrowsAppException_WhenAlreadySubmitted() {
+    @DisplayName("submitExam should return idempotent response when attempt is already submitted")
+    void submitExam_ReturnsIdempotentResponse_WhenAlreadySubmitted() {
         UUID attemptId = UUID.randomUUID();
         ExamAttempt attempt = ExamAttempt.builder()
                 .id(attemptId)
                 .exam(publishedExam)
                 .user(studentUser)
                 .status(AttemptStatus.SUBMITTED)
+                .submitTime(LocalDateTime.now().minusMinutes(5))
                 .build();
 
         when(redisExamSessionService.acquireSubmissionLock(attemptId, 300L)).thenReturn(true);
         when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
 
-        assertThrows(AppException.class, () ->
-                examSessionService.submitExam(attemptId, null, studentUser, null));
+        SubmitAcceptedResponse response = examSessionService.submitExam(attemptId, null, studentUser, null);
 
-        verify(redisExamSessionService, times(1)).releaseSubmissionLock(attemptId);
+        assertNotNull(response);
+        assertEquals(attemptId, response.getAttemptId());
+        assertEquals("PROCESSING", response.getStatus());
         verify(examSubmissionProducer, never()).sendSubmissionMessage(any());
     }
 
@@ -586,5 +593,30 @@ class ExamSessionServiceTest {
         assertNotNull(result);
         assertEquals(9.0, result.getTotalScore());
         assertEquals(AttemptStatus.SUBMITTED, result.getStatus());
+    }
+
+    @Test
+    @DisplayName("autoSubmitActiveAttemptsForExam should fetch in-progress attempts and send submission messages")
+    void autoSubmitActiveAttemptsForExam_Success() {
+        UUID examId = publishedExam.getId();
+        UUID attemptId = UUID.randomUUID();
+        ExamAttempt activeAttempt = ExamAttempt.builder()
+                .id(attemptId)
+                .exam(publishedExam)
+                .user(studentUser)
+                .status(AttemptStatus.IN_PROGRESS)
+                .build();
+
+        when(examAttemptRepository.findByExamIdAndStatus(examId, AttemptStatus.IN_PROGRESS))
+                .thenReturn(List.of(activeAttempt));
+        when(redisExamSessionService.acquireSubmissionLock(attemptId, 300L)).thenReturn(true);
+        when(redisExamSessionService.getDraftAnswers(attemptId)).thenReturn(Collections.emptyMap());
+
+        examSessionService.autoSubmitActiveAttemptsForExam(examId, "Exam closed by teacher");
+
+        verify(examSubmissionProducer).sendSubmissionMessage(argThat(msg ->
+                msg.getAttemptId().equals(attemptId) && msg.getExamId().equals(examId)));
+        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/exams/" + examId + "/proctoring"), any(Object.class));
+        verify(messagingTemplate, never()).convertAndSend(eq("/topic/attempts/" + attemptId + "/proctoring"), any(Object.class));
     }
 }

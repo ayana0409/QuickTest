@@ -52,6 +52,9 @@ class ExamServiceTest {
     @Mock
     private MediaDeleteProducer mediaDeleteProducer;
 
+    @Mock
+    private com.quicktest.modules.session.service.ExamSessionService examSessionService;
+
     @InjectMocks
     private ExamServiceImpl examService;
 
@@ -227,5 +230,6 @@ class ExamServiceTest {
         ExamDetailResponse response = examService.closeExam(sampleExam.getId(), teacher);
 
         assertEquals(ExamStatus.CLOSED, response.getStatus());
+        verify(examSessionService).autoSubmitActiveAttemptsForExam(eq(sampleExam.getId()), anyString());
     }
 }
