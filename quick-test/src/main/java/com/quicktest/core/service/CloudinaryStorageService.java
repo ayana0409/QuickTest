@@ -42,5 +42,15 @@ public interface CloudinaryStorageService {
      * @param publicIdsOrUrls list of Cloudinary public identifiers or secure URLs
      */
     void deleteMediaBatch(java.util.List<String> publicIdsOrUrls);
+
+    /**
+     * Duplicates an existing image by uploading from its source URL to a new asset in Cloudinary,
+     * generating a distinct publicId and secureUrl.
+     *
+     * @param sourceUrl  URL of the existing image to clone
+     * @param folderType target folder alias (e.g. "questions", "options")
+     * @return metadata of the newly duplicated image
+     */
+    MediaUploadResponse duplicateImage(String sourceUrl, String folderType);
 }
 

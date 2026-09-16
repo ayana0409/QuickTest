@@ -129,12 +129,10 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
 
     setIsSaving(true);
     try {
-      const result = await gradingService.submitEssayGrades({
+      await gradingService.submitEssayGrades({
         attemptId: detail.attemptId,
         grades: gradesPayload,
       });
-
-      toast.success(result.message || 'Lưu điểm bài thi thành công!');
 
       // Refresh detail
       const updated = await gradingService.getAttemptDetailForGrading(attemptId);

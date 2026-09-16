@@ -42,6 +42,11 @@
       "type": "string"
     },
     {
+      "key": "duplicateExamId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "singleChoiceQId",
       "value": "",
       "type": "string"
@@ -2331,6 +2336,202 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is 200\", function () {",
                   "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.27 Duplicate Exam - No Images Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/duplicate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "duplicate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Kỳ thi thử THPT Toán 2026 - Bản sao\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}",
+                  "if ((typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})) && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data && (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"duplicateExamId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"duplicateExamId\", (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {})).data.id);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.28 Duplicate Exam - Forbidden Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/{{examId}}/duplicate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "{{examId}}",
+                "duplicate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Hacker Attempt\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 403\", function () {",
+                  "        pm.response.to.have.status(403);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.29 Duplicate Exam - Not Found",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/exams/00000000-0000-0000-0000-000000000000/duplicate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "exams",
+                "00000000-0000-0000-0000-000000000000",
+                "duplicate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
                   "    });",
                   "}"
                 ]

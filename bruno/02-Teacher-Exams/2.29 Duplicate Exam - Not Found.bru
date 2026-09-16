@@ -1,0 +1,28 @@
+meta {
+  name: 2.29 Duplicate Exam - Not Found
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/00000000-0000-0000-0000-000000000000/duplicate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 404
+}

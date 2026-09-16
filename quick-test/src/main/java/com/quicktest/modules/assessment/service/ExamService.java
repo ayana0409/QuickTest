@@ -56,4 +56,12 @@ public interface ExamService {
      * optionally updating the time window and attempt limits.
      */
     ExamDetailResponse republishExam(UUID examId, com.quicktest.modules.assessment.dto.ExamRepublishRequest request, User teacher);
+
+    /**
+     * Duplicate an existing exam with all questions and options.
+     * Starts in DRAFT status with a newly generated access code.
+     * If the exam contains images, image cloning is offloaded to RabbitMQ in the background
+     * and the exam is temporarily in CLONING status until all images are duplicated.
+     */
+    ExamDetailResponse duplicateExam(UUID examId, com.quicktest.modules.assessment.dto.ExamDuplicateRequest request, User teacher);
 }

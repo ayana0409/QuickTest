@@ -43,9 +43,9 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
                 "e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, " +
                 "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.startTime, e.endTime, e.createdAt) " +
                 "FROM Exam e LEFT JOIN e.questions q " +
-                "WHERE e.createdBy.id = :teacherId " +
+                "WHERE e.createdBy.id = :teacherId AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
                 "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.startTime, e.endTime, e.createdAt",
-        countQuery = "SELECT COUNT(e) FROM Exam e WHERE e.createdBy.id = :teacherId"
+        countQuery = "SELECT COUNT(e) FROM Exam e WHERE e.createdBy.id = :teacherId AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING"
     )
     Page<ExamSummaryResponse> findSummariesByTeacherId(@Param("teacherId") UUID teacherId, Pageable pageable);
 

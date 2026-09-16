@@ -6,6 +6,7 @@ import type {
   ExamCreateRequest,
   ExamUpdateRequest,
   ExamRepublishRequest,
+  ExamDuplicateRequest,
   PageResponse,
 } from '@/types/exam';
 import type {
@@ -176,6 +177,18 @@ export const examService = {
         headers: { 'Content-Type': 'multipart/form-data' },
         successMessage: 'Tải ảnh minh họa lên thành công!',
       }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Duplicate an existing exam with new access code, questions, and options.
+   * If the exam has images, duplicates them asynchronously via background worker.
+   */
+  async duplicateExam(id: string, payload?: ExamDuplicateRequest): Promise<ExamDetailResponse> {
+    const response = await apiClient.post<ApiResponse<ExamDetailResponse>>(
+      `/teacher/exams/${id}/duplicate`,
+      payload ?? {}
     );
     return response.data.data;
   },

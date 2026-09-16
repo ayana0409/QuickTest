@@ -7,9 +7,11 @@ import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.assessment.dto.ExamCreateRequest;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
+import com.quicktest.modules.assessment.dto.ExamDuplicateRequest;
 import com.quicktest.modules.assessment.dto.ExamRepublishRequest;
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.dto.ExamUpdateRequest;
+import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.assessment.service.ExamService;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
@@ -125,6 +127,24 @@ public class ExamController {
         User teacher = getAuthenticatedTeacher(currentUser);
         ExamDetailResponse response = examService.republishExam(id, request, teacher);
         return ResponseEntity.ok(ApiResponse.success(response, "Exam republished successfully"));
+    }
+
+    /**
+     * Duplicate an existing exam with all questions and options.
+     */
+    @PostMapping("/{id}/duplicate")
+    public ResponseEntity<ApiResponse<ExamDetailResponse>> duplicateExam(
+            @PathVariable("id") UUID id,
+            @RequestBody(required = false) @Valid ExamDuplicateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        User teacher = getAuthenticatedTeacher(currentUser);
+        ExamDetailResponse response = examService.duplicateExam(id, request, teacher);
+        boolean isAsync = response.getStatus() == ExamStatus.CLONING;
+        HttpStatus status = isAsync ? HttpStatus.ACCEPTED : HttpStatus.CREATED;
+        String message = isAsync
+                ? "Đang nhân bản đề thi và sao chép hình ảnh trong nền..."
+                : "Nhân bản đề thi thành công";
+        return ResponseEntity.status(status).body(ApiResponse.success(response, message));
     }
 
     /**

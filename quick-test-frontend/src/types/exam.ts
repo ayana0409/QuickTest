@@ -8,7 +8,7 @@ export * from './candidateAnswer';
 /**
  * Exam lifecycle states matching backend ExamStatus enum.
  */
-export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'CLOSED';
+export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'CLOSED' | 'CLONING';
 
 /**
  * Candidate exam attempt progression status matching backend AttemptStatus enum.
@@ -258,5 +258,12 @@ export interface ExamRepublishRequest {
   endTime?: string | null;
   durationMinutes?: number;
   maxAttempts?: number;
+}
+
+/**
+ * Request payload to duplicate an existing exam.
+ */
+export interface ExamDuplicateRequest {
+  title?: string;
 }
 

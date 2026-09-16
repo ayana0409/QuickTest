@@ -1,13 +1,18 @@
 package com.quicktest.modules.assessment.service;
 
+import com.quicktest.config.RabbitMQConfig;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage;
+import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage.ImageCloneItem;
 import com.quicktest.modules.assessment.dto.ExamCreateRequest;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
+import com.quicktest.modules.assessment.dto.ExamDuplicateRequest;
 import com.quicktest.modules.assessment.dto.ExamRepublishRequest;
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.dto.ExamUpdateRequest;
 import com.quicktest.modules.assessment.dto.QuestionResponse;
+import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.assessment.entity.Question;
@@ -19,6 +24,7 @@ import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.session.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -27,7 +33,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -55,6 +60,7 @@ public class ExamServiceImpl implements ExamService {
     private final AnswerOptionRepository answerOptionRepository;
     private final MediaDeleteProducer mediaDeleteProducer;
     private final ExamSessionService examSessionService;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
@@ -297,6 +303,157 @@ public class ExamServiceImpl implements ExamService {
 
         List<QuestionResponse> questions = fetchQuestionsWithOptions(examId);
         return ExamDetailResponse.fromEntityWithQuestions(republishedExam, questions);
+    }
+
+    @Override
+    @Transactional
+    public ExamDetailResponse duplicateExam(UUID examId, ExamDuplicateRequest request, User teacher) {
+        log.info("Duplicating exam ID: {} by teacher ID: {}", examId, teacher.getId());
+
+        Exam sourceExam = findExamWithCreatorOrThrow(examId);
+        verifyOwnership(sourceExam, teacher);
+
+        // 1. Determine title and generate new unique access code
+        String newTitle = (request != null && request.getTitle() != null && !request.getTitle().isBlank())
+                ? request.getTitle().trim()
+                : "[Bản sao] " + sourceExam.getTitle();
+
+        String newAccessCode = resolveAccessCode(null);
+
+        // 2. Fetch all source questions with options
+        List<Question> sourceQuestions = questionRepository.findByExamIdWithOptions(examId);
+
+        // 3. Count images across questions and options
+        boolean hasImages = false;
+        for (Question sq : sourceQuestions) {
+            if (sq.getImageUrl() != null && !sq.getImageUrl().isBlank()) {
+                hasImages = true;
+                break;
+            }
+            if (sq.getOptions() != null) {
+                for (AnswerOption so : sq.getOptions()) {
+                    if (so.getImageUrl() != null && !so.getImageUrl().isBlank()) {
+                        hasImages = true;
+                        break;
+                    }
+                }
+                if (hasImages) break;
+            }
+        }
+
+        // 4. Create new Exam entity (CLONING if has images, DRAFT if no images)
+        Exam newExam = Exam.builder()
+                .title(newTitle)
+                .accessCode(newAccessCode)
+                .description(sourceExam.getDescription())
+                .status(hasImages ? ExamStatus.CLONING : ExamStatus.DRAFT)
+                .durationMinutes(sourceExam.getDurationMinutes())
+                .maxAttempts(sourceExam.getMaxAttempts())
+                .shuffleQuestions(sourceExam.getShuffleQuestions())
+                .shuffleOptions(sourceExam.getShuffleOptions())
+                .startTime(null)
+                .endTime(null)
+                .createdBy(teacher)
+                .questions(new ArrayList<>())
+                .build();
+
+        Exam savedNewExam = examRepository.save(newExam);
+
+        // 5. Duplicate questions and options
+        List<Question> newQuestions = new ArrayList<>();
+        List<ImageCloneItem> actualTaskItems = new ArrayList<>();
+
+        for (Question sq : sourceQuestions) {
+            Question newQuestion = Question.builder()
+                    .orderIndex(sq.getOrderIndex())
+                    .content(sq.getContent())
+                    .imageUrl(sq.getImageUrl())
+                    .imagePublicId(sq.getImagePublicId())
+                    .questionType(sq.getQuestionType())
+                    .points(sq.getPoints())
+                    .sampleAnswer(sq.getSampleAnswer())
+                    .numericTolerance(sq.getNumericTolerance())
+                    .gradingRubric(sq.getGradingRubric())
+                    .exam(savedNewExam)
+                    .options(new ArrayList<>())
+                    .build();
+
+            Question savedNewQuestion = questionRepository.save(newQuestion);
+
+            if (sq.getImageUrl() != null && !sq.getImageUrl().isBlank()) {
+                actualTaskItems.add(ImageCloneItem.builder()
+                        .questionId(savedNewQuestion.getId())
+                        .optionId(null)
+                        .sourceUrl(sq.getImageUrl())
+                        .sourcePublicId(sq.getImagePublicId())
+                        .targetFolder("questions")
+                        .build());
+            }
+
+            if (sq.getOptions() != null) {
+                for (AnswerOption so : sq.getOptions()) {
+                    AnswerOption newOption = AnswerOption.builder()
+                            .orderIndex(so.getOrderIndex())
+                            .content(so.getContent())
+                            .imageUrl(so.getImageUrl())
+                            .imagePublicId(so.getImagePublicId())
+                            .isCorrect(so.getIsCorrect())
+                            .question(savedNewQuestion)
+                            .build();
+
+                    AnswerOption savedNewOption = answerOptionRepository.save(newOption);
+
+                    if (so.getImageUrl() != null && !so.getImageUrl().isBlank()) {
+                        actualTaskItems.add(ImageCloneItem.builder()
+                                .questionId(savedNewQuestion.getId())
+                                .optionId(savedNewOption.getId())
+                                .sourceUrl(so.getImageUrl())
+                                .sourcePublicId(so.getImagePublicId())
+                                .targetFolder("options")
+                                .build());
+                    }
+                    newQuestion.getOptions().add(savedNewOption);
+                }
+            }
+            newQuestions.add(savedNewQuestion);
+        }
+
+        savedNewExam.setQuestions(newQuestions);
+
+        // 6. If hasImages, publish background task to RabbitMQ after commit
+        if (hasImages) {
+            UUID clonedExamId = savedNewExam.getId();
+            UUID teacherId = teacher.getId();
+            ExamCloneTaskMessage message = ExamCloneTaskMessage.builder()
+                    .newExamId(clonedExamId)
+                    .teacherId(teacherId)
+                    .items(actualTaskItems)
+                    .build();
+
+            if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        log.info("Publishing exam clone task message to RabbitMQ for new exam ID: {} with {} images",
+                                clonedExamId, actualTaskItems.size());
+                        rabbitTemplate.convertAndSend(RabbitMQConfig.EXAM_CLONE_EXCHANGE,
+                                RabbitMQConfig.EXAM_CLONE_ROUTING_KEY, message);
+                    }
+                });
+            } else {
+                rabbitTemplate.convertAndSend(RabbitMQConfig.EXAM_CLONE_EXCHANGE,
+                        RabbitMQConfig.EXAM_CLONE_ROUTING_KEY, message);
+            }
+        } else {
+            log.info("Exam ID: {} duplicated successfully as DRAFT without images. New exam ID: {}",
+                    examId, savedNewExam.getId());
+        }
+
+        List<QuestionResponse> questionResponses = newQuestions.stream()
+                .map(QuestionResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        return ExamDetailResponse.fromEntityWithQuestions(savedNewExam, questionResponses);
     }
 
     // ==========================================

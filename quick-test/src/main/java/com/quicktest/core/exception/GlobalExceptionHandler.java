@@ -171,6 +171,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle Spring MVC NoResourceFoundException (404 for unmapped endpoints or missing static resources).
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(HttpStatus.NOT_FOUND.value(), "Resource not found: " + ex.getResourcePath()));
+    }
+
+    /**
      * Fallback handler for all uncaught exceptions.
      */
     @ExceptionHandler(Exception.class)

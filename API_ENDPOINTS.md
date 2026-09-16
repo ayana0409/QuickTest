@@ -62,7 +62,8 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 8 | | `PATCH` | `/api/teacher/exams/{id}/publish` | `TEACHER` | Xuất bản đề thi (từ DRAFT hoặc CLOSED -> PUBLISHED) |
 | 9 | | `PATCH` | `/api/teacher/exams/{id}/close` | `TEACHER` | Đóng đề thi (CLOSED) & tự động thu các bài dở dang |
 | 10 | | `PATCH` | `/api/teacher/exams/{id}/republish` | `TEACHER` | Mở lại đề thi đã đóng (cập nhật hạn chót, chuyển sang PUBLISHED) |
-| 11 | | `DELETE` | `/api/teacher/exams/{id}` | `TEACHER` | Xóa đề thi (chỉ xóa DRAFT) |
+| 11 | | `POST` | `/api/teacher/exams/{id}/duplicate` | `TEACHER` | Nhân bản đề thi sang bản nháp mới (bất đồng bộ sao chép ảnh qua RabbitMQ) |
+| 12 | | `DELETE` | `/api/teacher/exams/{id}` | `TEACHER` | Xóa đề thi (chỉ xóa DRAFT) |
 | 11 | **Questions** | `POST` | `/api/teacher/exams/{examId}/questions` | `TEACHER` | Thêm câu hỏi vào đề thi |
 | 12 | | `PUT` | `/api/teacher/questions/{questionId}` | `TEACHER` | Cập nhật câu hỏi và đáp án |
 | 13 | | `PUT` | `/api/teacher/questions/{questionId}/image` | `TEACHER` | Cập nhật trực tiếp ảnh câu hỏi (xóa ảnh cũ Cloudinary) |
@@ -282,7 +283,23 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
   - Nếu có thiết lập `endTime`, hạn chót phải ở tương lai (`endTime > now`).
 - **Response (200 OK):** `ExamDetailResponse` (status = "PUBLISHED")
 
-#### 2.8. Xóa đề thi (`DELETE /api/teacher/exams/{id}`)
+#### 2.8. Nhân bản đề thi (`POST /api/teacher/exams/{id}/duplicate`)
+- **Mô tả:** Nhân bản một đề thi đã có sẵn của giáo viên thành một đề thi mới ở trạng thái `DRAFT` với mã phòng thi (`accessCode`) mới ngẫu nhiên.
+  - Sao chép toàn bộ danh sách câu hỏi, đáp án, điểm số và cấu hình.
+  - Nếu đề thi có hình ảnh minh họa (câu hỏi hoặc đáp án): đề thi tạm chuyển sang trạng thái `CLONING` (ẩn khỏi danh sách giáo viên), đẩy tác vụ sao chép ảnh sang hàng đợi RabbitMQ (`exam.clone.queue`). Sau khi Background Worker nhân bản toàn bộ ảnh sang asset Cloudinary độc lập (ID mới), đề thi tự động chuyển sang `DRAFT` và phát thông báo WebSocket (`/topic/teachers/{teacherId}/notifications`) về cho giáo viên.
+  - Nếu đề thi không có hình ảnh: tạo trực tiếp trạng thái `DRAFT` ngay lập tức (201 Created).
+- **Quyền hạn:** `TEACHER`
+- **Path Variable:** `id` (UUID đề thi nguồn cần nhân bản)
+- **Request Body (Tùy chọn):** `ExamDuplicateRequest`
+  ```json
+  {
+    "title": "Kỳ thi thử THPT Toán 2026 - Lần 2"
+  }
+  ```
+  *(Nếu để trống `title`, hệ thống tự động đặt tiền tố `[Bản sao] <Tên đề gốc>`)*
+- **Response (201 Created hoặc 202 Accepted):** `ExamDetailResponse`
+
+#### 2.9. Xóa đề thi (`DELETE /api/teacher/exams/{id}`)
 - **Mô tả:** Xóa vĩnh viễn đề thi. Chỉ cho phép xóa khi đề thi đang ở trạng thái `DRAFT`.
 - **Quyền hạn:** `TEACHER`
 - **Response (200 OK):**

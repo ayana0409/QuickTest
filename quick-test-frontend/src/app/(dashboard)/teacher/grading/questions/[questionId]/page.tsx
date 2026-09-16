@@ -69,10 +69,7 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
 
   const handleSaveBatch = async () => {
     if (dirtyCount === 0) return;
-    const success = await saveAllDrafts(questionId);
-    if (success) {
-      toast.success(`Đã lưu thành công điểm và nhận xét cho ${dirtyCount} bài làm!`);
-    }
+    await saveAllDrafts(questionId);
   };
 
   const handleTriggerAi = async () => {

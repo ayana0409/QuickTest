@@ -34,6 +34,10 @@ public class RabbitMQConfig {
     public static final String MEDIA_DELETE_QUEUE = "media.delete.queue";
     public static final String MEDIA_DELETE_ROUTING_KEY = "media.delete.routing-key";
 
+    public static final String EXAM_CLONE_EXCHANGE = "exam.clone.exchange";
+    public static final String EXAM_CLONE_QUEUE = "exam.clone.queue";
+    public static final String EXAM_CLONE_ROUTING_KEY = "exam.clone.routing-key";
+
     /**
      * Durable queue for asynchronous media batch upload tasks.
      */
@@ -80,6 +84,30 @@ public class RabbitMQConfig {
     @Bean
     public Binding mediaDeleteBinding(Queue mediaDeleteQueue, DirectExchange mediaDeleteExchange) {
         return BindingBuilder.bind(mediaDeleteQueue).to(mediaDeleteExchange).with(MEDIA_DELETE_ROUTING_KEY);
+    }
+
+    /**
+     * Durable queue for background exam cloning and image duplication tasks.
+     */
+    @Bean
+    public Queue examCloneQueue() {
+        return QueueBuilder.durable(EXAM_CLONE_QUEUE).build();
+    }
+
+    /**
+     * Direct exchange for exam cloning tasks.
+     */
+    @Bean
+    public DirectExchange examCloneExchange() {
+        return new DirectExchange(EXAM_CLONE_EXCHANGE);
+    }
+
+    /**
+     * Binding exam clone queue to direct clone exchange.
+     */
+    @Bean
+    public Binding examCloneBinding(Queue examCloneQueue, DirectExchange examCloneExchange) {
+        return BindingBuilder.bind(examCloneQueue).to(examCloneExchange).with(EXAM_CLONE_ROUTING_KEY);
     }
 
     /**

@@ -109,7 +109,6 @@ export default function ExamEntryPage() {
       });
 
       if (paper && paper.attemptId) {
-        toast.success('Khởi tạo bài thi thành công!');
         router.push(`/exam/${paper.attemptId}`);
       } else {
         // Fallback navigate to access code route

@@ -1,0 +1,30 @@
+meta {
+  name: 2.28 Duplicate Exam - Forbidden Student
+  type: http
+  seq: 28
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/duplicate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Hacker Attempt"
+  }
+}
+
+assert {
+  res.status: eq 403
+}

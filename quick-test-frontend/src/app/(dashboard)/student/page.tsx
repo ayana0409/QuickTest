@@ -84,7 +84,6 @@ export default function StudentDashboardPage() {
     try {
       const paper = await candidateSessionService.startExam({ accessCode: cleanCode });
       if (paper && paper.attemptId) {
-        toast.success(`Tham gia phòng thi: ${paper.examTitle}`);
         router.push(`/exam/${paper.attemptId}`);
       } else {
         router.push(`/exam/${cleanCode.toLowerCase()}`);

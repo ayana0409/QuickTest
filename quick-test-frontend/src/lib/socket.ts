@@ -5,6 +5,8 @@ const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws-exam'
 
 let stompClient: Client | null = null;
 
+const connectCallbacks = new Set<(client: Client) => void>();
+
 /**
  * Get current STOMP client instance.
  */
@@ -29,11 +31,24 @@ export function connectWebSocket(
     return null;
   }
 
-  // If already connected, return existing client
+  // If already connected, immediately execute callback
   if (stompClient && stompClient.connected) {
     if (onConnectCallback) {
-      onConnectCallback(stompClient);
+      try {
+        onConnectCallback(stompClient);
+      } catch (err) {
+        console.error('[STOMP] Error in immediate onConnect callback:', err);
+      }
     }
+    return stompClient;
+  }
+
+  // If connection is already in progress, queue the callback without creating a new client
+  if (onConnectCallback) {
+    connectCallbacks.add(onConnectCallback);
+  }
+
+  if (stompClient && stompClient.active) {
     return stompClient;
   }
 
@@ -58,9 +73,17 @@ export function connectWebSocket(
     heartbeatOutgoing: 10000,
     onConnect: (frame) => {
       console.log('[STOMP] Connected successfully:', frame);
-      if (stompClient && onConnectCallback) {
-        onConnectCallback(stompClient);
-      }
+      const callbacks = Array.from(connectCallbacks);
+      connectCallbacks.clear();
+      callbacks.forEach((cb) => {
+        try {
+          if (stompClient && stompClient.connected) {
+            cb(stompClient);
+          }
+        } catch (e) {
+          console.error('[STOMP] Error in onConnect callback:', e);
+        }
+      });
     },
     onStompError: (frame) => {
       console.error('[STOMP] Broker error:', frame.headers['message'], frame.body);

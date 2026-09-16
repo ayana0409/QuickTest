@@ -39,7 +39,8 @@ export const candidateSessionService = {
 
     const response = await apiClient.post<ApiResponse<ExamPaper>>(
       '/session/start',
-      finalPayload
+      finalPayload,
+      { successMessage: 'Tham gia phòng thi thành công!' }
     );
     return response.data.data;
   },

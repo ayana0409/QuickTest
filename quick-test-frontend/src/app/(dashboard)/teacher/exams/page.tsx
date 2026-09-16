@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -30,13 +30,14 @@ import { Card, CardContent } from '@/components/common/Card';
 import { Modal } from '@/components/common/Modal';
 import { useAuthStore } from '@/stores/authStore';
 import { examService } from '@/services/exam.service';
+import { connectWebSocket, subscribeTopic } from '@/lib/socket';
 import { formatDateTime, formatDateTimeForPayload } from '@/lib/utils';
 import type { ExamSummaryResponse, ExamStatus, PageResponse } from '@/types/exam';
 import toast from 'react-hot-toast';
 
 export default function TeacherExamsPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, token } = useAuthStore();
 
   const [exams, setExams] = useState<ExamSummaryResponse[]>([]);
   const [pageMeta, setPageMeta] = useState<PageResponse<ExamSummaryResponse> | null>(null);
@@ -60,6 +61,11 @@ export default function TeacherExamsPage() {
   const [republishStartTime, setRepublishStartTime] = useState<string>('');
   const [republishDuration, setRepublishDuration] = useState<number>(45);
   const [isRepublishing, setIsRepublishing] = useState(false);
+
+  // Duplicate Modal States
+  const [duplicateTarget, setDuplicateTarget] = useState<ExamSummaryResponse | null>(null);
+  const [duplicateTitle, setDuplicateTitle] = useState<string>('');
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   // Fetch exams from real backend API
   const fetchExams = useCallback(
@@ -176,6 +182,79 @@ export default function TeacherExamsPage() {
       setIsRepublishing(false);
     }
   };
+
+  // Open modal to duplicate an exam
+  const handleOpenDuplicateModal = (exam: ExamSummaryResponse) => {
+    setDuplicateTarget(exam);
+    const titleBase = exam.title.replace(/^\[Bản sao\]\s*/, '');
+    setDuplicateTitle(`[Bản sao] ${titleBase}`);
+  };
+
+  // Confirm exam duplication
+  const handleConfirmDuplicate = async () => {
+    if (!duplicateTarget) return;
+    setIsDuplicating(true);
+    try {
+      await examService.duplicateExam(duplicateTarget.id, {
+        title: duplicateTitle.trim() || undefined,
+      });
+      setDuplicateTarget(null);
+      fetchExams(currentPage);
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  // Stable refs for fetchExams and currentPage to prevent unnecessary re-subscribing
+  const fetchExamsRef = useRef(fetchExams);
+  useEffect(() => {
+    fetchExamsRef.current = fetchExams;
+  }, [fetchExams]);
+
+  const currentPageRef = useRef(currentPage);
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
+
+  // Real-time WebSocket listener for completed background image duplication
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    let isMounted = true;
+    let sub: any = null;
+
+    connectWebSocket(token, () => {
+      if (!isMounted) return;
+      if (sub) {
+        sub.unsubscribe();
+        sub = null;
+      }
+      sub = subscribeTopic(`/topic/teachers/${user.id}/notifications`, (message) => {
+        try {
+          const payload = JSON.parse(message.body);
+          if (payload.type === 'EXAM_CLONED') {
+            const toastKey = payload.examId ? `exam-cloned-${payload.examId}` : 'exam-cloned';
+            toast.success(payload.message || 'Đề thi đã được nhân bản hoàn tất!', {
+              id: toastKey,
+            });
+            fetchExamsRef.current(currentPageRef.current);
+          }
+        } catch (e) {
+          console.error('Failed to parse teacher notification payload:', e);
+        }
+      });
+    });
+
+    return () => {
+      isMounted = false;
+      if (sub) {
+        sub.unsubscribe();
+        sub = null;
+      }
+    };
+  }, [isAuthenticated, user?.id, token]);
 
   // Delete draft exam
   const handleDeleteConfirm = async () => {
@@ -428,6 +507,16 @@ export default function TeacherExamsPage() {
                     </Button>
                   </Link>
 
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenDuplicateModal(exam)}
+                    leftIcon={<Copy className="w-3.5 h-3.5" />}
+                    title="Nhân bản đề thi này sang bản nháp mới"
+                  >
+                    Nhân bản
+                  </Button>
+
                   {isDraft && (
                     <>
                       <Button
@@ -623,6 +712,63 @@ export default function TeacherExamsPage() {
                 className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               />
             </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Duplicate Exam Modal */}
+      <Modal
+        isOpen={!!duplicateTarget}
+        onClose={() => !isDuplicating && setDuplicateTarget(null)}
+        title="Nhân bản Đề thi"
+        description="Tạo một đề thi bản nháp mới kế thừa toàn bộ câu hỏi, đáp án và hình ảnh minh họa."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setDuplicateTarget(null)}
+              disabled={isDuplicating}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              isLoading={isDuplicating}
+              onClick={handleConfirmDuplicate}
+              leftIcon={<Copy className="w-4 h-4" />}
+            >
+              Xác nhận nhân bản
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+              Tên đề thi bản sao *
+            </label>
+            <input
+              type="text"
+              value={duplicateTitle}
+              onChange={(e) => setDuplicateTitle(e.target.value)}
+              placeholder="Nhập tên đề thi mới..."
+              className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              disabled={isDuplicating}
+            />
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-xs text-indigo-700 dark:text-indigo-300 space-y-1.5">
+            <p className="font-semibold flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              Cơ chế nhân bản đề thi:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-[11px] opacity-90">
+              <li>Mã phòng thi mới ngẫu nhiên, trạng thái ban đầu là <strong>Bản nháp</strong>.</li>
+              <li>Sao chép toàn bộ câu hỏi trắc nghiệm, tự luận và các đáp án.</li>
+              <li>Hình ảnh minh họa sẽ được nhân bản độc lập qua hàng đợi ngầm.</li>
+              <li>Đề thi sẽ tự động xuất hiện trên danh sách ngay sau khi hoàn tất.</li>
+            </ul>
           </div>
         </div>
       </Modal>

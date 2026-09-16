@@ -149,6 +149,47 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
         }
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public MediaUploadResponse duplicateImage(String sourceUrl, String folderType) {
+        if (sourceUrl == null || sourceUrl.isBlank()) {
+            throw new AppException("Source image URL must not be empty", HttpStatus.BAD_REQUEST);
+        }
+
+        String targetFolder = resolveFolder(folderType);
+
+        try {
+            Map<String, Object> params = ObjectUtils.asMap(
+                    "folder", targetFolder,
+                    "resource_type", "image",
+                    "quality", "auto",
+                    "fetch_format", "auto"
+            );
+
+            log.info("Duplicating image on Cloudinary from source: {}, targetFolder: {}", sourceUrl, targetFolder);
+
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(sourceUrl, params);
+
+            String secureUrl = (String) uploadResult.get("secure_url");
+            String publicId = (String) uploadResult.get("public_id");
+            String format = (String) uploadResult.get("format");
+            Number bytesCount = (Number) uploadResult.get("bytes");
+            Long size = bytesCount != null ? bytesCount.longValue() : 0L;
+
+            log.info("Successfully duplicated image on Cloudinary: newPublicId={}, newUrl={}", publicId, secureUrl);
+
+            return MediaUploadResponse.builder()
+                    .url(secureUrl)
+                    .publicId(publicId)
+                    .folder(targetFolder)
+                    .format(format)
+                    .size(size)
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to duplicate image from source {}: {}", sourceUrl, e.getMessage(), e);
+            throw new AppException("Cloudinary image duplication failed: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
+        }
+    }
 
     /**
      * Extracts Cloudinary publicId from a secure URL or returns null if not an URL.

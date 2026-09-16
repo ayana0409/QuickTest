@@ -67,6 +67,11 @@ export default function EditExamPage() {
   const [republishDuration, setRepublishDuration] = useState<number>(45);
   const [isRepublishing, setIsRepublishing] = useState(false);
 
+  // Duplicate modal states
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [duplicateTitle, setDuplicateTitle] = useState<string>('');
+  const [isDuplicating, setIsDuplicating] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -213,6 +218,35 @@ export default function EditExamPage() {
     }
   };
 
+  // Open modal to duplicate exam
+  const handleOpenDuplicateModal = () => {
+    if (!exam) return;
+    const titleBase = exam.title.replace(/^\[Bản sao\]\s*/, '');
+    setDuplicateTitle(`[Bản sao] ${titleBase}`);
+    setIsDuplicateModalOpen(true);
+  };
+
+  // Confirm duplication
+  const handleConfirmDuplicate = async () => {
+    if (!exam) return;
+    setIsDuplicating(true);
+    try {
+      const cloned = await examService.duplicateExam(exam.id, {
+        title: duplicateTitle.trim() || undefined,
+      });
+      setIsDuplicateModalOpen(false);
+      if (cloned.status === 'CLONING') {
+        router.push('/teacher/exams');
+      } else {
+        router.push(`/teacher/exams/${cloned.id}/edit`);
+      }
+    } catch {
+      // Handled by Axios Interceptor
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   // Save Settings
   const onSaveSettings = async (data: SettingsFormData) => {
     if (!exam) return;
@@ -327,6 +361,16 @@ export default function EditExamPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenDuplicateModal}
+            leftIcon={<Copy className="w-3.5 h-3.5" />}
+            title="Nhân bản đề thi này sang bản nháp mới"
+          >
+            Nhân bản
+          </Button>
+
           {isDraft && (
             <>
               <Button
@@ -684,6 +728,63 @@ export default function EditExamPage() {
                 className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               />
             </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Duplicate Exam Modal */}
+      <Modal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => !isDuplicating && setIsDuplicateModalOpen(false)}
+        title="Nhân bản Đề thi"
+        description="Tạo một đề thi bản nháp mới kế thừa toàn bộ câu hỏi, đáp án và hình ảnh minh họa."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsDuplicateModalOpen(false)}
+              disabled={isDuplicating}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              isLoading={isDuplicating}
+              onClick={handleConfirmDuplicate}
+              leftIcon={<Copy className="w-4 h-4" />}
+            >
+              Xác nhận nhân bản
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+              Tên đề thi bản sao *
+            </label>
+            <input
+              type="text"
+              value={duplicateTitle}
+              onChange={(e) => setDuplicateTitle(e.target.value)}
+              placeholder="Nhập tên đề thi mới..."
+              className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              disabled={isDuplicating}
+            />
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-xs text-indigo-700 dark:text-indigo-300 space-y-1.5">
+            <p className="font-semibold flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              Cơ chế nhân bản đề thi:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-[11px] opacity-90">
+              <li>Mã phòng thi mới ngẫu nhiên, trạng thái ban đầu là <strong>Bản nháp</strong>.</li>
+              <li>Sao chép toàn bộ câu hỏi trắc nghiệm, tự luận và các đáp án.</li>
+              <li>Hình ảnh minh họa sẽ được nhân bản độc lập qua hàng đợi ngầm.</li>
+              <li>Đề thi sẽ tự động xuất hiện trên danh sách ngay sau khi hoàn tất.</li>
+            </ul>
           </div>
         </div>
       </Modal>

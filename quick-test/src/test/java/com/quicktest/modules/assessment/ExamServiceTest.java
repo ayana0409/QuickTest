@@ -55,6 +55,9 @@ class ExamServiceTest {
     @Mock
     private com.quicktest.modules.session.service.ExamSessionService examSessionService;
 
+    @Mock
+    private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
+
     @InjectMocks
     private ExamServiceImpl examService;
 

@@ -1,0 +1,40 @@
+meta {
+  name: 2.27 Duplicate Exam - No Images Success
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/duplicate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Kỳ thi thử THPT Toán 2026 - Bản sao"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.status: eq DRAFT
+  res.body.data.title: eq Kỳ thi thử THPT Toán 2026 - Bản sao
+  res.body.data.id: isDefined
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.id) {
+    bru.setVar("duplicateExamId", res.body.data.id);
+    bru.setEnvVar("duplicateExamId", res.body.data.id);
+  }
+}
