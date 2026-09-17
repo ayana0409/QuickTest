@@ -18,7 +18,9 @@ import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -59,21 +61,22 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
 
         verifyExamOwnership(exam, currentTeacher);
 
+        Pageable normalizedPageable = normalizeSortPageable(pageable);
         Page<ExamAttempt> attemptsPage;
         boolean hasKeyword = search != null && !search.isBlank();
 
         if (hasKeyword) {
             String pattern = "%" + search.trim().toLowerCase() + "%";
             if (status != null) {
-                attemptsPage = examAttemptRepository.searchAttemptsByExamIdAndStatus(examId, status, pattern, pageable);
+                attemptsPage = examAttemptRepository.searchAttemptsByExamIdAndStatus(examId, status, pattern, normalizedPageable);
             } else {
-                attemptsPage = examAttemptRepository.searchAttemptsByExamId(examId, pattern, pageable);
+                attemptsPage = examAttemptRepository.searchAttemptsByExamId(examId, pattern, normalizedPageable);
             }
         } else {
             if (status != null) {
-                attemptsPage = examAttemptRepository.findByExamIdAndStatus(examId, status, pageable);
+                attemptsPage = examAttemptRepository.findByExamIdAndStatus(examId, status, normalizedPageable);
             } else {
-                attemptsPage = examAttemptRepository.findByExamId(examId, pageable);
+                attemptsPage = examAttemptRepository.findByExamId(examId, normalizedPageable);
             }
         }
 
@@ -264,6 +267,73 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
                 .build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ExamAttemptStatsResponse getExamAttemptStats(UUID examId, User currentTeacher) {
+        log.debug("Computing attempt statistics for examId: {}, teacherId: {}", examId, currentTeacher.getId());
+
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
+
+        verifyExamOwnership(exam, currentTeacher);
+
+        // Single round-trip: compute all metrics in one SQL aggregation
+        Object[] row = examAttemptRepository.computeAttemptStats(examId);
+
+        if (row == null || row.length == 0) {
+            return ExamAttemptStatsResponse.builder().build();
+        }
+
+        // Defensive unwrap: if Spring Data JPA wraps the single row in an outer array (Object[][]), unwrap it
+        if (row.length == 1 && row[0] instanceof Object[]) {
+            row = (Object[]) row[0];
+        }
+
+        long totalAttempts        = toLong(row[0]);
+        long completedAttempts    = toLong(row[1]);
+        long pendingAttempts      = toLong(row[2]);
+        long inProgressAttempts   = toLong(row[3]);
+        long disqualifiedAttempts = toLong(row[4]);
+        Double avgScore           = toDouble(row[5]);
+        Double maxScore           = toDouble(row[6]);
+        Double minScore           = toDouble(row[7]);
+        long gradedCount          = toLong(row[8]);
+        long totalViolations      = toLong(row[9]);
+        int maxViolations         = row[10] != null ? ((Number) row[10]).intValue() : 0;
+        long attemptsWithViolations = toLong(row[11]);
+        Double avgDuration        = toDouble(row[12]);
+        Long maxDuration          = row[13] != null ? ((Number) row[13]).longValue() : null;
+        Long minDuration          = row[14] != null ? ((Number) row[14]).longValue() : null;
+
+        return ExamAttemptStatsResponse.builder()
+                .totalAttempts(totalAttempts)
+                .completedAttempts(completedAttempts)
+                .pendingGradingAttempts(pendingAttempts)
+                .inProgressAttempts(inProgressAttempts)
+                .disqualifiedAttempts(disqualifiedAttempts)
+                .averageScore(avgScore != null ? Math.round(avgScore * 100.0) / 100.0 : null)
+                .highestScore(maxScore)
+                .lowestScore(minScore)
+                .gradedCount(gradedCount)
+                .totalViolations(totalViolations)
+                .maxViolations(maxViolations)
+                .attemptsWithViolations(attemptsWithViolations)
+                .averageDurationSeconds(avgDuration != null ? Math.round(avgDuration * 10.0) / 10.0 : null)
+                .maxDurationSeconds(maxDuration)
+                .minDurationSeconds(minDuration)
+                .build();
+    }
+
+    /** Safely coerce a possibly-null aggregation result to Long (0 if null). */
+    private long toLong(Object val) {
+        return val != null ? ((Number) val).longValue() : 0L;
+    }
+
+    /** Safely coerce a possibly-null aggregation result to Double. */
+    private Double toDouble(Object val) {
+        return val != null ? ((Number) val).doubleValue() : null;
+    }
+
     private void verifyExamOwnership(Exam exam, User currentTeacher) {
         if (exam.getCreatedBy() == null || currentTeacher == null
                 || !exam.getCreatedBy().getId().equals(currentTeacher.getId())) {
@@ -289,5 +359,39 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
             return ea.getGuestIdentifier().trim();
         }
         return null;
+    }
+
+    /**
+     * Normalize Pageable sort parameters for exam attempts.
+     * Enforces NULLS LAST for numeric and score attributes so attempts awaiting grading or in-progress
+     * are naturally positioned at the end when sorting ascending or descending.
+     * Sanitizes requested properties against allowed entity fields to prevent runtime JPA errors.
+     */
+    private Pageable normalizeSortPageable(Pageable pageable) {
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            return PageRequest.of(pageable != null ? pageable.getPageNumber() : 0,
+                    pageable != null ? pageable.getPageSize() : 20,
+                    Sort.by(Sort.Direction.DESC, "submitTime"));
+        }
+
+        List<Sort.Order> normalizedOrders = new ArrayList<>();
+        for (Sort.Order order : pageable.getSort()) {
+            String prop = order.getProperty() != null ? order.getProperty().trim() : "";
+            Sort.Direction direction = order.getDirection();
+
+            if ("totalScore".equalsIgnoreCase(prop) || "score".equalsIgnoreCase(prop)) {
+                normalizedOrders.add(new Sort.Order(direction, "totalScore"));
+            } else if ("violationCount".equalsIgnoreCase(prop) || "violations".equalsIgnoreCase(prop)) {
+                normalizedOrders.add(new Sort.Order(direction, "violationCount"));
+            } else if ("startTime".equalsIgnoreCase(prop)) {
+                normalizedOrders.add(new Sort.Order(direction, "startTime"));
+            } else if ("guestName".equalsIgnoreCase(prop) || "name".equalsIgnoreCase(prop)) {
+                normalizedOrders.add(new Sort.Order(direction, "guestName"));
+            } else {
+                normalizedOrders.add(new Sort.Order(direction, "submitTime"));
+            }
+        }
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(normalizedOrders));
     }
 }

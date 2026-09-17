@@ -102,4 +102,51 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
             @Param("status") AttemptStatus status,
             @Param("pattern") String pattern,
             Pageable pageable);
+
+    /**
+     * Compute all key statistics for an exam's attempts in a single database round-trip.
+     * Uses PostgreSQL native query for robust duration calculation via EXTRACT(EPOCH FROM (submit_time - start_time)).
+     * Returns one row with aggregated values; uses CASE expressions to segment counts by status.
+     *
+     * Result object array layout (index → meaning):
+     *  [0]  totalAttempts          (Long)
+     *  [1]  completedAttempts      (Long)
+     *  [2]  pendingAttempts        (Long)
+     *  [3]  inProgressAttempts     (Long)
+     *  [4]  disqualifiedAttempts   (Long)
+     *  [5]  avgScore               (Double)
+     *  [6]  maxScore               (Double)
+     *  [7]  minScore               (Double)
+     *  [8]  gradedCount            (Long)
+     *  [9]  totalViolations        (Long)
+     *  [10] maxViolations          (Integer)
+     *  [11] attemptsWithViolations (Long)
+     *  [12] avgDurationSeconds     (Double)   — AVG of EPOCH diff for SUBMITTED
+     *  [13] maxDurationSeconds     (Long)     — MAX of EPOCH diff for SUBMITTED
+     *  [14] minDurationSeconds     (Long)     — MIN of EPOCH diff for SUBMITTED
+     */
+    @Query(value = """
+            SELECT
+              COUNT(id),
+              COALESCE(SUM(CASE WHEN status = 'SUBMITTED' THEN 1 ELSE 0 END), 0),
+              COALESCE(SUM(CASE WHEN status = 'AWAITING_MANUAL_GRADING' THEN 1 ELSE 0 END), 0),
+              COALESCE(SUM(CASE WHEN status = 'IN_PROGRESS' THEN 1 ELSE 0 END), 0),
+              COALESCE(SUM(CASE WHEN status = 'DISQUALIFIED' THEN 1 ELSE 0 END), 0),
+              AVG(total_score),
+              MAX(total_score),
+              MIN(total_score),
+              COALESCE(SUM(CASE WHEN total_score IS NOT NULL THEN 1 ELSE 0 END), 0),
+              COALESCE(SUM(violation_count), 0),
+              MAX(violation_count),
+              COALESCE(SUM(CASE WHEN violation_count > 0 THEN 1 ELSE 0 END), 0),
+              AVG(CASE WHEN status = 'SUBMITTED' AND submit_time IS NOT NULL AND start_time IS NOT NULL
+                       THEN EXTRACT(EPOCH FROM (submit_time - start_time)) ELSE NULL END),
+              MAX(CASE WHEN status = 'SUBMITTED' AND submit_time IS NOT NULL AND start_time IS NOT NULL
+                       THEN EXTRACT(EPOCH FROM (submit_time - start_time)) ELSE NULL END),
+              MIN(CASE WHEN status = 'SUBMITTED' AND submit_time IS NOT NULL AND start_time IS NOT NULL
+                       THEN EXTRACT(EPOCH FROM (submit_time - start_time)) ELSE NULL END)
+            FROM exam_attempts
+            WHERE exam_id = :examId
+            """, nativeQuery = true)
+    Object[] computeAttemptStats(@Param("examId") UUID examId);
 }

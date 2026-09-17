@@ -9,6 +9,7 @@ import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
 import com.quicktest.modules.session.dto.AttemptGradingDetailResponse;
 import com.quicktest.modules.session.dto.AttemptSummaryResponse;
+import com.quicktest.modules.session.dto.ExamAttemptStatsResponse;
 import com.quicktest.modules.session.dto.GradeEssaySubmissionRequest;
 import com.quicktest.modules.session.dto.GradingResultResponse;
 import com.quicktest.modules.session.entity.AttemptStatus;
@@ -58,6 +59,21 @@ public class TeacherGradingController {
                 examId, status, search, pageable, teacher);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Submissions retrieved successfully"));
+    }
+
+    /**
+     * Retrieve aggregated statistics for all attempts of an exam.
+     * Computed from a single database query for maximum performance.
+     */
+    @GetMapping("/exams/{examId}/stats")
+    public ResponseEntity<ApiResponse<ExamAttemptStatsResponse>> getExamAttemptStats(
+            @PathVariable("examId") UUID examId,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+
+        User teacher = getAuthenticatedTeacher(currentUser);
+        ExamAttemptStatsResponse stats = teacherGradingService.getExamAttemptStats(examId, teacher);
+
+        return ResponseEntity.ok(ApiResponse.success(stats, "Exam statistics computed successfully"));
     }
 
     /**

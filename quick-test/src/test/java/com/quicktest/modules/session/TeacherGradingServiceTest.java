@@ -171,11 +171,12 @@ class TeacherGradingServiceTest {
         void getAttemptsToGrade_Success_WhenOwner_WithoutKeyword() {
                 UUID examId = mathExam.getId();
                 Pageable pageable = PageRequest.of(0, 10, Sort.by("submitTime").descending());
-                Page<ExamAttempt> page = new PageImpl<>(List.of(awaitingAttempt), pageable, 1);
+                Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("submitTime")));
+                Page<ExamAttempt> page = new PageImpl<>(List.of(awaitingAttempt), expectedPageable, 1);
 
                 when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
                 when(examAttemptRepository.findByExamIdAndStatus(eq(examId), eq(AttemptStatus.AWAITING_MANUAL_GRADING),
-                                eq(pageable)))
+                                eq(expectedPageable)))
                                 .thenReturn(page);
                 when(candidateAnswerRepository.countByExamAttemptIdAndGradingStatus(awaitingAttempt.getId(),
                                 GradingStatus.PENDING_MANUAL))
@@ -200,11 +201,12 @@ class TeacherGradingServiceTest {
         void getAttemptsToGrade_Success_WhenOwner_WithSearchKeyword() {
                 UUID examId = mathExam.getId();
                 Pageable pageable = PageRequest.of(0, 10, Sort.by("submitTime").descending());
-                Page<ExamAttempt> page = new PageImpl<>(List.of(awaitingAttempt), pageable, 1);
+                Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("submitTime")));
+                Page<ExamAttempt> page = new PageImpl<>(List.of(awaitingAttempt), expectedPageable, 1);
 
                 when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
                 when(examAttemptRepository.searchAttemptsByExamIdAndStatus(eq(examId),
-                                eq(AttemptStatus.AWAITING_MANUAL_GRADING), eq("%student%"), eq(pageable)))
+                                eq(AttemptStatus.AWAITING_MANUAL_GRADING), eq("%student%"), eq(expectedPageable)))
                                 .thenReturn(page);
                 when(candidateAnswerRepository.countByExamAttemptIdAndGradingStatus(awaitingAttempt.getId(),
                                 GradingStatus.PENDING_MANUAL))
@@ -215,6 +217,52 @@ class TeacherGradingServiceTest {
 
                 assertNotNull(response);
                 assertEquals(1, response.getContent().size());
+        }
+
+        @Test
+        @DisplayName("getAttemptsToGrade should normalize sort when sorting by totalScore desc")
+        void getAttemptsToGrade_Success_WhenSortingByScoreDesc() {
+                UUID examId = mathExam.getId();
+                Pageable pageable = PageRequest.of(0, 10, Sort.by("totalScore").descending());
+                Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("totalScore")));
+                Page<ExamAttempt> page = new PageImpl<>(List.of(awaitingAttempt), expectedPageable, 1);
+
+                when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
+                when(examAttemptRepository.findByExamId(eq(examId), eq(expectedPageable)))
+                                .thenReturn(page);
+                when(candidateAnswerRepository.countByExamAttemptIdAndGradingStatus(awaitingAttempt.getId(),
+                                GradingStatus.PENDING_MANUAL))
+                                .thenReturn(2L);
+
+                PageResponse<AttemptSummaryResponse> response = teacherGradingService.getAttemptsToGrade(
+                                examId, null, null, pageable, teacherOwner);
+
+                assertNotNull(response);
+                assertEquals(1, response.getContent().size());
+                verify(examAttemptRepository).findByExamId(eq(examId), eq(expectedPageable));
+        }
+
+        @Test
+        @DisplayName("getAttemptsToGrade should normalize sort when sorting by violationCount desc")
+        void getAttemptsToGrade_Success_WhenSortingByViolationCountDesc() {
+                UUID examId = mathExam.getId();
+                Pageable pageable = PageRequest.of(0, 10, Sort.by("violationCount").descending());
+                Pageable expectedPageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("violationCount")));
+                Page<ExamAttempt> page = new PageImpl<>(List.of(awaitingAttempt), expectedPageable, 1);
+
+                when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
+                when(examAttemptRepository.findByExamId(eq(examId), eq(expectedPageable)))
+                                .thenReturn(page);
+                when(candidateAnswerRepository.countByExamAttemptIdAndGradingStatus(awaitingAttempt.getId(),
+                                GradingStatus.PENDING_MANUAL))
+                                .thenReturn(2L);
+
+                PageResponse<AttemptSummaryResponse> response = teacherGradingService.getAttemptsToGrade(
+                                examId, null, null, pageable, teacherOwner);
+
+                assertNotNull(response);
+                assertEquals(1, response.getContent().size());
+                verify(examAttemptRepository).findByExamId(eq(examId), eq(expectedPageable));
         }
 
         @Test
@@ -410,5 +458,156 @@ class TeacherGradingServiceTest {
                 assertThrows(AppException.class, () -> teacherGradingService.submitEssayGrades(request, teacherOwner));
 
                 verify(candidateAnswerRepository, never()).findById(any());
+        }
+
+        // =========================================================
+        //  getExamAttemptStats — aggregated statistics tests
+        // =========================================================
+
+        @Test
+        @DisplayName("getExamAttemptStats - happy path returns correct aggregated values")
+        void getExamAttemptStats_happyPath_returnsCorrectAggregation() {
+                UUID examId = mathExam.getId();
+
+                // Row layout mirrors the JPQL projection order
+                Object[] row = new Object[] {
+                        5L,   // totalAttempts
+                        3L,   // completedAttempts (SUBMITTED)
+                        1L,   // pendingGradingAttempts (AWAITING_MANUAL_GRADING)
+                        1L,   // inProgressAttempts
+                        0L,   // disqualifiedAttempts
+                        7.25, // avgScore
+                        9.5,  // maxScore
+                        4.0,  // minScore
+                        3L,   // gradedCount
+                        5L,   // totalViolations
+                        3,    // maxViolations
+                        2L,   // attemptsWithViolations
+                        1800.0, // avgDurationSeconds
+                        3600L,  // maxDurationSeconds
+                        900L    // minDurationSeconds
+                };
+
+                when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
+                when(examAttemptRepository.computeAttemptStats(examId)).thenReturn(row);
+
+                ExamAttemptStatsResponse stats = teacherGradingService.getExamAttemptStats(examId, teacherOwner);
+
+                assertEquals(5L, stats.getTotalAttempts());
+                assertEquals(3L, stats.getCompletedAttempts());
+                assertEquals(1L, stats.getPendingGradingAttempts());
+                assertEquals(1L, stats.getInProgressAttempts());
+                assertEquals(0L, stats.getDisqualifiedAttempts());
+                assertEquals(7.25, stats.getAverageScore(), 0.01);
+                assertEquals(9.5, stats.getHighestScore(), 0.01);
+                assertEquals(4.0, stats.getLowestScore(), 0.01);
+                assertEquals(3L, stats.getGradedCount());
+                assertEquals(5L, stats.getTotalViolations());
+                assertEquals(3, stats.getMaxViolations());
+                assertEquals(2L, stats.getAttemptsWithViolations());
+                assertEquals(1800.0, stats.getAverageDurationSeconds(), 0.5);
+                assertEquals(3600L, stats.getMaxDurationSeconds());
+                assertEquals(900L, stats.getMinDurationSeconds());
+        }
+
+        @Test
+        @DisplayName("getExamAttemptStats - exam with zero attempts returns safe zero values")
+        void getExamAttemptStats_noAttempts_returnsZeroValues() {
+                UUID examId = mathExam.getId();
+
+                // All aggregate functions return NULL when no rows exist; COUNT returns 0
+                Object[] row = new Object[] {
+                        0L, 0L, 0L, 0L, 0L,  // counts
+                        null, null, null, 0L,  // score stats
+                        0L, 0, 0L,             // violation stats
+                        null, null, null       // duration stats
+                };
+
+                when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
+                when(examAttemptRepository.computeAttemptStats(examId)).thenReturn(row);
+
+                ExamAttemptStatsResponse stats = teacherGradingService.getExamAttemptStats(examId, teacherOwner);
+
+                assertEquals(0L, stats.getTotalAttempts());
+                assertNull(stats.getAverageScore(), "Should be null when no graded attempts");
+                assertNull(stats.getHighestScore());
+                assertNull(stats.getLowestScore());
+                assertEquals(0L, stats.getTotalViolations());
+                assertNull(stats.getAverageDurationSeconds(), "Should be null when no completed attempts");
+                assertNull(stats.getMaxDurationSeconds());
+                assertNull(stats.getMinDurationSeconds());
+        }
+
+        @Test
+        @DisplayName("getExamAttemptStats - attempts in progress with no scores still returns counts")
+        void getExamAttemptStats_inProgressOnlyNoScores_returnsInProgressCount() {
+                UUID examId = mathExam.getId();
+
+                Object[] row = new Object[] {
+                        2L, 0L, 0L, 2L, 0L,   // 2 in-progress
+                        null, null, null, 0L,   // no scores
+                        0L, 0, 0L,              // no violations
+                        null, null, null        // no duration
+                };
+
+                when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
+                when(examAttemptRepository.computeAttemptStats(examId)).thenReturn(row);
+
+                ExamAttemptStatsResponse stats = teacherGradingService.getExamAttemptStats(examId, teacherOwner);
+
+                assertEquals(2L, stats.getTotalAttempts());
+                assertEquals(2L, stats.getInProgressAttempts());
+                assertEquals(0L, stats.getCompletedAttempts());
+                assertNull(stats.getAverageScore());
+                assertEquals(0L, stats.getGradedCount());
+        }
+
+        @Test
+        @DisplayName("getExamAttemptStats - access denied for non-owner teacher")
+        void getExamAttemptStats_notOwner_throwsAccessDeniedException() {
+                UUID examId = mathExam.getId();
+
+                when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
+
+                assertThrows(
+                        org.springframework.security.access.AccessDeniedException.class,
+                        () -> teacherGradingService.getExamAttemptStats(examId, otherTeacher)
+                );
+
+                verify(examAttemptRepository, never()).computeAttemptStats(any());
+        }
+
+        @Test
+        @DisplayName("getExamAttemptStats - exam not found throws ResourceNotFoundException")
+        void getExamAttemptStats_examNotFound_throwsResourceNotFoundException() {
+                UUID examId = UUID.randomUUID();
+
+                when(examRepository.findById(examId)).thenReturn(Optional.empty());
+
+                assertThrows(
+                        com.quicktest.core.exception.ResourceNotFoundException.class,
+                        () -> teacherGradingService.getExamAttemptStats(examId, teacherOwner)
+                );
+        }
+
+        @Test
+        @DisplayName("getExamAttemptStats - score is rounded to 2 decimal places")
+        void getExamAttemptStats_averageScoreRounding_isTwoDecimalPlaces() {
+                UUID examId = mathExam.getId();
+
+                Object[] row = new Object[] {
+                        3L, 3L, 0L, 0L, 0L,
+                        7.333333333, 10.0, 5.0, 3L, // avgScore repeating decimal
+                        0L, 0, 0L,
+                        null, null, null
+                };
+
+                when(examRepository.findById(examId)).thenReturn(Optional.of(mathExam));
+                when(examAttemptRepository.computeAttemptStats(examId)).thenReturn(row);
+
+                ExamAttemptStatsResponse stats = teacherGradingService.getExamAttemptStats(examId, teacherOwner);
+
+                // Math.round(7.333... * 100) / 100.0 == 7.33
+                assertEquals(7.33, stats.getAverageScore(), 0.001);
         }
 }

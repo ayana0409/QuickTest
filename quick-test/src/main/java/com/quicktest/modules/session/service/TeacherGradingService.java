@@ -4,6 +4,7 @@ import com.quicktest.core.common.PageResponse;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.session.dto.AttemptGradingDetailResponse;
 import com.quicktest.modules.session.dto.AttemptSummaryResponse;
+import com.quicktest.modules.session.dto.ExamAttemptStatsResponse;
 import com.quicktest.modules.session.dto.GradeEssaySubmissionRequest;
 import com.quicktest.modules.session.dto.GradingResultResponse;
 import com.quicktest.modules.session.entity.AttemptStatus;
@@ -35,4 +36,10 @@ public interface TeacherGradingService {
      * Submit awarded scores and comments for essay questions and finalize attempt status if complete.
      */
     GradingResultResponse submitEssayGrades(GradeEssaySubmissionRequest request, User currentTeacher);
+
+    /**
+     * Compute aggregated statistics (scores, violations, durations) for all attempts in an exam.
+     * Uses a single-pass JPQL query for optimal database performance.
+     */
+    ExamAttemptStatsResponse getExamAttemptStats(UUID examId, User currentTeacher);
 }

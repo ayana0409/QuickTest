@@ -1,0 +1,23 @@
+meta {
+  name: 5.17 Get Exam Attempt Stats - Forbidden for Student
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 403
+}

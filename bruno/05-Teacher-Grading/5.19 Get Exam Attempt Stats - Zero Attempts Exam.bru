@@ -1,0 +1,29 @@
+meta {
+  name: 5.19 Get Exam Attempt Stats - Score and Duration Nullable Fields
+  type: http
+  seq: 19
+}
+
+# This test verifies that an exam with zero attempts returns safe defaults:
+# averageScore, highestScore, lowestScore, averageDurationSeconds,
+# maxDurationSeconds, minDurationSeconds may all be null.
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{emptyExamId}}/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.totalAttempts: eq 0
+  res.body.data.completedAttempts: eq 0
+  res.body.data.totalViolations: eq 0
+}

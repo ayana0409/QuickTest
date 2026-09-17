@@ -1,0 +1,33 @@
+meta {
+  name: 5.16 Get Exam Attempt Stats - Success
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.data.totalAttempts: isDefined
+  res.body.data.completedAttempts: isDefined
+  res.body.data.pendingGradingAttempts: isDefined
+  res.body.data.inProgressAttempts: isDefined
+  res.body.data.disqualifiedAttempts: isDefined
+  res.body.data.gradedCount: isDefined
+  res.body.data.totalViolations: isDefined
+  res.body.data.attemptsWithViolations: isDefined
+  res.body.data.maxViolations: isDefined
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 5.18 Get Exam Attempt Stats - Exam Not Found
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/00000000-0000-0000-0000-000000000000/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}

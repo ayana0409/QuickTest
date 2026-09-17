@@ -16,6 +16,28 @@ import type {
 import type { AttemptSummaryDto, AttemptStatus, PageResponse } from '@/types/exam';
 
 /**
+ * Aggregated statistics for all attempts within a specific exam.
+ * Mirrors the backend ExamAttemptStatsResponse DTO.
+ */
+export interface ExamAttemptStatsDto {
+  totalAttempts: number;
+  completedAttempts: number;
+  pendingGradingAttempts: number;
+  inProgressAttempts: number;
+  disqualifiedAttempts: number;
+  averageScore: number | null;
+  highestScore: number | null;
+  lowestScore: number | null;
+  gradedCount: number;
+  totalViolations: number;
+  maxViolations: number;
+  attemptsWithViolations: number;
+  averageDurationSeconds: number | null;
+  maxDurationSeconds: number | null;
+  minDurationSeconds: number | null;
+}
+
+/**
  * Filter parameters for querying candidate exam attempts.
  */
 export interface GetExamAttemptsParams {
@@ -174,6 +196,20 @@ export const gradingService = {
       {
         successMessage: 'Cập nhật điểm thành công!',
       }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Fetch aggregated statistics for all attempts in an exam in a single API call.
+   * Returns counts by status, score min/max/avg, violation totals, and duration metrics.
+   *
+   * @param examId The unique identifier of the target exam
+   * @returns Aggregated attempt statistics
+   */
+  async getExamAttemptStats(examId: string): Promise<ExamAttemptStatsDto> {
+    const response = await apiClient.get<ApiResponse<ExamAttemptStatsDto>>(
+      `/teacher/grading/exams/${examId}/stats`
     );
     return response.data.data;
   },

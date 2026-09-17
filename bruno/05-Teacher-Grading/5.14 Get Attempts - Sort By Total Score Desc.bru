@@ -1,0 +1,30 @@
+meta {
+  name: 5.14 Get Attempts - Sort By Total Score Desc
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?page=0&size=10&sort=totalScore,desc
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+  sort: totalScore,desc
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.content: isDefined
+}

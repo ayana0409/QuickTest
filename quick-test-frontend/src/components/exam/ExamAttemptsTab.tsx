@@ -8,20 +8,24 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  User,
   Eye,
   RefreshCw,
-  ShieldAlert,
   Edit3,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   Inbox,
   Award,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  BarChart3,
+  ChevronDown,
 } from 'lucide-react';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { gradingService } from '@/services/grading.service';
+import { ExamStatsPanel } from '@/components/exam/ExamStatsPanel';
 import type { AttemptSummaryDto, AttemptStatus, PageResponse } from '@/types/exam';
 import { formatDateTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -39,13 +43,28 @@ const STATUS_FILTERS: { label: string; value: AttemptStatus | 'ALL' }[] = [
   { label: 'Bị đình chỉ / Vi phạm', value: 'DISQUALIFIED' },
 ];
 
+const SORT_OPTIONS: { label: string; value: string }[] = [
+  { label: 'Thời gian: Mới nhất trước', value: 'submitTime,desc' },
+  { label: 'Thời gian: Cũ nhất trước', value: 'submitTime,asc' },
+  { label: 'Điểm số: Cao đến thấp', value: 'totalScore,desc' },
+  { label: 'Điểm số: Thấp đến cao', value: 'totalScore,asc' },
+  { label: 'Vi phạm: Nhiều nhất trước', value: 'violationCount,desc' },
+  { label: 'Vi phạm: Ít nhất trước', value: 'violationCount,asc' },
+];
+
 export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalPoints = 10 }) => {
   const [attemptsData, setAttemptsData] = useState<PageResponse<AttemptSummaryDto> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Filter and Pagination state
+  // Statistics panel visibility
+  const [statsExpanded, setStatsExpanded] = useState(true);
+  // Increment to trigger ExamStatsPanel re-fetch after a grading action
+  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
+
+  // Filter, Sorting and Pagination state
   const [selectedStatus, setSelectedStatus] = useState<AttemptStatus | 'ALL'>('ALL');
+  const [sortOption, setSortOption] = useState<string>('submitTime,desc');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
@@ -74,7 +93,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
           search: debouncedSearch || undefined,
           page: currentPage,
           size: pageSize,
-          sort: 'submitTime,desc',
+          sort: sortOption,
         });
         setAttemptsData(response);
       } catch (err: any) {
@@ -84,15 +103,43 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
         setIsRefreshing(false);
       }
     },
-    [examId, selectedStatus, debouncedSearch, currentPage, pageSize]
+    [examId, selectedStatus, debouncedSearch, currentPage, pageSize, sortOption]
   );
 
   useEffect(() => {
     fetchAttempts(true);
   }, [fetchAttempts]);
 
-  // Aggregate metrics from current content
-  const totalAttemptsCount = attemptsData?.totalElements ?? 0;
+  // Handle header column click sort toggle
+  const handleSortToggle = (field: 'totalScore' | 'violationCount' | 'submitTime') => {
+    const [currentField, currentDirection] = sortOption.split(',');
+    let newDirection: 'asc' | 'desc' = 'desc';
+
+    if (currentField === field) {
+      newDirection = currentDirection === 'desc' ? 'asc' : 'desc';
+    } else {
+      // Default to desc when switching to new field (e.g. highest score first, most violations first)
+      newDirection = 'desc';
+    }
+
+    setSortOption(`${field},${newDirection}`);
+    setCurrentPage(0);
+  };
+
+  // Helper indicator for active sort column
+  const renderSortIndicator = (field: 'totalScore' | 'violationCount' | 'submitTime') => {
+    const [currentField, currentDirection] = sortOption.split(',');
+    if (currentField !== field) {
+      return <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400/60 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />;
+    }
+    return currentDirection === 'desc' ? (
+      <ArrowDown className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 stroke-[2.5]" />
+    ) : (
+      <ArrowUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 stroke-[2.5]" />
+    );
+  };
+
+  // Attempt list from current page
   const attemptsList = attemptsData?.content || [];
 
   // Helper status label
@@ -133,55 +180,37 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
 
   return (
     <div className="space-y-6">
-      {/* KPI Overview Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Tổng số phiên thi</p>
-            <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              {totalAttemptsCount}
-            </p>
+      {/* ── Collapsible Statistics Panel ── */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+        {/* Toggle header */}
+        <button
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors"
+          onClick={() => setStatsExpanded((prev) => !prev)}
+          aria-expanded={statsExpanded}
+        >
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-indigo-500" />
+            <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              Thống kê tổng quan
+            </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-            <User className="w-5 h-5" />
-          </div>
-        </div>
+          <ChevronDown
+            className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${
+              statsExpanded ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Chờ chấm tự luận</p>
-            <p className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
-              {attemptsList.filter((a) => a.status === 'AWAITING_MANUAL_GRADING').length}
-            </p>
+        {/* Stats content — smooth collapse */}
+        {statsExpanded && (
+          <div className="px-4 pb-4 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+            <ExamStatsPanel
+              examId={examId}
+              totalPoints={totalPoints}
+              refreshTrigger={statsRefreshTrigger}
+            />
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-            <Edit3 className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Đã hoàn thành điểm</p>
-            <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              {attemptsList.filter((a) => a.status === 'SUBMITTED').length}
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Phiên có vi phạm</p>
-            <p className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
-              {attemptsList.filter((a) => (a.violationCount || 0) > 0).length}
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -216,6 +245,24 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
               ))}
             </select>
           </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <select
+              value={sortOption}
+              onChange={(e) => {
+                setSortOption(e.target.value);
+                setCurrentPage(0);
+              }}
+              className="px-3 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 cursor-pointer font-medium"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Action / Refresh */}
@@ -223,7 +270,10 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchAttempts(false)}
+            onClick={() => {
+              fetchAttempts(false);
+              setStatsRefreshTrigger((prev) => prev + 1);
+            }}
             isLoading={isRefreshing}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />}
           >
@@ -252,17 +302,18 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
               Chưa có phiên thi nào phù hợp
             </h3>
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
-              {debouncedSearch || selectedStatus !== 'ALL'
+              {debouncedSearch || selectedStatus !== 'ALL' || sortOption !== 'submitTime,desc'
                 ? 'Không tìm thấy phiên thi nào khớp với điều kiện lọc hiện tại. Vui lòng thử xóa bộ lọc tìm kiếm.'
                 : 'Thí sinh sau khi tham gia bài thi sẽ được ghi nhận và hiển thị đầy đủ tiến độ tại danh sách này.'}
             </p>
-            {(debouncedSearch || selectedStatus !== 'ALL') && (
+            {(debouncedSearch || selectedStatus !== 'ALL' || sortOption !== 'submitTime,desc') && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   setSearchTerm('');
                   setSelectedStatus('ALL');
+                  setSortOption('submitTime,desc');
                 }}
               >
                 Xóa tất cả bộ lọc
@@ -276,9 +327,42 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
                 <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400 text-[11px] uppercase tracking-wider font-semibold">
                   <th className="py-3.5 px-4">Thí sinh</th>
                   <th className="py-3.5 px-4">Trạng thái</th>
-                  <th className="py-3.5 px-4">Điểm số</th>
-                  <th className="py-3.5 px-4">Vi phạm</th>
-                  <th className="py-3.5 px-4">Thời gian</th>
+                  <th
+                    onClick={() => handleSortToggle('totalScore')}
+                    className="py-3.5 px-4 cursor-pointer select-none group hover:bg-zinc-100/70 dark:hover:bg-zinc-800/60 transition-colors"
+                    title="Nhấn để sắp xếp theo điểm số"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={sortOption.startsWith('totalScore') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}>
+                        Điểm số
+                      </span>
+                      {renderSortIndicator('totalScore')}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSortToggle('violationCount')}
+                    className="py-3.5 px-4 cursor-pointer select-none group hover:bg-zinc-100/70 dark:hover:bg-zinc-800/60 transition-colors"
+                    title="Nhấn để sắp xếp theo số lần vi phạm"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={sortOption.startsWith('violationCount') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}>
+                        Vi phạm
+                      </span>
+                      {renderSortIndicator('violationCount')}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSortToggle('submitTime')}
+                    className="py-3.5 px-4 cursor-pointer select-none group hover:bg-zinc-100/70 dark:hover:bg-zinc-800/60 transition-colors"
+                    title="Nhấn để sắp xếp theo thời gian"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={sortOption.startsWith('submitTime') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}>
+                        Thời gian
+                      </span>
+                      {renderSortIndicator('submitTime')}
+                    </div>
+                  </th>
                   <th className="py-3.5 px-4 text-right">Thao tác</th>
                 </tr>
               </thead>
