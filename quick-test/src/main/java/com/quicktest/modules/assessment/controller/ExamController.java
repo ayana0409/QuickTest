@@ -56,14 +56,16 @@ public class ExamController {
     }
 
     /**
-     * Get paginated list of exams created by the authenticated teacher.
+     * Get paginated list of exams created by the authenticated teacher with optional search and status filtering.
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ExamSummaryResponse>>> getTeacherExams(
             @AuthenticationPrincipal UserDetailsImpl currentUser,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "status", required = false) ExamStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         User teacher = getAuthenticatedTeacher(currentUser);
-        Page<ExamSummaryResponse> response = examService.getTeacherExams(teacher, pageable);
+        Page<ExamSummaryResponse> response = examService.getTeacherExams(teacher, search, status, pageable);
         return ResponseEntity.ok(ApiResponse.success(PageResponse.from(response), "Exams retrieved successfully"));
     }
 

@@ -250,6 +250,8 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 - **Mô tả:** Lấy danh sách đề thi do giáo viên hiện tại tạo, có phân trang.
 - **Quyền hạn:** `TEACHER`
 - **Query Params:**
+  - `search` (optional): Từ khóa tìm kiếm theo tiêu đề bài thi (`title`) hoặc mã phòng thi (`accessCode`), không phân biệt hoa thường
+  - `status` (optional): Lọc theo trạng thái đề thi (`DRAFT`, `PUBLISHED`, `CLOSED`)
   - `page` (default: 0): Chỉ số trang
   - `size` (default: 10): Số lượng bản ghi mỗi trang
   - `sort` (default: "createdAt,desc"): Tiêu chí sắp xếp

@@ -189,8 +189,17 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<ExamSummaryResponse> getTeacherExams(User teacher, String search, ExamStatus status, Pageable pageable) {
+        String pattern = (search != null && !search.trim().isBlank())
+                ? "%" + search.trim().toLowerCase() + "%"
+                : null;
+        return examRepository.findSummariesByTeacherId(teacher.getId(), status, pattern, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<ExamSummaryResponse> getTeacherExams(User teacher, Pageable pageable) {
-        return examRepository.findSummariesByTeacherId(teacher.getId(), pageable);
+        return getTeacherExams(teacher, null, null, pageable);
     }
 
     @Override

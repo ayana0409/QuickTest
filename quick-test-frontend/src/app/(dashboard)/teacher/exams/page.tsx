@@ -23,6 +23,7 @@ import {
   ExternalLink,
   RotateCcw,
   Calendar,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -45,6 +46,7 @@ export default function TeacherExamsPage() {
   const [pageSize] = useState(10);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | ExamStatus>('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -67,9 +69,21 @@ export default function TeacherExamsPage() {
   const [duplicateTitle, setDuplicateTitle] = useState<string>('');
   const [isDuplicating, setIsDuplicating] = useState(false);
 
-  // Fetch exams from real backend API
+  // Debounce search input to avoid spamming the backend
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch exams from real backend API with search and status filters
   const fetchExams = useCallback(
-    async (pageIndex = 0) => {
+    async (
+      pageIndex = 0,
+      searchVal = debouncedSearch,
+      statusVal = statusFilter
+    ) => {
       setIsLoading(true);
       setLoadError(null);
       try {
@@ -77,27 +91,47 @@ export default function TeacherExamsPage() {
           page: pageIndex,
           size: pageSize,
           sort: 'createdAt,desc',
+          search: searchVal || undefined,
+          status: statusVal,
         });
         setExams(res.content || []);
         setPageMeta(res);
         setCurrentPage(pageIndex);
       } catch (err: any) {
         console.error('Failed to fetch exams from backend:', err);
-        setLoadError(err?.response?.data?.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại.');
+        setLoadError(
+          err?.response?.data?.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại.'
+        );
       } finally {
         setIsLoading(false);
       }
     },
-    [pageSize]
+    [pageSize, debouncedSearch, statusFilter]
   );
 
+  // Fetch when debouncedSearch or statusFilter changes
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
-    fetchExams(0);
-  }, [isAuthenticated, router, fetchExams]);
+    fetchExams(0, debouncedSearch, statusFilter);
+  }, [isAuthenticated, router, debouncedSearch, statusFilter]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const trimmed = searchTerm.trim();
+      setDebouncedSearch(trimmed);
+      fetchExams(0, trimmed, statusFilter);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setDebouncedSearch('');
+    fetchExams(0, '', statusFilter);
+  };
 
   // Copy access code
   const handleCopyCode = (code: string) => {
@@ -271,14 +305,7 @@ export default function TeacherExamsPage() {
     }
   };
 
-  // Client side filtering for active search and status
-  const filteredExams = exams.filter((e) => {
-    const matchesSearch =
-      e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.accessCode.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || e.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
@@ -318,9 +345,20 @@ export default function TeacherExamsPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Tìm kiếm theo tiêu đề hoặc mã đề thi..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            className="w-full pl-10 pr-10 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              title="Xóa từ khóa"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Status Filter Tabs */}
@@ -404,19 +442,19 @@ export default function TeacherExamsPage() {
             </div>
           ))}
         </div>
-      ) : filteredExams.length === 0 ? (
+      ) : exams.length === 0 ? (
         /* Empty State */
         <div className="p-16 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
           <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-4 border border-indigo-100 dark:border-indigo-900/60">
             <BookOpen className="w-7 h-7" />
           </div>
           <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-1">
-            {searchTerm || statusFilter !== 'ALL'
+            {debouncedSearch || statusFilter !== 'ALL'
               ? 'Không có đề thi phù hợp với bộ lọc'
               : 'Chưa có đề thi nào'}
           </h3>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto mb-6">
-            {searchTerm || statusFilter !== 'ALL'
+            {debouncedSearch || statusFilter !== 'ALL'
               ? 'Thử thay đổi từ khóa tìm kiếm hoặc bỏ chọn trạng thái đã lọc.'
               : 'Bắt đầu khởi tạo kỳ thi đầu tiên để gửi mã thi cho học sinh của bạn.'}
           </p>
@@ -429,7 +467,7 @@ export default function TeacherExamsPage() {
       ) : (
         /* Responsive Data Table / List */
         <div className="space-y-3">
-          {filteredExams.map((exam) => {
+          {exams.map((exam) => {
             const isDraft = exam.status === 'DRAFT';
             const isPublished = exam.status === 'PUBLISHED';
             const isActionBusy = actionInProgressId === exam.id;

@@ -35,7 +35,7 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     Optional<Exam> findByIdWithCreatedBy(@Param("id") UUID id);
 
     /**
-     * Optimized single-query summary pagination for teacher dashboard,
+     * Optimized single-query summary pagination for teacher dashboard with optional status and search filtering,
      * calculating question counts and sum of points without N+1 query overhead.
      */
     @Query(
@@ -44,11 +44,26 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
                 "e.isProctoringEnabled, e.maxViolations, " +
                 "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.startTime, e.endTime, e.createdAt) " +
                 "FROM Exam e LEFT JOIN e.questions q " +
-                "WHERE e.createdBy.id = :teacherId AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
+                "WHERE e.createdBy.id = :teacherId " +
+                "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
+                "AND (:status IS NULL OR e.status = :status) " +
+                "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern)) " +
                 "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.isProctoringEnabled, e.maxViolations, e.startTime, e.endTime, e.createdAt",
-        countQuery = "SELECT COUNT(e) FROM Exam e WHERE e.createdBy.id = :teacherId AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING"
+        countQuery = "SELECT COUNT(e) FROM Exam e " +
+                     "WHERE e.createdBy.id = :teacherId " +
+                     "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
+                     "AND (:status IS NULL OR e.status = :status) " +
+                     "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern))"
     )
-    Page<ExamSummaryResponse> findSummariesByTeacherId(@Param("teacherId") UUID teacherId, Pageable pageable);
+    Page<ExamSummaryResponse> findSummariesByTeacherId(
+            @Param("teacherId") UUID teacherId,
+            @Param("status") ExamStatus status,
+            @Param("pattern") String pattern,
+            Pageable pageable);
+
+    default Page<ExamSummaryResponse> findSummariesByTeacherId(UUID teacherId, Pageable pageable) {
+        return findSummariesByTeacherId(teacherId, null, null, pageable);
+    }
 
     long countByStatus(ExamStatus status);
 

@@ -1,0 +1,36 @@
+meta {
+  name: 2.30 Get Teacher Exams - Search By AccessCode And Status
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/exams?page=0&size=10&search=NOPROC&status=PUBLISHED
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+  search: NOPROC
+  status: PUBLISHED
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+vars:pre-request {
+  teacherToken: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZWFjaGVyX2RlYnVnIiwidXNlcklkIjoiOGVmZjZkYjItMmFjNy00NzlhLTkwYmUtNTg0MzNkNzBjZjI1IiwiZW1haWwiOiJ0ZWFjaGVyQHF1aWNrdGVzdC5jb20iLCJyb2xlIjoiVEVBQ0hFUiIsImlhdCI6MTc4OTE5MTM4MCwiZXhwIjoxNzg5Mjc3NzgwfQ.ZV60L_728acx29OySe04Xyk1pJYaJFKVgblgh7AwTEc
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.data.content: isDefined
+}

@@ -4,6 +4,7 @@ import com.quicktest.modules.assessment.dto.ExamCreateRequest;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.dto.ExamUpdateRequest;
+import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.iam.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,9 +32,17 @@ public interface ExamService {
     void deleteExam(UUID examId, User teacher);
 
     /**
+     * Retrieve paginated summary list of exams created by the teacher,
+     * with optional keyword search (matching title or accessCode) and status filtering.
+     */
+    Page<ExamSummaryResponse> getTeacherExams(User teacher, String search, ExamStatus status, Pageable pageable);
+
+    /**
      * Retrieve paginated summary list of exams created by the teacher.
      */
-    Page<ExamSummaryResponse> getTeacherExams(User teacher, Pageable pageable);
+    default Page<ExamSummaryResponse> getTeacherExams(User teacher, Pageable pageable) {
+        return getTeacherExams(teacher, null, null, pageable);
+    }
 
     /**
      * Retrieve complete exam details including all questions and options.

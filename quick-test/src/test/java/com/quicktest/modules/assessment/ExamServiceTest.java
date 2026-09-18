@@ -295,4 +295,38 @@ class ExamServiceTest {
         assertTrue(ex.getMessage().contains("sau thời điểm hiện tại"));
         verify(examRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("getTeacherExams should delegate with normalized pattern and status to repository")
+    void shouldDelegateSearchAndStatusToRepository() {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        org.springframework.data.domain.Page<com.quicktest.modules.assessment.dto.ExamSummaryResponse> emptyPage =
+                new org.springframework.data.domain.PageImpl<>(Collections.emptyList());
+
+        when(examRepository.findSummariesByTeacherId(eq(teacher.getId()), eq(ExamStatus.PUBLISHED), eq("%math2026%"), eq(pageable)))
+                .thenReturn(emptyPage);
+
+        org.springframework.data.domain.Page<com.quicktest.modules.assessment.dto.ExamSummaryResponse> result =
+                examService.getTeacherExams(teacher, "  MATH2026  ", ExamStatus.PUBLISHED, pageable);
+
+        assertNotNull(result);
+        verify(examRepository).findSummariesByTeacherId(teacher.getId(), ExamStatus.PUBLISHED, "%math2026%", pageable);
+    }
+
+    @Test
+    @DisplayName("getTeacherExams should pass null pattern when search is blank")
+    void shouldPassNullPatternWhenSearchIsBlank() {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        org.springframework.data.domain.Page<com.quicktest.modules.assessment.dto.ExamSummaryResponse> emptyPage =
+                new org.springframework.data.domain.PageImpl<>(Collections.emptyList());
+
+        when(examRepository.findSummariesByTeacherId(eq(teacher.getId()), isNull(), isNull(), eq(pageable)))
+                .thenReturn(emptyPage);
+
+        org.springframework.data.domain.Page<com.quicktest.modules.assessment.dto.ExamSummaryResponse> result =
+                examService.getTeacherExams(teacher, "   ", null, pageable);
+
+        assertNotNull(result);
+        verify(examRepository).findSummariesByTeacherId(teacher.getId(), null, null, pageable);
+    }
 }

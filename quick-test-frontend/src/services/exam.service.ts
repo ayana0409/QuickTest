@@ -8,6 +8,7 @@ import type {
   ExamRepublishRequest,
   ExamDuplicateRequest,
   PageResponse,
+  ExamStatus,
 } from '@/types/exam';
 import type {
   QuestionResponse,
@@ -17,15 +18,38 @@ import type {
 } from '@/types/question';
 
 /**
+ * Filter parameters for querying teacher exams.
+ */
+export interface GetTeacherExamsParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+  search?: string;
+  status?: ExamStatus | 'ALL';
+}
+
+/**
  * Service providing typed API communication with Teacher Exam & Question backend endpoints.
  */
 export const examService = {
   /**
-   * Fetch paginated list of exams created by the authenticated teacher.
+   * Fetch paginated list of exams created by the authenticated teacher with optional search and status.
    */
-  async getTeacherExams(params?: { page?: number; size?: number; sort?: string }): Promise<PageResponse<ExamSummaryResponse>> {
+  async getTeacherExams(params?: GetTeacherExamsParams): Promise<PageResponse<ExamSummaryResponse>> {
+    const apiParams: Record<string, any> = { ...params };
+    if (apiParams.status === 'ALL') {
+      delete apiParams.status;
+    }
+    if (typeof apiParams.search === 'string') {
+      const trimmed = apiParams.search.trim();
+      if (trimmed) {
+        apiParams.search = trimmed;
+      } else {
+        delete apiParams.search;
+      }
+    }
     const response = await apiClient.get<ApiResponse<PageResponse<ExamSummaryResponse>>>('/teacher/exams', {
-      params,
+      params: apiParams,
     });
     return response.data.data;
   },
