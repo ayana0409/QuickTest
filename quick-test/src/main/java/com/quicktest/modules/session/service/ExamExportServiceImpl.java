@@ -1,0 +1,540 @@
+package com.quicktest.modules.session.service;
+
+import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.modules.assessment.entity.Exam;
+import com.quicktest.modules.assessment.entity.Question;
+import com.quicktest.modules.assessment.repository.ExamRepository;
+import com.quicktest.modules.iam.entity.User;
+import com.quicktest.modules.session.entity.AttemptStatus;
+import com.quicktest.modules.session.entity.ExamAttempt;
+import com.quicktest.modules.session.repository.CandidateAnswerRepository;
+import com.quicktest.modules.session.repository.ExamAttemptRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.DefaultIndexedColorMap;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+/**
+ * Implementation of ExamExportService providing professional Excel reports for exam sessions.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ExamExportServiceImpl implements ExamExportService {
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private final ExamRepository examRepository;
+    private final ExamAttemptRepository examAttemptRepository;
+    private final CandidateAnswerRepository candidateAnswerRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportExamAttemptsToExcel(UUID examId, AttemptStatus status, String search, User currentTeacher) {
+        log.info("Exporting exam attempts to Excel for examId: {}, status: {}, search: {}, teacherId: {}",
+                examId, status, search, currentTeacher != null ? currentTeacher.getId() : null);
+
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
+
+        verifyExamOwnership(exam, currentTeacher);
+
+        String searchPattern = (search != null && !search.isBlank())
+                ? "%" + search.trim().toLowerCase() + "%"
+                : null;
+
+        List<ExamAttempt> attempts = examAttemptRepository.findAttemptsForExport(
+                examId,
+                status,
+                searchPattern,
+                Sort.by(Sort.Direction.DESC, "submitTime")
+        );
+
+        // Fetch answered question counts in a single query to eliminate N+1 overhead
+        List<Object[]> answeredRows = candidateAnswerRepository.countAnsweredQuestionsByExamId(examId);
+        Map<UUID, Long> answeredCountMap = new HashMap<>();
+        for (Object[] row : answeredRows) {
+            if (row != null && row.length >= 2 && row[0] instanceof UUID attemptId && row[1] instanceof Number count) {
+                answeredCountMap.put(attemptId, count.longValue());
+            }
+        }
+
+        // Fetch aggregate statistics for the exam overview block
+        Object[] stats = examAttemptRepository.computeAttemptStats(examId);
+
+        return buildWorkbookBytes(exam, attempts, answeredCountMap, stats, status, search);
+    }
+
+    private void verifyExamOwnership(Exam exam, User currentTeacher) {
+        if (exam.getCreatedBy() == null || currentTeacher == null
+                || !exam.getCreatedBy().getId().equals(currentTeacher.getId())) {
+            throw new AccessDeniedException("You are not authorized to export data for this exam");
+        }
+    }
+
+    private byte[] buildWorkbookBytes(
+            Exam exam,
+            List<ExamAttempt> attempts,
+            Map<UUID, Long> answeredCountMap,
+            Object[] stats,
+            AttemptStatus statusFilter,
+            String searchFilter) {
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Danh Sách Phiên Thi");
+            sheet.setDisplayGridlines(true);
+
+            // Palette colors
+            byte[] primaryIndigo = new byte[]{(byte) 79, (byte) 70, (byte) 229}; // #4F46E5
+            byte[] zebraStripe = new byte[]{(byte) 248, (byte) 250, (byte) 252}; // #F8FAFC
+            byte[] metaBg = new byte[]{(byte) 241, (byte) 245, (byte) 249}; // #F1F5F9
+            byte[] metaLabelBg = new byte[]{(byte) 226, (byte) 232, (byte) 240}; // #E2E8F0
+            byte[] borderGray = new byte[]{(byte) 203, (byte) 213, (byte) 225}; // #CBD5E1
+
+            DefaultIndexedColorMap colorMap = new DefaultIndexedColorMap();
+
+            // Cell Styles
+            XSSFCellStyle titleStyle = workbook.createCellStyle();
+            XSSFFont titleFont = workbook.createFont();
+            titleFont.setFontName("Segoe UI");
+            titleFont.setFontHeightInPoints((short) 16);
+            titleFont.setBold(true);
+            titleFont.setColor(new XSSFColor(primaryIndigo, colorMap));
+            titleStyle.setFont(titleFont);
+            titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            XSSFCellStyle subtitleStyle = workbook.createCellStyle();
+            XSSFFont subtitleFont = workbook.createFont();
+            subtitleFont.setFontName("Segoe UI");
+            subtitleFont.setFontHeightInPoints((short) 9);
+            subtitleFont.setItalic(true);
+            subtitleFont.setColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            subtitleStyle.setFont(subtitleFont);
+            subtitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            // Metadata styles
+            XSSFCellStyle metaLabelStyle = workbook.createCellStyle();
+            XSSFFont metaLabelFont = workbook.createFont();
+            metaLabelFont.setFontName("Segoe UI");
+            metaLabelFont.setFontHeightInPoints((short) 10);
+            metaLabelFont.setBold(true);
+            metaLabelStyle.setFont(metaLabelFont);
+            metaLabelStyle.setFillForegroundColor(new XSSFColor(metaLabelBg, colorMap));
+            metaLabelStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            setThinBorders(metaLabelStyle, new XSSFColor(borderGray, colorMap));
+
+            XSSFCellStyle metaValueStyle = workbook.createCellStyle();
+            XSSFFont metaValueFont = workbook.createFont();
+            metaValueFont.setFontName("Segoe UI");
+            metaValueFont.setFontHeightInPoints((short) 10);
+            metaValueStyle.setFont(metaValueFont);
+            metaValueStyle.setFillForegroundColor(new XSSFColor(metaBg, colorMap));
+            metaValueStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            setThinBorders(metaValueStyle, new XSSFColor(borderGray, colorMap));
+
+            // Table Header style
+            XSSFCellStyle headerStyle = workbook.createCellStyle();
+            XSSFFont headerFont = workbook.createFont();
+            headerFont.setFontName("Segoe UI");
+            headerFont.setFontHeightInPoints((short) 10);
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(new XSSFColor(primaryIndigo, colorMap));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            setThinBorders(headerStyle, new XSSFColor(new byte[]{(byte) 55, (byte) 48, (byte) 163}, colorMap));
+
+            // Data styles
+            DataFormat dataFormat = workbook.createDataFormat();
+
+            XSSFCellStyle dataLeft = createDataStyle(workbook, HorizontalAlignment.LEFT, null, borderGray, colorMap);
+            XSSFCellStyle dataCenter = createDataStyle(workbook, HorizontalAlignment.CENTER, null, borderGray, colorMap);
+            XSSFCellStyle dataRight = createDataStyle(workbook, HorizontalAlignment.RIGHT, null, borderGray, colorMap);
+            XSSFCellStyle dataNumber = createDataStyle(workbook, HorizontalAlignment.RIGHT, null, borderGray, colorMap);
+            dataNumber.setDataFormat(dataFormat.getFormat("#,##0.00"));
+
+            XSSFCellStyle dataZebraLeft = createDataStyle(workbook, HorizontalAlignment.LEFT, zebraStripe, borderGray, colorMap);
+            XSSFCellStyle dataZebraCenter = createDataStyle(workbook, HorizontalAlignment.CENTER, zebraStripe, borderGray, colorMap);
+            XSSFCellStyle dataZebraRight = createDataStyle(workbook, HorizontalAlignment.RIGHT, zebraStripe, borderGray, colorMap);
+            XSSFCellStyle dataZebraNumber = createDataStyle(workbook, HorizontalAlignment.RIGHT, zebraStripe, borderGray, colorMap);
+            dataZebraNumber.setDataFormat(dataFormat.getFormat("#,##0.00"));
+
+            // Row 0: Title
+            Row row0 = sheet.createRow(0);
+            row0.setHeightInPoints(28);
+            Cell cellTitle = row0.createCell(0);
+            cellTitle.setCellValue("BÁO CÁO DANH SÁCH PHIÊN THI & KẾT QUẢ");
+            cellTitle.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 7));
+
+            // Row 1: Subtitle & Generated timestamp
+            Row row1 = sheet.createRow(1);
+            row1.setHeightInPoints(18);
+            Cell cellSub = row1.createCell(0);
+            cellSub.setCellValue("Hệ thống QuickTest - Xuất lúc: " + LocalDateTime.now().format(DATE_TIME_FORMATTER));
+            cellSub.setCellStyle(subtitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 7));
+
+            // Metadata block (Rows 3 - 6)
+            int totalQuestions = (exam.getQuestions() != null) ? exam.getQuestions().size() : 0;
+            double calculatedMaxPoints = 0.0;
+            if (exam.getQuestions() != null) {
+                for (Question q : exam.getQuestions()) {
+                    if (q.getPoints() != null) {
+                        calculatedMaxPoints += q.getPoints();
+                    }
+                }
+            }
+            Double maxScore = calculatedMaxPoints > 0 ? calculatedMaxPoints : null;
+            Integer durationMins = exam.getDurationMinutes();
+
+            // Stats extraction with safe array length bounds checking
+            boolean hasStats = stats != null && stats.length >= 8;
+            long totalAttempts = hasStats && stats[0] != null ? ((Number) stats[0]).longValue() : attempts.size();
+            long completedAttempts = hasStats && stats[1] != null ? ((Number) stats[1]).longValue() : 0;
+            Double avgScore = hasStats && stats[5] != null ? ((Number) stats[5]).doubleValue() : null;
+            Double highestScore = hasStats && stats[6] != null ? ((Number) stats[6]).doubleValue() : null;
+            Double lowestScore = hasStats && stats[7] != null ? ((Number) stats[7]).doubleValue() : null;
+
+            createMetadataRow(sheet, 3, "Tên kỳ thi:", exam.getTitle(), "Mã phòng thi:", exam.getAccessCode() != null ? exam.getAccessCode() : "N/A", metaLabelStyle, metaValueStyle);
+            createMetadataRow(sheet, 4, "Thời lượng:", (durationMins != null ? durationMins + " phút" : "Không giới hạn"), "Điểm tối đa:", (maxScore != null ? String.format("%.2f", maxScore) : "N/A"), metaLabelStyle, metaValueStyle);
+            createMetadataRow(sheet, 5, "Tổng số câu hỏi:", String.valueOf(totalQuestions), "Tổng số lượt thi:", String.valueOf(totalAttempts) + " (Đã nộp: " + completedAttempts + ")", metaLabelStyle, metaValueStyle);
+            
+            String scoreStatsText = String.format("TB: %s | Cao nhất: %s | Thấp nhất: %s",
+                    avgScore != null ? String.format("%.2f", avgScore) : "N/A",
+                    highestScore != null ? String.format("%.2f", highestScore) : "N/A",
+                    lowestScore != null ? String.format("%.2f", lowestScore) : "N/A");
+
+            String filterText = "Tất cả";
+            if (statusFilter != null || (searchFilter != null && !searchFilter.isBlank())) {
+                List<String> filters = new ArrayList<>();
+                if (statusFilter != null) filters.add("Trạng thái: " + statusFilter);
+                if (searchFilter != null && !searchFilter.isBlank()) filters.add("Từ khóa: " + searchFilter.trim());
+                filterText = String.join(", ", filters);
+            }
+            createMetadataRow(sheet, 6, "Thống kê điểm số:", scoreStatsText, "Bộ lọc áp dụng:", filterText, metaLabelStyle, metaValueStyle);
+
+            // Table Header Row at Row 8
+            int headerRowIndex = 8;
+            Row headerRow = sheet.createRow(headerRowIndex);
+            headerRow.setHeightInPoints(26);
+
+            String[] headers = new String[]{
+                    "STT",
+                    "Mã phiên thi",
+                    "Họ và tên thí sinh",
+                    "Email / Định danh",
+                    "Loại thí sinh",
+                    "Trạng thái",
+                    "Điểm đạt được",
+                    "Điểm tối đa",
+                    "Tỷ lệ %",
+                    "Số câu đã làm",
+                    "Thời gian bắt đầu",
+                    "Thời gian nộp bài",
+                    "Thời gian làm bài",
+                    "Số vi phạm",
+                    "Bị đình chỉ",
+                    "Địa chỉ IP",
+                    "Thiết bị / Trình duyệt"
+            };
+
+            for (int col = 0; col < headers.length; col++) {
+                Cell c = headerRow.createCell(col);
+                c.setCellValue(headers[col]);
+                c.setCellStyle(headerStyle);
+            }
+
+            // Data Rows
+            int rowIndex = headerRowIndex + 1;
+            int stt = 1;
+            for (ExamAttempt attempt : attempts) {
+                Row row = sheet.createRow(rowIndex);
+                row.setHeightInPoints(21);
+                boolean isZebra = (stt % 2 == 0);
+
+                XSSFCellStyle currentLeft = isZebra ? dataZebraLeft : dataLeft;
+                XSSFCellStyle currentCenter = isZebra ? dataZebraCenter : dataCenter;
+                XSSFCellStyle currentRight = isZebra ? dataZebraRight : dataRight;
+                XSSFCellStyle currentNumber = isZebra ? dataZebraNumber : dataNumber;
+
+                // 0. STT
+                Cell c0 = row.createCell(0);
+                c0.setCellValue(stt++);
+                c0.setCellStyle(currentCenter);
+
+                // 1. Mã phiên thi
+                Cell c1 = row.createCell(1);
+                c1.setCellValue(attempt.getId() != null ? attempt.getId().toString() : "");
+                c1.setCellStyle(currentCenter);
+
+                // 2. Họ và tên thí sinh
+                Cell c2 = row.createCell(2);
+                c2.setCellValue(resolveCandidateName(attempt));
+                c2.setCellStyle(currentLeft);
+
+                // 3. Email / Định danh
+                Cell c3 = row.createCell(3);
+                c3.setCellValue(resolveCandidateIdentifier(attempt));
+                c3.setCellStyle(currentLeft);
+
+                // 4. Loại thí sinh
+                Cell c4 = row.createCell(4);
+                c4.setCellValue(attempt.getUser() != null ? "Thành viên" : "Tự do");
+                c4.setCellStyle(currentCenter);
+
+                // 5. Trạng thái
+                Cell c5 = row.createCell(5);
+                c5.setCellValue(formatStatus(attempt.getStatus()));
+                c5.setCellStyle(currentCenter);
+
+                // 6. Điểm đạt được
+                Cell c6 = row.createCell(6);
+                if (attempt.getTotalScore() != null) {
+                    c6.setCellValue(attempt.getTotalScore());
+                    c6.setCellStyle(currentNumber);
+                } else {
+                    c6.setCellValue("-");
+                    c6.setCellStyle(currentCenter);
+                }
+
+                // 7. Điểm tối đa
+                Cell c7 = row.createCell(7);
+                if (maxScore != null) {
+                    c7.setCellValue(maxScore);
+                    c7.setCellStyle(currentNumber);
+                } else {
+                    c7.setCellValue("-");
+                    c7.setCellStyle(currentCenter);
+                }
+
+                // 8. Tỷ lệ %
+                Cell c8 = row.createCell(8);
+                if (attempt.getTotalScore() != null && maxScore != null && maxScore > 0) {
+                    double pct = (attempt.getTotalScore() / maxScore) * 100.0;
+                    c8.setCellValue(String.format("%.1f%%", pct));
+                } else {
+                    c8.setCellValue("-");
+                }
+                c8.setCellStyle(currentCenter);
+
+                // 9. Số câu đã làm
+                Cell c9 = row.createCell(9);
+                long answered = answeredCountMap.getOrDefault(attempt.getId(), 0L);
+                c9.setCellValue(answered + " / " + totalQuestions);
+                c9.setCellStyle(currentCenter);
+
+                // 10. Thời gian bắt đầu
+                Cell c10 = row.createCell(10);
+                c10.setCellValue(attempt.getStartTime() != null ? attempt.getStartTime().format(DATE_TIME_FORMATTER) : "-");
+                c10.setCellStyle(currentCenter);
+
+                // 11. Thời gian nộp bài
+                Cell c11 = row.createCell(11);
+                c11.setCellValue(attempt.getSubmitTime() != null ? attempt.getSubmitTime().format(DATE_TIME_FORMATTER) : "-");
+                c11.setCellStyle(currentCenter);
+
+                // 12. Thời gian làm bài
+                Cell c12 = row.createCell(12);
+                c12.setCellValue(formatDuration(attempt.getStartTime(), attempt.getSubmitTime()));
+                c12.setCellStyle(currentCenter);
+
+                // 13. Số vi phạm
+                Cell c13 = row.createCell(13);
+                int violations = attempt.getViolationCount() != null ? attempt.getViolationCount() : 0;
+                c13.setCellValue(violations);
+                c13.setCellStyle(currentCenter);
+
+                // 14. Bị đình chỉ
+                Cell c14 = row.createCell(14);
+                boolean isDisqualified = (attempt.getStatus() == AttemptStatus.DISQUALIFIED);
+                c14.setCellValue(isDisqualified ? "Có" : "Không");
+                c14.setCellStyle(currentCenter);
+
+                // 15. Địa chỉ IP
+                Cell c15 = row.createCell(15);
+                c15.setCellValue(attempt.getIpAddress() != null ? attempt.getIpAddress() : "-");
+                c15.setCellStyle(currentCenter);
+
+                // 16. Thiết bị / Trình duyệt
+                Cell c16 = row.createCell(16);
+                c16.setCellValue(attempt.getUserAgent() != null ? attempt.getUserAgent() : "-");
+                c16.setCellStyle(currentLeft);
+
+                rowIndex++;
+            }
+
+            // Adjust column widths with extra padding and bounds
+            for (int col = 0; col < headers.length; col++) {
+                sheet.autoSizeColumn(col);
+                int currentWidth = sheet.getColumnWidth(col);
+                int paddedWidth = currentWidth + 1200; // Extra padding
+                if (col == 1) {
+                    // Attempt ID: fixed reasonable width
+                    sheet.setColumnWidth(col, Math.max(paddedWidth, 9500));
+                } else if (col == 16) {
+                    // User Agent: clamp to avoid oversized columns
+                    sheet.setColumnWidth(col, Math.min(Math.max(paddedWidth, 8000), 14000));
+                } else {
+                    sheet.setColumnWidth(col, Math.max(paddedWidth, 3200));
+                }
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (IOException e) {
+            log.error("Failed to generate Excel workbook for examId: {}", exam.getId(), e);
+            throw new RuntimeException("Error generating Excel report", e);
+        }
+    }
+
+    private void createMetadataRow(
+            Sheet sheet,
+            int rowIndex,
+            String label1,
+            String val1,
+            String label2,
+            String val2,
+            XSSFCellStyle labelStyle,
+            XSSFCellStyle valStyle) {
+
+        Row r = sheet.createRow(rowIndex);
+        r.setHeightInPoints(20);
+
+        // Col 0: Label 1
+        Cell c0 = r.createCell(0);
+        c0.setCellValue(label1);
+        c0.setCellStyle(labelStyle);
+
+        // Col 1-3: Val 1
+        Cell c1 = r.createCell(1);
+        c1.setCellValue(val1 != null ? val1 : "");
+        c1.setCellStyle(valStyle);
+        for (int c = 2; c <= 3; c++) {
+            Cell empty = r.createCell(c);
+            empty.setCellStyle(valStyle);
+        }
+        sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 1, 3));
+
+        // Col 4: Label 2
+        Cell c4 = r.createCell(4);
+        c4.setCellValue(label2);
+        c4.setCellStyle(labelStyle);
+
+        // Col 5-7: Val 2
+        Cell c5 = r.createCell(5);
+        c5.setCellValue(val2 != null ? val2 : "");
+        c5.setCellStyle(valStyle);
+        for (int c = 6; c <= 7; c++) {
+            Cell empty = r.createCell(c);
+            empty.setCellStyle(valStyle);
+        }
+        sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 5, 7));
+    }
+
+    private XSSFCellStyle createDataStyle(
+            XSSFWorkbook wb,
+            HorizontalAlignment align,
+            byte[] bgRgb,
+            byte[] borderRgb,
+            DefaultIndexedColorMap colorMap) {
+
+        XSSFCellStyle style = wb.createCellStyle();
+        XSSFFont font = wb.createFont();
+        font.setFontName("Segoe UI");
+        font.setFontHeightInPoints((short) 9);
+        style.setFont(font);
+
+        style.setAlignment(align);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        if (bgRgb != null) {
+            style.setFillForegroundColor(new XSSFColor(bgRgb, colorMap));
+            style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        }
+
+        setThinBorders(style, new XSSFColor(borderRgb, colorMap));
+        return style;
+    }
+
+    private void setThinBorders(XSSFCellStyle style, XSSFColor borderColor) {
+        style.setBorderTop(BorderStyle.THIN);
+        style.setTopBorderColor(borderColor);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBottomBorderColor(borderColor);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setLeftBorderColor(borderColor);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setRightBorderColor(borderColor);
+    }
+
+    private String resolveCandidateName(ExamAttempt ea) {
+        if (ea.getUser() != null && ea.getUser().getFullName() != null && !ea.getUser().getFullName().isBlank()) {
+            return ea.getUser().getFullName().trim();
+        }
+        if (ea.getGuestName() != null && !ea.getGuestName().isBlank()) {
+            return ea.getGuestName().trim();
+        }
+        return "Thí sinh ẩn danh";
+    }
+
+    private String resolveCandidateIdentifier(ExamAttempt ea) {
+        if (ea.getUser() != null && ea.getUser().getEmail() != null && !ea.getUser().getEmail().isBlank()) {
+            return ea.getUser().getEmail().trim();
+        }
+        if (ea.getGuestIdentifier() != null && !ea.getGuestIdentifier().isBlank()) {
+            return ea.getGuestIdentifier().trim();
+        }
+        return "-";
+    }
+
+    private String formatStatus(AttemptStatus status) {
+        if (status == null) return "-";
+        return switch (status) {
+            case IN_PROGRESS -> "Đang làm bài";
+            case SUBMITTED -> "Đã nộp bài";
+            case AWAITING_MANUAL_GRADING -> "Chờ chấm tự luận";
+            case DISQUALIFIED -> "Bị đình chỉ";
+        };
+    }
+
+    private String formatDuration(LocalDateTime start, LocalDateTime submit) {
+        if (start == null || submit == null) {
+            return "-";
+        }
+        Duration duration = Duration.between(start, submit);
+        if (duration.isNegative()) {
+            return "-";
+        }
+        long totalSeconds = duration.getSeconds();
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+
+        if (hours > 0) {
+            return String.format("%dh %02dm %02ds", hours, minutes, seconds);
+        }
+        return String.format("%02dm %02ds", minutes, seconds);
+    }
+}

@@ -13,6 +13,7 @@ import com.quicktest.modules.session.dto.ExamAttemptStatsResponse;
 import com.quicktest.modules.session.dto.GradeEssaySubmissionRequest;
 import com.quicktest.modules.session.dto.GradingResultResponse;
 import com.quicktest.modules.session.entity.AttemptStatus;
+import com.quicktest.modules.session.service.ExamExportService;
 import com.quicktest.modules.session.service.TeacherGradingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -40,6 +43,7 @@ import java.util.UUID;
 public class TeacherGradingController {
 
     private final TeacherGradingService teacherGradingService;
+    private final ExamExportService examExportService;
     private final UserRepository userRepository;
 
     /**
@@ -74,6 +78,29 @@ public class TeacherGradingController {
         ExamAttemptStatsResponse stats = teacherGradingService.getExamAttemptStats(examId, teacher);
 
         return ResponseEntity.ok(ApiResponse.success(stats, "Exam statistics computed successfully"));
+    }
+
+    /**
+     * Export all exam attempts with comprehensive details to an Excel (.xlsx) file.
+     * Supports optional status and search filtering.
+     */
+    @GetMapping("/exams/{examId}/attempts/export-excel")
+    public ResponseEntity<byte[]> exportExamAttemptsToExcel(
+            @PathVariable("examId") UUID examId,
+            @RequestParam(value = "status", required = false) AttemptStatus status,
+            @RequestParam(value = "search", required = false) String search,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+
+        User teacher = getAuthenticatedTeacher(currentUser);
+        byte[] excelBytes = examExportService.exportExamAttemptsToExcel(examId, status, search, teacher);
+
+        String filename = "Exam_Attempts_" + examId + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .contentLength(excelBytes.length)
+                .body(excelBytes);
     }
 
     /**

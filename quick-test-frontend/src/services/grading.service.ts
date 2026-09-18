@@ -213,4 +213,33 @@ export const gradingService = {
     );
     return response.data.data;
   },
+
+  /**
+   * Export all candidate exam attempts for an exam to an Excel (.xlsx) file.
+   * Downloads as binary blob.
+   *
+   * @param examId The unique identifier of the target exam
+   * @param status Optional filter by attempt status
+   * @param search Optional keyword search
+   * @returns Blob representation of the Excel spreadsheet
+   */
+  async exportExamAttemptsExcel(
+    examId: string,
+    status?: AttemptStatus,
+    search?: string
+  ): Promise<Blob> {
+    const params: Record<string, string> = {};
+    if (status) params.status = status;
+    if (search && search.trim()) params.search = search.trim();
+
+    const response = await apiClient.get(
+      `/teacher/grading/exams/${examId}/attempts/export-excel`,
+      {
+        params,
+        responseType: 'blob',
+      }
+    );
+    return response.data as Blob;
+  },
 };
+

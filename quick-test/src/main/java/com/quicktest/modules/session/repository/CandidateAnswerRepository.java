@@ -108,4 +108,14 @@ public interface CandidateAnswerRepository extends JpaRepository<CandidateAnswer
     List<CandidateAnswer> findPendingByExamId(
             @Param("examId") UUID examId,
             @Param("status") GradingStatus status);
+
+    /**
+     * Count answered questions grouped by attemptId for all attempts in an exam.
+     * Returns List of [attemptId (UUID), answeredCount (Long)].
+     */
+    @Query("SELECT ca.examAttempt.id, COUNT(ca.id) " +
+           "FROM CandidateAnswer ca " +
+           "WHERE ca.examAttempt.exam.id = :examId " +
+           "GROUP BY ca.examAttempt.id")
+    List<Object[]> countAnsweredQuestionsByExamId(@Param("examId") UUID examId);
 }

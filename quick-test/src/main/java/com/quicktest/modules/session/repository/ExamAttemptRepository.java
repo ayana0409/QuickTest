@@ -4,6 +4,7 @@ import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.entity.ExamAttempt;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -102,6 +103,26 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
             @Param("status") AttemptStatus status,
             @Param("pattern") String pattern,
             Pageable pageable);
+
+    /**
+     * Retrieve all candidate attempts for Excel export with optional status and search filters.
+     * Eagerly fetches exam and user to prevent N+1 query overhead.
+     */
+    @Query("SELECT ea FROM ExamAttempt ea " +
+           "JOIN FETCH ea.exam e " +
+           "LEFT JOIN FETCH ea.user u " +
+           "WHERE ea.exam.id = :examId " +
+           "AND (:status IS NULL OR ea.status = :status) " +
+           "AND (:pattern IS NULL OR (" +
+           "     LOWER(ea.guestName) LIKE :pattern " +
+           "     OR LOWER(ea.guestIdentifier) LIKE :pattern " +
+           "     OR LOWER(u.fullName) LIKE :pattern " +
+           "     OR LOWER(u.email) LIKE :pattern))")
+    List<ExamAttempt> findAttemptsForExport(
+            @Param("examId") UUID examId,
+            @Param("status") AttemptStatus status,
+            @Param("pattern") String pattern,
+            Sort sort);
 
     /**
      * Compute all key statistics for an exam's attempts in a single database round-trip.

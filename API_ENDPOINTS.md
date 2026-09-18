@@ -83,8 +83,10 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 27 | | `GET` | `/api/teacher/proctoring/attempts/{attemptId}/status` | `TEACHER` | Xem trạng thái viễn trắc, heartbeat, tỷ lệ tập trung |
 | 28 | | `POST` | `/api/teacher/proctoring/attempts/{attemptId}/disqualify` | `TEACHER` | Đình chỉ thi cưỡng chế thí sinh vi phạm |
 | 29 | **Attempt Grading** | `GET` | `/api/teacher/grading/exams/{examId}/attempts` | `TEACHER` | Lấy danh sách bài nộp cần chấm theo đề thi |
-| 30 | | `GET` | `/api/teacher/grading/attempts/{attemptId}` | `TEACHER` | Xem chi tiết bài làm của 1 thí sinh để chấm |
-| 31 | | `POST` | `/api/teacher/grading/attempts/submit-grades` | `TEACHER` | Lưu điểm các câu tự luận của 1 bài thi |
+| 30 | | `GET` | `/api/teacher/grading/exams/{examId}/stats` | `TEACHER` | Lấy thống kê tổng quan các phiên thi (điểm, thời gian, vi phạm) |
+| 31 | | `GET` | `/api/teacher/grading/exams/{examId}/attempts/export-excel` | `TEACHER` | Xuất file Excel (.xlsx) danh sách phiên thi đầy đủ thông tin |
+| 32 | | `GET` | `/api/teacher/grading/attempts/{attemptId}` | `TEACHER` | Xem chi tiết bài làm của 1 thí sinh để chấm |
+| 33 | | `POST` | `/api/teacher/grading/attempts/submit-grades` | `TEACHER` | Lưu điểm các câu tự luận của 1 bài thi |
 | 32 | **Question Grading** | `GET` | `/api/teacher/grading/exams/{examId}/questions` | `TEACHER` | Danh sách câu hỏi tự luận cần chấm (thống kê tiến độ) |
 | 33 | | `GET` | `/api/teacher/grading/questions/{questionId}/submissions` | `TEACHER` | Xem biểu điểm và bài làm học sinh theo câu hỏi |
 | 34 | | `POST` | `/api/teacher/grading/questions/{questionId}/manual` | `TEACHER` | Chấm tay hàng loạt/lẻ theo câu hỏi (tính điểm tự động) |
@@ -625,6 +627,49 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
   }
   ```
 - **Response (200 OK):** `GradingResultResponse`
+
+#### 8.4. Thống kê tổng quan các phiên thi (`GET /api/teacher/grading/exams/{examId}/stats`)
+- **Mô tả:** Lấy toàn bộ chỉ số tổng hợp về các lượt thi của đề thi: tổng số lượt thi, phân loại trạng thái (đã nộp, chờ chấm, đang làm, đình chỉ), điểm trung bình / cao nhất / thấp nhất, số bài có vi phạm, thời gian làm bài trung bình / tối đa / tối thiểu.
+- **Quyền hạn:** `TEACHER` (chỉ xem đề của chính mình)
+- **Path Variable:** `examId` (UUID)
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Exam statistics computed successfully",
+    "data": {
+      "totalAttempts": 45,
+      "completedAttempts": 40,
+      "pendingGradingAttempts": 5,
+      "inProgressAttempts": 0,
+      "disqualifiedAttempts": 1,
+      "averageScore": 7.85,
+      "highestScore": 10.0,
+      "lowestScore": 3.5,
+      "gradedCount": 40,
+      "totalViolations": 12,
+      "maxViolations": 5,
+      "attemptsWithViolations": 4,
+      "averageDurationSeconds": 1820.5,
+      "maxDurationSeconds": 2700,
+      "minDurationSeconds": 950
+    },
+    "timestamp": "2026-09-18T12:00:00"
+  }
+  ```
+
+#### 8.5. Xuất file Excel danh sách phiên thi (`GET /api/teacher/grading/exams/{examId}/attempts/export-excel`)
+- **Mô tả:** Xuất toàn bộ danh sách phiên thi của đề thi ra file bảng tính Excel (`.xlsx`) được định dạng chuyên nghiệp.
+  - **Khối thông tin đề thi (Banner Overview):** Tên kỳ thi, mã phòng thi, thời lượng, điểm tối đa, tổng số câu hỏi, tổng số lượt thi, thống kê điểm số (trung bình, cao nhất, thấp nhất), bộ lọc đang áp dụng.
+  - **Bảng dữ liệu chi tiết (17 cột):** STT, Mã phiên thi, Họ và tên thí sinh, Email / Định danh, Loại thí sinh (Thành viên / Tự do), Trạng thái (Đang làm bài, Đã nộp bài, Chờ chấm tự luận, Bị đình chỉ), Điểm đạt được, Điểm tối đa, Tỷ lệ %, Số câu đã làm, Thời gian bắt đầu, Thời gian nộp bài, Thời gian làm bài, Số vi phạm, Bị đình chỉ, Địa chỉ IP, Thiết bị / Trình duyệt.
+  - Hỗ trợ các tham số lọc: `status` (lọc theo trạng thái) và `search` (tìm kiếm theo tên, email, định danh thí sinh).
+- **Quyền hạn:** `TEACHER` (chỉ xuất đề do chính mình tạo)
+- **Path Variable:** `examId` (UUID)
+- **Query Params (Tùy chọn):**
+  - `status` (`IN_PROGRESS` | `SUBMITTED` | `AWAITING_MANUAL_GRADING` | `DISQUALIFIED`)
+  - `search` (chuỗi ký tự tìm kiếm)
+- **Headers:** `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- **Response (200 OK):** Binary file stream (`.xlsx`), header `Content-Disposition: attachment; filename="Exam_Attempts_{examId}.xlsx"`
 
 ---
 

@@ -1,0 +1,24 @@
+meta {
+  name: 5.20 Export Exam Attempts - Excel
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts/export-excel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+}
+
+assert {
+  res.status: eq 200
+  res.headers["content-type"]: contains application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+}

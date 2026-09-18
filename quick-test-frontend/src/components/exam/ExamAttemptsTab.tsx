@@ -21,6 +21,7 @@ import {
   ArrowDown,
   BarChart3,
   ChevronDown,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
@@ -56,6 +57,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
   const [attemptsData, setAttemptsData] = useState<PageResponse<AttemptSummaryDto> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Statistics panel visibility
   const [statsExpanded, setStatsExpanded] = useState(true);
@@ -137,6 +139,36 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
     ) : (
       <ArrowUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 stroke-[2.5]" />
     );
+  };
+
+  // Handle exporting all filtered attempts to Excel (.xlsx)
+  const handleExportExcel = async () => {
+    if (!examId) return;
+    setIsExporting(true);
+    try {
+      const blob = await gradingService.exportExamAttemptsExcel(
+        examId,
+        selectedStatus === 'ALL' ? undefined : selectedStatus,
+        debouncedSearch || undefined
+      );
+
+      // Create blob download URL and trigger browser download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      link.download = `Danh_Sach_Phien_Thi_${timestamp}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast.success('Xuất file Excel danh sách phiên thi thành công!');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Không thể xuất file Excel danh sách phiên thi.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Attempt list from current page
@@ -265,8 +297,18 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
           </div>
         </div>
 
-        {/* Action / Refresh */}
+        {/* Action / Export / Refresh */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            isLoading={isExporting}
+            leftIcon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+            className="hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium"
+          >
+            Xuất Excel
+          </Button>
           <Button
             variant="outline"
             size="sm"
