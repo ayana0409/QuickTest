@@ -29,6 +29,8 @@ interface CreateExamFormData {
   maxAttempts: number;
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
+  isProctoringEnabled: boolean;
+  maxViolations: number;
   startTime?: string;
   endTime?: string;
 }
@@ -51,6 +53,8 @@ export default function CreateExamPage() {
       maxAttempts: 1,
       shuffleQuestions: true,
       shuffleOptions: true,
+      isProctoringEnabled: false,
+      maxViolations: 5,
       startTime: '',
       endTime: '',
     },
@@ -67,6 +71,8 @@ export default function CreateExamPage() {
         maxAttempts: Number(data.maxAttempts) || 1,
         shuffleQuestions: Boolean(data.shuffleQuestions),
         shuffleOptions: Boolean(data.shuffleOptions),
+        isProctoringEnabled: Boolean(data.isProctoringEnabled),
+        maxViolations: Number(data.maxViolations) || 5,
         startTime: formatDateTimeForPayload(data.startTime),
         endTime: formatDateTimeForPayload(data.endTime),
       };
@@ -295,6 +301,48 @@ export default function CreateExamPage() {
                     </p>
                   </div>
                 </label>
+
+                <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-4">
+                  <label className="flex items-start gap-3 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      {...register('isProctoringEnabled')}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 mt-0.5 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                        Bật giám sát trực tuyến (Proctoring)
+                      </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Tự động phát hiện chuyển tab, mở DevTools hoặc mất tiêu điểm và cảnh báo vi phạm.
+                      </p>
+                    </div>
+                  </label>
+
+                  {watch('isProctoringEnabled') && (
+                    <div className="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 space-y-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                        Số lần vi phạm tối đa trước khi đình chỉ
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          {...register('maxViolations', {
+                            min: { value: 1, message: 'Tối thiểu 1 lần' },
+                            valueAsNumber: true,
+                          })}
+                          className="w-28 px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        />
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                          lần cảnh báo. Nếu thí sinh vượt quá số lần này, hệ thống sẽ tự động đình chỉ bài thi.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

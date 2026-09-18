@@ -479,6 +479,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                 .examDescription(exam.getDescription())
                 .durationMinutes(exam.getDurationMinutes())
                 .totalQuestions(maskedQuestions.size())
+                .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .maxViolations(exam.getMaxViolations())
                 .startTime(attempt.getStartTime())
                 .expireAt(attempt.getExpireAt())
                 .serverTime(now)

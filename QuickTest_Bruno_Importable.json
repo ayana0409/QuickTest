@@ -864,7 +864,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026\",\n    \"accessCode\": \"{{uniqueCode}}\",\n    \"description\": \"Đề thi khảo sát chất lượng môn Toán với 4 dạng câu hỏi\",\n    \"durationMinutes\": 45,\n    \"maxAttempts\": 2,\n    \"shuffleQuestions\": true,\n    \"shuffleOptions\": true\n  }",
+              "raw": "{\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026\",\n    \"accessCode\": \"{{uniqueCode}}\",\n    \"description\": \"Đề thi khảo sát chất lượng môn Toán với 4 dạng câu hỏi\",\n    \"durationMinutes\": 45,\n    \"maxAttempts\": 2,\n    \"shuffleQuestions\": true,\n    \"shuffleOptions\": true,\n    \"isProctoringEnabled\": true,\n    \"maxViolations\": 3\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1271,7 +1271,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026 (Cập nhật)\",\r\n    \"description\": \"Thời gian làm bài điều chỉnh lên 60 phút\",\r\n    \"durationMinutes\": 60,\r\n    \"maxAttempts\": 3,\r\n    \"shuffleQuestions\": false,\r\n    \"shuffleOptions\": false\r\n  }",
+              "raw": "{\r\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026 (Cập nhật)\",\r\n    \"description\": \"Thời gian làm bài điều chỉnh lên 60 phút\",\r\n    \"durationMinutes\": 60,\r\n    \"maxAttempts\": 3,\r\n    \"shuffleQuestions\": false,\r\n    \"shuffleOptions\": false,\r\n    \"isProctoringEnabled\": true,\r\n    \"maxViolations\": 5\r\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4857,6 +4857,312 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is 404\", function () {",
                   "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.14 Get Attempts - Sort By Total Score Desc",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?page=0&size=10&sort=totalScore,desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.15 Get Attempts - Sort By Violation Count Desc",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/attempts?page=0&size=10&sort=violationCount,desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "attempts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.16 Get Exam Attempt Stats - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.17 Get Exam Attempt Stats - Forbidden for Student",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{examId}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{examId}}",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{studentToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 403\", function () {",
+                  "        pm.response.to.have.status(403);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.18 Get Exam Attempt Stats - Exam Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/00000000-0000-0000-0000-000000000000/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "00000000-0000-0000-0000-000000000000",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.19 Get Exam Attempt Stats - Score and Duration Nullable Fields",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teacher/grading/exams/{{emptyExamId}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teacher",
+                "grading",
+                "exams",
+                "{{emptyExamId}}",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
                   "    });",
                   "}"
                 ]

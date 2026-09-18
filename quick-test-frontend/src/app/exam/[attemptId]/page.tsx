@@ -20,7 +20,6 @@ import { QuestionCard } from '@/components/exam/QuestionCard';
 import { ExamWarningModal } from '@/components/exam/ExamWarningModal';
 import { ExamDisqualifiedOverlay } from '@/components/exam/ExamDisqualifiedOverlay';
 import { SubmitConfirmModal } from '@/components/exam/SubmitConfirmModal';
-import { ProctoringSettingsModal } from '@/components/exam/ProctoringSettingsModal';
 import { GuestInfoModal } from '@/components/exam/GuestInfoModal';
 import toast from 'react-hot-toast';
 import type { ExamPaper, QuestionInPaper } from '@/types/exam';
@@ -120,44 +119,22 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   const [warningMessage, setWarningMessage] = useState<string>('');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
-  // Proctoring Settings State
-  const [proctoringSettings, setProctoringSettings] = useState<ProctoringSettings>(
-    DEFAULT_PROCTORING_SETTINGS
-  );
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  // Proctoring Settings State (controlled dynamically by teacher/exam configuration)
+  const [proctoringSettings, setProctoringSettings] = useState<ProctoringSettings>({
+    ...DEFAULT_PROCTORING_SETTINGS,
+    enabled: false,
+  });
 
-  // Load Proctoring Settings from localStorage
+  // Sync proctoring settings with exam paper configuration
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('quicktest_proctoring_settings');
-      if (saved) {
-        setProctoringSettings(JSON.parse(saved));
-      }
-    } catch {
-      // Ignored
+    if (examPaper) {
+      const isEnabled = Boolean(examPaper.isProctoringEnabled);
+      setProctoringSettings((prev) => ({
+        ...prev,
+        enabled: isEnabled,
+      }));
     }
-  }, []);
-
-  const handleSaveProctoringSettings = (newSettings: ProctoringSettings) => {
-    setProctoringSettings(newSettings);
-    try {
-      localStorage.setItem('quicktest_proctoring_settings', JSON.stringify(newSettings));
-    } catch {
-      // Ignored
-    }
-    // If master proctoring was turned off, dismiss any active violation alert modal
-    if (!newSettings.enabled) {
-      setWarningModalOpen(false);
-    }
-  };
-
-  const handleToggleMasterProctoring = () => {
-    const nextSettings: ProctoringSettings = {
-      ...proctoringSettings,
-      enabled: !proctoringSettings.enabled,
-    };
-    handleSaveProctoringSettings(nextSettings);
-  };
+  }, [examPaper?.isProctoringEnabled]);
 
   // Debounce Auto-Save Ref
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -729,8 +706,6 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           onToggleFullscreen={handleToggleFullscreen}
           isFullscreen={isFullscreen}
           proctoringSettings={proctoringSettings}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onToggleMasterProctoring={handleToggleMasterProctoring}
         />
 
         {/* Main Workspace */}
@@ -847,7 +822,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         <ExamWarningModal
           isOpen={warningModalOpen && !isDisqualified}
           violationCount={violationCount}
-          maxAllowed={3}
+          maxAllowed={examPaper.maxViolations || 5}
           message={warningMessage}
           onAcknowledge={() => setWarningModalOpen(false)}
         />
@@ -869,14 +844,6 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           unansweredIndices={unansweredIndices}
           onJumpToQuestion={setCurrentQuestionIndex}
           isSubmitting={isSubmitting}
-        />
-
-        {/* Proctoring Settings Modal */}
-        <ProctoringSettingsModal
-          isOpen={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          settings={proctoringSettings}
-          onSaveSettings={handleSaveProctoringSettings}
         />
 
         {/* Guest Candidate Info Modal (Re-authentication) */}

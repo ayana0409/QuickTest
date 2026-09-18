@@ -39,6 +39,11 @@ public class ExamUpdateRequest {
 
     private Boolean shuffleOptions;
 
+    private Boolean isProctoringEnabled;
+
+    @Min(value = 1, message = "Max violations must be at least 1")
+    private Integer maxViolations;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
 

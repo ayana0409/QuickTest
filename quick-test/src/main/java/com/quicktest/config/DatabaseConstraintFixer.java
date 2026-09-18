@@ -55,5 +55,13 @@ public class DatabaseConstraintFixer implements ApplicationRunner {
         } catch (Exception e) {
             log.warn("[DB CONSTRAINT] Could not alter content columns to nullable: {}", e.getMessage());
         }
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE exams ADD COLUMN IF NOT EXISTS is_proctoring_enabled BOOLEAN NOT NULL DEFAULT false;");
+            jdbcTemplate.execute("ALTER TABLE exams ADD COLUMN IF NOT EXISTS max_violations INTEGER NOT NULL DEFAULT 5;");
+            log.info("[DB CONSTRAINT] exams is_proctoring_enabled and max_violations columns verified.");
+        } catch (Exception e) {
+            log.warn("[DB CONSTRAINT] Could not add proctoring columns to exams table: {}", e.getMessage());
+        }
     }
 }

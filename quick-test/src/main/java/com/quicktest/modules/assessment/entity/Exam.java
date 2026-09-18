@@ -58,6 +58,14 @@ public class Exam {
     @Builder.Default
     private Boolean shuffleOptions = true;   // Shuffle options order
 
+    @Builder.Default
+    @Column(name = "is_proctoring_enabled", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isProctoringEnabled = false; // Flag to enable anti-cheat proctoring
+
+    @Builder.Default
+    @Column(name = "max_violations", nullable = false, columnDefinition = "integer default 5")
+    private Integer maxViolations = 5; // Violation threshold before auto-disqualification
+
     private LocalDateTime startTime; // Exam opening timestamp
     private LocalDateTime endTime;   // Exam closing timestamp
 

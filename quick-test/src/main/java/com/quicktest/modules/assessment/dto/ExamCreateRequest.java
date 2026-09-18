@@ -50,6 +50,13 @@ public class ExamCreateRequest {
     @Builder.Default
     private Boolean shuffleOptions = true;
 
+    @Builder.Default
+    private Boolean isProctoringEnabled = false;
+
+    @Builder.Default
+    @Min(value = 1, message = "Max violations must be at least 1")
+    private Integer maxViolations = 5;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
 

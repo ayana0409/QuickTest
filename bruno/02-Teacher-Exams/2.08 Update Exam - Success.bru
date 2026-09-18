@@ -26,10 +26,14 @@ body:json {
     "durationMinutes": 60,
     "maxAttempts": 3,
     "shuffleQuestions": false,
-    "shuffleOptions": false
+    "shuffleOptions": false,
+    "isProctoringEnabled": true,
+    "maxViolations": 5
   }
 }
 
 assert {
   res.status: eq 200
+  res.body.data.isProctoringEnabled: eq true
+  res.body.data.maxViolations: eq 5
 }

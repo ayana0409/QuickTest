@@ -33,6 +33,8 @@ public class ExamDetailResponse {
     private Integer maxAttempts;
     private Boolean shuffleQuestions;
     private Boolean shuffleOptions;
+    private Boolean isProctoringEnabled;
+    private Integer maxViolations;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
@@ -79,6 +81,8 @@ public class ExamDetailResponse {
                 .maxAttempts(exam.getMaxAttempts())
                 .shuffleQuestions(exam.getShuffleQuestions())
                 .shuffleOptions(exam.getShuffleOptions())
+                .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .maxViolations(exam.getMaxViolations())
                 .startTime(exam.getStartTime())
                 .endTime(exam.getEndTime())
                 .createdAt(exam.getCreatedAt())
@@ -113,6 +117,8 @@ public class ExamDetailResponse {
                 .maxAttempts(exam.getMaxAttempts())
                 .shuffleQuestions(exam.getShuffleQuestions())
                 .shuffleOptions(exam.getShuffleOptions())
+                .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .maxViolations(exam.getMaxViolations())
                 .startTime(exam.getStartTime())
                 .endTime(exam.getEndTime())
                 .createdAt(exam.getCreatedAt())

@@ -24,6 +24,8 @@ public class ExamSummaryResponse {
     private ExamStatus status;
     private Integer durationMinutes;
     private Integer maxAttempts;
+    private Boolean isProctoringEnabled;
+    private Integer maxViolations;
     private Long totalQuestions;
     private Double totalPoints;
 
@@ -46,6 +48,8 @@ public class ExamSummaryResponse {
             ExamStatus status,
             Integer durationMinutes,
             Integer maxAttempts,
+            Boolean isProctoringEnabled,
+            Integer maxViolations,
             Long totalQuestions,
             Double totalPoints,
             LocalDateTime startTime,
@@ -57,6 +61,8 @@ public class ExamSummaryResponse {
         this.status = status;
         this.durationMinutes = durationMinutes;
         this.maxAttempts = maxAttempts;
+        this.isProctoringEnabled = isProctoringEnabled;
+        this.maxViolations = maxViolations;
         this.totalQuestions = totalQuestions != null ? totalQuestions : 0L;
         this.totalPoints = totalPoints != null ? totalPoints : 0.0;
         this.startTime = startTime;
@@ -75,6 +81,8 @@ public class ExamSummaryResponse {
                 .status(exam.getStatus())
                 .durationMinutes(exam.getDurationMinutes())
                 .maxAttempts(exam.getMaxAttempts())
+                .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .maxViolations(exam.getMaxViolations())
                 .totalQuestions(totalQuestions)
                 .totalPoints(totalPoints)
                 .startTime(exam.getStartTime())

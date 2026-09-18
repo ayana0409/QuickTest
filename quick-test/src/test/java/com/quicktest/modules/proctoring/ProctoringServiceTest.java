@@ -103,6 +103,8 @@ class ProctoringServiceTest {
                                 .accessCode("PROC123")
                                 .createdBy(teacher)
                                 .durationMinutes(60)
+                                .isProctoringEnabled(true)
+                                .maxViolations(5)
                                 .build();
 
                 attemptId = UUID.randomUUID();
@@ -162,6 +164,55 @@ class ProctoringServiceTest {
                 assertEquals(5, alert.getViolationCount());
                 assertTrue(alert.getDisqualified());
                 assertEquals(0, alert.getRemainingAllowed());
+                assertEquals(AttemptStatus.DISQUALIFIED, attempt.getStatus());
+
+                verify(violationLogRepository).save(any(ViolationLog.class));
+                verify(examAttemptRepository).save(attempt);
+        }
+
+        @Test
+        @DisplayName("recordViolation - When proctoring is disabled, bypass violation recording")
+        void recordViolation_WhenProctoringDisabled_BypassesRecording() {
+                exam.setIsProctoringEnabled(false);
+                when(examAttemptRepository.findByIdWithExamAndUser(attemptId)).thenReturn(Optional.of(attempt));
+
+                ViolationReportMessage report = ViolationReportMessage.builder()
+                                .attemptId(attemptId)
+                                .violationType(ViolationType.TAB_SWITCH)
+                                .description("Tab switch detected")
+                                .build();
+
+                ViolationAlertMessage alert = proctoringService.recordViolation(attemptId, report, student.getId());
+
+                assertNotNull(alert);
+                assertFalse(alert.getDisqualified());
+                assertEquals(0, alert.getViolationCount());
+                assertEquals("Proctoring is disabled for this exam.", alert.getMessage());
+
+                verify(violationLogRepository, never()).save(any(ViolationLog.class));
+                verify(valueOperations, never()).increment(anyString());
+        }
+
+        @Test
+        @DisplayName("recordViolation - Custom maxViolations threshold auto-disqualifies candidate earlier")
+        void recordViolation_CustomThreshold_AutoDisqualifies() {
+                exam.setMaxViolations(2);
+                when(examAttemptRepository.findByIdWithExamAndUser(attemptId)).thenReturn(Optional.of(attempt));
+                when(valueOperations.increment(anyString())).thenReturn(2L);
+
+                ViolationReportMessage report = ViolationReportMessage.builder()
+                                .attemptId(attemptId)
+                                .violationType(ViolationType.TAB_SWITCH)
+                                .description("Tab switch detected")
+                                .build();
+
+                ViolationAlertMessage alert = proctoringService.recordViolation(attemptId, report, student.getId());
+
+                assertNotNull(alert);
+                assertEquals(2, alert.getViolationCount());
+                assertEquals(2, alert.getMaxAllowed());
+                assertEquals(0, alert.getRemainingAllowed());
+                assertTrue(alert.getDisqualified());
                 assertEquals(AttemptStatus.DISQUALIFIED, attempt.getStatus());
 
                 verify(violationLogRepository).save(any(ViolationLog.class));

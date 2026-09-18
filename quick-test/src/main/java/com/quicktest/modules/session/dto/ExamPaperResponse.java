@@ -25,6 +25,8 @@ public class ExamPaperResponse {
     private String examDescription;
     private Integer durationMinutes;
     private Integer totalQuestions;
+    private Boolean isProctoringEnabled;
+    private Integer maxViolations;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;

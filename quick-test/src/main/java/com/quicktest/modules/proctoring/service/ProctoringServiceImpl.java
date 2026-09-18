@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("null")
 public class ProctoringServiceImpl implements ProctoringService {
 
-    private static final int MAX_VIOLATION_THRESHOLD = 5;
+    private static final int DEFAULT_MAX_VIOLATIONS = 5;
     private static final Duration REDIS_KEY_TTL = Duration.ofHours(24);
     private static final Duration HEARTBEAT_TTL = Duration.ofSeconds(120);
 
@@ -76,6 +76,28 @@ public class ProctoringServiceImpl implements ProctoringService {
             throw new AppException("Cannot report violations for an exam attempt that is not IN_PROGRESS", HttpStatus.BAD_REQUEST);
         }
 
+        Exam exam = attempt.getExam();
+        boolean isProctoringEnabled = exam.getIsProctoringEnabled() != null && exam.getIsProctoringEnabled();
+        int maxAllowed = (exam.getMaxViolations() != null && exam.getMaxViolations() > 0)
+                ? exam.getMaxViolations()
+                : DEFAULT_MAX_VIOLATIONS;
+
+        // If proctoring is not enabled by the instructor, bypass violation recording
+        if (!isProctoringEnabled) {
+            log.info("Proctoring is disabled for exam {}. Ignoring violation for attempt {}.",
+                    exam.getId(), attemptId);
+            return ViolationAlertMessage.builder()
+                    .attemptId(attemptId)
+                    .violationType(report.getViolationType())
+                    .violationCount(attempt.getViolationCount())
+                    .maxAllowed(maxAllowed)
+                    .remainingAllowed(maxAllowed)
+                    .disqualified(false)
+                    .message("Proctoring is disabled for this exam.")
+                    .timestamp(LocalDateTime.now())
+                    .build();
+        }
+
         // 1. Atomic Redis Counter increment
         String countKey = String.format(KEY_VIOLATIONS_COUNT, attemptId);
         Long redisCount = stringRedisTemplate.opsForValue().increment(countKey);
@@ -101,26 +123,26 @@ public class ProctoringServiceImpl implements ProctoringService {
         attempt.setViolationCount(currentTotal);
 
         // 4. Check threshold for automatic disqualification
-        boolean isDisqualified = currentTotal >= MAX_VIOLATION_THRESHOLD;
+        boolean isDisqualified = currentTotal >= maxAllowed;
         if (isDisqualified) {
             log.warn("Attempt {} has exceeded violation threshold ({}/{}). Auto-disqualifying candidate.",
-                    attemptId, currentTotal, MAX_VIOLATION_THRESHOLD);
+                    attemptId, currentTotal, maxAllowed);
             attempt.setStatus(AttemptStatus.DISQUALIFIED);
         }
         examAttemptRepository.save(attempt);
 
-        int remaining = Math.max(0, MAX_VIOLATION_THRESHOLD - currentTotal);
+        int remaining = Math.max(0, maxAllowed - currentTotal);
         String alertText = isDisqualified
-                ? String.format("Candidate disqualified! Violation limit exceeded (%d/%d).", currentTotal, MAX_VIOLATION_THRESHOLD)
+                ? String.format("Candidate disqualified! Violation limit exceeded (%d/%d).", currentTotal, maxAllowed)
                 : String.format("Violation detected: %s. Total violations: %d/%d. Remaining warnings: %d.",
-                        report.getViolationType().name(), currentTotal, MAX_VIOLATION_THRESHOLD, remaining);
+                        report.getViolationType().name(), currentTotal, maxAllowed, remaining);
 
         // 5. Construct alert message
         ViolationAlertMessage alertMessage = ViolationAlertMessage.builder()
                 .attemptId(attemptId)
                 .violationType(report.getViolationType())
                 .violationCount(currentTotal)
-                .maxAllowed(MAX_VIOLATION_THRESHOLD)
+                .maxAllowed(maxAllowed)
                 .remainingAllowed(remaining)
                 .disqualified(isDisqualified)
                 .message(alertText)
@@ -301,12 +323,16 @@ public class ProctoringServiceImpl implements ProctoringService {
 
         examAttemptRepository.save(attempt);
 
+        int maxAllowed = (attempt.getExam().getMaxViolations() != null && attempt.getExam().getMaxViolations() > 0)
+                ? attempt.getExam().getMaxViolations()
+                : DEFAULT_MAX_VIOLATIONS;
+
         // Push alerts over WebSocket
         ViolationAlertMessage alert = ViolationAlertMessage.builder()
                 .attemptId(attemptId)
                 .violationType(ViolationType.TEACHER_DISQUALIFY)
                 .violationCount(getEffectiveViolationCount(attempt))
-                .maxAllowed(MAX_VIOLATION_THRESHOLD)
+                .maxAllowed(maxAllowed)
                 .remainingAllowed(0)
                 .disqualified(true)
                 .message("You have been disqualified by the instructor: " + desc)

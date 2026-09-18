@@ -54,6 +54,8 @@ export interface Exam {
   maxAttempts: number;
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
+  isProctoringEnabled?: boolean;
+  maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
   createdAt: string;
@@ -78,6 +80,8 @@ export interface ExamSummaryResponse {
   status: ExamStatus;
   durationMinutes: number;
   maxAttempts: number;
+  isProctoringEnabled?: boolean;
+  maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
   createdAt: string;
@@ -100,6 +104,8 @@ export interface ExamDetailResponse {
   maxAttempts: number;
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
+  isProctoringEnabled?: boolean;
+  maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
   createdAt: string;
@@ -121,6 +127,8 @@ export interface ExamCreateRequest {
   maxAttempts?: number;
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
+  isProctoringEnabled?: boolean;
+  maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
 }
@@ -135,6 +143,8 @@ export interface ExamUpdateRequest {
   maxAttempts?: number;
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
+  isProctoringEnabled?: boolean;
+  maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
   status?: ExamStatus;
@@ -150,6 +160,8 @@ export interface ExamPaper {
   examDescription?: string | null;
   durationMinutes: number;
   totalQuestions: number;
+  isProctoringEnabled?: boolean;
+  maxViolations?: number;
   startTime: string;
   expireAt: string;
   serverTime: string;

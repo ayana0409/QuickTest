@@ -208,6 +208,10 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
     "description": "Đề thi chính thức 45 phút",
     "durationMinutes": 45,
     "maxAttempts": 1,
+    "shuffleQuestions": true,
+    "shuffleOptions": true,
+    "isProctoringEnabled": true,
+    "maxViolations": 3,
     "startTime": "2026-10-01T08:00:00",
     "endTime": "2026-10-01T12:00:00"
   }
@@ -225,6 +229,10 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
       "status": "DRAFT",
       "durationMinutes": 45,
       "maxAttempts": 1,
+      "shuffleQuestions": true,
+      "shuffleOptions": true,
+      "isProctoringEnabled": true,
+      "maxViolations": 3,
       "startTime": "2026-10-01T08:00:00",
       "endTime": "2026-10-01T12:00:00",
       "totalQuestions": 0,
@@ -546,7 +554,9 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 ### Module 6 & 7: Giám Sát Phòng Thi Trực Tuyến & Viễn Trắc (Proctoring)
 
 #### 6.1. Thí sinh báo cáo vi phạm (`POST /api/session/proctoring/violations`)
-- **Mô tả:** SDK giám sát phía client gửi telemetry khi phát hiện gian lận: rời màn hình, switch tab, mất tiêu điểm chuột, phím tắt cấm, v.v.
+- **Mô tả:** SDK giám sát phía client gửi telemetry khi phát hiện gian lận: rời màn hình, switch tab, mất tiêu điểm chuột, phím tắt cấm, mở DevTools, v.v.
+  - Hệ thống kiểm tra cấu hình `isProctoringEnabled` của đề thi: nếu giáo viên tắt giám sát, các báo cáo sẽ được bỏ qua mà không lưu audit logs hay tăng bộ đếm.
+  - Nếu bật giám sát, hệ thống ghi nhận vi phạm và so sánh với ngưỡng `maxViolations` do giáo viên cấu hình cho đề thi đó. Vượt quá ngưỡng sẽ tự động chuyển bài thi sang `DISQUALIFIED` (đình chỉ).
 - **Request Body:**
   ```json
   {
@@ -555,7 +565,7 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
     "details": "User switched away to another application for 6 seconds"
   }
   ```
-- **Response (200 OK):** `ViolationAlertMessage` (thông báo cảnh báo vi phạm)
+- **Response (200 OK):** `ViolationAlertMessage` (thông báo cảnh báo vi phạm kèm `maxAllowed` và `remainingAllowed`)
 
 #### 6.2. Thí sinh gửi Heartbeat (`POST /api/session/proctoring/heartbeat`)
 - **Mô tả:** HTTP beacon fallback gửi tín hiệu duy trì trạng thái kết nối active mỗi 15-30 giây.
