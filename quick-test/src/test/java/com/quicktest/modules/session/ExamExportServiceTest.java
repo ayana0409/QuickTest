@@ -1,13 +1,17 @@
 package com.quicktest.modules.session;
 
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
 import com.quicktest.modules.assessment.repository.ExamRepository;
+import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.session.entity.AttemptStatus;
+import com.quicktest.modules.session.entity.CandidateAnswer;
 import com.quicktest.modules.session.entity.ExamAttempt;
+import com.quicktest.modules.session.entity.GradingStatus;
 import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import com.quicktest.modules.session.service.ExamExportServiceImpl;
@@ -49,6 +53,9 @@ class ExamExportServiceTest {
 
     @Mock
     private CandidateAnswerRepository candidateAnswerRepository;
+
+    @Mock
+    private QuestionRepository questionRepository;
 
     @InjectMocks
     private ExamExportServiceImpl examExportService;
@@ -239,5 +246,154 @@ class ExamExportServiceTest {
 
         assertNotNull(result);
         verify(examAttemptRepository).findAttemptsForExport(eq(examId), eq(AttemptStatus.SUBMITTED), eq("%nguyen%"), any(Sort.class));
+    }
+
+    @Test
+    @DisplayName("Export single attempt successfully generates .xlsx with question details, scores, and feedback")
+    void exportSingleAttemptToExcel_Success() throws IOException {
+        UUID attemptId = UUID.randomUUID();
+
+        ExamAttempt attempt = ExamAttempt.builder()
+                .id(attemptId)
+                .exam(exam)
+                .user(User.builder().id(UUID.randomUUID()).fullName("Tran Van C").email("tvc@test.edu.vn").build())
+                .startTime(LocalDateTime.now().minusMinutes(40))
+                .submitTime(LocalDateTime.now().minusMinutes(5))
+                .status(AttemptStatus.SUBMITTED)
+                .totalScore(9.0)
+                .violationCount(1)
+                .ipAddress("10.0.0.1")
+                .userAgent("Mozilla/5.0")
+                .build();
+
+        AnswerOption optA = AnswerOption.builder().id(UUID.randomUUID()).orderIndex(0).content("Đáp án A").isCorrect(true).build();
+        AnswerOption optB = AnswerOption.builder().id(UUID.randomUUID()).orderIndex(1).content("Đáp án B").isCorrect(false).build();
+
+        Question q1 = Question.builder()
+                .id(UUID.randomUUID())
+                .orderIndex(1)
+                .points(5.0)
+                .questionType(QuestionType.SINGLE_CHOICE)
+                .content("Câu hỏi trắc nghiệm 1?")
+                .options(List.of(optA, optB))
+                .build();
+
+        Question q2 = Question.builder()
+                .id(UUID.randomUUID())
+                .orderIndex(2)
+                .points(5.0)
+                .questionType(QuestionType.ESSAY_TEXT)
+                .content("Câu hỏi tự luận 2?")
+                .sampleAnswer("Bài mẫu tự luận...")
+                .build();
+
+        List<Question> questions = List.of(q1, q2);
+
+        CandidateAnswer ca1 = CandidateAnswer.builder()
+                .id(UUID.randomUUID())
+                .examAttempt(attempt)
+                .question(q1)
+                .selectedOptions(Set.of(optA))
+                .awardedScore(5.0)
+                .gradingStatus(GradingStatus.AUTO_GRADED)
+                .build();
+
+        CandidateAnswer ca2 = CandidateAnswer.builder()
+                .id(UUID.randomUUID())
+                .examAttempt(attempt)
+                .question(q2)
+                .textAnswer("Bài làm của thí sinh về câu 2.")
+                .awardedScore(4.0)
+                .gradingStatus(GradingStatus.GRADED)
+                .teacherFeedback("Làm bài tốt, diễn đạt rõ ràng!")
+                .build();
+
+        List<CandidateAnswer> answers = List.of(ca1, ca2);
+
+        when(examAttemptRepository.findByIdWithExamAndUser(attemptId)).thenReturn(Optional.of(attempt));
+        when(questionRepository.findByExamIdWithOptions(exam.getId())).thenReturn(questions);
+        when(candidateAnswerRepository.findByExamAttemptIdWithQuestion(attemptId)).thenReturn(answers);
+
+        // Act
+        byte[] excelBytes = examExportService.exportSingleAttemptToExcel(attemptId, teacher);
+
+        // Assert
+        assertNotNull(excelBytes);
+        assertTrue(excelBytes.length > 0);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(excelBytes))) {
+            Sheet sheet = workbook.getSheet("Chi Tiet Bai Lam");
+            assertNotNull(sheet, "Worksheet 'Chi Tiet Bai Lam' must exist");
+
+            // Row 0: Title
+            Row titleRow = sheet.getRow(0);
+            assertNotNull(titleRow);
+            assertEquals("KẾT QUẢ BÀI THI CHI TIẾT CỦA THÍ SINH", titleRow.getCell(0).getStringCellValue());
+
+            // Row 10: Table Header
+            Row headerRow = sheet.getRow(10);
+            assertNotNull(headerRow);
+            assertEquals("STT", headerRow.getCell(0).getStringCellValue());
+            assertEquals("Loại câu hỏi", headerRow.getCell(1).getStringCellValue());
+            assertEquals("Nội dung câu hỏi", headerRow.getCell(2).getStringCellValue());
+            assertEquals("Câu trả lời của thí sinh", headerRow.getCell(3).getStringCellValue());
+            assertEquals("Đáp án đúng / Chuẩn", headerRow.getCell(4).getStringCellValue());
+            assertEquals("Điểm tối đa", headerRow.getCell(5).getStringCellValue());
+            assertEquals("Điểm đạt được", headerRow.getCell(6).getStringCellValue());
+            assertEquals("Tỷ lệ %", headerRow.getCell(7).getStringCellValue());
+            assertEquals("Trạng thái chấm", headerRow.getCell(8).getStringCellValue());
+            assertEquals("Nhận xét của giáo viên (Feedback)", headerRow.getCell(9).getStringCellValue());
+
+            // Row 11: Question 1 (Multiple choice)
+            Row rowQ1 = sheet.getRow(11);
+            assertNotNull(rowQ1);
+            assertEquals(1, (int) rowQ1.getCell(0).getNumericCellValue());
+            assertEquals("Trắc nghiệm (1 đáp án)", rowQ1.getCell(1).getStringCellValue());
+            assertEquals("Câu hỏi trắc nghiệm 1?", rowQ1.getCell(2).getStringCellValue());
+            assertEquals("A. Đáp án A", rowQ1.getCell(3).getStringCellValue());
+            assertEquals("A. Đáp án A", rowQ1.getCell(4).getStringCellValue());
+            assertEquals(5.0, rowQ1.getCell(5).getNumericCellValue(), 0.01);
+            assertEquals(5.0, rowQ1.getCell(6).getNumericCellValue(), 0.01);
+            assertEquals("100.0%", rowQ1.getCell(7).getStringCellValue());
+            assertEquals("Tự động chấm", rowQ1.getCell(8).getStringCellValue());
+            assertEquals("-", rowQ1.getCell(9).getStringCellValue());
+
+            // Row 12: Question 2 (Essay with feedback)
+            Row rowQ2 = sheet.getRow(12);
+            assertNotNull(rowQ2);
+            assertEquals(2, (int) rowQ2.getCell(0).getNumericCellValue());
+            assertEquals("Tự luận", rowQ2.getCell(1).getStringCellValue());
+            assertEquals("Câu hỏi tự luận 2?", rowQ2.getCell(2).getStringCellValue());
+            assertEquals("Bài làm của thí sinh về câu 2.", rowQ2.getCell(3).getStringCellValue());
+            assertEquals("Bài mẫu tự luận...", rowQ2.getCell(4).getStringCellValue());
+            assertEquals(5.0, rowQ2.getCell(5).getNumericCellValue(), 0.01);
+            assertEquals(4.0, rowQ2.getCell(6).getNumericCellValue(), 0.01);
+            assertEquals("80.0%", rowQ2.getCell(7).getStringCellValue());
+            assertEquals("Giáo viên đã chấm", rowQ2.getCell(8).getStringCellValue());
+            assertEquals("Làm bài tốt, diễn đạt rõ ràng!", rowQ2.getCell(9).getStringCellValue());
+        }
+    }
+
+    @Test
+    @DisplayName("Export single attempt throws AccessDeniedException when teacher does not own exam")
+    void exportSingleAttemptToExcel_ThrowsAccessDenied_WhenNotExamOwner() {
+        UUID attemptId = UUID.randomUUID();
+        ExamAttempt attempt = ExamAttempt.builder().id(attemptId).exam(exam).build();
+        when(examAttemptRepository.findByIdWithExamAndUser(attemptId)).thenReturn(Optional.of(attempt));
+
+        assertThrows(AccessDeniedException.class, () ->
+                examExportService.exportSingleAttemptToExcel(attemptId, otherTeacher)
+        );
+    }
+
+    @Test
+    @DisplayName("Export single attempt throws ResourceNotFoundException when attempt does not exist")
+    void exportSingleAttemptToExcel_ThrowsResourceNotFound_WhenAttemptDoesNotExist() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(examAttemptRepository.findByIdWithExamAndUser(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                examExportService.exportSingleAttemptToExcel(nonExistentId, teacher)
+        );
     }
 }

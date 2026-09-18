@@ -1,0 +1,24 @@
+meta {
+  name: 5.21 Export Single Attempt - Excel
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/grading/attempts/{{attemptId}}/export-excel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+}
+
+assert {
+  res.status: eq 200
+  res.headers["content-type"]: contains application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+}

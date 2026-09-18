@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -52,6 +53,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showAutoGraded, setShowAutoGraded] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Form state for essay grades
   const [essayGrades, setEssayGrades] = useState<Record<string, EssayFormState>>({});
@@ -144,6 +146,29 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
     }
   };
 
+  const handleExportExcel = async () => {
+    if (!attemptId) return;
+    setIsExporting(true);
+    try {
+      const blob = await gradingService.exportSingleAttemptExcel(attemptId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const candidateSlug = (detail?.candidateName || 'Thi_Sinh').replace(/\s+/g, '_');
+      link.download = `Bai_Lam_${candidateSlug}_${attemptId.slice(0, 8)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast.success('Xuất file Excel bài làm thành công!');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Không thể xuất file Excel bài làm.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto py-16 text-center space-y-4">
@@ -216,8 +241,18 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
               </div>
             </div>
 
-            {/* Live Score Summary Chip */}
+            {/* Actions & Live Score Summary Chip */}
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportExcel}
+                isLoading={isExporting}
+                leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                className="hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium shadow-xs"
+              >
+                Xuất Excel bài làm
+              </Button>
               <div className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 text-right">
                 <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
                   Điểm tổng kết

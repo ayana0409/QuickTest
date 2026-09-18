@@ -58,6 +58,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportingAttemptId, setExportingAttemptId] = useState<string | null>(null);
 
   // Statistics panel visibility
   const [statsExpanded, setStatsExpanded] = useState(true);
@@ -168,6 +169,29 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
       toast.error(err?.response?.data?.message || 'Không thể xuất file Excel danh sách phiên thi.');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // Handle exporting a single candidate's attempt breakdown to Excel
+  const handleExportSingleAttempt = async (attemptId: string, candidateName?: string) => {
+    setExportingAttemptId(attemptId);
+    try {
+      const blob = await gradingService.exportSingleAttemptExcel(attemptId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const candidateSlug = (candidateName || 'Thi_Sinh').replace(/\s+/g, '_');
+      link.download = `Bai_Lam_${candidateSlug}_${attemptId.slice(0, 8)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast.success(`Xuất file Excel bài làm của ${candidateName || 'thí sinh'} thành công!`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Không thể xuất file Excel bài làm của thí sinh.');
+    } finally {
+      setExportingAttemptId(null);
     }
   };
 
@@ -509,6 +533,17 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
                       {/* Actions Column */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExportSingleAttempt(attempt.attemptId, attempt.candidateName)}
+                            isLoading={exportingAttemptId === attempt.attemptId}
+                            title="Xuất bảng điểm chi tiết bài làm ra Excel"
+                            className="hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium"
+                            leftIcon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                          >
+                            Xuất Excel
+                          </Button>
                           <Link href={`/teacher/grading/attempts/${attempt.attemptId}`}>
                             <Button
                               variant={attempt.status === 'AWAITING_MANUAL_GRADING' ? 'primary' : 'outline'}

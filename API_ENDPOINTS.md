@@ -86,7 +86,8 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 30 | | `GET` | `/api/teacher/grading/exams/{examId}/stats` | `TEACHER` | Lấy thống kê tổng quan các phiên thi (điểm, thời gian, vi phạm) |
 | 31 | | `GET` | `/api/teacher/grading/exams/{examId}/attempts/export-excel` | `TEACHER` | Xuất file Excel (.xlsx) danh sách phiên thi đầy đủ thông tin |
 | 32 | | `GET` | `/api/teacher/grading/attempts/{attemptId}` | `TEACHER` | Xem chi tiết bài làm của 1 thí sinh để chấm |
-| 33 | | `POST` | `/api/teacher/grading/attempts/submit-grades` | `TEACHER` | Lưu điểm các câu tự luận của 1 bài thi |
+| 33 | | `GET` | `/api/teacher/grading/attempts/{attemptId}/export-excel` | `TEACHER` | Xuất file Excel (.xlsx) bài làm riêng lẻ kèm điểm từng câu & feedback |
+| 34 | | `POST` | `/api/teacher/grading/attempts/submit-grades` | `TEACHER` | Lưu điểm các câu tự luận của 1 bài thi |
 | 32 | **Question Grading** | `GET` | `/api/teacher/grading/exams/{examId}/questions` | `TEACHER` | Danh sách câu hỏi tự luận cần chấm (thống kê tiến độ) |
 | 33 | | `GET` | `/api/teacher/grading/questions/{questionId}/submissions` | `TEACHER` | Xem biểu điểm và bài làm học sinh theo câu hỏi |
 | 34 | | `POST` | `/api/teacher/grading/questions/{questionId}/manual` | `TEACHER` | Chấm tay hàng loạt/lẻ theo câu hỏi (tính điểm tự động) |
@@ -670,6 +671,29 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
   - `search` (chuỗi ký tự tìm kiếm)
 - **Headers:** `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
 - **Response (200 OK):** Binary file stream (`.xlsx`), header `Content-Disposition: attachment; filename="Exam_Attempts_{examId}.xlsx"`
+
+#### 8.6. Xuất file Excel bài làm riêng lẻ của 1 thí sinh (`GET /api/teacher/grading/attempts/{attemptId}/export-excel`)
+- **Mô tả:** Xuất chi tiết bài làm của một thí sinh cụ thể ra file bảng tính Excel (`.xlsx`) phục vụ lưu trữ hồ sơ, in ấn hoặc gửi bảng điểm cho học sinh/phụ huynh.
+  - **Khối thông tin tổng quan (Header Banner):**
+    - Thông tin thí sinh: Họ và tên, Email/Mã định danh, Loại tài khoản (Thành viên / Tự do), Địa chỉ IP và Thiết bị (User Agent).
+    - Thông tin bài thi: Tên bài thi, Mã phòng thi, Trạng thái nộp bài, Thời gian bắt đầu và nộp bài, Tổng thời gian làm bài thực tế, Ghi nhận vi phạm giám sát (số lần vi phạm, tình trạng đình chỉ).
+    - Kết quả đạt được nổi bật: Tổng điểm đạt được / Tổng điểm đề thi, Tỷ lệ %, Số câu đã trả lời / Tổng số câu hỏi.
+  - **Bảng chi tiết từng câu hỏi (10 cột):**
+    1. STT (Câu số theo đề thi)
+    2. Loại câu hỏi (Trắc nghiệm 1 đáp án, Trắc nghiệm nhiều đáp án, Điền số, Tự luận)
+    3. Nội dung câu hỏi (bật text wrapping)
+    4. Câu trả lời của thí sinh (các phương án đã chọn dạng `A. Nội dung`, hoặc văn bản tự luận/số thí sinh nhập)
+    5. Đáp án đúng / Đáp án chuẩn (các phương án đúng, hoặc đáp án mẫu / tiêu chí rubric)
+    6. Điểm tối đa của câu hỏi
+    7. Điểm đạt được
+    8. Tỷ lệ %
+    9. Trạng thái chấm (Tự động chấm, Giáo viên đã chấm, Chờ chấm tự luận)
+    10. **Nhận xét của giáo viên (Teacher Feedback)** kèm giải thích chấm của AI nếu có
+  - **Dòng tổng kết (Summary Row):** Tổng kết điểm tối đa đề thi, tổng điểm đạt được, tỷ lệ % chung toàn bài.
+- **Quyền hạn:** `TEACHER` (chỉ xuất bài làm thuộc đề thi của chính mình)
+- **Path Variable:** `attemptId` (UUID)
+- **Headers:** `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- **Response (200 OK):** Binary file stream (`.xlsx`), header `Content-Disposition: attachment; filename="Attempt_{attemptId}.xlsx"`
 
 ---
 

@@ -21,4 +21,15 @@ public interface ExamExportService {
      * @return byte array containing the .xlsx workbook
      */
     byte[] exportExamAttemptsToExcel(UUID examId, AttemptStatus status, String search, User currentTeacher);
+
+    /**
+     * Export a detailed breakdown of a single exam attempt to an Excel (.xlsx) file,
+     * including full candidate profile, exam overview, score per question, options chosen,
+     * standard correct answers, and teacher feedback.
+     *
+     * @param attemptId      the UUID of the exam attempt
+     * @param currentTeacher the authenticated teacher requesting the export
+     * @return byte array containing the .xlsx workbook
+     */
+    byte[] exportSingleAttemptToExcel(UUID attemptId, User currentTeacher);
 }

@@ -119,6 +119,27 @@ public class TeacherGradingController {
     }
 
     /**
+     * Export detailed results of a single candidate exam attempt to an Excel (.xlsx) file.
+     * Contains candidate profile, exam overview, score per question, and teacher feedback.
+     */
+    @GetMapping("/attempts/{attemptId}/export-excel")
+    public ResponseEntity<byte[]> exportSingleAttemptToExcel(
+            @PathVariable("attemptId") UUID attemptId,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+
+        User teacher = getAuthenticatedTeacher(currentUser);
+        byte[] excelBytes = examExportService.exportSingleAttemptToExcel(attemptId, teacher);
+
+        String filename = "Attempt_" + attemptId + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .contentLength(excelBytes.length)
+                .body(excelBytes);
+    }
+
+    /**
      * Submit manual grades and feedback for essay questions.
      */
     @PostMapping("/attempts/submit-grades")

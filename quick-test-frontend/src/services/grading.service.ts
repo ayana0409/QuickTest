@@ -241,5 +241,22 @@ export const gradingService = {
     );
     return response.data as Blob;
   },
+
+  /**
+   * Export detailed breakdown of an individual candidate exam attempt to an Excel (.xlsx) file.
+   * Includes scores per question, selected options, standard answers, and teacher feedback.
+   *
+   * @param attemptId The unique identifier of the target attempt
+   * @returns Blob representation of the Excel spreadsheet
+   */
+  async exportSingleAttemptExcel(attemptId: string): Promise<Blob> {
+    const response = await apiClient.get(
+      `/teacher/grading/attempts/${attemptId}/export-excel`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data as Blob;
+  },
 };
 

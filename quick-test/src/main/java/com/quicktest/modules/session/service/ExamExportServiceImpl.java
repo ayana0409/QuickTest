@@ -1,12 +1,17 @@
 package com.quicktest.modules.session.service;
 
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.Question;
+import com.quicktest.modules.assessment.entity.QuestionType;
 import com.quicktest.modules.assessment.repository.ExamRepository;
+import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.session.entity.AttemptStatus;
+import com.quicktest.modules.session.entity.CandidateAnswer;
 import com.quicktest.modules.session.entity.ExamAttempt;
+import com.quicktest.modules.session.entity.GradingStatus;
 import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +48,7 @@ public class ExamExportServiceImpl implements ExamExportService {
     private final ExamRepository examRepository;
     private final ExamAttemptRepository examAttemptRepository;
     private final CandidateAnswerRepository candidateAnswerRepository;
+    private final QuestionRepository questionRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -79,6 +85,31 @@ public class ExamExportServiceImpl implements ExamExportService {
         Object[] stats = examAttemptRepository.computeAttemptStats(examId);
 
         return buildWorkbookBytes(exam, attempts, answeredCountMap, stats, status, search);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportSingleAttemptToExcel(UUID attemptId, User currentTeacher) {
+        log.info("Exporting single exam attempt to Excel for attemptId: {}, teacherId: {}",
+                attemptId, currentTeacher != null ? currentTeacher.getId() : null);
+
+        ExamAttempt attempt = examAttemptRepository.findByIdWithExamAndUser(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("ExamAttempt", "id", attemptId));
+
+        Exam exam = attempt.getExam();
+        verifyExamOwnership(exam, currentTeacher);
+
+        List<Question> questions = questionRepository.findByExamIdWithOptions(exam.getId());
+        List<CandidateAnswer> answers = candidateAnswerRepository.findByExamAttemptIdWithQuestion(attemptId);
+
+        Map<UUID, CandidateAnswer> answerMap = new HashMap<>();
+        for (CandidateAnswer ca : answers) {
+            if (ca.getQuestion() != null && ca.getQuestion().getId() != null) {
+                answerMap.put(ca.getQuestion().getId(), ca);
+            }
+        }
+
+        return buildSingleAttemptWorkbookBytes(attempt, exam, questions, answerMap);
     }
 
     private void verifyExamOwnership(Exam exam, User currentTeacher) {
@@ -536,5 +567,542 @@ public class ExamExportServiceImpl implements ExamExportService {
             return String.format("%dh %02dm %02ds", hours, minutes, seconds);
         }
         return String.format("%02dm %02ds", minutes, seconds);
+    }
+
+    private byte[] buildSingleAttemptWorkbookBytes(
+            ExamAttempt attempt,
+            Exam exam,
+            List<Question> questions,
+            Map<UUID, CandidateAnswer> answerMap) {
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            String candidateName = resolveCandidateName(attempt);
+            Sheet sheet = workbook.createSheet("Chi Tiet Bai Lam");
+            sheet.setDisplayGridlines(true);
+
+            // Palette colors
+            byte[] primaryIndigo = new byte[]{(byte) 79, (byte) 70, (byte) 229}; // #4F46E5
+            byte[] zebraStripe = new byte[]{(byte) 248, (byte) 250, (byte) 252}; // #F8FAFC
+            byte[] metaBg = new byte[]{(byte) 241, (byte) 245, (byte) 249}; // #F1F5F9
+            byte[] metaLabelBg = new byte[]{(byte) 226, (byte) 232, (byte) 240}; // #E2E8F0
+            byte[] borderGray = new byte[]{(byte) 203, (byte) 213, (byte) 225}; // #CBD5E1
+
+            DefaultIndexedColorMap colorMap = new DefaultIndexedColorMap();
+
+            // Fonts & Styles
+            XSSFCellStyle titleStyle = workbook.createCellStyle();
+            XSSFFont titleFont = workbook.createFont();
+            titleFont.setFontName("Segoe UI");
+            titleFont.setFontHeightInPoints((short) 15);
+            titleFont.setBold(true);
+            titleFont.setColor(new XSSFColor(primaryIndigo, colorMap));
+            titleStyle.setFont(titleFont);
+            titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            XSSFCellStyle subtitleStyle = workbook.createCellStyle();
+            XSSFFont subtitleFont = workbook.createFont();
+            subtitleFont.setFontName("Segoe UI");
+            subtitleFont.setFontHeightInPoints((short) 9);
+            subtitleFont.setItalic(true);
+            subtitleFont.setColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            subtitleStyle.setFont(subtitleFont);
+            subtitleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            XSSFCellStyle metaLabelStyle = workbook.createCellStyle();
+            XSSFFont metaLabelFont = workbook.createFont();
+            metaLabelFont.setFontName("Segoe UI");
+            metaLabelFont.setFontHeightInPoints((short) 9);
+            metaLabelFont.setBold(true);
+            metaLabelStyle.setFont(metaLabelFont);
+            metaLabelStyle.setFillForegroundColor(new XSSFColor(metaLabelBg, colorMap));
+            metaLabelStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            setThinBorders(metaLabelStyle, new XSSFColor(borderGray, colorMap));
+
+            XSSFCellStyle metaValueStyle = workbook.createCellStyle();
+            XSSFFont metaValueFont = workbook.createFont();
+            metaValueFont.setFontName("Segoe UI");
+            metaValueFont.setFontHeightInPoints((short) 9);
+            metaValueStyle.setFont(metaValueFont);
+            metaValueStyle.setFillForegroundColor(new XSSFColor(metaBg, colorMap));
+            metaValueStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            setThinBorders(metaValueStyle, new XSSFColor(borderGray, colorMap));
+
+            XSSFCellStyle sectionStyle = workbook.createCellStyle();
+            XSSFFont sectionFont = workbook.createFont();
+            sectionFont.setFontName("Segoe UI");
+            sectionFont.setFontHeightInPoints((short) 11);
+            sectionFont.setBold(true);
+            sectionFont.setColor(new XSSFColor(primaryIndigo, colorMap));
+            sectionStyle.setFont(sectionFont);
+            sectionStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            XSSFCellStyle headerStyle = workbook.createCellStyle();
+            XSSFFont headerFont = workbook.createFont();
+            headerFont.setFontName("Segoe UI");
+            headerFont.setFontHeightInPoints((short) 10);
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(new XSSFColor(primaryIndigo, colorMap));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            setThinBorders(headerStyle, new XSSFColor(new byte[]{(byte) 55, (byte) 48, (byte) 163}, colorMap));
+
+            DataFormat dataFormat = workbook.createDataFormat();
+
+            XSSFCellStyle dataLeftWrap = createDataStyleWithWrap(workbook, HorizontalAlignment.LEFT, null, borderGray, colorMap, true);
+            XSSFCellStyle dataCenter = createDataStyleWithWrap(workbook, HorizontalAlignment.CENTER, null, borderGray, colorMap, false);
+            XSSFCellStyle dataNumber = createDataStyleWithWrap(workbook, HorizontalAlignment.RIGHT, null, borderGray, colorMap, false);
+            dataNumber.setDataFormat(dataFormat.getFormat("#,##0.00"));
+
+            XSSFCellStyle dataZebraLeftWrap = createDataStyleWithWrap(workbook, HorizontalAlignment.LEFT, zebraStripe, borderGray, colorMap, true);
+            XSSFCellStyle dataZebraCenter = createDataStyleWithWrap(workbook, HorizontalAlignment.CENTER, zebraStripe, borderGray, colorMap, false);
+            XSSFCellStyle dataZebraNumber = createDataStyleWithWrap(workbook, HorizontalAlignment.RIGHT, zebraStripe, borderGray, colorMap, false);
+            dataZebraNumber.setDataFormat(dataFormat.getFormat("#,##0.00"));
+
+            XSSFCellStyle summaryLabelStyle = workbook.createCellStyle();
+            XSSFFont summaryFont = workbook.createFont();
+            summaryFont.setFontName("Segoe UI");
+            summaryFont.setFontHeightInPoints((short) 10);
+            summaryFont.setBold(true);
+            summaryLabelStyle.setFont(summaryFont);
+            summaryLabelStyle.setAlignment(HorizontalAlignment.RIGHT);
+            summaryLabelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            summaryLabelStyle.setFillForegroundColor(new XSSFColor(metaLabelBg, colorMap));
+            summaryLabelStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            setThinBorders(summaryLabelStyle, new XSSFColor(borderGray, colorMap));
+
+            XSSFCellStyle summaryNumberStyle = workbook.createCellStyle();
+            summaryNumberStyle.setFont(summaryFont);
+            summaryNumberStyle.setAlignment(HorizontalAlignment.RIGHT);
+            summaryNumberStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            summaryNumberStyle.setFillForegroundColor(new XSSFColor(metaLabelBg, colorMap));
+            summaryNumberStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            summaryNumberStyle.setDataFormat(dataFormat.getFormat("#,##0.00"));
+            setThinBorders(summaryNumberStyle, new XSSFColor(borderGray, colorMap));
+
+            XSSFCellStyle summaryCenterStyle = workbook.createCellStyle();
+            summaryCenterStyle.setFont(summaryFont);
+            summaryCenterStyle.setAlignment(HorizontalAlignment.CENTER);
+            summaryCenterStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            summaryCenterStyle.setFillForegroundColor(new XSSFColor(metaLabelBg, colorMap));
+            summaryCenterStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            setThinBorders(summaryCenterStyle, new XSSFColor(borderGray, colorMap));
+
+            // Row 0: Title Banner
+            Row r0 = sheet.createRow(0);
+            r0.setHeightInPoints(26);
+            Cell cTitle = r0.createCell(0);
+            cTitle.setCellValue("KẾT QUẢ BÀI THI CHI TIẾT CỦA THÍ SINH");
+            cTitle.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 9));
+
+            // Row 1: Subtitle
+            Row r1 = sheet.createRow(1);
+            r1.setHeightInPoints(18);
+            Cell cSub = r1.createCell(0);
+            cSub.setCellValue("Hệ thống QuickTest - Xuất lúc: " + LocalDateTime.now().format(DATE_TIME_FORMATTER));
+            cSub.setCellStyle(subtitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 9));
+
+            // Totals
+            double totalExamPoints = 0.0;
+            for (Question q : questions) {
+                if (q.getPoints() != null) totalExamPoints += q.getPoints();
+            }
+            int totalQuestionsCount = questions.size();
+            int answeredCount = 0;
+            for (Question q : questions) {
+                if (answerMap.containsKey(q.getId())) answeredCount++;
+            }
+
+            String violationsText = (attempt.getViolationCount() != null ? attempt.getViolationCount() : 0) + " lần"
+                    + (attempt.getStatus() == AttemptStatus.DISQUALIFIED ? " (Bị đình chỉ thi)" : " (Bình thường)");
+
+            String totalScoreSummary = (attempt.getTotalScore() != null
+                    ? String.format("%.2f", attempt.getTotalScore()) : "Chờ chấm")
+                    + " / " + String.format("%.2f", totalExamPoints) + " đ";
+
+            if (totalExamPoints > 0 && attempt.getTotalScore() != null) {
+                double pct = (attempt.getTotalScore() / totalExamPoints) * 100.0;
+                totalScoreSummary += String.format(" (%.1f%%)", pct);
+            }
+
+            // Metadata rows (Rows 3 - 7)
+            createMetadataRowWide(sheet, 3, "Họ tên thí sinh:", candidateName, "Tên bài thi:", exam.getTitle(), metaLabelStyle, metaValueStyle);
+            createMetadataRowWide(sheet, 4, "Email / Định danh:", resolveCandidateIdentifier(attempt), "Mã phòng thi:", exam.getAccessCode() != null ? exam.getAccessCode() : "N/A", metaLabelStyle, metaValueStyle);
+            createMetadataRowWide(sheet, 5, "Loại thí sinh:", (attempt.getUser() != null ? "Thành viên hệ thống" : "Thí sinh tự do (Guest)"), "Trạng thái bài thi:", formatStatus(attempt.getStatus()), metaLabelStyle, metaValueStyle);
+            createMetadataRowWide(sheet, 6, "Thời gian làm bài:", formatDuration(attempt.getStartTime(), attempt.getSubmitTime()), "Ghi nhận vi phạm:", violationsText, metaLabelStyle, metaValueStyle);
+            createMetadataRowWide(sheet, 7, "Kết quả đạt được:", totalScoreSummary, "Số câu đã làm:", answeredCount + " / " + totalQuestionsCount + " câu", metaLabelStyle, metaValueStyle);
+
+            // Row 9: Table title
+            Row r9 = sheet.createRow(9);
+            r9.setHeightInPoints(22);
+            Cell cSection = r9.createCell(0);
+            cSection.setCellValue("BẢNG ĐIỂM CHI TIẾT TỪNG CÂU HỎI & NHẬN XÉT CỦA GIÁO VIÊN");
+            cSection.setCellStyle(sectionStyle);
+            sheet.addMergedRegion(new CellRangeAddress(9, 9, 0, 9));
+
+            // Row 10: Table Header
+            int headerRowIndex = 10;
+            Row headerRow = sheet.createRow(headerRowIndex);
+            headerRow.setHeightInPoints(26);
+
+            String[] headers = new String[]{
+                    "STT",
+                    "Loại câu hỏi",
+                    "Nội dung câu hỏi",
+                    "Câu trả lời của thí sinh",
+                    "Đáp án đúng / Chuẩn",
+                    "Điểm tối đa",
+                    "Điểm đạt được",
+                    "Tỷ lệ %",
+                    "Trạng thái chấm",
+                    "Nhận xét của giáo viên (Feedback)"
+            };
+
+            for (int col = 0; col < headers.length; col++) {
+                Cell c = headerRow.createCell(col);
+                c.setCellValue(headers[col]);
+                c.setCellStyle(headerStyle);
+            }
+
+            // Data rows
+            int rowIndex = headerRowIndex + 1;
+            int qIndex = 1;
+            double sumMaxScore = 0.0;
+            double sumAwardedScore = 0.0;
+
+            for (Question q : questions) {
+                Row row = sheet.createRow(rowIndex);
+                boolean isZebra = (qIndex % 2 == 0);
+
+                XSSFCellStyle currentLeft = isZebra ? dataZebraLeftWrap : dataLeftWrap;
+                XSSFCellStyle currentCenter = isZebra ? dataZebraCenter : dataCenter;
+                XSSFCellStyle currentNumber = isZebra ? dataZebraNumber : dataNumber;
+
+                CandidateAnswer ca = answerMap.get(q.getId());
+                double qMaxScore = q.getPoints() != null ? q.getPoints() : 0.0;
+                sumMaxScore += qMaxScore;
+
+                // 0. STT
+                Cell c0 = row.createCell(0);
+                c0.setCellValue(qIndex++);
+                c0.setCellStyle(currentCenter);
+
+                // 1. Loại câu hỏi
+                Cell c1 = row.createCell(1);
+                c1.setCellValue(formatQuestionType(q.getQuestionType()));
+                c1.setCellStyle(currentCenter);
+
+                // 2. Nội dung câu hỏi
+                Cell c2 = row.createCell(2);
+                c2.setCellValue(q.getContent() != null ? q.getContent() : "");
+                c2.setCellStyle(currentLeft);
+
+                // 3. Câu trả lời của thí sinh
+                Cell c3 = row.createCell(3);
+                c3.setCellValue(formatCandidateAnswer(q, ca));
+                c3.setCellStyle(currentLeft);
+
+                // 4. Đáp án đúng / Chuẩn
+                Cell c4 = row.createCell(4);
+                c4.setCellValue(formatCorrectAnswer(q));
+                c4.setCellStyle(currentLeft);
+
+                // 5. Điểm tối đa
+                Cell c5 = row.createCell(5);
+                c5.setCellValue(qMaxScore);
+                c5.setCellStyle(currentNumber);
+
+                // 6. Điểm đạt được
+                Cell c6 = row.createCell(6);
+                if (ca != null && ca.getAwardedScore() != null) {
+                    double awarded = ca.getAwardedScore();
+                    sumAwardedScore += awarded;
+                    c6.setCellValue(awarded);
+                    c6.setCellStyle(currentNumber);
+                } else if (ca != null && ca.getGradingStatus() == GradingStatus.PENDING_MANUAL) {
+                    c6.setCellValue("Chờ chấm");
+                    c6.setCellStyle(currentCenter);
+                } else {
+                    c6.setCellValue(0.0);
+                    c6.setCellStyle(currentNumber);
+                }
+
+                // 7. Tỷ lệ %
+                Cell c7 = row.createCell(7);
+                if (ca != null && ca.getAwardedScore() != null && qMaxScore > 0) {
+                    double pct = (ca.getAwardedScore() / qMaxScore) * 100.0;
+                    c7.setCellValue(String.format("%.1f%%", pct));
+                } else if (ca != null && ca.getGradingStatus() == GradingStatus.PENDING_MANUAL) {
+                    c7.setCellValue("-");
+                } else {
+                    c7.setCellValue("0.0%");
+                }
+                c7.setCellStyle(currentCenter);
+
+                // 8. Trạng thái chấm
+                Cell c8 = row.createCell(8);
+                c8.setCellValue(ca != null ? formatGradingStatus(ca.getGradingStatus()) : "Chưa làm bài");
+                c8.setCellStyle(currentCenter);
+
+                // 9. Nhận xét của giáo viên
+                Cell c9 = row.createCell(9);
+                c9.setCellValue(formatTeacherFeedback(ca));
+                c9.setCellStyle(currentLeft);
+
+                rowIndex++;
+            }
+
+            // Summary Row
+            Row summaryRow = sheet.createRow(rowIndex);
+            summaryRow.setHeightInPoints(24);
+
+            Cell sumLabel = summaryRow.createCell(0);
+            sumLabel.setCellValue("TỔNG CỘNG ĐIỂM BÀI THI:");
+            sumLabel.setCellStyle(summaryLabelStyle);
+            for (int c = 1; c <= 4; c++) {
+                Cell empty = summaryRow.createCell(c);
+                empty.setCellStyle(summaryLabelStyle);
+            }
+            sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 0, 4));
+
+            Cell sumMax = summaryRow.createCell(5);
+            sumMax.setCellValue(sumMaxScore);
+            sumMax.setCellStyle(summaryNumberStyle);
+
+            Cell sumAwarded = summaryRow.createCell(6);
+            if (attempt.getTotalScore() != null) {
+                sumAwarded.setCellValue(attempt.getTotalScore());
+            } else {
+                sumAwarded.setCellValue(sumAwardedScore);
+            }
+            sumAwarded.setCellStyle(summaryNumberStyle);
+
+            Cell sumPct = summaryRow.createCell(7);
+            double finalScore = attempt.getTotalScore() != null ? attempt.getTotalScore() : sumAwardedScore;
+            if (sumMaxScore > 0) {
+                sumPct.setCellValue(String.format("%.1f%%", (finalScore / sumMaxScore) * 100.0));
+            } else {
+                sumPct.setCellValue("-");
+            }
+            sumPct.setCellStyle(summaryCenterStyle);
+
+            Cell sumStatus = summaryRow.createCell(8);
+            sumStatus.setCellValue(formatStatus(attempt.getStatus()));
+            sumStatus.setCellStyle(summaryCenterStyle);
+
+            Cell sumEmpty = summaryRow.createCell(9);
+            sumEmpty.setCellValue("");
+            sumEmpty.setCellStyle(summaryLabelStyle);
+
+            // Column Widths
+            sheet.setColumnWidth(0, 2000);  // STT
+            sheet.setColumnWidth(1, 6200);  // Loại câu hỏi
+            sheet.setColumnWidth(2, 13000); // Nội dung câu hỏi
+            sheet.setColumnWidth(3, 11000); // Câu trả lời thí sinh
+            sheet.setColumnWidth(4, 11000); // Đáp án đúng
+            sheet.setColumnWidth(5, 3400);  // Điểm tối đa
+            sheet.setColumnWidth(6, 3600);  // Điểm đạt được
+            sheet.setColumnWidth(7, 3200);  // Tỷ lệ %
+            sheet.setColumnWidth(8, 5200);  // Trạng thái chấm
+            sheet.setColumnWidth(9, 13000); // Nhận xét giáo viên
+
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (IOException e) {
+            log.error("Failed to generate Single Attempt Excel workbook for attemptId: {}", attempt.getId(), e);
+            throw new RuntimeException("Error generating Single Attempt Excel report", e);
+        }
+    }
+
+    private void createMetadataRowWide(
+            Sheet sheet,
+            int rowIndex,
+            String label1,
+            String val1,
+            String label2,
+            String val2,
+            XSSFCellStyle labelStyle,
+            XSSFCellStyle valStyle) {
+
+        Row r = sheet.createRow(rowIndex);
+        r.setHeightInPoints(20);
+
+        // Col 0-1: Label 1
+        Cell c0 = r.createCell(0);
+        c0.setCellValue(label1);
+        c0.setCellStyle(labelStyle);
+        Cell c1 = r.createCell(1);
+        c1.setCellStyle(labelStyle);
+        sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 0, 1));
+
+        // Col 2-4: Val 1
+        Cell c2 = r.createCell(2);
+        c2.setCellValue(val1 != null ? val1 : "");
+        c2.setCellStyle(valStyle);
+        for (int c = 3; c <= 4; c++) {
+            Cell empty = r.createCell(c);
+            empty.setCellStyle(valStyle);
+        }
+        sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 2, 4));
+
+        // Col 5-6: Label 2
+        Cell c5 = r.createCell(5);
+        c5.setCellValue(label2);
+        c5.setCellStyle(labelStyle);
+        Cell c6 = r.createCell(6);
+        c6.setCellStyle(labelStyle);
+        sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 5, 6));
+
+        // Col 7-9: Val 2
+        Cell c7 = r.createCell(7);
+        c7.setCellValue(val2 != null ? val2 : "");
+        c7.setCellStyle(valStyle);
+        for (int c = 8; c <= 9; c++) {
+            Cell empty = r.createCell(c);
+            empty.setCellStyle(valStyle);
+        }
+        sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 7, 9));
+    }
+
+    private XSSFCellStyle createDataStyleWithWrap(
+            XSSFWorkbook wb,
+            HorizontalAlignment align,
+            byte[] bgRgb,
+            byte[] borderRgb,
+            DefaultIndexedColorMap colorMap,
+            boolean wrapText) {
+
+        XSSFCellStyle style = wb.createCellStyle();
+        XSSFFont font = wb.createFont();
+        font.setFontName("Segoe UI");
+        font.setFontHeightInPoints((short) 9);
+        style.setFont(font);
+
+        style.setAlignment(align);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setWrapText(wrapText);
+
+        if (bgRgb != null) {
+            style.setFillForegroundColor(new XSSFColor(bgRgb, colorMap));
+            style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        }
+
+        setThinBorders(style, new XSSFColor(borderRgb, colorMap));
+        return style;
+    }
+
+    private String formatCandidateAnswer(Question q, CandidateAnswer ca) {
+        if (ca == null) {
+            return "(Chưa trả lời)";
+        }
+        QuestionType type = q.getQuestionType();
+        if (type == QuestionType.SINGLE_CHOICE || type == QuestionType.MULTIPLE_CHOICE) {
+            if (ca.getSelectedOptions() == null || ca.getSelectedOptions().isEmpty()) {
+                return "(Chưa chọn đáp án)";
+            }
+            List<AnswerOption> sorted = new ArrayList<>(ca.getSelectedOptions());
+            sorted.sort(Comparator.comparingInt(AnswerOption::getOrderIndex));
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < sorted.size(); i++) {
+                AnswerOption opt = sorted.get(i);
+                if (i > 0) sb.append(", ");
+                sb.append(formatOptionLabel(opt.getOrderIndex())).append(". ").append(opt.getContent() != null ? opt.getContent() : "");
+            }
+            return sb.toString();
+        } else {
+            return (ca.getTextAnswer() != null && !ca.getTextAnswer().isBlank())
+                    ? ca.getTextAnswer().trim()
+                    : "(Chưa trả lời)";
+        }
+    }
+
+    private String formatCorrectAnswer(Question q) {
+        QuestionType type = q.getQuestionType();
+        if (type == QuestionType.SINGLE_CHOICE || type == QuestionType.MULTIPLE_CHOICE) {
+            if (q.getOptions() == null || q.getOptions().isEmpty()) {
+                return "-";
+            }
+            List<AnswerOption> correctOptions = q.getOptions().stream()
+                    .filter(opt -> Boolean.TRUE.equals(opt.getIsCorrect()))
+                    .sorted(Comparator.comparingInt(AnswerOption::getOrderIndex))
+                    .toList();
+            if (correctOptions.isEmpty()) {
+                return "-";
+            }
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < correctOptions.size(); i++) {
+                AnswerOption opt = correctOptions.get(i);
+                if (i > 0) sb.append(", ");
+                sb.append(formatOptionLabel(opt.getOrderIndex())).append(". ").append(opt.getContent() != null ? opt.getContent() : "");
+            }
+            return sb.toString();
+        } else if (type == QuestionType.NUMERIC) {
+            if (q.getSampleAnswer() != null && !q.getSampleAnswer().isBlank()) {
+                String ans = q.getSampleAnswer().trim();
+                if (q.getNumericTolerance() != null && q.getNumericTolerance() > 0) {
+                    ans += " (± " + q.getNumericTolerance() + ")";
+                }
+                return ans;
+            }
+            return "-";
+        } else {
+            // ESSAY_TEXT
+            if (q.getSampleAnswer() != null && !q.getSampleAnswer().isBlank()) {
+                return q.getSampleAnswer().trim();
+            }
+            if (q.getGradingRubric() != null && !q.getGradingRubric().isBlank()) {
+                return "Tiêu chí: " + q.getGradingRubric().trim();
+            }
+            return "-";
+        }
+    }
+
+    private String formatOptionLabel(int orderIndex) {
+        if (orderIndex >= 0 && orderIndex < 26) {
+            return String.valueOf((char) ('A' + orderIndex));
+        }
+        return String.valueOf(orderIndex + 1);
+    }
+
+    private String formatQuestionType(QuestionType type) {
+        if (type == null) return "-";
+        return switch (type) {
+            case SINGLE_CHOICE -> "Trắc nghiệm (1 đáp án)";
+            case MULTIPLE_CHOICE -> "Trắc nghiệm (Nhiều đáp án)";
+            case NUMERIC -> "Điền số";
+            case ESSAY_TEXT -> "Tự luận";
+        };
+    }
+
+    private String formatGradingStatus(GradingStatus status) {
+        if (status == null) return "Chưa làm bài";
+        return switch (status) {
+            case AUTO_GRADED -> "Tự động chấm";
+            case GRADED -> "Giáo viên đã chấm";
+            case PENDING_MANUAL -> "Chờ chấm tự luận";
+            case PENDING_AI -> "Đang chờ AI chấm";
+        };
+    }
+
+    private String formatTeacherFeedback(CandidateAnswer ca) {
+        if (ca == null) return "-";
+        boolean hasTeacherFeedback = ca.getTeacherFeedback() != null && !ca.getTeacherFeedback().isBlank();
+        boolean hasAiExplanation = ca.getAiGradingExplanation() != null && !ca.getAiGradingExplanation().isBlank();
+
+        if (hasTeacherFeedback && hasAiExplanation) {
+            return ca.getTeacherFeedback().trim() + "\n(AI): " + ca.getAiGradingExplanation().trim();
+        } else if (hasTeacherFeedback) {
+            return ca.getTeacherFeedback().trim();
+        } else if (hasAiExplanation) {
+            return "(AI): " + ca.getAiGradingExplanation().trim();
+        }
+        return "-";
     }
 }
