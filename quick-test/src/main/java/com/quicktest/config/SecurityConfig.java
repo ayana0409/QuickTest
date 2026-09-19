@@ -136,8 +136,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Teacher endpoints (accessible by TEACHER or ADMIN)
                         .requestMatchers("/api/teacher/**").hasAnyRole("TEACHER", "ADMIN")
-                        // Student endpoints (accessible by STUDENT or ADMIN)
-                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
+                        // Student endpoints (accessible by STUDENT, TEACHER or ADMIN)
+                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

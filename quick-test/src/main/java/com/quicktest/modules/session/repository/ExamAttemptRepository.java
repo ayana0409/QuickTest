@@ -1,5 +1,6 @@
 package com.quicktest.modules.session.repository;
 
+import com.quicktest.modules.session.dto.StudentAttemptSummaryDto;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.entity.ExamAttempt;
 import org.springframework.data.domain.Page;
@@ -170,4 +171,35 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
             WHERE exam_id = :examId
             """, nativeQuery = true)
     Object[] computeAttemptStats(@Param("examId") UUID examId);
+
+    /**
+     * Retrieve paginated attempt summaries for a student, joining with Exam to retrieve title
+     * and counting total recorded proctoring violations without causing N+1 queries.
+     */
+    @Query(value = """
+            SELECT new com.quicktest.modules.session.dto.StudentAttemptSummaryDto(
+                ea.id,
+                e.id,
+                e.title,
+                ea.startTime,
+                ea.submitTime,
+                ea.status,
+                ea.totalScore,
+                COUNT(vl.id)
+            )
+            FROM ExamAttempt ea
+            JOIN ea.exam e
+            LEFT JOIN com.quicktest.modules.proctoring.entity.ViolationLog vl ON vl.examAttempt = ea
+            WHERE ea.user.id = :userId
+            GROUP BY ea.id, e.id, e.title, ea.startTime, ea.submitTime, ea.status, ea.totalScore
+            ORDER BY ea.startTime DESC
+            """,
+            countQuery = """
+            SELECT COUNT(ea.id)
+            FROM ExamAttempt ea
+            WHERE ea.user.id = :userId
+            """)
+    Page<StudentAttemptSummaryDto> findStudentAttemptSummaries(
+            @Param("userId") UUID userId,
+            Pageable pageable);
 }

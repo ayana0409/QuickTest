@@ -1,0 +1,27 @@
+meta {
+  name: 10.05 Get Attempt Detail - Not Found
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/student/attempts/{{nonExistentAttemptId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+vars:pre-request {
+  nonExistentAttemptId: 00000000-0000-0000-0000-000000000000
+}
+
+assert {
+  res.status: eq 404
+}

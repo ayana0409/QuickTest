@@ -7,6 +7,7 @@ import {
   Clock,
   Award,
   FileCheck2,
+  FileText,
   Home,
   RefreshCw,
   AlertCircle,
@@ -182,8 +183,22 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
         {/* Navigation Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="/"
+            href={`/student/history/${attemptId}`}
             className="w-full sm:w-auto py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Xem chi tiết bài làm & điểm từng câu</span>
+          </Link>
+          <Link
+            href="/student/history"
+            className="w-full sm:w-auto py-3 px-5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white font-medium text-sm border border-zinc-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Clock className="w-4 h-4" />
+            <span>Lịch sử bài thi</span>
+          </Link>
+          <Link
+            href="/"
+            className="w-full sm:w-auto py-3 px-5 rounded-xl bg-transparent hover:bg-white/5 text-zinc-400 hover:text-zinc-200 font-medium text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Home className="w-4 h-4" />
             <span>Về trang chủ</span>

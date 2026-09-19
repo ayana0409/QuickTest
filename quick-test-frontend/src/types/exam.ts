@@ -1,4 +1,4 @@
-import type { Question, QuestionInPaper, QuestionResponse } from './question';
+import type { Question, QuestionInPaper, QuestionResponse, QuestionType } from './question';
 import type { CandidateAnswer, SaveAnswerRequest, GradingStatus } from './candidateAnswer';
 
 // Re-export question and candidateAnswer types for seamless backward compatibility
@@ -39,6 +39,69 @@ export interface AttemptSummaryDto {
   pendingEssayCount: number;
   hasPendingEssay: boolean;
   violationCount: number;
+}
+
+/**
+ * Summary DTO of an attempt for the authenticated student history view.
+ */
+export interface StudentAttemptSummaryDto {
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  startTime: string;
+  submitTime?: string | null;
+  status: AttemptStatus;
+  awardedScore?: number | null;
+  maxScore?: number | null;
+  violationCount: number;
+}
+
+export interface StudentViolationItemDto {
+  id: string;
+  violationType: string;
+  description: string;
+  timestamp: string;
+}
+
+export interface StudentOptionDto {
+  id: string;
+  content?: string | null;
+  imageUrl?: string | null;
+  orderIndex: number;
+  isCorrect: boolean;
+  isSelected: boolean;
+}
+
+export interface StudentQuestionDetailDto {
+  questionId: string;
+  orderIndex: number;
+  content: string;
+  imageUrl?: string | null;
+  questionType: QuestionType;
+  points: number;
+  awardedScore?: number | null;
+  gradingStatus: GradingStatus;
+  textAnswer?: string | null;
+  sampleAnswer?: string | null;
+  teacherFeedback?: string | null;
+  selectedOptionIds: string[];
+  options: StudentOptionDto[];
+}
+
+export interface StudentAttemptDetailResponse {
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  accessCode: string;
+  status: AttemptStatus;
+  awardedScore?: number | null;
+  maxScore?: number | null;
+  startTime: string;
+  submitTime?: string | null;
+  durationSeconds?: number | null;
+  violationCount: number;
+  violations: StudentViolationItemDto[];
+  questions: StudentQuestionDetailDto[];
 }
 
 /**

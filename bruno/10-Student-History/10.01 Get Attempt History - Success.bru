@@ -1,0 +1,30 @@
+meta {
+  name: 10.01 Get Attempt History - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/student/attempts?page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+}

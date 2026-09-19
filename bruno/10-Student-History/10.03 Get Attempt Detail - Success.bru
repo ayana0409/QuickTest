@@ -1,0 +1,30 @@
+meta {
+  name: 10.03 Get Attempt Detail - Success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/student/attempts/{{attemptId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+vars:pre-request {
+  attemptId: 0a4097d4-b8a0-44f2-b319-07279b0171eb
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.attemptId: isDefined
+  res.body.data.questions: isDefined
+}

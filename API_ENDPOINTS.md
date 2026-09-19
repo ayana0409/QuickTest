@@ -1,6 +1,6 @@
 # QuickTest Online Exam System - Comprehensive API Documentation
 
-Tài liệu đặc tả toàn bộ **45 RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL, Redis, RabbitMQ, Cloudinary, Google Gemini AI).
+Tài liệu đặc tả toàn bộ **47 RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL, Redis, RabbitMQ, Cloudinary, Google Gemini AI).
 
 ---
 
@@ -103,6 +103,8 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 42 | | `GET` | `/api/admin/exams/{id}` | `ADMIN` | Xem chi tiết đề thi và câu hỏi |
 | 43 | | `PATCH` | `/api/admin/exams/{id}/close` | `ADMIN` | Đóng khẩn cấp đề thi đang mở |
 | 44 | | `DELETE` | `/api/admin/exams/{id}` | `ADMIN` | Xóa đề thi (chỉ DRAFT/CLOSED và chưa có lượt thi) |
+| 45 | **Student History** | `GET` | `/api/student/attempts` | `STUDENT` | Lấy danh sách lịch sử thi phân trang của sinh viên |
+| 46 | | `GET` | `/api/student/attempts/{attemptId}` | `STUDENT` | Xem chi tiết bài làm, điểm từng câu, đáp án & vi phạm quy chế |
 
 ---
 
@@ -1135,6 +1137,150 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
     "message": "Exam deleted successfully",
     "data": null,
     "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+---
+
+### Module 11: Lịch Sử Thi & Xem Lại Bài Làm Của Sinh Viên (Student Attempt History & Review)
+
+Cung cấp cho thí sinh (học sinh / sinh viên đã đăng ký) khả năng tự theo dõi toàn diện tiến trình học tập, lịch sử các bài thi đã làm, điểm số đạt được, xem lại đáp án chi tiết từng câu hỏi (câu trắc nghiệm, tự luận, điền số) và minh bạch nhật ký vi phạm quy chế phòng thi.
+
+#### 11.1. Lấy danh sách lịch sử thi của sinh viên (`GET /api/student/attempts`)
+- **Mô tả:** Trả về danh sách tóm tắt tất cả các lượt làm bài của sinh viên đang đăng nhập, hỗ trợ phân trang chuẩn Spring Data JPA và sắp xếp theo thời gian bắt đầu mới nhất (`startTime DESC`).
+- **Quyền hạn:** `STUDENT`, `TEACHER`, `ADMIN` (Được bảo vệ bởi JWT, tự động trích xuất `userId` từ token, sinh viên chỉ thấy bài thi của chính mình).
+- **Headers:** `Authorization: Bearer <student_token>`
+- **Query Parameters:**
+  - `page` (integer, optional, default: 0): Số thứ tự trang (0-indexed).
+  - `size` (integer, optional, default: 10): Số lượng bản ghi mỗi trang.
+  - `sort` (string, optional, default: `startTime,desc`): Tiêu chí sắp xếp.
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Attempt history retrieved successfully",
+    "data": {
+      "content": [
+        {
+          "attemptId": "c29a7eb0-2890-4283-b76b-7feca554cf08",
+          "examId": "e1f7a220-410a-4712-a17a-8f972b9a7101",
+          "examTitle": "Kỳ thi thử THPT Quốc Gia môn Toán 2026",
+          "startTime": "2026-09-18T10:15:00",
+          "submitTime": "2026-09-18T11:00:00",
+          "status": "SUBMITTED",
+          "awardedScore": 6.5,
+          "maxScore": 7.0,
+          "violationCount": 0
+        },
+        {
+          "attemptId": "2fd7961d-e6e7-4a1b-9c61-9a4ea6a321dd",
+          "examId": "a8bf1160-c8e3-494c-9ebe-303352f81ce1",
+          "examTitle": "Exam With Strict Proctoring (Limit 2)",
+          "startTime": "2026-09-18T12:00:00",
+          "submitTime": "2026-09-18T12:35:00",
+          "status": "SUBMITTED",
+          "awardedScore": 0.0,
+          "maxScore": 10.0,
+          "violationCount": 2
+        }
+      ],
+      "page": 0,
+      "size": 10,
+      "totalElements": 33,
+      "totalPages": 4,
+      "isFirst": true,
+      "isLast": false,
+      "hasNext": true,
+      "hasPrevious": false
+    },
+    "timestamp": "2026-09-19T12:00:00"
+  }
+  ```
+
+#### 11.2. Xem chi tiết bài làm, đáp án & giám sát quy chế (`GET /api/student/attempts/{attemptId}`)
+- **Mô tả:** Trả về toàn bộ chi tiết của bài thi đã nộp: điểm số đạt được, thang điểm tối đa, thời gian hoàn thành (`durationSeconds`), toàn bộ danh sách câu hỏi kèm đáp án thí sinh đã chọn, đáp án đúng của đề thi, nhận xét của giáo viên (đối với tự luận), và nhật ký telemetry giám sát proctoring (thời điểm chuyển tab, cảnh báo vi phạm).
+- **Quyền hạn:** `STUDENT`, `TEACHER`, `ADMIN` (Kiểm tra nghiêm ngặt quyền sở hữu: sinh viên chỉ được xem chi tiết bài làm của chính mình).
+- **Headers:** `Authorization: Bearer <student_token>`
+- **Path Variables:**
+  - `attemptId` (UUID, required): Mã định danh lượt thi cần xem.
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Attempt details retrieved successfully",
+    "data": {
+      "attemptId": "c29a7eb0-2890-4283-b76b-7feca554cf08",
+      "examId": "e1f7a220-410a-4712-a17a-8f972b9a7101",
+      "examTitle": "Kỳ thi thử THPT Quốc Gia môn Toán 2026",
+      "accessCode": "MATH-2026",
+      "status": "SUBMITTED",
+      "awardedScore": 6.5,
+      "maxScore": 7.0,
+      "startTime": "2026-09-18T10:15:00",
+      "submitTime": "2026-09-18T11:00:00",
+      "durationSeconds": 2700,
+      "violationCount": 1,
+      "violations": [
+        {
+          "id": "66597854-c177-48d4-8e54-6e8e32161e57",
+          "violationType": "TAB_SWITCH",
+          "description": "Switched to browser tab",
+          "timestamp": "2026-09-18T10:35:12"
+        }
+      ],
+      "questions": [
+        {
+          "questionId": "db2e451a-3b2a-41f2-bf41-766894c08153",
+          "orderIndex": 1,
+          "content": "Giá trị của tích phân $\\int_0^1 x dx$ bằng bao nhiêu?",
+          "imageUrl": null,
+          "questionType": "SINGLE_CHOICE",
+          "points": 1.0,
+          "awardedScore": 1.0,
+          "gradingStatus": "GRADED",
+          "textAnswer": null,
+          "sampleAnswer": null,
+          "teacherFeedback": null,
+          "selectedOptionIds": [
+            "a1111111-1111-1111-1111-111111111111"
+          ],
+          "options": [
+            {
+              "id": "a1111111-1111-1111-1111-111111111111",
+              "content": "1/2",
+              "imageUrl": null,
+              "orderIndex": 1,
+              "isCorrect": true,
+              "isSelected": true
+            },
+            {
+              "id": "b2222222-2222-2222-2222-222222222222",
+              "content": "1",
+              "imageUrl": null,
+              "orderIndex": 2,
+              "isCorrect": false,
+              "isSelected": false
+            }
+          ]
+        },
+        {
+          "questionId": "ec3f562b-4c3b-52f3-cf52-877905d19264",
+          "orderIndex": 2,
+          "content": "Trình bày phương pháp tìm cực trị của hàm số $y = f(x)$.",
+          "imageUrl": null,
+          "questionType": "ESSAY_TEXT",
+          "points": 2.0,
+          "awardedScore": 1.5,
+          "gradingStatus": "GRADED",
+          "textAnswer": "Bước 1: Tìm tập xác định. Bước 2: Tính đạo hàm f'(x) và giải phương trình f'(x) = 0...",
+          "sampleAnswer": "1. Tìm TXĐ. 2. Tính f'(x), tìm nghiệm f'(x)=0. 3. Lập bảng biến thiên kết luận.",
+          "teacherFeedback": "Trình bày tốt, cần bổ sung điều kiện đủ của dấu đạo hàm khi qua điểm cực trị.",
+          "selectedOptionIds": [],
+          "options": []
+        }
+      ]
+    },
+    "timestamp": "2026-09-19T12:00:00"
   }
   ```
 

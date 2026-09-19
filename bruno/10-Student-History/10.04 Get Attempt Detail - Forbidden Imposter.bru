@@ -1,0 +1,27 @@
+meta {
+  name: 10.04 Get Attempt Detail - Forbidden Imposter
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/student/attempts/{{otherStudentAttemptId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+vars:pre-request {
+  otherStudentAttemptId: 00000000-0000-0000-0000-000000000001
+}
+
+assert {
+  res.status: in [403, 404]
+}
