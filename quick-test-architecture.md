@@ -33,24 +33,30 @@ com.quicktest
 │   ├── security/                   # JwtAuthenticationFilter, UserDetailsImpl, SsoClaimsExtractor
 │   └── utils/                      # Tiện ích mã hóa, chuỗi, thời gian, toán học
 ├── modules/                        # Phân rã nghiệp vụ theo module
-│   ├── common/                     # Shared DTOs, Enums dùng chung đa module
-│   ├── iam/                        # Quản lý định danh & SSO (Teacher & Student)
-│   │   ├── controller/             # AuthController, ProfileController
-│   │   ├── dto/                    # LoginRequest, RegisterRequest, AuthResponse, SsoUserDto
-│   │   ├── entity/                 # User, Role, AuthProvider
-│   │   ├── repository/             # UserRepository
-│   │   └── service/                # AuthService, SsoProvisioningService
-│   ├── assessment/                 # Quản lý ngân hàng đề & câu hỏi (Teacher)
+│   ├── common/                     # Shared    ├── admin/                          # System administration and oversight
+│   │   ├── controller/             # AdminUserController, AdminExamController, AdminDashboardController
+│   │   ├── dto/                    # Admin statistics and management DTOs
+│   │   └── service/                # AdminService, StatsService
+    ├── assessment/                 # Quản lý ngân hàng đề & câu hỏi (Teacher)
 │   │   ├── controller/             # ExamController, QuestionController
-│   │   ├── dto/                    # ExamRequest, QuestionRequest, ExamDetailResponse
+│   │   ├── dto/                    # ExamRequest, QuestionRequest, ExamDetailResponse, QuestionBankItemResponse
 │   │   ├── entity/                 # Exam, ExamStatus, Question, QuestionType, AnswerOption
 │   │   ├── repository/             # ExamRepository, QuestionRepository, AnswerOptionRepository
 │   │   └── service/                # ExamService, QuestionService
-│   ├── session/                    # Phiên làm bài, chấm điểm & nộp bài (Guest & Student)
+    ├── session/                    # Phiên làm bài, chấm điểm & nộp bài (Guest & Student)
 │   │   ├── controller/             # ExamSessionController, GradingController
 │   │   ├── dto/                    # StartSessionRequest, SubmitAnswerDto, GradeEssayDto
 │   │   ├── entity/                 # ExamAttempt, AttemptStatus, CandidateAnswer, GradingStatus
 │   │   ├── repository/             # ExamAttemptRepository, CandidateAnswerRepository
+│   │   └── service/                # ExamSessionService, GradingService, RedisSessionService
+    └── proctoring/                 # Hệ thống telemetry, phát hiện & xử phạt gian lận
+        ├── controller/             # ProctoringTelemetryController
+        ├── dto/                    # ViolationTelemetryDto
+        ├── entity/                 # ViolationLog, ViolationType
+        ├── repository/             # ViolationLogRepository
+        ├── service/                # ProctoringService
+        └── websocket/              # ProctoringWebSocketHandler
+└── QuickTestApplication.java─ repository/             # ExamAttemptRepository, CandidateAnswerRepository
 │   │   └── service/                # ExamSessionService, GradingService, RedisSessionService
 │   └── proctoring/                 # Hệ thống telemetry, phát hiện & xử phạt gian lận
 │       ├── controller/             # ProctoringTelemetryController
@@ -69,9 +75,9 @@ com.quicktest
 | Bảng (Table) | Mô tả | Ràng buộc & Chỉ mục chính |
 | :--- | :--- | :--- |
 | **users** | Tài khoản nội bộ và tài khoản liên kết SSO (QuickBite/ABP). | `sso_subject_id` (Unique, Nullable), `email` (Unique), `username` (Unique, Nullable). |
-| **exams** | Cấu hình kỳ thi, thời lượng, trạng thái phát hành. | `access_code` (Unique), Index `(created_by, created_at)`. |
-| **questions** | Ngân hàng câu hỏi thuộc đề thi. Hỗ trợ 4 dạng câu hỏi. | FK `exam_id`, Index `(exam_id, order_index)`. |
-| **answer_options** | Các đáp án lựa chọn cho câu hỏi trắc nghiệm. | FK `question_id`, Index `(question_id, order_index)`. |
+| **exams** | Cấu hình kỳ thi, thời lượng, trạng thái phát hành. | `access_code` (Unique), Index `(created_by, created_at)`. Hỗ trợ bật/tắt chống gian lận (`is_proctoring_enabled`) và bảo mật kết quả (`show_results_to_students`). |
+| **questions** | Ngân hàng câu hỏi thuộc đề thi. Hỗ trợ 4 dạng câu hỏi và ảnh đính kèm. | FK `exam_id`, Index `(exam_id, order_index)`. |
+| **answer_options** | Các đáp án lựa chọn cho câu hỏi trắc nghiệm. Hỗ trợ ảnh đính kèm. | FK `question_id`, Index `(question_id, order_index)`. |
 | **exam_attempts** | Phiên làm bài của thí sinh (User hoặc Guest). | Optimistic Lock `@Version`, Check Constraint: `(user_id IS NOT NULL) OR (guest_name IS NOT NULL AND guest_identifier IS NOT NULL)`. |
 | **candidate_answers** | Câu trả lời của thí sinh cho từng câu hỏi. | Unique Constraint: `(attempt_id, question_id)`. |
 | **candidate_selected_options** | Bảng trung gian lưu danh sách đáp án chọn (Multiple Choice). | Composite PK: `(candidate_answer_id, option_id)`. |
@@ -162,7 +168,8 @@ package com.quicktest.modules.iam.entity;
 
 public enum Role {
     TEACHER,
-    STUDENT
+    STUDENT,
+    ADMIN
 }
 ```
 
@@ -248,6 +255,18 @@ public class Exam {
     @Builder.Default
     private Boolean shuffleOptions = true;   // Xáo trộn thứ tự đáp án
 
+    @Builder.Default
+    @Column(name = "is_proctoring_enabled", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isProctoringEnabled = false; // Bật/tắt giám sát chống gian lận
+
+    @Builder.Default
+    @Column(name = "show_results_to_students", nullable = false, columnDefinition = "boolean default true")
+    private Boolean showResultsToStudents = true; // Cấu hình cho phép học sinh xem điểm và đáp án
+
+    @Builder.Default
+    @Column(name = "max_violations", nullable = false, columnDefinition = "integer default 5")
+    private Integer maxViolations = 5; // Số lần vi phạm tối đa trước khi tự động đình chỉ thi
+
     private LocalDateTime startTime; // Thời điểm bắt đầu mở thi
     private LocalDateTime endTime;   // Thời điểm đóng phòng thi
 
@@ -309,8 +328,14 @@ public class Question {
     @Builder.Default
     private Integer orderIndex = 0; // Thứ tự hiển thị mặc định
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl; // Link ảnh đính kèm (Cloudinary)
+
+    @Column(name = "image_public_id", length = 255)
+    private String imagePublicId; // ID ảnh trên Cloudinary
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -336,6 +361,7 @@ public class Question {
     // Dành cho SINGLE_CHOICE và MULTIPLE_CHOICE
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
+    @org.hibernate.annotations.BatchSize(size = 50)
     @Builder.Default
     private List<AnswerOption> options = new ArrayList<>();
 }
@@ -371,8 +397,14 @@ public class AnswerOption {
     @Builder.Default
     private Integer orderIndex = 0; // Thứ tự hiển thị A, B, C, D
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl; // Link ảnh đính kèm
+
+    @Column(name = "image_public_id", length = 255)
+    private String imagePublicId; // ID ảnh trên Cloudinary
 
     @Column(nullable = false)
     @Builder.Default
