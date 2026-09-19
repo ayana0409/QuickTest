@@ -35,6 +35,7 @@ public class StudentAttemptDetailResponse {
     private LocalDateTime submitTime;
     private Long durationSeconds;
     private Integer violationCount;
+    private Boolean showResultsToStudents;
 
     @Builder.Default
     private List<ViolationItemDto> violations = new ArrayList<>();

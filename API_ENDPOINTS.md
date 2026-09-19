@@ -219,6 +219,7 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
     "shuffleOptions": true,
     "isProctoringEnabled": true,
     "maxViolations": 3,
+    "showResultsToStudents": true,
     "startTime": "2026-10-01T08:00:00",
     "endTime": "2026-10-01T12:00:00"
   }
@@ -240,6 +241,7 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
       "shuffleOptions": true,
       "isProctoringEnabled": true,
       "maxViolations": 3,
+      "showResultsToStudents": true,
       "startTime": "2026-10-01T08:00:00",
       "endTime": "2026-10-01T12:00:00",
       "totalQuestions": 0,
@@ -1198,7 +1200,10 @@ Cung cấp cho thí sinh (học sinh / sinh viên đã đăng ký) khả năng t
   ```
 
 #### 11.2. Xem chi tiết bài làm, đáp án & giám sát quy chế (`GET /api/student/attempts/{attemptId}`)
-- **Mô tả:** Trả về toàn bộ chi tiết của bài thi đã nộp: điểm số đạt được, thang điểm tối đa, thời gian hoàn thành (`durationSeconds`), toàn bộ danh sách câu hỏi kèm đáp án thí sinh đã chọn, đáp án đúng của đề thi, nhận xét của giáo viên (đối với tự luận), và nhật ký telemetry giám sát proctoring (thời điểm chuyển tab, cảnh báo vi phạm).
+- **Mô tả:** Trả về toàn bộ chi tiết của bài thi đã nộp: điểm số đạt được, thang điểm tối đa, thời gian hoàn thành (`durationSeconds`), danh sách câu hỏi kèm đáp án thí sinh đã nộp, và nhật ký vi phạm telemetry.
+  - **Cơ chế bảo vệ đề thi (`showResultsToStudents`):**
+    - **Nếu `true`:** Hiển thị điểm thi (`awardedScore`, `maxScore`), điểm từng câu (`points`, `awardedScore`), trạng thái chấm (`gradingStatus`), đáp án đúng (`isCorrect`), đáp án mẫu (`sampleAnswer`) và nhận xét của giáo viên (`teacherFeedback`).
+    - **Nếu `false`:** Hệ thống tự động che giấu (mask) toàn bộ đáp án đúng (`isCorrect = null`), điểm số (`awardedScore = null`, `maxScore = null`, `points = null`), đáp án mẫu và nhận xét để ngăn chặn lộ đề thi hoặc đáp án cho người khác. Học sinh chỉ thấy câu hỏi và câu trả lời mà mình đã nộp (`isSelected`, `textAnswer`).
 - **Quyền hạn:** `STUDENT`, `TEACHER`, `ADMIN` (Kiểm tra nghiêm ngặt quyền sở hữu: sinh viên chỉ được xem chi tiết bài làm của chính mình).
 - **Headers:** `Authorization: Bearer <student_token>`
 - **Path Variables:**
@@ -1214,6 +1219,7 @@ Cung cấp cho thí sinh (học sinh / sinh viên đã đăng ký) khả năng t
       "examTitle": "Kỳ thi thử THPT Quốc Gia môn Toán 2026",
       "accessCode": "MATH-2026",
       "status": "SUBMITTED",
+      "showResultsToStudents": true,
       "awardedScore": 6.5,
       "maxScore": 7.0,
       "startTime": "2026-09-18T10:15:00",

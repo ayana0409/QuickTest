@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 /**
- * REST controller providing exam management operations for teachers.
+ * REST controller providing exam management operations for teachers (CRUD, publish, close, clone).
  */
 @RestController
 @RequestMapping("/api/teacher/exams")

@@ -63,6 +63,10 @@ public class Exam {
     private Boolean isProctoringEnabled = false; // Flag to enable anti-cheat proctoring
 
     @Builder.Default
+    @Column(name = "show_results_to_students", nullable = false, columnDefinition = "boolean default true")
+    private Boolean showResultsToStudents = true; // Flag to disclose scores, correct answers, and feedback to students
+
+    @Builder.Default
     @Column(name = "max_violations", nullable = false, columnDefinition = "integer default 5")
     private Integer maxViolations = 5; // Violation threshold before auto-disqualification
 

@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Sparkles,
   BookOpen,
+  Lock,
 } from 'lucide-react';
 import { studentService } from '@/services/student.service';
 import type { StudentAttemptDetailResponse, AttemptStatus } from '@/types/exam';
@@ -116,6 +117,8 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
     };
   }, [attemptId]);
 
+  const showResults = data?.showResultsToStudents ?? true;
+
   /**
    * Filter questions based on selected tab.
    */
@@ -124,12 +127,13 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
     return data.questions.filter((q) => {
       if (activeFilter === 'ALL') return true;
       if (activeFilter === 'ESSAY') return q.questionType === 'ESSAY_TEXT';
+      if (!showResults) return true;
       const isCorrect = (q.awardedScore ?? 0) >= (q.points ?? 1.0);
       if (activeFilter === 'CORRECT') return isCorrect;
       if (activeFilter === 'INCORRECT') return !isCorrect && q.questionType !== 'ESSAY_TEXT';
       return true;
     });
-  }, [data?.questions, activeFilter]);
+  }, [data?.questions, activeFilter, showResults]);
 
   /**
    * Calculate overview statistics.
@@ -139,16 +143,16 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
       return { totalQuestions: 0, correctCount: 0, percentage: 0 };
     }
     const totalQuestions = data.questions.length;
-    const correctCount = data.questions.filter(
-      (q) => (q.awardedScore ?? 0) >= (q.points ?? 1.0)
-    ).length;
+    const correctCount = showResults
+      ? data.questions.filter((q) => (q.awardedScore ?? 0) >= (q.points ?? 1.0)).length
+      : 0;
     const percentage =
-      data.maxScore && data.maxScore > 0 && data.awardedScore != null
+      showResults && data.maxScore && data.maxScore > 0 && data.awardedScore != null
         ? Math.round((data.awardedScore / data.maxScore) * 100)
         : 0;
 
     return { totalQuestions, correctCount, percentage };
-  }, [data]);
+  }, [data, showResults]);
 
   if (loading) {
     return (
@@ -200,6 +204,21 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Security Privacy Alert When showResults is false */}
+      {!showResults && (
+        <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
+          <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+              Chế độ bảo mật đề thi (Results Withheld)
+            </h3>
+            <p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
+              Giáo viên đã tắt tính năng xem điểm số chi tiết và đáp án đúng để bảo mật nội dung đề thi. Bạn chỉ có thể xem lại câu hỏi và các phương án bạn đã chọn.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-zinc-900 border border-indigo-900/40 p-6 sm:p-8 text-white relative overflow-hidden shadow-xl">
         <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -220,23 +239,38 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
             </h1>
 
             <p className="text-xs sm:text-sm text-zinc-400">
-              Chi tiết đánh giá kết quả bài thi, đáp án thí sinh và nhật ký giám sát quy chế.
+              {showResults
+                ? 'Chi tiết đánh giá kết quả bài thi, đáp án thí sinh và nhật ký giám sát quy chế.'
+                : 'Xem lại nội dung bài nộp của bạn. Điểm số và đáp án đúng đang được bảo mật.'}
             </p>
           </div>
 
           {/* Big Score Card */}
           <div className="rounded-2xl bg-white/5 border border-white/10 p-5 sm:p-6 text-center shrink-0 min-w-[200px] backdrop-blur-md">
             <span className="text-xs uppercase tracking-wider text-indigo-200/80 font-semibold block mb-1">
-              Điểm Đạt Được
+              {showResults ? 'Điểm Đạt Được' : 'Trạng Thái'}
             </span>
-            <div className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-              <span className="text-emerald-400">{data.awardedScore ?? 0}</span>
-              <span className="text-white/40 text-xl font-normal mx-1">/</span>
-              <span className="text-white/80 text-2xl">{data.maxScore ?? 10}</span>
-            </div>
-            <div className="text-xs text-zinc-400 mt-2 font-medium">
-              Đạt {overviewStats.percentage}% tổng điểm
-            </div>
+            {showResults ? (
+              <>
+                <div className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                  <span className="text-emerald-400">{data.awardedScore ?? 0}</span>
+                  <span className="text-white/40 text-xl font-normal mx-1">/</span>
+                  <span className="text-white/80 text-2xl">{data.maxScore ?? 10}</span>
+                </div>
+                <div className="text-xs text-zinc-400 mt-2 font-medium">
+                  Đạt {overviewStats.percentage}% tổng điểm
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-xl sm:text-2xl font-bold text-white tracking-tight py-1">
+                  Bảo mật điểm
+                </div>
+                <div className="text-xs text-zinc-400 mt-1 font-medium">
+                  Chưa công bố đáp án & điểm
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -265,11 +299,17 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
         <div className="p-1 rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-800">
           <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-between h-full shadow-sm">
             <div className="space-y-1">
-              <span className="text-xs font-medium text-zinc-500">Số câu đúng</span>
+              <span className="text-xs font-medium text-zinc-500">
+                {showResults ? 'Số câu đúng' : 'Số câu trong bài'}
+              </span>
               <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                {overviewStats.correctCount} / {overviewStats.totalQuestions}
+                {showResults
+                  ? `${overviewStats.correctCount} / ${overviewStats.totalQuestions}`
+                  : `${overviewStats.totalQuestions} câu`}
               </div>
-              <p className="text-[11px] text-zinc-400">Câu đạt điểm tối đa</p>
+              <p className="text-[11px] text-zinc-400">
+                {showResults ? 'Câu đạt điểm tối đa' : 'Đã nộp bài làm'}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-5 h-5" />
@@ -376,31 +416,35 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
               <span>Chi tiết từng câu hỏi & Đáp án</span>
             </h2>
             <p className="text-xs text-zinc-500">
-              Kiểm tra chi tiết bài làm của bạn so với đáp án chuẩn và điểm số đạt được từng câu.
+              {showResults
+                ? 'Kiểm tra chi tiết bài làm của bạn so với đáp án chuẩn và điểm số đạt được từng câu.'
+                : 'Xem lại nội dung các câu hỏi và phần trả lời bạn đã nộp trong bài thi.'}
             </p>
           </div>
 
           {/* Filter Tabs */}
-          <div className="inline-flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-500">
-            <button
-              onClick={() => setActiveFilter('ALL')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${activeFilter === 'ALL' ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-            >
-              Tất cả ({data.questions.length})
-            </button>
-            <button
-              onClick={() => setActiveFilter('CORRECT')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${activeFilter === 'CORRECT' ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-            >
-              Đúng ({overviewStats.correctCount})
-            </button>
-            <button
-              onClick={() => setActiveFilter('INCORRECT')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${activeFilter === 'INCORRECT' ? 'bg-white dark:bg-zinc-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-            >
-              Sai ({data.questions.length - overviewStats.correctCount})
-            </button>
-          </div>
+          {showResults && (
+            <div className="inline-flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-500">
+              <button
+                onClick={() => setActiveFilter('ALL')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${activeFilter === 'ALL' ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+              >
+                Tất cả ({data.questions.length})
+              </button>
+              <button
+                onClick={() => setActiveFilter('CORRECT')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${activeFilter === 'CORRECT' ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+              >
+                Đúng ({overviewStats.correctCount})
+              </button>
+              <button
+                onClick={() => setActiveFilter('INCORRECT')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${activeFilter === 'INCORRECT' ? 'bg-white dark:bg-zinc-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+              >
+                Sai ({data.questions.length - overviewStats.correctCount})
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Question Cards List */}
@@ -433,24 +477,31 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
 
                       {/* Score Badge */}
                       <div className="flex items-center gap-2">
-                        <div
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
-                            isCorrect
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
-                              : isPartiallyGraded
-                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
-                              : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40'
-                          }`}
-                        >
-                          {isCorrect ? (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          ) : (
-                            <XCircle className="w-3.5 h-3.5" />
-                          )}
-                          <span>
-                            {q.awardedScore ?? 0} / {q.points ?? 1.0} điểm
-                          </span>
-                        </div>
+                        {showResults ? (
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
+                              isCorrect
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
+                                : isPartiallyGraded
+                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+                                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40'
+                            }`}
+                          >
+                            {isCorrect ? (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5" />
+                            )}
+                            <span>
+                              {q.awardedScore ?? 0} / {q.points ?? 1.0} điểm
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                            <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                            <span>Điểm số bảo mật</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -482,10 +533,12 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
 
                             // Determine option styling
                             let optClass = 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 text-zinc-800 dark:text-zinc-200';
-                            if (isCorrectOpt) {
+                            if (showResults && isCorrectOpt) {
                               optClass = 'border-emerald-500/60 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 font-medium';
-                            } else if (isSelected && !isCorrectOpt) {
+                            } else if (showResults && isSelected && !isCorrectOpt) {
                               optClass = 'border-rose-500/60 bg-rose-50/50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200';
+                            } else if (!showResults && isSelected) {
+                              optClass = 'border-indigo-500/60 bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200 font-medium';
                             }
 
                             return (
@@ -513,7 +566,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                                       Đáp án bạn chọn
                                     </span>
                                   )}
-                                  {isCorrectOpt && (
+                                  {showResults && isCorrectOpt && (
                                     <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                                       <CheckCircle2 className="w-3 h-3" />
                                       <span>Đáp án đúng</span>
@@ -535,7 +588,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                           </p>
                         </div>
 
-                        {q.sampleAnswer && (
+                        {showResults && q.sampleAnswer && (
                           <div className="rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 p-4 space-y-1.5">
                             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                               Đáp án chuẩn / Hướng dẫn giải:
@@ -546,7 +599,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                           </div>
                         )}
 
-                        {q.teacherFeedback && (
+                        {showResults && q.teacherFeedback && (
                           <div className="rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 p-4 space-y-1.5">
                             <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
                               Nhận xét của giáo viên:

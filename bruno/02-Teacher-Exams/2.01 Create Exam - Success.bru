@@ -34,7 +34,8 @@ body:json {
     "shuffleQuestions": true,
     "shuffleOptions": true,
     "isProctoringEnabled": true,
-    "maxViolations": 3
+    "maxViolations": 3,
+    "showResultsToStudents": true
   }
 }
 
@@ -42,6 +43,7 @@ assert {
   res.status: eq 201
   res.body.data.isProctoringEnabled: eq true
   res.body.data.maxViolations: eq 3
+  res.body.data.showResultsToStudents: eq true
 }
 
 script:post-response {

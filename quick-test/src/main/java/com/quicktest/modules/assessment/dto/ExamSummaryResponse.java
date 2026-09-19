@@ -3,6 +3,7 @@ package com.quicktest.modules.assessment.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @Data
 @Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class ExamSummaryResponse {
 
     private UUID id;
@@ -25,6 +27,7 @@ public class ExamSummaryResponse {
     private Integer durationMinutes;
     private Integer maxAttempts;
     private Boolean isProctoringEnabled;
+    private Boolean showResultsToStudents;
     private Integer maxViolations;
     private Long totalQuestions;
     private Double totalPoints;
@@ -38,8 +41,9 @@ public class ExamSummaryResponse {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
+
     /**
-     * JPQL Constructor expression used in ExamRepository projection.
+     * Backward-compatible JPQL Constructor expression without showResultsToStudents.
      */
     public ExamSummaryResponse(
             UUID id,
@@ -55,19 +59,7 @@ public class ExamSummaryResponse {
             LocalDateTime startTime,
             LocalDateTime endTime,
             LocalDateTime createdAt) {
-        this.id = id;
-        this.title = title;
-        this.accessCode = accessCode;
-        this.status = status;
-        this.durationMinutes = durationMinutes;
-        this.maxAttempts = maxAttempts;
-        this.isProctoringEnabled = isProctoringEnabled;
-        this.maxViolations = maxViolations;
-        this.totalQuestions = totalQuestions != null ? totalQuestions : 0L;
-        this.totalPoints = totalPoints != null ? totalPoints : 0.0;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.createdAt = createdAt;
+        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, true, maxViolations, totalQuestions, totalPoints, startTime, endTime, createdAt);
     }
 
     /**
@@ -82,6 +74,7 @@ public class ExamSummaryResponse {
                 .durationMinutes(exam.getDurationMinutes())
                 .maxAttempts(exam.getMaxAttempts())
                 .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .showResultsToStudents(exam.getShowResultsToStudents())
                 .maxViolations(exam.getMaxViolations())
                 .totalQuestions(totalQuestions)
                 .totalPoints(totalPoints)

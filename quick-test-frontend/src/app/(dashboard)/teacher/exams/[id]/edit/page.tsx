@@ -21,6 +21,7 @@ import {
   Users,
   RotateCcw,
   ShieldCheck,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -42,6 +43,7 @@ interface SettingsFormData {
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
   isProctoringEnabled: boolean;
+  showResultsToStudents: boolean;
   maxViolations: number;
   startTime?: string;
   endTime?: string;
@@ -97,6 +99,7 @@ export default function EditExamPage() {
         shuffleQuestions: data.shuffleQuestions,
         shuffleOptions: data.shuffleOptions,
         isProctoringEnabled: data.isProctoringEnabled ?? false,
+        showResultsToStudents: data.showResultsToStudents ?? true,
         maxViolations: data.maxViolations ?? 5,
         startTime: data.startTime ? data.startTime.slice(0, 16) : '',
         endTime: data.endTime ? data.endTime.slice(0, 16) : '',
@@ -266,6 +269,7 @@ export default function EditExamPage() {
         shuffleQuestions: Boolean(data.shuffleQuestions),
         shuffleOptions: Boolean(data.shuffleOptions),
         isProctoringEnabled: Boolean(data.isProctoringEnabled),
+        showResultsToStudents: Boolean(data.showResultsToStudents),
         maxViolations: Number(data.maxViolations) || 5,
         startTime: formatDateTimeForPayload(data.startTime),
         endTime: formatDateTimeForPayload(data.endTime),
@@ -645,6 +649,23 @@ export default function EditExamPage() {
                       </div>
                     </div>
                   )}
+
+                  <label className="flex items-start gap-3 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      {...register('showResultsToStudents')}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 mt-0.5 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <Eye className="w-4 h-4 text-emerald-500" />
+                        Công bố điểm và đáp án cho thí sinh (Show Results)
+                      </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Cho phép thí sinh xem lại điểm từng câu và đáp án đúng sau khi nộp bài. Tắt tùy chọn này nếu muốn bảo mật đề thi và chống lộ đáp án cho người khác.
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
 

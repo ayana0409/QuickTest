@@ -54,6 +54,9 @@ public class ExamCreateRequest {
     private Boolean isProctoringEnabled = false;
 
     @Builder.Default
+    private Boolean showResultsToStudents = true;
+
+    @Builder.Default
     @Min(value = 1, message = "Max violations must be at least 1")
     private Integer maxViolations = 5;
 

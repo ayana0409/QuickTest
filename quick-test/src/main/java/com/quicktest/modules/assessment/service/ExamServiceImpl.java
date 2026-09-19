@@ -84,6 +84,7 @@ public class ExamServiceImpl implements ExamService {
                 .shuffleQuestions(request.getShuffleQuestions() != null ? request.getShuffleQuestions() : true)
                 .shuffleOptions(request.getShuffleOptions() != null ? request.getShuffleOptions() : true)
                 .isProctoringEnabled(Boolean.TRUE.equals(request.getIsProctoringEnabled()))
+                .showResultsToStudents(request.getShowResultsToStudents() != null ? request.getShowResultsToStudents() : true)
                 .maxViolations(request.getMaxViolations() != null ? request.getMaxViolations() : 5)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
@@ -129,6 +130,9 @@ public class ExamServiceImpl implements ExamService {
         }
         if (request.getIsProctoringEnabled() != null) {
             exam.setIsProctoringEnabled(request.getIsProctoringEnabled());
+        }
+        if (request.getShowResultsToStudents() != null) {
+            exam.setShowResultsToStudents(request.getShowResultsToStudents());
         }
         if (request.getMaxViolations() != null) {
             exam.setMaxViolations(request.getMaxViolations());
@@ -369,6 +373,7 @@ public class ExamServiceImpl implements ExamService {
                 .shuffleQuestions(sourceExam.getShuffleQuestions())
                 .shuffleOptions(sourceExam.getShuffleOptions())
                 .isProctoringEnabled(sourceExam.getIsProctoringEnabled())
+                .showResultsToStudents(sourceExam.getShowResultsToStudents() != null ? sourceExam.getShowResultsToStudents() : true)
                 .maxViolations(sourceExam.getMaxViolations())
                 .startTime(null)
                 .endTime(null)

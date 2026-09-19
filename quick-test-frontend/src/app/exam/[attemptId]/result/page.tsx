@@ -12,6 +12,7 @@ import {
   RefreshCw,
   AlertCircle,
   HelpCircle,
+  Lock,
 } from 'lucide-react';
 import { candidateSessionService } from '@/services/candidateSession.service';
 import type { SubmitResultResponse } from '@/types/exam';
@@ -132,12 +133,18 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
             <span
               className={cn(
                 'text-xs font-semibold px-2.5 py-1 rounded-full border',
-                isAutoGraded
+                result?.showResultsToStudents === false
+                  ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                  : isAutoGraded
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                   : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
               )}
             >
-              {isAutoGraded ? 'Đã hoàn tất chấm điểm' : 'Chờ chấm tự luận'}
+              {result?.showResultsToStudents === false
+                ? 'Đã nộp bài thi (Bảo mật điểm)'
+                : isAutoGraded
+                ? 'Đã hoàn tất chấm điểm'
+                : 'Chờ chấm tự luận'}
             </span>
           </div>
 
@@ -153,7 +160,14 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
           </div>
 
           {/* Score Display (If Available) */}
-          {isAutoGraded && result?.totalScore !== undefined && result?.totalScore !== null ? (
+          {result?.showResultsToStudents === false ? (
+            <div className="flex items-start gap-2.5 pt-1 text-xs text-zinc-300 bg-indigo-950/30 p-3.5 rounded-xl border border-indigo-800/40">
+              <Lock className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+              <span>
+                Giáo viên đã thiết lập chế độ bảo mật kết quả cho kỳ thi này nhằm tránh lộ đề thi. Điểm số và đáp án chi tiết sẽ được công bố sau.
+              </span>
+            </div>
+          ) : isAutoGraded && result?.totalScore !== undefined && result?.totalScore !== null ? (
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 <Award className="w-4 h-4 text-amber-400" />
@@ -187,7 +201,11 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
             className="w-full sm:w-auto py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <FileText className="w-4 h-4" />
-            <span>Xem chi tiết bài làm & điểm từng câu</span>
+            <span>
+              {result?.showResultsToStudents === false
+                ? 'Xem lại bài làm đã nộp'
+                : 'Xem chi tiết bài làm & điểm từng câu'}
+            </span>
           </Link>
           <Link
             href="/student/history"

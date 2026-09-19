@@ -275,15 +275,25 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                     .build();
         }
 
+        boolean showResults = attempt.getExam() == null || attempt.getExam().getShowResultsToStudents() == null || attempt.getExam().getShowResultsToStudents();
+
+        String message;
+        if (!showResults) {
+            message = "Exam submitted successfully. Detailed scores and answers are withheld by the teacher to protect exam integrity.";
+        } else if (attempt.getStatus() == AttemptStatus.AWAITING_MANUAL_GRADING) {
+            message = "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher.";
+        } else {
+            message = "Exam submitted and graded successfully.";
+        }
+
         return SubmitResultResponse.builder()
                 .attemptId(attemptId)
                 .examTitle(attempt.getExam().getTitle())
                 .status(attempt.getStatus())
-                .totalScore(attempt.getTotalScore())
+                .totalScore(showResults ? attempt.getTotalScore() : null)
+                .showResultsToStudents(showResults)
                 .submitTime(attempt.getSubmitTime())
-                .message(attempt.getStatus() == AttemptStatus.AWAITING_MANUAL_GRADING
-                        ? "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher."
-                        : "Exam submitted and graded successfully.")
+                .message(message)
                 .build();
     }
 

@@ -4,6 +4,7 @@ import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.modules.assessment.entity.AnswerOption;
+import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.proctoring.entity.ViolationLog;
 import com.quicktest.modules.proctoring.repository.ViolationLogRepository;
@@ -81,6 +82,9 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                         .build())
                 .collect(Collectors.toList());
 
+        Exam exam = attempt.getExam();
+        boolean showResults = exam == null || exam.getShowResultsToStudents() == null || exam.getShowResultsToStudents();
+
         // Calculate duration in seconds
         Long durationSeconds = null;
         if (attempt.getStartTime() != null && attempt.getSubmitTime() != null) {
@@ -109,7 +113,7 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                 .content(opt.getContent())
                                 .imageUrl(opt.getImageUrl())
                                 .orderIndex(opt.getOrderIndex())
-                                .isCorrect(opt.getIsCorrect())
+                                .isCorrect(showResults ? opt.getIsCorrect() : null)
                                 .isSelected(selectedIds.contains(opt.getId()))
                                 .build())
                         .collect(Collectors.toList());
@@ -121,12 +125,12 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                     .content(q.getContent())
                     .imageUrl(q.getImageUrl())
                     .questionType(q.getQuestionType())
-                    .points(points)
-                    .awardedScore(ca.getAwardedScore())
-                    .gradingStatus(ca.getGradingStatus())
+                    .points(showResults ? points : null)
+                    .awardedScore(showResults ? ca.getAwardedScore() : null)
+                    .gradingStatus(showResults ? ca.getGradingStatus() : null)
                     .textAnswer(ca.getTextAnswer())
-                    .sampleAnswer(q.getSampleAnswer())
-                    .teacherFeedback(ca.getTeacherFeedback())
+                    .sampleAnswer(showResults ? q.getSampleAnswer() : null)
+                    .teacherFeedback(showResults ? ca.getTeacherFeedback() : null)
                     .selectedOptionIds(new ArrayList<>(selectedIds))
                     .options(optionDtos)
                     .build());
@@ -134,18 +138,19 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
 
         return StudentAttemptDetailResponse.builder()
                 .attemptId(attempt.getId())
-                .examId(attempt.getExam().getId())
-                .examTitle(attempt.getExam().getTitle())
-                .accessCode(attempt.getExam().getAccessCode())
+                .examId(exam != null ? exam.getId() : null)
+                .examTitle(exam != null ? exam.getTitle() : null)
+                .accessCode(exam != null ? exam.getAccessCode() : null)
                 .status(attempt.getStatus())
-                .awardedScore(attempt.getTotalScore())
-                .maxScore(maxTotalScore > 0 ? maxTotalScore : 10.0)
+                .awardedScore(showResults ? attempt.getTotalScore() : null)
+                .maxScore(showResults ? (maxTotalScore > 0 ? maxTotalScore : 10.0) : null)
                 .startTime(attempt.getStartTime())
                 .submitTime(attempt.getSubmitTime())
                 .durationSeconds(durationSeconds)
                 .violationCount(attempt.getViolationCount() != null ? attempt.getViolationCount() : violationDtos.size())
                 .violations(violationDtos)
                 .questions(questionDtos)
+                .showResultsToStudents(showResults)
                 .build();
     }
 }

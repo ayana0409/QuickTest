@@ -26,6 +26,8 @@ public class SubmitResultResponse {
     // Total score is populated immediately if all questions are auto-graded
     private Double totalScore;
 
+    private Boolean showResultsToStudents;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime submitTime;
 

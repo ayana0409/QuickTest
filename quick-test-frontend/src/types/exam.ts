@@ -100,6 +100,7 @@ export interface StudentAttemptDetailResponse {
   submitTime?: string | null;
   durationSeconds?: number | null;
   violationCount: number;
+  showResultsToStudents?: boolean;
   violations: StudentViolationItemDto[];
   questions: StudentQuestionDetailDto[];
 }
@@ -118,6 +119,7 @@ export interface Exam {
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
   isProctoringEnabled?: boolean;
+  showResultsToStudents?: boolean;
   maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
@@ -144,6 +146,7 @@ export interface ExamSummaryResponse {
   durationMinutes: number;
   maxAttempts: number;
   isProctoringEnabled?: boolean;
+  showResultsToStudents?: boolean;
   maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
@@ -168,6 +171,7 @@ export interface ExamDetailResponse {
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
   isProctoringEnabled?: boolean;
+  showResultsToStudents?: boolean;
   maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
@@ -191,6 +195,7 @@ export interface ExamCreateRequest {
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
   isProctoringEnabled?: boolean;
+  showResultsToStudents?: boolean;
   maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
@@ -207,6 +212,7 @@ export interface ExamUpdateRequest {
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
   isProctoringEnabled?: boolean;
+  showResultsToStudents?: boolean;
   maxViolations?: number;
   startTime?: string | null;
   endTime?: string | null;
@@ -307,6 +313,7 @@ export interface SubmitResultResponse {
   passed?: boolean | null;
   submittedAt: string;
   message: string;
+  showResultsToStudents?: boolean;
   gradingStatus?: GradingStatus;
 }
 

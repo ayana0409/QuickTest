@@ -596,6 +596,33 @@ class ExamSessionServiceTest {
     }
 
     @Test
+    @DisplayName("getSubmissionResult should mask score and set message when showResultsToStudents is false")
+    void getSubmissionResult_WhenShowResultsFalse_ShouldMaskScore() {
+        UUID attemptId = UUID.randomUUID();
+        publishedExam.setShowResultsToStudents(false);
+        ExamAttempt attempt = ExamAttempt.builder()
+                .id(attemptId)
+                .exam(publishedExam)
+                .user(studentUser)
+                .status(AttemptStatus.SUBMITTED)
+                .totalScore(9.0)
+                .submitTime(LocalDateTime.now())
+                .build();
+
+        when(redisExamSessionService.getCachedSubmissionResult(attemptId)).thenReturn(null);
+        when(examAttemptRepository.findByIdWithExam(attemptId)).thenReturn(Optional.of(attempt));
+
+        SubmitResultResponse result = examSessionService.getSubmissionResult(attemptId, studentUser, null);
+
+        assertNotNull(result);
+        assertFalse(result.getShowResultsToStudents());
+        assertNull(result.getTotalScore());
+        assertTrue(result.getMessage().contains("withheld") || result.getMessage().contains("integrity"));
+        assertEquals(AttemptStatus.SUBMITTED, result.getStatus());
+        publishedExam.setShowResultsToStudents(true);
+    }
+
+    @Test
     @DisplayName("autoSubmitActiveAttemptsForExam should fetch in-progress attempts and send submission messages")
     void autoSubmitActiveAttemptsForExam_Success() {
         UUID examId = publishedExam.getId();

@@ -242,6 +242,62 @@ class StudentAttemptServiceTest {
                 .filter(o -> o.getId().equals(opt2Id)).findFirst().orElseThrow();
         assertFalse(optDto2.getIsSelected());
         assertFalse(optDto2.getIsCorrect());
+        assertTrue(detail.getShowResultsToStudents());
+    }
+
+    @Test
+    @DisplayName("getStudentAttemptDetail: Should mask scores, correct options, and sample answers when showResultsToStudents is false")
+    void getStudentAttemptDetail_ShowResultsFalse() {
+        exam.setShowResultsToStudents(false);
+
+        UUID opt1Id = UUID.randomUUID();
+        AnswerOption opt1 = AnswerOption.builder()
+                .id(opt1Id)
+                .content("Mitochondria")
+                .isCorrect(true)
+                .build();
+
+        Question question = Question.builder()
+                .id(UUID.randomUUID())
+                .content("What is the powerhouse of the cell?")
+                .questionType(QuestionType.SINGLE_CHOICE)
+                .points(2.0)
+                .options(List.of(opt1))
+                .sampleAnswer("Detailed explanation...")
+                .build();
+
+        CandidateAnswer answer = CandidateAnswer.builder()
+                .id(UUID.randomUUID())
+                .examAttempt(attempt)
+                .question(question)
+                .selectedOptions(Set.of(opt1))
+                .awardedScore(2.0)
+                .teacherFeedback("Good job!")
+                .gradingStatus(GradingStatus.GRADED)
+                .build();
+
+        when(examAttemptRepository.findByIdWithExamAndUser(attemptId)).thenReturn(Optional.of(attempt));
+        when(candidateAnswerRepository.findByExamAttemptIdWithQuestion(attemptId)).thenReturn(List.of(answer));
+        when(violationLogRepository.findByExamAttemptIdOrderByTimestampAsc(attemptId)).thenReturn(Collections.emptyList());
+
+        StudentAttemptDetailResponse detail = studentAttemptService.getStudentAttemptDetail(attemptId, studentId);
+
+        assertNotNull(detail);
+        assertFalse(detail.getShowResultsToStudents());
+        assertNull(detail.getAwardedScore(), "Total score must be hidden when showResultsToStudents is false");
+        assertNull(detail.getMaxScore(), "Total max score must be hidden when showResultsToStudents is false");
+
+        assertEquals(1, detail.getQuestions().size());
+        StudentAttemptDetailResponse.QuestionDetailDto qDto = detail.getQuestions().get(0);
+        assertNull(qDto.getPoints(), "Question points must be hidden");
+        assertNull(qDto.getAwardedScore(), "Question awarded score must be hidden");
+        assertNull(qDto.getSampleAnswer(), "Sample answer must be hidden");
+        assertNull(qDto.getTeacherFeedback(), "Teacher feedback must be hidden");
+
+        assertEquals(1, qDto.getOptions().size());
+        StudentAttemptDetailResponse.OptionDto optDto = qDto.getOptions().get(0);
+        assertNull(optDto.getIsCorrect(), "isCorrect flag on options must be masked to null");
+        assertTrue(optDto.getIsSelected(), "Candidate's own selected option must still be visible");
     }
 
     @Test
