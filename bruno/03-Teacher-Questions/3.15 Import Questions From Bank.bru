@@ -1,0 +1,33 @@
+meta {
+  name: 3.15 Import Questions From Bank
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{examId}}/questions/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "questionIds": [
+      "{{singleChoiceQId}}"
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data: isDefined
+}

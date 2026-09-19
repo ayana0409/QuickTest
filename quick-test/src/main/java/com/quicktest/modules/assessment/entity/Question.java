@@ -7,16 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.BatchSize;
+
 /**
  * Question entity belonging to an exam. Supports 4 different question types.
  */
 @Entity
-@Table(
-    name = "questions",
-    indexes = {
+@Table(name = "questions", indexes = {
         @Index(name = "idx_questions_exam_order", columnList = "exam_id, orderIndex")
-    }
-)
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -62,9 +61,11 @@ public class Question {
     @JoinColumn(name = "exam_id", nullable = false)
     private Exam exam;
 
-    // Options for SINGLE_CHOICE and MULTIPLE_CHOICE questions
+    // Options for SINGLE_CHOICE and MULTIPLE_CHOICE questions - batch fetched to
+    // prevent N+1 queries
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
+    @BatchSize(size = 50)
     @Builder.Default
     private List<AnswerOption> options = new ArrayList<>();
 }

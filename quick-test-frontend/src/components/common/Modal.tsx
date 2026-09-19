@@ -11,6 +11,7 @@ export interface ModalProps {
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
+  bodyClassName?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -22,6 +23,7 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   size = 'md',
   className,
+  bodyClassName,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -71,7 +73,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-zinc-100 dark:border-zinc-800">
+        <div className="flex items-start justify-between p-6 border-b border-zinc-100 dark:border-zinc-800 flex-shrink-0">
           <div>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
               {title}
@@ -93,11 +95,13 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 max-h-[calc(85vh-150px)] overflow-y-auto">{children}</div>
+        <div className={cn('p-6 max-h-[calc(85vh-150px)] overflow-y-auto', bodyClassName)}>
+          {children}
+        </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 flex-shrink-0">
             {footer}
           </div>
         )}

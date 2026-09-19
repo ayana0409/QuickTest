@@ -71,23 +71,32 @@ public class ExamCloneConsumer {
             }
         }
 
-        // Once all images are duplicated, transition the exam to DRAFT so it becomes visible
+        // Once all images are duplicated, transition the exam to DRAFT (if it was CLONING) and notify teacher
         examRepository.findById(message.getNewExamId()).ifPresent(exam -> {
-            exam.setStatus(ExamStatus.DRAFT);
-            examRepository.save(exam);
-            log.info("Exam ID {} completed duplication and transitioned to DRAFT", exam.getId());
+            boolean isQuestionImport = "QUESTION_IMPORT".equalsIgnoreCase(message.getTaskType());
+
+            if (!isQuestionImport && exam.getStatus() == ExamStatus.CLONING) {
+                exam.setStatus(ExamStatus.DRAFT);
+                examRepository.save(exam);
+                log.info("Exam ID {} completed duplication and transitioned to DRAFT", exam.getId());
+            }
 
             // Notify teacher via WebSocket real-time channel
             if (messagingTemplate != null && message.getTeacherId() != null) {
                 try {
                     String destination = "/topic/teachers/" + message.getTeacherId() + "/notifications";
+                    String notifType = isQuestionImport ? "QUESTION_IMPORT_COMPLETED" : "EXAM_CLONED";
+                    String notifMessage = isQuestionImport
+                            ? "Đã nhân bản độc lập toàn bộ hình ảnh cho các câu hỏi nhập vào đề thi '" + exam.getTitle() + "'!"
+                            : "Đề thi '" + exam.getTitle() + "' đã được nhân bản hoàn tất!";
+
                     messagingTemplate.convertAndSend(destination, Map.of(
-                            "type", "EXAM_CLONED",
+                            "type", notifType,
                             "examId", exam.getId().toString(),
                             "title", exam.getTitle(),
-                            "message", "Đề thi '" + exam.getTitle() + "' đã được nhân bản hoàn tất!"
+                            "message", notifMessage
                     ));
-                    log.info("Sent EXAM_CLONED WebSocket notification to {}", destination);
+                    log.info("Sent {} WebSocket notification to {}", notifType, destination);
                 } catch (Exception wsEx) {
                     log.warn("Failed to send WebSocket notification for cloned exam {}: {}", exam.getId(), wsEx.getMessage());
                 }

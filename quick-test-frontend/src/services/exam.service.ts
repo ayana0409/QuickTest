@@ -15,7 +15,20 @@ import type {
   QuestionCreateRequest,
   QuestionUpdateRequest,
   MediaUploadResponse,
+  QuestionBankItem,
+  QuestionImportRequest,
 } from '@/types/question';
+
+/**
+ * Filter parameters for querying question bank items.
+ */
+export interface GetQuestionBankParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+  search?: string;
+  excludeExamId?: string;
+}
 
 /**
  * Filter parameters for querying teacher exams.
@@ -213,6 +226,41 @@ export const examService = {
     const response = await apiClient.post<ApiResponse<ExamDetailResponse>>(
       `/teacher/exams/${id}/duplicate`,
       payload ?? {}
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Fetch paginated list of questions from teacher's question bank.
+   * Can exclude a target exam and filter by search keyword.
+   */
+  async getQuestionBank(params?: GetQuestionBankParams): Promise<PageResponse<QuestionBankItem>> {
+    const apiParams: Record<string, any> = { ...params };
+    if (typeof apiParams.search === 'string') {
+      const trimmed = apiParams.search.trim();
+      if (trimmed) {
+        apiParams.search = trimmed;
+      } else {
+        delete apiParams.search;
+      }
+    }
+    const response = await apiClient.get<ApiResponse<PageResponse<QuestionBankItem>>>(
+      '/teacher/question-bank',
+      { params: apiParams }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Import selected questions from question bank into a target exam.
+   */
+  async importQuestionsFromBank(examId: string, questionIds: string[]): Promise<QuestionResponse[]> {
+    const response = await apiClient.post<ApiResponse<QuestionResponse[]>>(
+      `/teacher/exams/${examId}/questions/import`,
+      { questionIds } as QuestionImportRequest,
+      {
+        successMessage: `Đã nhập thành công ${questionIds.length} câu hỏi vào đề thi!`,
+      }
     );
     return response.data.data;
   },

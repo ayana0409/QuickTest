@@ -1,10 +1,13 @@
 package com.quicktest.modules.assessment.controller;
 
 import com.quicktest.core.common.ApiResponse;
+import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.security.UserDetailsImpl;
+import com.quicktest.modules.assessment.dto.QuestionBankItemResponse;
 import com.quicktest.modules.assessment.dto.QuestionCreateRequest;
+import com.quicktest.modules.assessment.dto.QuestionImportRequest;
 import com.quicktest.modules.assessment.dto.QuestionResponse;
 import com.quicktest.modules.assessment.dto.QuestionUpdateRequest;
 import com.quicktest.modules.assessment.service.QuestionService;
@@ -12,12 +15,17 @@ import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -83,6 +91,43 @@ public class QuestionController {
         User teacher = getAuthenticatedTeacher(currentUser);
         questionService.deleteQuestion(questionId, teacher);
         return ResponseEntity.ok(ApiResponse.success(null, "Question deleted successfully"));
+    }
+
+    /**
+     * Get paginated list of the teacher's question bank (all questions across all their exams).
+     * Optionally excludes a specific exam and supports keyword search.
+     *
+     * @param excludeExamId optional exam UUID to exclude from the bank
+     * @param search        optional keyword to filter by question content or exam title
+     */
+    @GetMapping("/question-bank")
+    public ResponseEntity<ApiResponse<PageResponse<QuestionBankItemResponse>>> getQuestionBank(
+            @AuthenticationPrincipal UserDetailsImpl currentUser,
+            @RequestParam(value = "excludeExamId", required = false) UUID excludeExamId,
+            @RequestParam(value = "search", required = false) String search,
+            @PageableDefault(size = 10, sort = "orderIndex") Pageable pageable) {
+        User teacher = getAuthenticatedTeacher(currentUser);
+        Page<QuestionBankItemResponse> page = questionService.getQuestionBank(teacher, excludeExamId, search, pageable);
+        return ResponseEntity.ok(ApiResponse.success(
+                PageResponse.from(page), "Question bank retrieved successfully"));
+    }
+
+    /**
+     * Import selected questions from the question bank into a target exam.
+     * Each question and its options/images are deep-copied; the originals are not modified.
+     */
+    @PostMapping("/exams/{examId}/questions/import")
+    public ResponseEntity<ApiResponse<List<QuestionResponse>>> importQuestionsFromBank(
+            @PathVariable("examId") UUID examId,
+            @Valid @RequestBody QuestionImportRequest request,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        User teacher = getAuthenticatedTeacher(currentUser);
+        List<QuestionResponse> imported = questionService.importQuestionsFromBank(
+                examId, request.getQuestionIds(), teacher);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(imported,
+                        imported.size() + " question(s) imported successfully"));
     }
 
     private User getAuthenticatedTeacher(UserDetailsImpl currentUser) {

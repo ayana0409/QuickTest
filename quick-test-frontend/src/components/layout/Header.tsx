@@ -119,6 +119,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
 
   // Derive dynamic page title from pathname
   const getPageTitle = (): string => {
+    if (pathname.endsWith('/profile')) return 'Thông tin cá nhân';
     if (pathname.startsWith('/admin')) return 'Admin Workspace';
     if (pathname.startsWith('/teacher/exams')) return 'Exam Management';
     if (pathname.startsWith('/teacher/grading')) return 'Essay Grading';
@@ -255,6 +256,15 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
 
               {/* Navigation Options */}
               <div className="p-1.5 space-y-0.5">
+                <Link
+                  href="/teacher/profile"
+                  onClick={() => setIsUserDropdownOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <UserIcon className="w-4 h-4 text-zinc-400" />
+                  <span>Thông tin cá nhân</span>
+                </Link>
+
                 <Link
                   href="/"
                   onClick={() => setIsUserDropdownOpen(false)}

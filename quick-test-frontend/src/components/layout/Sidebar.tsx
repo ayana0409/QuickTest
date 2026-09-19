@@ -18,7 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  HelpCircle,
+  User as UserIcon,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -38,8 +38,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   TEACHER: [
     { label: 'Exam Management', href: '/teacher/exams', icon: BookOpen },
     { label: 'Essay Grading', href: '/teacher/grading', icon: FileCheck },
-    { label: 'Question Bank', href: '/teacher/questions', icon: HelpCircle },
-    { label: 'Exam Analytics', href: '/teacher/analytics', icon: BarChart3 },
+    { label: 'Thông tin cá nhân', href: '/teacher/profile', icon: UserIcon },
   ],
   STUDENT: [
     { label: 'My Exams', href: '/student', icon: GraduationCap },
@@ -177,19 +176,24 @@ export function Sidebar({
       <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         {!isCollapsed ? (
           <div className="space-y-2">
-            <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            <Link
+              href="/teacher/profile"
+              onClick={onMobileClose}
+              className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer group"
+              title="Xem thông tin cá nhân"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                 {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {user?.fullName || 'User Account'}
                 </p>
                 <p className="text-[11px] text-zinc-500 truncate">
                   {user?.email || 'user@quicktest.com'}
                 </p>
               </div>
-            </div>
+            </Link>
 
             <button
               type="button"
@@ -202,12 +206,13 @@ export function Sidebar({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-1">
-            <div
-              className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs"
-              title={user?.fullName || 'User'}
+            <Link
+              href="/teacher/profile"
+              className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs hover:scale-105 transition-transform shadow-xs"
+              title={user?.fullName || 'Xem thông tin cá nhân'}
             >
               {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-            </div>
+            </Link>
             <button
               type="button"
               onClick={handleLogout}

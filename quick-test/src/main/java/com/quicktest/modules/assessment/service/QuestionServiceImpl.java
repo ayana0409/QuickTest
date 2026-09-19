@@ -5,6 +5,10 @@ import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.CloudinaryStorageService;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.assessment.dto.AnswerOptionDto;
+import com.quicktest.config.RabbitMQConfig;
+import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage;
+import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage.ImageCloneItem;
+import com.quicktest.modules.assessment.dto.QuestionBankItemResponse;
 import com.quicktest.modules.assessment.dto.QuestionCreateRequest;
 import com.quicktest.modules.assessment.dto.QuestionResponse;
 import com.quicktest.modules.assessment.dto.QuestionUpdateRequest;
@@ -19,6 +23,9 @@ import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +51,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final AnswerOptionRepository answerOptionRepository;
     private final CloudinaryStorageService cloudinaryStorageService;
     private final MediaDeleteProducer mediaDeleteProducer;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
@@ -60,8 +68,7 @@ public class QuestionServiceImpl implements QuestionService {
                 request.getSampleAnswer(),
                 request.getNumericTolerance(),
                 request.getGradingRubric(),
-                request.getOptions()
-        );
+                request.getOptions());
 
         // Validate question must have either text content or an image URL
         boolean hasContent = request.getContent() != null && !request.getContent().trim().isEmpty();
@@ -112,7 +119,8 @@ public class QuestionServiceImpl implements QuestionService {
                         .question(question)
                         .content(hasOptContent ? optionDto.getContent().trim() : null)
                         .imageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null)
-                        .imagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
+                        .imagePublicId(
+                                optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
                         .isCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()))
                         .orderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : optionIndex++)
                         .build();
@@ -141,8 +149,7 @@ public class QuestionServiceImpl implements QuestionService {
                 request.getSampleAnswer(),
                 request.getNumericTolerance(),
                 request.getGradingRubric(),
-                request.getOptions()
-        );
+                request.getOptions());
 
         boolean hasContent = request.getContent() != null && !request.getContent().trim().isEmpty();
         boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty();
@@ -209,7 +216,8 @@ public class QuestionServiceImpl implements QuestionService {
                     boolean retained = false;
                     if (request.getOptions() != null) {
                         for (AnswerOptionDto newOpt : request.getOptions()) {
-                            if (oldOpt.getImagePublicId() != null && oldOpt.getImagePublicId().equals(newOpt.getImagePublicId())) {
+                            if (oldOpt.getImagePublicId() != null
+                                    && oldOpt.getImagePublicId().equals(newOpt.getImagePublicId())) {
                                 retained = true;
                                 break;
                             }
@@ -229,9 +237,11 @@ public class QuestionServiceImpl implements QuestionService {
                 }
             }
 
-            // In-place synchronization of options collection to avoid N+1 deletes & re-inserts
+            // In-place synchronization of options collection to avoid N+1 deletes &
+            // re-inserts
             List<AnswerOption> existingOptions = question.getOptions();
-            List<AnswerOptionDto> newOptionDtos = request.getOptions() != null ? request.getOptions() : new ArrayList<>();
+            List<AnswerOptionDto> newOptionDtos = request.getOptions() != null ? request.getOptions()
+                    : new ArrayList<>();
             int minSize = Math.min(existingOptions.size(), newOptionDtos.size());
 
             // 1. Update existing options in-place (no deletes, no re-inserts)
@@ -245,7 +255,8 @@ public class QuestionServiceImpl implements QuestionService {
                 AnswerOption existing = existingOptions.get(i);
                 existing.setContent(hasOptContent ? optionDto.getContent().trim() : null);
                 existing.setImageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null);
-                existing.setImagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null);
+                existing.setImagePublicId(
+                        optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null);
                 existing.setIsCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()));
                 existing.setOrderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : (i + 1));
             }
@@ -263,7 +274,8 @@ public class QuestionServiceImpl implements QuestionService {
                             .question(question)
                             .content(hasOptContent ? optionDto.getContent().trim() : null)
                             .imageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null)
-                            .imagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
+                            .imagePublicId(
+                                    optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
                             .isCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()))
                             .orderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : (i + 1))
                             .build();
@@ -297,7 +309,8 @@ public class QuestionServiceImpl implements QuestionService {
         verifyOwnership(question.getExam(), teacher);
         verifyExamIsDraft(question.getExam());
 
-        // Collect question image and option images to delete asynchronously via RabbitMQ
+        // Collect question image and option images to delete asynchronously via
+        // RabbitMQ
         List<String> mediaToDelete = new ArrayList<>();
         if (question.getImagePublicId() != null && !question.getImagePublicId().isBlank()) {
             mediaToDelete.add(question.getImagePublicId());
@@ -315,12 +328,14 @@ public class QuestionServiceImpl implements QuestionService {
             }
         }
 
-        // 1. Bulk delete all answer options in 1 SQL query to avoid N+1 Hibernate deletes
+        // 1. Bulk delete all answer options in 1 SQL query to avoid N+1 Hibernate
+        // deletes
         answerOptionRepository.deleteByQuestionId(questionId);
 
         // 2. Bulk delete question itself in 1 SQL query
         questionRepository.deleteQuestionById(questionId);
-        log.info("Question ID: {} and its answer options successfully deleted from database via bulk queries", questionId);
+        log.info("Question ID: {} and its answer options successfully deleted from database via bulk queries",
+                questionId);
 
         // Schedule media deletion strictly AFTER transaction commit succeeds
         if (!mediaToDelete.isEmpty()) {
@@ -330,7 +345,8 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     @Transactional
-    public QuestionResponse updateQuestionImage(UUID questionId, org.springframework.web.multipart.MultipartFile file, User teacher) {
+    public QuestionResponse updateQuestionImage(UUID questionId, org.springframework.web.multipart.MultipartFile file,
+            User teacher) {
         log.info("Directly updating image for question ID: {} by teacher ID: {}", questionId, teacher.getId());
 
         Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
@@ -340,8 +356,8 @@ public class QuestionServiceImpl implements QuestionService {
         verifyExamIsDraft(question.getExam());
 
         // Upload new image to Cloudinary
-        com.quicktest.modules.assessment.dto.MediaUploadResponse uploadRes =
-                cloudinaryStorageService.uploadSingle(file, "questions");
+        com.quicktest.modules.assessment.dto.MediaUploadResponse uploadRes = cloudinaryStorageService.uploadSingle(file,
+                "questions");
 
         // Collect old image to delete asynchronously
         List<String> mediaToDelete = new ArrayList<>();
@@ -366,8 +382,10 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     /**
-     * Schedule media deletion batches to RabbitMQ strictly AFTER the current database transaction commits.
-     * If the transaction rolls back due to an error, this hook is never triggered, preventing data loss on Cloudinary.
+     * Schedule media deletion batches to RabbitMQ strictly AFTER the current
+     * database transaction commits.
+     * If the transaction rolls back due to an error, this hook is never triggered,
+     * preventing data loss on Cloudinary.
      */
     private void scheduleMediaDeletionAfterCommit(UUID examId, List<String> mediaIdentifiers, String source) {
         if (mediaIdentifiers == null || mediaIdentifiers.isEmpty()) {
@@ -387,13 +405,15 @@ public class QuestionServiceImpl implements QuestionService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    log.info("Transaction committed. Dispatching {} media identifiers to RabbitMQ deletion queue for examId={}, source={}",
+                    log.info(
+                            "Transaction committed. Dispatching {} media identifiers to RabbitMQ deletion queue for examId={}, source={}",
                             cleanMedia.size(), examId, source);
                     mediaDeleteProducer.sendDeleteBatches(examId, cleanMedia, source);
                 }
             });
         } else {
-            log.info("No active transaction. Directly dispatching {} media identifiers to RabbitMQ deletion queue for examId={}, source={}",
+            log.info(
+                    "No active transaction. Directly dispatching {} media identifiers to RabbitMQ deletion queue for examId={}, source={}",
                     cleanMedia.size(), examId, source);
             mediaDeleteProducer.sendDeleteBatches(examId, cleanMedia, source);
         }
@@ -455,7 +475,8 @@ public class QuestionServiceImpl implements QuestionService {
                         throw new AppException("Sample answer for numeric question must be a finite number");
                     }
                 } catch (NumberFormatException ex) {
-                    throw new AppException("Sample answer for numeric question must be a valid number (e.g. 42 or 3.14 or 3,14)");
+                    throw new AppException(
+                            "Sample answer for numeric question must be a valid number (e.g. 42 or 3.14 or 3,14)");
                 }
                 if (numericTolerance != null && numericTolerance < 0.0) {
                     throw new AppException("Numeric tolerance cannot be negative");
@@ -485,7 +506,167 @@ public class QuestionServiceImpl implements QuestionService {
 
     private void verifyExamIsDraft(Exam exam) {
         if (exam.getStatus() != ExamStatus.DRAFT) {
-            throw new AppException("Cannot modify questions for an exam with status " + exam.getStatus() + ". Only DRAFT exams can be modified.");
+            throw new AppException("Cannot modify questions for an exam with status " + exam.getStatus()
+                    + ". Only DRAFT exams can be modified.");
         }
+    }
+
+    // ==============================
+    // Question Bank
+    // ==============================
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<QuestionBankItemResponse> getQuestionBank(
+            User teacher, UUID excludeExamId, String search, Pageable pageable) {
+
+        log.info("Fetching question bank for teacher ID: {}, excludeExamId: {}, search: '{}'",
+                teacher.getId(), excludeExamId, search);
+
+        // Build a LIKE pattern or null if search is empty
+        String pattern = (search != null && !search.trim().isEmpty())
+                ? "%" + search.trim().toLowerCase() + "%"
+                : null;
+
+        Page<Question> page = questionRepository.findBankByTeacherId(
+                teacher.getId(), excludeExamId, pattern, pageable);
+
+        return page.map(QuestionBankItemResponse::fromEntity);
+    }
+
+    @Override
+    @Transactional
+    public List<QuestionResponse> importQuestionsFromBank(
+            UUID targetExamId, List<UUID> questionIds, User teacher) {
+
+        log.info("Importing {} question(s) into exam ID: {} by teacher ID: {}",
+                questionIds.size(), targetExamId, teacher.getId());
+
+        // 1. Validate target exam ownership and draft status
+        Exam targetExam = examRepository.findByIdWithCreatedBy(targetExamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", targetExamId));
+        verifyOwnership(targetExam, teacher);
+        verifyExamIsDraft(targetExam);
+
+        // 2. Batch-fetch source questions (with options + exam) in one query
+        List<Question> sourceQuestions = questionRepository.findAllByIdInWithOptionsAndExam(questionIds);
+
+        if (sourceQuestions.isEmpty()) {
+            throw new ResourceNotFoundException("Question", "ids", questionIds);
+        }
+
+        // 3. Verify teacher owns each source question's exam
+        for (Question sq : sourceQuestions) {
+            if (!sq.getExam().getCreatedBy().getId().equals(teacher.getId())) {
+                throw new AccessDeniedException(
+                        "You do not own question '" + sq.getId() + "'");
+            }
+        }
+
+        // 4. Determine starting orderIndex for appended questions
+        int nextOrderIndex = (int) questionRepository.countByExamId(targetExamId) + 1;
+
+        List<QuestionResponse> results = new ArrayList<>();
+        List<ImageCloneItem> imageTasks = new ArrayList<>();
+
+        for (Question sq : sourceQuestions) {
+            // 4a. Build new Question entity (using existing image URLs initially for
+            // instant UI responsiveness)
+            Question newQuestion = Question.builder()
+                    .exam(targetExam)
+                    .content(sq.getContent())
+                    .imageUrl(sq.getImageUrl())
+                    .imagePublicId(sq.getImagePublicId())
+                    .questionType(sq.getQuestionType())
+                    .points(sq.getPoints())
+                    .orderIndex(nextOrderIndex++)
+                    .sampleAnswer(sq.getSampleAnswer())
+                    .numericTolerance(sq.getNumericTolerance())
+                    .gradingRubric(sq.getGradingRubric())
+                    .options(new ArrayList<>())
+                    .build();
+
+            Question savedQuestion = questionRepository.save(newQuestion);
+
+            // If question has an image, schedule for asynchronous duplication in RabbitMQ
+            if (sq.getImageUrl() != null && !sq.getImageUrl().isBlank()) {
+                imageTasks.add(ImageCloneItem.builder()
+                        .questionId(savedQuestion.getId())
+                        .optionId(null)
+                        .sourceUrl(sq.getImageUrl())
+                        .sourcePublicId(sq.getImagePublicId())
+                        .targetFolder("questions")
+                        .build());
+            }
+
+            // 4b. Clone each answer option
+            if (sq.getOptions() != null) {
+                for (AnswerOption so : sq.getOptions()) {
+                    AnswerOption newOption = AnswerOption.builder()
+                            .question(savedQuestion)
+                            .content(so.getContent())
+                            .imageUrl(so.getImageUrl())
+                            .imagePublicId(so.getImagePublicId())
+                            .isCorrect(so.getIsCorrect())
+                            .orderIndex(so.getOrderIndex())
+                            .build();
+
+                    AnswerOption savedOption = answerOptionRepository.save(newOption);
+                    savedQuestion.getOptions().add(savedOption);
+
+                    // If option has an image, schedule for asynchronous duplication in RabbitMQ
+                    if (so.getImageUrl() != null && !so.getImageUrl().isBlank()) {
+                        imageTasks.add(ImageCloneItem.builder()
+                                .questionId(savedQuestion.getId())
+                                .optionId(savedOption.getId())
+                                .sourceUrl(so.getImageUrl())
+                                .sourcePublicId(so.getImagePublicId())
+                                .targetFolder("options")
+                                .build());
+                    }
+                }
+            }
+
+            results.add(QuestionResponse.fromEntity(savedQuestion));
+        }
+
+        // 5. If any questions or options contain images, publish clone task to RabbitMQ
+        // after transaction commits
+        if (!imageTasks.isEmpty()) {
+            ExamCloneTaskMessage message = ExamCloneTaskMessage.builder()
+                    .newExamId(targetExamId)
+                    .teacherId(teacher.getId())
+                    .taskType("QUESTION_IMPORT")
+                    .items(imageTasks)
+                    .build();
+
+            if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        log.info("Queuing {} image duplication tasks to RabbitMQ for imported questions in exam ID: {}",
+                                imageTasks.size(), targetExamId);
+                        try {
+                            rabbitTemplate.convertAndSend(RabbitMQConfig.EXAM_CLONE_EXCHANGE,
+                                    RabbitMQConfig.EXAM_CLONE_ROUTING_KEY, message);
+                        } catch (Exception ex) {
+                            log.warn("Failed to publish question import image clone message to RabbitMQ: {}",
+                                    ex.getMessage());
+                        }
+                    }
+                });
+            } else {
+                try {
+                    rabbitTemplate.convertAndSend(RabbitMQConfig.EXAM_CLONE_EXCHANGE,
+                            RabbitMQConfig.EXAM_CLONE_ROUTING_KEY, message);
+                } catch (Exception ex) {
+                    log.warn("Failed to publish question import image clone message to RabbitMQ: {}", ex.getMessage());
+                }
+            }
+        }
+
+        log.info("Successfully imported {} question(s) into exam ID: {} (queued {} background image clone tasks)",
+                results.size(), targetExamId, imageTasks.size());
+        return results;
     }
 }

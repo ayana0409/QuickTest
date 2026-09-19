@@ -22,6 +22,7 @@ import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { Card } from '@/components/common/Card';
 import { Modal } from '@/components/common/Modal';
+import { QuestionBankModal } from '@/components/exam/QuestionBankModal';
 import { examService } from '@/services/exam.service';
 import type {
   QuestionResponse,
@@ -95,6 +96,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
   onQuestionsChange,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -597,6 +599,14 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         {!isLocked && (
           <div className="flex items-center gap-2">
             <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Layers className="w-4 h-4 text-indigo-500" />}
+              onClick={() => setIsBankModalOpen(true)}
+            >
+              Ngân hàng câu hỏi
+            </Button>
+            <Button
               size="sm"
               leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => handleOpenAddModal('SINGLE_CHOICE')}
@@ -619,6 +629,15 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
           </p>
           {!isLocked && (
             <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                leftIcon={<Layers className="w-4 h-4 text-indigo-500" />}
+                onClick={() => setIsBankModalOpen(true)}
+              >
+                Nhập từ ngân hàng
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -1209,6 +1228,16 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
           Câu hỏi và toàn bộ hình ảnh đính kèm trên hệ thống đám mây sẽ bị xóa vĩnh viễn ngay lập tức.
         </p>
       </Modal>
+
+      {/* Question Bank Import Modal */}
+      <QuestionBankModal
+        isOpen={isBankModalOpen}
+        onClose={() => setIsBankModalOpen(false)}
+        examId={examId}
+        onImportSuccess={() => {
+          onQuestionsChange();
+        }}
+      />
     </div>
   );
 };

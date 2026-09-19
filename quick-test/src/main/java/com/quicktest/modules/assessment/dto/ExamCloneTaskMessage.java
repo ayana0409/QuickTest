@@ -21,6 +21,7 @@ public class ExamCloneTaskMessage implements Serializable {
 
     private UUID newExamId;
     private UUID teacherId;
+    private String taskType; // "EXAM_CLONE" or "QUESTION_IMPORT"
 
     @Builder.Default
     private List<ImageCloneItem> items = new ArrayList<>();

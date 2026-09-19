@@ -68,7 +68,9 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 12 | | `PUT` | `/api/teacher/questions/{questionId}` | `TEACHER` | Cập nhật câu hỏi và đáp án |
 | 13 | | `PUT` | `/api/teacher/questions/{questionId}/image` | `TEACHER` | Cập nhật trực tiếp ảnh câu hỏi (xóa ảnh cũ Cloudinary) |
 | 14 | | `DELETE` | `/api/teacher/questions/{questionId}` | `TEACHER` | Xóa câu hỏi (tự động dọn ảnh câu hỏi + đáp án trên Cloudinary) |
-| 15 | **Media Upload** | `POST` | `/api/teacher/media/upload` | `TEACHER` | Upload 1 file ảnh đồng bộ lên Cloudinary |
+| 15 | | `GET` | `/api/teacher/question-bank` | `TEACHER` | Lấy ngân hàng câu hỏi của giáo viên (phân trang, lọc theo đề/từ khóa) |
+| 16 | | `POST` | `/api/teacher/exams/{examId}/questions/import` | `TEACHER` | Nhập câu hỏi từ ngân hàng vào đề thi (deep copy dữ liệu & ảnh) |
+| 17 | **Media Upload** | `POST` | `/api/teacher/media/upload` | `TEACHER` | Upload 1 file ảnh đồng bộ lên Cloudinary |
 | 16 | | `POST` | `/api/teacher/media/batch-upload` | `TEACHER` | Upload hàng loạt ảnh chạy nền (Async RabbitMQ) |
 | 17 | | `GET` | `/api/teacher/media/batch/{batchId}/status` | `TEACHER` | Kiểm tra tiến độ upload batch & lấy danh sách URL |
 | 18 | **Candidate Session** | `POST` | `/api/session/start` | All (Student/Guest) | Bắt đầu hoặc khôi phục lượt thi, nhận đề thi masked |
@@ -398,6 +400,96 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 - **Tính năng dọn dẹp:** Tự động gọi Cloudinary API xóa ảnh câu hỏi (nếu có) và **duyệt xóa toàn bộ ảnh đính kèm của các đáp án** trên Cloudinary trước khi xóa bản ghi DB.
 - **Quyền hạn:** `TEACHER`
 - **Response (200 OK):** `ApiResponse<Void>`
+
+#### 3.5. Lấy ngân hàng câu hỏi của giáo viên (`GET /api/teacher/question-bank`)
+- **Mô tả:** Lấy danh sách toàn bộ câu hỏi thuộc tất cả các đề thi mà giáo viên hiện tại sở hữu. Hỗ trợ phân trang, tìm kiếm từ khóa theo nội dung câu hỏi hoặc tên đề thi gốc, và loại trừ một đề thi mục tiêu.
+- **Quyền hạn:** `TEACHER`
+- **Query Params:**
+  - `excludeExamId` (optional): UUID đề thi cần loại trừ (thường là đề thi đang soạn thảo).
+  - `search` (optional): Từ khóa tìm kiếm theo nội dung câu hỏi hoặc tiêu đề đề thi gốc.
+  - `page` (default: 0): Chỉ số trang.
+  - `size` (default: 10): Số lượng bản ghi mỗi trang.
+  - `sort` (default: "orderIndex"): Tiêu chí sắp xếp.
+- **Response (200 OK):** `ApiResponse<PageResponse<QuestionBankItemResponse>>`
+  ```json
+  {
+    "status": 200,
+    "message": "Question bank retrieved successfully",
+    "data": {
+      "content": [
+        {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "examId": "e4b1752b-7c5e-4c74-8b1e-6adbc79bfb54",
+          "examTitle": "Kiểm tra Giữa kỳ Sinh học 12",
+          "examAccessCode": "BIO12GK",
+          "examSubject": "Sinh học",
+          "content": "Bào quan nào sau đây thực hiện chức năng quang hợp?",
+          "imageUrl": "https://res.cloudinary.com/demo/image/upload/plant_cell.png",
+          "imagePublicId": "quick-test/questions/plant_cell",
+          "questionType": "SINGLE_CHOICE",
+          "points": 2.0,
+          "orderIndex": 1,
+          "sampleAnswer": null,
+          "numericTolerance": null,
+          "gradingRubric": null,
+          "options": [
+            {
+              "id": "c1d2e3f4-5678-90ab-cdef-123456789012",
+              "orderIndex": 1,
+              "content": "Lục lạp",
+              "imageUrl": null,
+              "imagePublicId": null,
+              "isCorrect": true
+            }
+          ]
+        }
+      ],
+      "pageNumber": 0,
+      "pageSize": 10,
+      "totalElements": 25,
+      "totalPages": 3,
+      "last": false
+    },
+    "timestamp": "2026-09-19T12:00:00"
+  }
+  ```
+
+#### 3.6. Nhập câu hỏi từ ngân hàng vào đề thi (`POST /api/teacher/exams/{examId}/questions/import`)
+- **Mô tả:** Nhập hàng loạt câu hỏi đã chọn từ ngân hàng vào đề thi đích đang ở trạng thái `DRAFT`.
+  - Thực hiện **Deep Copy**: nhân bản toàn bộ câu hỏi, đáp án, và tự động gọi Cloudinary nhân bản độc lập các hình ảnh minh họa (cả câu hỏi và đáp án).
+  - Tự động đánh số thứ tự tiếp nối (`orderIndex`) cho các câu hỏi mới thêm vào cuối đề thi.
+  - Xác thực quyền sở hữu nghiêm ngặt: giáo viên phải sở hữu cả đề thi đích và tất cả các đề thi chứa câu hỏi nguồn.
+- **Quyền hạn:** `TEACHER`
+- **Path Variable:** `examId` (UUID đề thi đích cần nhập câu hỏi vào)
+- **Request Body:**
+  ```json
+  {
+    "questionIds": [
+      "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "b2c3d4e5-f678-90ab-cdef-234567890123"
+    ]
+  }
+  ```
+- **Response (201 Created):** `ApiResponse<List<QuestionResponse>>`
+  ```json
+  {
+    "status": 201,
+    "message": "2 question(s) imported successfully",
+    "data": [
+      {
+        "id": "f7e6d5c4-b3a2-1098-7654-3210fedcba98",
+        "orderIndex": 5,
+        "content": "Bào quan nào sau đây thực hiện chức năng quang hợp?",
+        "imageUrl": "https://res.cloudinary.com/demo/image/upload/plant_cell_clone.png",
+        "imagePublicId": "quick-test/questions/plant_cell_clone",
+        "questionType": "SINGLE_CHOICE",
+        "points": 2.0,
+        "options": [ ... ]
+      }
+    ],
+    "timestamp": "2026-09-19T12:00:00"
+  }
+  ```
 
 ---
 

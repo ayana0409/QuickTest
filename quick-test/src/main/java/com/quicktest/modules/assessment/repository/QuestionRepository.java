@@ -1,6 +1,8 @@
 package com.quicktest.modules.assessment.repository;
 
 import com.quicktest.modules.assessment.entity.Question;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -69,5 +71,42 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Question q WHERE q.id = :id")
     void deleteQuestionById(@Param("id") UUID id);
+
+    /**
+     * Paginated question bank listing: all questions from all exams owned by a teacher,
+     * optionally excluding a specific exam and filtering by keyword (content match).
+     * Eagerly joins exam (ManyToOne) to allow true database-level pagination (LIMIT/OFFSET).
+     * Options are batch-fetched via Hibernate @BatchSize to prevent N+1 queries.
+     */
+    @Query(
+        value = "SELECT q FROM Question q " +
+                "JOIN FETCH q.exam e " +
+                "JOIN FETCH e.createdBy " +
+                "WHERE e.createdBy.id = :teacherId " +
+                "AND (:excludeExamId IS NULL OR e.id != :excludeExamId) " +
+                "AND (:pattern IS NULL OR LOWER(q.content) LIKE :pattern OR LOWER(e.title) LIKE :pattern) " +
+                "ORDER BY e.title ASC, q.orderIndex ASC",
+        countQuery = "SELECT COUNT(q) FROM Question q " +
+                     "JOIN q.exam e " +
+                     "WHERE e.createdBy.id = :teacherId " +
+                     "AND (:excludeExamId IS NULL OR e.id != :excludeExamId) " +
+                     "AND (:pattern IS NULL OR LOWER(q.content) LIKE :pattern OR LOWER(e.title) LIKE :pattern)"
+    )
+    Page<Question> findBankByTeacherId(
+            @Param("teacherId") UUID teacherId,
+            @Param("excludeExamId") UUID excludeExamId,
+            @Param("pattern") String pattern,
+            Pageable pageable);
+
+    /**
+     * Batch-fetch questions with their options and parent exam for import ownership checks.
+     * Uses DISTINCT to avoid duplicates from the JOIN FETCH.
+     */
+    @Query("SELECT DISTINCT q FROM Question q " +
+           "LEFT JOIN FETCH q.options " +
+           "JOIN FETCH q.exam e " +
+           "JOIN FETCH e.createdBy " +
+           "WHERE q.id IN :ids")
+    List<Question> findAllByIdInWithOptionsAndExam(@Param("ids") List<UUID> ids);
 }
 

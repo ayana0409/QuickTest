@@ -148,3 +148,33 @@ export interface BatchUploadStatusResponse {
   totalCount: number;
   errorMessages?: string[];
 }
+
+/**
+ * Item returned in the paginated question bank query.
+ * Represents a question along with metadata about the originating exam.
+ */
+export interface QuestionBankItem {
+  id: string;
+  examId: string;
+  examTitle: string;
+  examAccessCode: string;
+  examSubject?: string | null;
+  content: string;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
+  questionType: QuestionType;
+  points: number;
+  orderIndex: number;
+  sampleAnswer?: string | null;
+  numericTolerance?: number | null;
+  gradingRubric?: string | null;
+  options?: AnswerOptionResponse[];
+}
+
+/**
+ * Request payload for importing questions from bank into an exam.
+ */
+export interface QuestionImportRequest {
+  questionIds: string[];
+}
+
