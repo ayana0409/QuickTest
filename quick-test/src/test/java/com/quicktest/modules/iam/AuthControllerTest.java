@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -198,5 +199,64 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data.username").value("john_doe"))
                 .andExpect(jsonPath("$.data.email").value("john@example.com"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/auth/profile: Should return 200 when profile update request is valid")
+    void updateProfile_Success() throws Exception {
+        UpdateProfileRequest request = new UpdateProfileRequest("Jane Doe");
+        UserSummaryDto updatedDto = UserSummaryDto.builder()
+                .id(sampleUserDto.getId())
+                .username("john_doe")
+                .email("john@example.com")
+                .fullName("Jane Doe")
+                .roles(List.of("ROLE_TEACHER"))
+                .isActive(true)
+                .build();
+
+        when(authService.updateProfile(any(), any(UpdateProfileRequest.class))).thenReturn(updatedDto);
+
+        mockMvc.perform(put("/api/auth/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.fullName").value("Jane Doe"))
+                .andExpect(jsonPath("$.message").value("Profile updated successfully"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/auth/profile: Should return 400 when fullName is invalid")
+    void updateProfile_ValidationError() throws Exception {
+        UpdateProfileRequest request = new UpdateProfileRequest("");
+
+        mockMvc.perform(put("/api/auth/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUT /api/auth/password: Should return 200 when password update request is valid")
+    void updatePassword_Success() throws Exception {
+        UpdatePasswordRequest request = new UpdatePasswordRequest("oldSecret123", "newSecret123", "newSecret123");
+
+        mockMvc.perform(put("/api/auth/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.message").value("Password updated successfully"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/auth/password: Should return 400 when new password is too short")
+    void updatePassword_ValidationError() throws Exception {
+        UpdatePasswordRequest request = new UpdatePasswordRequest("oldSecret123", "123", "123");
+
+        mockMvc.perform(put("/api/auth/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }

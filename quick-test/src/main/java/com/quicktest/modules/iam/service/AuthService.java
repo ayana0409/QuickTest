@@ -30,4 +30,14 @@ public interface AuthService {
      * Refresh access and refresh tokens using a valid refresh token.
      */
     AuthResponse refreshToken(com.quicktest.modules.iam.dto.RefreshTokenRequest request);
+
+    /**
+     * Update profile details for the currently authenticated user.
+     */
+    UserSummaryDto updateProfile(UserDetailsImpl currentUser, com.quicktest.modules.iam.dto.UpdateProfileRequest request);
+
+    /**
+     * Update password for the currently authenticated user.
+     */
+    void updatePassword(UserDetailsImpl currentUser, com.quicktest.modules.iam.dto.UpdatePasswordRequest request);
 }

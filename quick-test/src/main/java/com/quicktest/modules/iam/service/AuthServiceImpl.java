@@ -8,7 +8,10 @@ import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.iam.dto.AuthResponse;
 import com.quicktest.modules.iam.dto.LoginRequest;
 import com.quicktest.modules.iam.dto.RegisterRequest;
+import com.quicktest.modules.iam.dto.UpdatePasswordRequest;
+import com.quicktest.modules.iam.dto.UpdateProfileRequest;
 import com.quicktest.modules.iam.dto.UserSummaryDto;
+import com.quicktest.modules.iam.entity.AuthProvider;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
@@ -196,5 +199,58 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
 
         return UserSummaryDto.fromEntity(user);
+    }
+
+    @Override
+    @Transactional
+    public UserSummaryDto updateProfile(UserDetailsImpl currentUser, UpdateProfileRequest request) {
+        if (currentUser == null) {
+            throw new AppException("User is not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+
+        user.updateProfile(request.getFullName());
+        User savedUser = userRepository.save(user);
+        log.info("User {} updated profile fullName to '{}'", user.getUsername(), savedUser.getFullName());
+
+        return UserSummaryDto.fromEntity(savedUser);
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(UserDetailsImpl currentUser, UpdatePasswordRequest request) {
+        if (currentUser == null) {
+            throw new AppException("User is not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+
+        // 1. Validate password confirmation
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new AppException("New password and confirm password do not match", HttpStatus.BAD_REQUEST);
+        }
+
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+
+        // 2. Reject password change for third-party SSO accounts
+        if (user.getAuthProvider() != AuthProvider.LOCAL) {
+            throw new AppException("Password change is not supported for SSO accounts", HttpStatus.BAD_REQUEST);
+        }
+
+        // 3. Verify current password
+        if (user.getPassword() == null || !passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new AppException("Current password is incorrect", HttpStatus.BAD_REQUEST);
+        }
+
+        // 4. Ensure new password is not identical to current password
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new AppException("New password cannot be the same as current password", HttpStatus.BAD_REQUEST);
+        }
+
+        // 5. Hash and update new password
+        user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("User {} successfully updated their password", user.getUsername());
     }
 }

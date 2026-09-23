@@ -15,14 +15,18 @@ import {
   LogOut,
   BookOpen,
   FileCheck,
-  ExternalLink,
   Sparkles,
   CheckCircle2,
   Lock,
   ChevronRight,
+  Edit3,
+  KeyRound,
+  AlertCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
-import { Badge } from '@/components/common/Badge';
+import { Modal } from '@/components/common/Modal';
+import { Input } from '@/components/common/Input';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/lib/axios';
 import { formatDateTime } from '@/lib/utils';
@@ -44,11 +48,26 @@ interface DetailedProfile {
 
 export default function TeacherProfilePage() {
   const router = useRouter();
-  const { user, activeRole, logout } = useAuthStore();
+  const { user, activeRole, logout, setUser } = useAuthStore();
   const [profile, setProfile] = useState<DetailedProfile | null>(user as DetailedProfile | null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCopiedId, setIsCopiedId] = useState(false);
 
+  // Edit Profile Modal State
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [fullNameInput, setFullNameInput] = useState('');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Change Password Modal State
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  // Fetch current user details from API
   useEffect(() => {
     async function fetchMe() {
       setIsLoading(true);
@@ -82,10 +101,114 @@ export default function TeacherProfilePage() {
     router.push('/login');
   };
 
+  // Open Edit Profile modal with current name
+  const handleOpenEditProfile = () => {
+    setFullNameInput(profile?.fullName || user?.fullName || '');
+    setProfileError(null);
+    setIsEditProfileOpen(true);
+  };
+
+  // Submit profile update (full name)
+  const handleUpdateProfileSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = fullNameInput.trim();
+    if (!trimmed || trimmed.length < 2) {
+      setProfileError('Họ và tên phải có ít nhất 2 ký tự');
+      return;
+    }
+    if (trimmed.length > 150) {
+      setProfileError('Họ và tên không được vượt quá 150 ký tự');
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    setProfileError(null);
+    try {
+      const res = await apiClient.put<ApiResponse<DetailedProfile>>(
+        '/auth/profile',
+        { fullName: trimmed },
+        { successMessage: 'Cập nhật thông tin thành công!' }
+      );
+      if (res.data?.data) {
+        const updated = res.data.data;
+        setProfile(updated);
+        // Sync with global authStore so Header, Sidebar and Avatar update immediately
+        if (user) {
+          setUser({
+            ...user,
+            fullName: updated.fullName,
+          });
+        }
+      }
+      setIsEditProfileOpen(false);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      const msg = axiosErr?.response?.data?.message || 'Không thể cập nhật thông tin cá nhân';
+      setProfileError(msg);
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  // Open Change Password modal
+  const handleOpenChangePassword = () => {
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError(null);
+    setIsChangePasswordOpen(true);
+  };
+
+  // Submit password change
+  const handleUpdatePasswordSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!oldPassword) {
+      setPasswordError('Vui lòng nhập mật khẩu hiện tại');
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError('Mật khẩu mới phải có ít nhất 6 ký tự');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    if (newPassword === oldPassword) {
+      setPasswordError('Mật khẩu mới không được trùng với mật khẩu hiện tại');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    setPasswordError(null);
+    try {
+      await apiClient.put<ApiResponse<void>>(
+        '/auth/password',
+        {
+          oldPassword,
+          newPassword,
+          confirmPassword,
+        },
+        { successMessage: 'Đổi mật khẩu thành công!' }
+      );
+      setIsChangePasswordOpen(false);
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      const msg = axiosErr?.response?.data?.message || 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại.';
+      setPasswordError(msg);
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
   const displayName = profile?.fullName || user?.fullName || 'Giáo viên';
   const displayEmail = profile?.email || user?.email || 'Chưa cập nhật';
   const displayUsername = profile?.username || user?.username || 'teacher';
   const roleName = activeRole || 'TEACHER';
+  const isLocalAuth = !profile?.authProvider || profile.authProvider === 'LOCAL';
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -103,7 +226,7 @@ export default function TeacherProfilePage() {
       {/* Hero Profile Card (Double-Bezel Architecture) */}
       <div className="p-1.5 rounded-[2rem] bg-gradient-to-b from-indigo-500/10 via-zinc-100 to-zinc-100 dark:from-indigo-500/20 dark:via-zinc-900 dark:to-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
         <div className="p-6 sm:p-8 rounded-[calc(2rem-0.375rem)] bg-white dark:bg-zinc-900/90 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
               {/* Avatar Circle */}
               <div className="relative">
@@ -143,16 +266,47 @@ export default function TeacherProfilePage() {
               </div>
             </div>
 
-            {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+              {/* Edit Profile Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenEditProfile}
+                leftIcon={<Edit3 className="w-4 h-4 text-indigo-500" />}
+              >
+                Sửa thông tin
+              </Button>
+
+              {/* Change Password Button (Hidden or blocked for SSO) */}
+              {isLocalAuth ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenChangePassword}
+                  leftIcon={<KeyRound className="w-4 h-4 text-amber-500" />}
+                >
+                  Đổi mật khẩu
+                </Button>
+              ) : (
+                <div
+                  className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-xs text-zinc-400 flex items-center gap-1.5 cursor-not-allowed"
+                  title="Tài khoản liên kết SSO không hỗ trợ đổi mật khẩu cục bộ"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>SSO (Không đổi MK)</span>
+                </div>
+              )}
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push('/teacher/exams')}
-                leftIcon={<BookOpen className="w-4 h-4 text-indigo-500" />}
+                leftIcon={<BookOpen className="w-4 h-4 text-zinc-500" />}
               >
                 Đề thi của tôi
               </Button>
+
               <Button
                 variant="danger"
                 size="sm"
@@ -170,24 +324,36 @@ export default function TeacherProfilePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Card 1: Thông tin tài khoản */}
         <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-zinc-100 dark:border-zinc-800">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-              <UserIcon className="w-4 h-4" />
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <UserIcon className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Thông tin tài khoản
+                </h3>
+                <p className="text-[11px] text-zinc-400">
+                  Chi tiết định danh của bạn trên hệ thống QuickTest
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                Thông tin tài khoản
-              </h3>
-              <p className="text-[11px] text-zinc-400">
-                Chi tiết định danh của bạn trên hệ thống QuickTest
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={handleOpenEditProfile}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-semibold flex items-center gap-1 transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Chỉnh sửa</span>
+            </button>
           </div>
 
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/60">
               <span className="text-zinc-500">Họ và tên:</span>
-              <span className="font-semibold text-zinc-800 dark:text-zinc-200">{displayName}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{displayName}</span>
+              </div>
             </div>
 
             <div className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/60">
@@ -207,9 +373,21 @@ export default function TeacherProfilePage() {
 
             <div className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/60">
               <span className="text-zinc-500">Phương thức đăng nhập:</span>
-              <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-[11px]">
-                {profile?.authProvider || 'LOCAL'} (Mật khẩu)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-[11px]">
+                  {profile?.authProvider || 'LOCAL'} {isLocalAuth ? '(Mật khẩu cục bộ)' : '(SSO Bên thứ ba)'}
+                </span>
+                {isLocalAuth && (
+                  <button
+                    type="button"
+                    onClick={handleOpenChangePassword}
+                    className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-semibold flex items-center gap-1"
+                  >
+                    <KeyRound className="w-3 h-3" />
+                    Đổi MK
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between py-1.5">
@@ -389,6 +567,136 @@ export default function TeacherProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Modal 1: Cập nhật thông tin cá nhân */}
+      <Modal
+        isOpen={isEditProfileOpen}
+        onClose={() => {
+          if (!isUpdatingProfile) setIsEditProfileOpen(false);
+        }}
+        title="Chỉnh sửa thông tin cá nhân"
+        description="Cập nhật họ và tên hiển thị trên hệ thống QuickTest"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isUpdatingProfile}
+              onClick={() => setIsEditProfileOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              isLoading={isUpdatingProfile}
+              onClick={handleUpdateProfileSubmit}
+            >
+              Lưu thay đổi
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleUpdateProfileSubmit} className="space-y-4">
+          <Input
+            label="Họ và tên"
+            value={fullNameInput}
+            onChange={(e) => setFullNameInput(e.target.value)}
+            placeholder="Ví dụ: Nguyễn Văn A"
+            autoFocus
+            error={profileError || undefined}
+            disabled={isUpdatingProfile}
+            helperText="Tên này sẽ hiển thị trên các chứng chỉ, đề thi và báo cáo chấm điểm"
+          />
+
+          <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
+            <div className="flex justify-between items-center text-zinc-500">
+              <span>Tên đăng nhập:</span>
+              <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">@{displayUsername}</span>
+            </div>
+            <div className="flex justify-between items-center text-zinc-500">
+              <span>Địa chỉ email:</span>
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">{displayEmail}</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 italic pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
+              * Tên đăng nhập và email được bảo vệ và không thể thay đổi tại màn hình này.
+            </p>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal 2: Đổi mật khẩu */}
+      <Modal
+        isOpen={isChangePasswordOpen}
+        onClose={() => {
+          if (!isUpdatingPassword) setIsChangePasswordOpen(false);
+        }}
+        title="Đổi mật khẩu"
+        description="Định kỳ thay đổi mật khẩu để nâng cao bảo mật tài khoản"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isUpdatingPassword}
+              onClick={() => setIsChangePasswordOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              isLoading={isUpdatingPassword}
+              onClick={handleUpdatePasswordSubmit}
+            >
+              Cập nhật mật khẩu
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleUpdatePasswordSubmit} className="space-y-4">
+          {passwordError && (
+            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 flex items-center gap-2 text-xs text-red-600 dark:text-red-400 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{passwordError}</span>
+            </div>
+          )}
+
+          <Input
+            label="Mật khẩu hiện tại"
+            type="password"
+            showPasswordToggle
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            placeholder="Nhập mật khẩu hiện tại của bạn"
+            disabled={isUpdatingPassword}
+            autoFocus
+          />
+
+          <Input
+            label="Mật khẩu mới"
+            type="password"
+            showPasswordToggle
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+            disabled={isUpdatingPassword}
+            helperText="Độ dài tối thiểu 6 ký tự"
+          />
+
+          <Input
+            label="Xác nhận mật khẩu mới"
+            type="password"
+            showPasswordToggle
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Nhập lại mật khẩu mới"
+            disabled={isUpdatingPassword}
+          />
+        </form>
+      </Modal>
     </div>
   );
 }

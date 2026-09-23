@@ -100,6 +100,13 @@ public class User {
     }
 
     /**
+     * Domain method: Update user password.
+     */
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    /**
      * Domain method: Deactivate user account.
      */
     public void deactivate() {
