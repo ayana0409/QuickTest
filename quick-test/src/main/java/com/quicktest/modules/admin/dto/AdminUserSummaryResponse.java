@@ -1,6 +1,7 @@
 package com.quicktest.modules.admin.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.quicktest.modules.iam.entity.AuthProvider;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,7 @@ public class AdminUserSummaryResponse {
     private String fullName;
     private Role role;
     private Boolean isActive;
+    private AuthProvider authProvider;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
@@ -44,8 +46,10 @@ public class AdminUserSummaryResponse {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .isActive(user.getIsActive())
+                .authProvider(user.getAuthProvider())
                 .createdAt(user.getCreatedAt())
                 .lastLoginAt(user.getLastLoginAt())
                 .build();
     }
 }
+

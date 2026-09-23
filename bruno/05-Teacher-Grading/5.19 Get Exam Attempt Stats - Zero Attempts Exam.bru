@@ -4,9 +4,12 @@ meta {
   seq: 19
 }
 
-# This test verifies that an exam with zero attempts returns safe defaults:
-# averageScore, highestScore, lowestScore, averageDurationSeconds,
-# maxDurationSeconds, minDurationSeconds may all be null.
+docs {
+  This test verifies that an exam with zero attempts returns safe defaults:
+  averageScore, highestScore, lowestScore, averageDurationSeconds,
+  maxDurationSeconds, minDurationSeconds may all be null.
+}
+
 get {
   url: {{baseUrl}}/api/teacher/grading/exams/{{emptyExamId}}/stats
   body: none

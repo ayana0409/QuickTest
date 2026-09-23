@@ -143,9 +143,11 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
               Tra cứu danh sách tài khoản, kích hoạt / khóa tài khoản, phân quyền quản trị viên hoặc giáo viên.
             </p>
-            <Button variant="outline" size="sm">
-              Mở danh sách tài khoản
-            </Button>
+            <Link href="/admin/users">
+              <Button variant="outline" size="sm">
+                Mở danh sách tài khoản
+              </Button>
+            </Link>
           </div>
 
           <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">

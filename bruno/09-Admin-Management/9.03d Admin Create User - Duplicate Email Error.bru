@@ -1,0 +1,35 @@
+meta {
+  name: 9.03d Admin Create User - Duplicate Email Error
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/admin/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "unique_username_for_dup_test",
+    "email": "{{createdTeacherEmail}}",
+    "fullName": "Duplicate Email Tester",
+    "password": "Password@123",
+    "role": "STUDENT"
+  }
+}
+
+assert {
+  res.status: in [400, 409]
+  res.body.message: isDefined
+}

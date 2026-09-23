@@ -8,3 +8,4 @@ export * from './question';
 export * from './candidateAnswer';
 export * from './exam';
 export * from './proctoring';
+export * from './admin';

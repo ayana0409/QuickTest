@@ -3,8 +3,7 @@ package com.quicktest.modules.admin.controller;
 import com.quicktest.core.common.ApiResponse;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.security.UserDetailsImpl;
-import com.quicktest.modules.admin.dto.AdminUserSummaryResponse;
-import com.quicktest.modules.admin.dto.UpdateUserRoleRequest;
+import com.quicktest.modules.admin.dto.*;
 import com.quicktest.modules.admin.service.AdminService;
 import com.quicktest.modules.iam.entity.Role;
 import jakarta.validation.Valid;
@@ -54,6 +53,39 @@ public class AdminUserController {
         AdminUserSummaryResponse user = adminService.getUserDetail(id);
         return ResponseEntity.ok(ApiResponse.success(user, "User details retrieved successfully"));
     }
+
+    /**
+     * Create a new user account with any role.
+     */
+    @PostMapping
+    public ResponseEntity<ApiResponse<AdminUserSummaryResponse>> createUser(
+            @Valid @RequestBody AdminCreateUserRequest request) {
+        AdminUserSummaryResponse user = adminService.createUser(request);
+        return ResponseEntity.ok(ApiResponse.success(user, "User created successfully"));
+    }
+
+    /**
+     * Update an existing user's profile details.
+     */
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<ApiResponse<AdminUserSummaryResponse>> updateUserProfile(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody AdminUpdateProfileRequest request) {
+        AdminUserSummaryResponse user = adminService.updateUserProfile(id, request);
+        return ResponseEntity.ok(ApiResponse.success(user, "User profile updated successfully"));
+    }
+
+    /**
+     * Reset a user's password directly.
+     */
+    @PutMapping("/{id}/password")
+    public ResponseEntity<ApiResponse<Void>> resetUserPassword(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody AdminResetPasswordRequest request) {
+        adminService.resetUserPassword(id, request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Password reset successfully"));
+    }
+
 
     /**
      * Toggle active/inactive status of a user.

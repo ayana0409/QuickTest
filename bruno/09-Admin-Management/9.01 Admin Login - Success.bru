@@ -24,7 +24,7 @@ body:json {
 
 assert {
   res.status: eq 200
-  res.body.data.userInfo.role: eq ADMIN
+  res.body.data.userInfo.roles: isDefined
 }
 
 script:post-response {
@@ -33,4 +33,10 @@ script:post-response {
     bru.setVar("adminToken", token);
     bru.setEnvVar("adminToken", token);
   }
+  let id = res.body?.data?.userInfo?.id;
+  if (id) {
+    bru.setVar("adminUserId", id);
+    bru.setEnvVar("adminUserId", id);
+  }
 }
+

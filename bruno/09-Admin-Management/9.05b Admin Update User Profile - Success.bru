@@ -1,0 +1,44 @@
+meta {
+  name: 9.05b Admin Update User Profile - Success
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/api/admin/users/{{newAdminUserId}}/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+script:pre-request {
+  let rand = Math.floor(100000 + Math.random() * 900000);
+  let modUsr = "mod_bruno_" + rand;
+  let modEmail = "mod_bruno_" + rand + "@quicktest.vn";
+  bru.setVar("updatedTeacherUsername", modUsr);
+  bru.setVar("updatedTeacherEmail", modEmail);
+}
+
+body:json {
+  {
+    "fullName": "Updated Teacher Name By Bruno",
+    "username": "{{updatedTeacherUsername}}",
+    "email": "{{updatedTeacherEmail}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.fullName: eq Updated Teacher Name By Bruno
+  res.body.data.username: eq {{updatedTeacherUsername}}
+  res.body.data.email: eq {{updatedTeacherEmail}}
+}

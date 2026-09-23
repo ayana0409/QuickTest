@@ -91,6 +91,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle deactivated or disabled user accounts.
+     */
+    @ExceptionHandler(org.springframework.security.authentication.DisabledException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDisabledException(
+            org.springframework.security.authentication.DisabledException ex) {
+        log.warn("Account deactivated: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(), "Your account has been deactivated. Please contact an administrator."));
+    }
+
+    /**
      * Handle authorization access denied.
      */
     @ExceptionHandler(AccessDeniedException.class)

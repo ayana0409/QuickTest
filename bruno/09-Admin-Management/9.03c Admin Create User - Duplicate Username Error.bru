@@ -1,0 +1,35 @@
+meta {
+  name: 9.03c Admin Create User - Duplicate Username Error
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/admin/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "{{createdTeacherUsername}}",
+    "email": "unique_email_for_dup_test@quicktest.vn",
+    "fullName": "Duplicate Username Tester",
+    "password": "Password@123",
+    "role": "STUDENT"
+  }
+}
+
+assert {
+  res.status: in [400, 409]
+  res.body.message: isDefined
+}

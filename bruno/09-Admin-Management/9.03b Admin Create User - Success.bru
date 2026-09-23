@@ -1,0 +1,54 @@
+meta {
+  name: 9.03b Admin Create User - Success
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/admin/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+script:pre-request {
+  let rand = Math.floor(100000 + Math.random() * 900000);
+  let usr = "bruno_t_" + rand;
+  let email = "bruno_t_" + rand + "@quicktest.vn";
+  bru.setVar("createdTeacherUsername", usr);
+  bru.setVar("createdTeacherEmail", email);
+}
+
+body:json {
+  {
+    "username": "{{createdTeacherUsername}}",
+    "email": "{{createdTeacherEmail}}",
+    "fullName": "Bruno Created Teacher",
+    "password": "InitialPassword@123",
+    "role": "TEACHER"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.role: eq TEACHER
+  res.body.data.authProvider: eq LOCAL
+  res.body.data.id: isDefined
+}
+
+script:post-response {
+  let id = res.body?.data?.id;
+  if (id) {
+    bru.setVar("newAdminUserId", id);
+    bru.setEnvVar("newAdminUserId", id);
+  }
+}

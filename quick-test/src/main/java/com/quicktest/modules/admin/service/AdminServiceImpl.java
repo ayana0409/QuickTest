@@ -2,12 +2,14 @@ package com.quicktest.modules.admin.service;
 
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.exception.UserAlreadyExistsException;
 import com.quicktest.modules.admin.dto.*;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
+import com.quicktest.modules.iam.entity.AuthProvider;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
@@ -23,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +50,7 @@ public class AdminServiceImpl implements AdminService {
     private final ExamAttemptRepository examAttemptRepository;
     private final ViolationLogRepository violationLogRepository;
     private final ExamSessionService examSessionService;
+    private final PasswordEncoder passwordEncoder;
 
     // =========================================================================
     // User Governance
@@ -83,6 +87,87 @@ public class AdminServiceImpl implements AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         return AdminUserSummaryResponse.fromEntity(user);
     }
+
+    @Override
+    @Transactional
+    public AdminUserSummaryResponse createUser(AdminCreateUserRequest request) {
+        String username = request.getUsername().trim();
+        String email = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByUsername(username)) {
+            throw new UserAlreadyExistsException("Username '" + username + "' is already taken");
+        }
+        if (userRepository.existsByEmail(email)) {
+            throw new UserAlreadyExistsException("Email '" + email + "' is already registered");
+        }
+
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        User newUser = User.createLocalUser(
+                username,
+                email,
+                encodedPassword,
+                request.getFullName().trim(),
+                request.getRole()
+        );
+
+        User savedUser = userRepository.save(newUser);
+        log.info("Admin created new user {} with role {}", savedUser.getUsername(), savedUser.getRole());
+        return AdminUserSummaryResponse.fromEntity(savedUser);
+    }
+
+    @Override
+    @Transactional
+    public AdminUserSummaryResponse updateUserProfile(UUID userId, AdminUpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        // Update fullName
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName().trim());
+        }
+
+        // Update username if provided and changed
+        if (request.getUsername() != null && !request.getUsername().isBlank()) {
+            String newUsername = request.getUsername().trim();
+            if (!newUsername.equalsIgnoreCase(user.getUsername())) {
+                if (userRepository.existsByUsernameAndIdNot(newUsername, userId)) {
+                    throw new UserAlreadyExistsException("Username '" + newUsername + "' is already taken");
+                }
+                user.setUsername(newUsername);
+            }
+        }
+
+        // Update email if provided and changed
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String newEmail = request.getEmail().trim().toLowerCase();
+            if (!newEmail.equalsIgnoreCase(user.getEmail())) {
+                if (userRepository.existsByEmailAndIdNot(newEmail, userId)) {
+                    throw new UserAlreadyExistsException("Email '" + newEmail + "' is already registered");
+                }
+                user.setEmail(newEmail);
+            }
+        }
+
+        User updatedUser = userRepository.save(user);
+        log.info("Admin updated profile for user {} (ID: {})", updatedUser.getUsername(), userId);
+        return AdminUserSummaryResponse.fromEntity(updatedUser);
+    }
+
+    @Override
+    @Transactional
+    public void resetUserPassword(UUID userId, AdminResetPasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (user.getAuthProvider() != null && user.getAuthProvider() != AuthProvider.LOCAL) {
+            throw new AppException("Cannot reset password for external/SSO authenticated users", HttpStatus.BAD_REQUEST);
+        }
+
+        user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("Admin reset password for user {} (ID: {})", user.getUsername(), userId);
+    }
+
 
     @Override
     @Transactional

@@ -864,7 +864,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026\",\n    \"accessCode\": \"{{uniqueCode}}\",\n    \"description\": \"Đề thi khảo sát chất lượng môn Toán với 4 dạng câu hỏi\",\n    \"durationMinutes\": 45,\n    \"maxAttempts\": 2,\n    \"shuffleQuestions\": true,\n    \"shuffleOptions\": true,\n    \"isProctoringEnabled\": true,\n    \"maxViolations\": 3\n  }",
+              "raw": "{\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026\",\n    \"accessCode\": \"{{uniqueCode}}\",\n    \"description\": \"Đề thi khảo sát chất lượng môn Toán với 4 dạng câu hỏi\",\n    \"durationMinutes\": 45,\n    \"maxAttempts\": 2,\n    \"shuffleQuestions\": true,\n    \"shuffleOptions\": true,\n    \"isProctoringEnabled\": true,\n    \"maxViolations\": 3,\n    \"showResultsToStudents\": true\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1271,7 +1271,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026 (Cập nhật)\",\r\n    \"description\": \"Thời gian làm bài điều chỉnh lên 60 phút\",\r\n    \"durationMinutes\": 60,\r\n    \"maxAttempts\": 3,\r\n    \"shuffleQuestions\": false,\r\n    \"shuffleOptions\": false,\r\n    \"isProctoringEnabled\": true,\r\n    \"maxViolations\": 5\r\n  }",
+              "raw": "{\r\n    \"title\": \"Kỳ thi thử THPT Quốc Gia môn Toán 2026 (Cập nhật)\",\r\n    \"description\": \"Thời gian làm bài điều chỉnh lên 60 phút\",\r\n    \"durationMinutes\": 60,\r\n    \"maxAttempts\": 3,\r\n    \"shuffleQuestions\": false,\r\n    \"shuffleOptions\": false,\r\n    \"isProctoringEnabled\": true,\r\n    \"maxViolations\": 5,\r\n    \"showResultsToStudents\": false\r\n  }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7564,6 +7564,14 @@
                   "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"adminToken\", token);",
                   "",
                   "    ",
+                  "  }",
+                  "  let id = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.userInfo?.id;",
+                  "  if (id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"adminUserId\", id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"adminUserId\", id);",
+                  "",
+                  "    ",
                   "  }"
                 ]
               }
@@ -7725,6 +7733,94 @@
           ]
         },
         {
+          "name": "9.03b Admin Create User - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{createdTeacherUsername}}\",\n    \"email\": \"{{createdTeacherEmail}}\",\n    \"fullName\": \"Bruno Created Teacher\",\n    \"password\": \"InitialPassword@123\",\n    \"role\": \"TEACHER\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let rand = Math.floor(100000 + Math.random() * 900000);",
+                  "  let usr = \"bruno_t_\" + rand;",
+                  "  let email = \"bruno_t_\" + rand + \"@quicktest.vn\";",
+                  "  ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"createdTeacherUsername\", usr);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"createdTeacherUsername\", usr);",
+                  "",
+                  "  ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"createdTeacherEmail\", email);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"createdTeacherEmail\", email);",
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}",
+                  "let id = (typeof pm !== \"undefined\" ? pm.response.json() : (typeof tc !== \"undefined\" ? tc.response.json : {}))?.data?.id;",
+                  "  if (id) {",
+                  "    ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"newAdminUserId\", id);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"newAdminUserId\", id);",
+                  "",
+                  "    ",
+                  "  }"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "9.04 List Users - Filter Role & Search",
           "request": {
             "method": "GET",
@@ -7765,6 +7861,67 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is 200\", function () {",
                   "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.03c Admin Create User - Duplicate Username Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{createdTeacherUsername}}\",\n    \"email\": \"unique_email_for_dup_test@quicktest.vn\",\n    \"fullName\": \"Duplicate Username Tester\",\n    \"password\": \"Password@123\",\n    \"role\": \"STUDENT\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [400, 409]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
                   "    });",
                   "}"
                 ]
@@ -7814,6 +7971,67 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is 200\", function () {",
                   "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.03d Admin Create User - Duplicate Email Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"unique_username_for_dup_test\",\n    \"email\": \"{{createdTeacherEmail}}\",\n    \"fullName\": \"Duplicate Email Tester\",\n    \"password\": \"Password@123\",\n    \"role\": \"STUDENT\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [400, 409]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
                   "    });",
                   "}"
                 ]
@@ -8041,6 +8259,88 @@
           ]
         },
         {
+          "name": "9.05b Admin Update User Profile - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{newAdminUserId}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{newAdminUserId}}",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Updated Teacher Name By Bruno\",\n    \"username\": \"{{updatedTeacherUsername}}\",\n    \"email\": \"{{updatedTeacherEmail}}\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let rand = Math.floor(100000 + Math.random() * 900000);",
+                  "  let modUsr = \"mod_bruno_\" + rand;",
+                  "  let modEmail = \"mod_bruno_\" + rand + \"@quicktest.vn\";",
+                  "  ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"updatedTeacherUsername\", modUsr);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"updatedTeacherUsername\", modUsr);",
+                  "",
+                  "  ",
+                  "if (typeof tc !== 'undefined') tc.setVar(\"updatedTeacherEmail\", modEmail);",
+                  "if (typeof pm !== 'undefined' && pm.collectionVariables) pm.collectionVariables.set(\"updatedTeacherEmail\", modEmail);",
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "9.10 Get Exam Detail",
           "request": {
             "method": "GET",
@@ -8090,6 +8390,69 @@
           ]
         },
         {
+          "name": "9.05c Admin Update User Profile - Duplicate Username Conflict",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{newAdminUserId}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{newAdminUserId}}",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"Duplicate Handle Tester\",\n    \"username\": \"admin\",\n    \"email\": \"unique_email_test@quicktest.vn\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is one of [400, 409]\", function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "9.11 Force Close Exam",
           "request": {
             "method": "PATCH",
@@ -8111,6 +8474,69 @@
                 "{{adminExamId}}",
                 "close"
               ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.05d Admin Reset User Password - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{newAdminUserId}}/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{newAdminUserId}}",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"newPassword\": \"NewAdminProvisionedPass@123\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "auth": {
               "type": "bearer",
@@ -8181,6 +8607,120 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is one of [200, 400]\", function () {",
                   "        pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.05e Verify Login With Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"usernameOrEmail\": \"{{updatedTeacherUsername}}\",\n    \"password\": \"NewAdminProvisionedPass@123\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.08b Update User Role - Prevent Self Demotion",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{adminUserId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{adminUserId}}",
+                "role"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role\": \"TEACHER\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 400\", function () {",
+                  "        pm.response.to.have.status(400);",
                   "    });",
                   "}"
                 ]
@@ -8419,6 +8959,55 @@
                   "if (typeof pm !== 'undefined') {",
                   "    pm.test(\"Status code is 404\", function () {",
                   "        pm.response.to.have.status(404);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.06 Get Attempt Detail - Hidden Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/student/attempts/{{attemptId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "student",
+                "attempts",
+                "{{attemptId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (typeof pm !== 'undefined') {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
                   "    });",
                   "}"
                 ]

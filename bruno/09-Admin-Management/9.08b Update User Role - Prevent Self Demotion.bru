@@ -1,0 +1,32 @@
+meta {
+  name: 9.08b Update User Role - Prevent Self Demotion
+  type: http
+  seq: 17
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/users/{{adminUserId}}/role
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "role": "TEACHER"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.status: eq 400
+  res.body.message: isDefined
+}

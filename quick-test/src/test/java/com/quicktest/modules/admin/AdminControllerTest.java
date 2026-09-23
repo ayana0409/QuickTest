@@ -175,6 +175,81 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.data.role").value("TEACHER"));
     }
 
+    @Test
+    @DisplayName("POST /api/admin/users: Should return 200 and created user")
+    void createUser_ReturnsOk() throws Exception {
+        AdminCreateUserRequest req = AdminCreateUserRequest.builder()
+                .username("newadmin")
+                .email("admin2@quicktest.com")
+                .fullName("Admin Two")
+                .password("supersecret123")
+                .role(Role.ADMIN)
+                .build();
+
+        AdminUserSummaryResponse res = AdminUserSummaryResponse.builder()
+                .id(UUID.randomUUID())
+                .username("newadmin")
+                .email("admin2@quicktest.com")
+                .fullName("Admin Two")
+                .role(Role.ADMIN)
+                .build();
+
+        when(adminService.createUser(any(AdminCreateUserRequest.class))).thenReturn(res);
+
+        userMockMvc.perform(post("/api/admin/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.username").value("newadmin"))
+                .andExpect(jsonPath("$.data.role").value("ADMIN"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/admin/users/{id}/profile: Should return 200 and updated user")
+    void updateUserProfile_ReturnsOk() throws Exception {
+        UUID targetId = UUID.randomUUID();
+        AdminUpdateProfileRequest req = AdminUpdateProfileRequest.builder()
+                .fullName("New Full Name")
+                .email("newemail@test.com")
+                .username("newuser")
+                .build();
+
+        AdminUserSummaryResponse res = AdminUserSummaryResponse.builder()
+                .id(targetId)
+                .fullName("New Full Name")
+                .email("newemail@test.com")
+                .username("newuser")
+                .build();
+
+        when(adminService.updateUserProfile(eq(targetId), any(AdminUpdateProfileRequest.class))).thenReturn(res);
+
+        userMockMvc.perform(put("/api/admin/users/" + targetId + "/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.fullName").value("New Full Name"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/admin/users/{id}/password: Should return 200")
+    void resetUserPassword_ReturnsOk() throws Exception {
+        UUID targetId = UUID.randomUUID();
+        AdminResetPasswordRequest req = AdminResetPasswordRequest.builder()
+                .newPassword("brandNewPassword123")
+                .build();
+
+        doNothing().when(adminService).resetUserPassword(eq(targetId), any(AdminResetPasswordRequest.class));
+
+        userMockMvc.perform(put("/api/admin/users/" + targetId + "/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.message").value("Password reset successfully"));
+    }
+
     // =========================================================================
     // AdminExamController Tests
     // =========================================================================

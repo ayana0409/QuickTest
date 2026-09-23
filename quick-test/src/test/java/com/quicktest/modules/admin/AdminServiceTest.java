@@ -1,10 +1,8 @@
 package com.quicktest.modules.admin;
 
 import com.quicktest.core.exception.AppException;
-import com.quicktest.modules.admin.dto.AdminDashboardResponse;
-import com.quicktest.modules.admin.dto.AdminExamSummaryResponse;
-import com.quicktest.modules.admin.dto.AdminUserSummaryResponse;
-import com.quicktest.modules.admin.dto.UpdateUserRoleRequest;
+import com.quicktest.modules.admin.dto.*;
+import com.quicktest.modules.iam.entity.AuthProvider;
 import com.quicktest.modules.admin.service.AdminServiceImpl;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
@@ -64,6 +62,9 @@ class AdminServiceTest {
 
     @Mock
     private com.quicktest.modules.session.service.ExamSessionService examSessionService;
+
+    @Mock
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AdminServiceImpl adminService;
@@ -226,9 +227,162 @@ class AdminServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    // --- createUser tests ---
+
+    @Test
+    @DisplayName("createUser: Successfully create user with any role")
+    void createUser_Success() {
+        AdminCreateUserRequest req = AdminCreateUserRequest.builder()
+                .username("new_teacher")
+                .email("teacher@quicktest.com")
+                .fullName("New Teacher")
+                .password("securePassword123")
+                .role(Role.TEACHER)
+                .build();
+
+        when(userRepository.existsByUsername("new_teacher")).thenReturn(false);
+        when(userRepository.existsByEmail("teacher@quicktest.com")).thenReturn(false);
+        when(passwordEncoder.encode("securePassword123")).thenReturn("hashedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            u.setId(UUID.randomUUID());
+            return u;
+        });
+
+        AdminUserSummaryResponse result = adminService.createUser(req);
+
+        assertNotNull(result);
+        assertEquals("new_teacher", result.getUsername());
+        assertEquals("teacher@quicktest.com", result.getEmail());
+        assertEquals("New Teacher", result.getFullName());
+        assertEquals(Role.TEACHER, result.getRole());
+        assertEquals(com.quicktest.modules.iam.entity.AuthProvider.LOCAL, result.getAuthProvider());
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("createUser: Duplicate username throws UserAlreadyExistsException")
+    void createUser_DuplicateUsername_ThrowsException() {
+        AdminCreateUserRequest req = AdminCreateUserRequest.builder()
+                .username("existing_user")
+                .email("user@quicktest.com")
+                .fullName("User")
+                .password("password")
+                .role(Role.STUDENT)
+                .build();
+
+        when(userRepository.existsByUsername("existing_user")).thenReturn(true);
+
+        assertThrows(com.quicktest.core.exception.UserAlreadyExistsException.class,
+                () -> adminService.createUser(req));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("createUser: Duplicate email throws UserAlreadyExistsException")
+    void createUser_DuplicateEmail_ThrowsException() {
+        AdminCreateUserRequest req = AdminCreateUserRequest.builder()
+                .username("new_user")
+                .email("existing@quicktest.com")
+                .fullName("User")
+                .password("password")
+                .role(Role.STUDENT)
+                .build();
+
+        when(userRepository.existsByUsername("new_user")).thenReturn(false);
+        when(userRepository.existsByEmail("existing@quicktest.com")).thenReturn(true);
+
+        assertThrows(com.quicktest.core.exception.UserAlreadyExistsException.class,
+                () -> adminService.createUser(req));
+        verify(userRepository, never()).save(any());
+    }
+
+    // --- updateUserProfile tests ---
+
+    @Test
+    @DisplayName("updateUserProfile: Successfully update profile details")
+    void updateUserProfile_Success() {
+        AdminUpdateProfileRequest req = AdminUpdateProfileRequest.builder()
+                .fullName("Updated Student Name")
+                .email("updated_student@quicktest.com")
+                .username("updated_student")
+                .build();
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(studentUser));
+        when(userRepository.existsByUsernameAndIdNot("updated_student", targetUserId)).thenReturn(false);
+        when(userRepository.existsByEmailAndIdNot("updated_student@quicktest.com", targetUserId)).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(studentUser);
+
+        AdminUserSummaryResponse result = adminService.updateUserProfile(targetUserId, req);
+
+        assertNotNull(result);
+        assertEquals("Updated Student Name", studentUser.getFullName());
+        assertEquals("updated_student@quicktest.com", studentUser.getEmail());
+        assertEquals("updated_student", studentUser.getUsername());
+        verify(userRepository).save(studentUser);
+    }
+
+    @Test
+    @DisplayName("updateUserProfile: Username taken by other user throws exception")
+    void updateUserProfile_UsernameTaken_ThrowsException() {
+        AdminUpdateProfileRequest req = AdminUpdateProfileRequest.builder()
+                .fullName("Student Name")
+                .username("another_user")
+                .build();
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(studentUser));
+        when(userRepository.existsByUsernameAndIdNot("another_user", targetUserId)).thenReturn(true);
+
+        assertThrows(com.quicktest.core.exception.UserAlreadyExistsException.class,
+                () -> adminService.updateUserProfile(targetUserId, req));
+        verify(userRepository, never()).save(any());
+    }
+
+    // --- resetUserPassword tests ---
+
+    @Test
+    @DisplayName("resetUserPassword: Successfully reset password for LOCAL user")
+    void resetUserPassword_Success() {
+        AdminResetPasswordRequest req = AdminResetPasswordRequest.builder()
+                .newPassword("newAdminProvidedSecret123")
+                .build();
+
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(studentUser));
+        when(passwordEncoder.encode("newAdminProvidedSecret123")).thenReturn("encodedNewSecret");
+
+        adminService.resetUserPassword(targetUserId, req);
+
+        assertEquals("encodedNewSecret", studentUser.getPassword());
+        verify(userRepository).save(studentUser);
+    }
+
+    @Test
+    @DisplayName("resetUserPassword: Non-LOCAL/SSO user throws AppException")
+    void resetUserPassword_NonLocalUser_ThrowsException() {
+        User googleUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("google_user")
+                .email("google@gmail.com")
+                .authProvider(AuthProvider.QUICK_BITE_SSO)
+                .build();
+
+        AdminResetPasswordRequest req = AdminResetPasswordRequest.builder()
+                .newPassword("newPassword123")
+                .build();
+
+        when(userRepository.findById(googleUser.getId())).thenReturn(Optional.of(googleUser));
+
+        AppException ex = assertThrows(AppException.class,
+                () -> adminService.resetUserPassword(googleUser.getId(), req));
+
+        assertTrue(ex.getMessage().contains("external/SSO"));
+        verify(userRepository, never()).save(any());
+    }
+
     // =========================================================================
     // Exam Governance Tests
     // =========================================================================
+
 
     @Test
     @DisplayName("listExams: Should return exam summaries without keyword")

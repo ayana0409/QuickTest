@@ -1,0 +1,33 @@
+meta {
+  name: 9.05c Admin Update User Profile - Duplicate Username Conflict
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{baseUrl}}/api/admin/users/{{newAdminUserId}}/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fullName": "Duplicate Handle Tester",
+    "username": "admin",
+    "email": "unique_email_test@quicktest.vn"
+  }
+}
+
+assert {
+  res.status: in [400, 409]
+  res.body.message: isDefined
+}

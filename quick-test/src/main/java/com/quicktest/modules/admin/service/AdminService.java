@@ -1,9 +1,6 @@
 package com.quicktest.modules.admin.service;
 
-import com.quicktest.modules.admin.dto.AdminDashboardResponse;
-import com.quicktest.modules.admin.dto.AdminExamSummaryResponse;
-import com.quicktest.modules.admin.dto.AdminUserSummaryResponse;
-import com.quicktest.modules.admin.dto.UpdateUserRoleRequest;
+import com.quicktest.modules.admin.dto.*;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.iam.entity.Role;
@@ -22,6 +19,12 @@ public interface AdminService {
     Page<AdminUserSummaryResponse> listUsers(Role role, Boolean isActive, String keyword, Pageable pageable);
 
     AdminUserSummaryResponse getUserDetail(UUID userId);
+
+    AdminUserSummaryResponse createUser(AdminCreateUserRequest request);
+
+    AdminUserSummaryResponse updateUserProfile(UUID userId, AdminUpdateProfileRequest request);
+
+    void resetUserPassword(UUID userId, AdminResetPasswordRequest request);
 
     AdminUserSummaryResponse toggleUserStatus(UUID userId, UUID currentAdminId);
 
