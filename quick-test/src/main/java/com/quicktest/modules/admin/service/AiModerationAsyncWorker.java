@@ -8,7 +8,6 @@ import com.quicktest.modules.assessment.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -58,13 +57,10 @@ public class AiModerationAsyncWorker {
     private final GeminiProperties geminiProperties;
 
     /**
-     * Main async method triggered by admin to run AI moderation in the background.
-     * Runs in a dedicated thread pool via @Async.
-     * Returns statistics about the run via the shared job state (polled by status endpoint).
-     *
-     * @return total number of questions processed in this run
+     * Main worker method executed by RabbitMQ consumer to run AI moderation.
+     * Executes sequentially within the single-worker consumer thread.
+     * Returns statistics about the run via the shared job state in Redis.
      */
-    @Async("aiModerationExecutor")
     public void runModerationJob() {
         // Double-check guard: prevent concurrent jobs (both JVM-level and Redis-level)
         if (!isRunning.compareAndSet(false, true)) {

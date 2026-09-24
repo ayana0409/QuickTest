@@ -5,6 +5,7 @@ import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.admin.dto.AdminModerationStatsResponse;
 import com.quicktest.modules.admin.dto.AdminQuestionModerationResponse;
+import com.quicktest.modules.admin.dto.AiModerationJobMessage;
 import com.quicktest.modules.admin.dto.AiModerationJobStatusResponse;
 import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Question;
@@ -44,6 +45,7 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
     private final UserRepository userRepository;
     private final MediaDeleteProducer mediaDeleteProducer;
     private final AiModerationAsyncWorker aiModerationAsyncWorker;
+    private final AiModerationProducer aiModerationProducer;
 
     @Override
     @Transactional(readOnly = true)
@@ -243,9 +245,12 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
                     .build();
         }
 
-        log.info("Triggering AI content moderation job in background...");
-        // Fire-and-forget: runs on the 'aiModerationExecutor' thread pool
-        aiModerationAsyncWorker.runModerationJob();
+        log.info("Queueing AI content moderation job into RabbitMQ...");
+        AiModerationJobMessage message = AiModerationJobMessage.builder()
+                .jobId(UUID.randomUUID())
+                .triggeredAt(LocalDateTime.now())
+                .build();
+        aiModerationProducer.sendModerationJob(message);
 
         return AiModerationJobStatusResponse.builder()
                 .running(true)
@@ -253,7 +258,7 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
                 .safeCount(0)
                 .unsafeCount(0)
                 .lastProcessedId(aiModerationAsyncWorker.getLastProcessedId())
-                .message("AI content moderation job started successfully in the background.")
+                .message("AI content moderation job has been queued successfully.")
                 .build();
     }
 

@@ -5,9 +5,11 @@ import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.admin.dto.AdminModerationStatsResponse;
 import com.quicktest.modules.admin.dto.AdminQuestionModerationResponse;
+import com.quicktest.modules.admin.dto.AiModerationJobMessage;
 import com.quicktest.modules.admin.dto.AiModerationJobStatusResponse;
 import com.quicktest.modules.admin.service.AdminQuestionModerationServiceImpl;
 import com.quicktest.modules.admin.service.AiModerationAsyncWorker;
+import com.quicktest.modules.admin.service.AiModerationProducer;
 import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
@@ -65,6 +67,9 @@ class AdminQuestionModerationServiceTest {
 
     @Mock
     private AiModerationAsyncWorker aiModerationAsyncWorker;
+
+    @Mock
+    private AiModerationProducer aiModerationProducer;
 
     @InjectMocks
     private AdminQuestionModerationServiceImpl moderationService;
@@ -250,18 +255,17 @@ class AdminQuestionModerationServiceTest {
     }
 
     @Test
-    @DisplayName("triggerAiModeration: starts background job when worker is not running")
+    @DisplayName("triggerAiModeration: enqueues job into RabbitMQ when worker is not running")
     void triggerAiModeration_WhenIdle_StartsJob() {
         when(aiModerationAsyncWorker.isJobRunning()).thenReturn(false);
         when(aiModerationAsyncWorker.getLastProcessedId()).thenReturn(null);
-        doNothing().when(aiModerationAsyncWorker).runModerationJob();
 
         AiModerationJobStatusResponse response = moderationService.triggerAiModeration();
 
         assertNotNull(response);
         assertTrue(response.isRunning());
-        assertEquals("AI content moderation job started successfully in the background.", response.getMessage());
-        verify(aiModerationAsyncWorker).runModerationJob();
+        assertEquals("AI content moderation job has been queued successfully.", response.getMessage());
+        verify(aiModerationProducer).sendModerationJob(any(AiModerationJobMessage.class));
     }
 
     @Test
@@ -276,7 +280,7 @@ class AdminQuestionModerationServiceTest {
         assertTrue(response.isRunning());
         assertEquals("last-uuid", response.getLastProcessedId());
         assertEquals("AI moderation job is already running. Please wait for it to finish.", response.getMessage());
-        verify(aiModerationAsyncWorker, never()).runModerationJob();
+        verify(aiModerationProducer, never()).sendModerationJob(any());
     }
 
     @Test

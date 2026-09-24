@@ -38,6 +38,34 @@ public class RabbitMQConfig {
     public static final String EXAM_CLONE_QUEUE = "exam.clone.queue";
     public static final String EXAM_CLONE_ROUTING_KEY = "exam.clone.routing-key";
 
+    public static final String AI_MODERATION_EXCHANGE = "ai.moderation.exchange";
+    public static final String AI_MODERATION_QUEUE = "ai.moderation.queue";
+    public static final String AI_MODERATION_ROUTING_KEY = "ai.moderation.routing-key";
+
+    /**
+     * Durable queue for asynchronous AI content moderation tasks.
+     */
+    @Bean
+    public Queue aiModerationQueue() {
+        return QueueBuilder.durable(AI_MODERATION_QUEUE).build();
+    }
+
+    /**
+     * Direct exchange for AI content moderation tasks.
+     */
+    @Bean
+    public DirectExchange aiModerationExchange() {
+        return new DirectExchange(AI_MODERATION_EXCHANGE);
+    }
+
+    /**
+     * Binding AI moderation queue to direct exchange.
+     */
+    @Bean
+    public Binding aiModerationBinding(Queue aiModerationQueue, DirectExchange aiModerationExchange) {
+        return BindingBuilder.bind(aiModerationQueue).to(aiModerationExchange).with(AI_MODERATION_ROUTING_KEY);
+    }
+
     /**
      * Durable queue for asynchronous media batch upload tasks.
      */
