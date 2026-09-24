@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,9 @@ public class QuestionResponse {
     private String sampleAnswer;
     private Double numericTolerance;
     private String gradingRubric;
+    private Boolean isSafe;
+    private LocalDateTime reviewedAt;
+    private UUID reviewedBy;
     private List<AnswerOptionResponse> options;
 
     /**
@@ -58,6 +62,9 @@ public class QuestionResponse {
                 .sampleAnswer(question.getSampleAnswer())
                 .numericTolerance(question.getNumericTolerance())
                 .gradingRubric(question.getGradingRubric())
+                .isSafe(question.getIsSafe())
+                .reviewedAt(question.getReviewedAt())
+                .reviewedBy(question.getReviewedBy())
                 .options(optionResponses)
                 .build();
     }

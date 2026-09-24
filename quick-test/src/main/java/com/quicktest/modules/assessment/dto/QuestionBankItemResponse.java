@@ -32,6 +32,7 @@ public class QuestionBankItemResponse {
     private String sampleAnswer;
     private Double numericTolerance;
     private String gradingRubric;
+    private Boolean isSafe;
     private List<AnswerOptionResponse> options;
 
     // Exam metadata - lets teacher know which exam this question belongs to
@@ -63,6 +64,7 @@ public class QuestionBankItemResponse {
                 .sampleAnswer(question.getSampleAnswer())
                 .numericTolerance(question.getNumericTolerance())
                 .gradingRubric(question.getGradingRubric())
+                .isSafe(question.getIsSafe())
                 .options(optionResponses)
                 .examId(question.getExam().getId())
                 .examTitle(question.getExam().getTitle())

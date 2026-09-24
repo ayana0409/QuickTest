@@ -3,6 +3,7 @@ package com.quicktest.modules.assessment.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -11,10 +12,12 @@ import org.hibernate.annotations.BatchSize;
 
 /**
  * Question entity belonging to an exam. Supports 4 different question types.
+ * Includes content moderation fields (isSafe, reviewedAt, reviewedBy) for admin governance.
  */
 @Entity
 @Table(name = "questions", indexes = {
-        @Index(name = "idx_questions_exam_order", columnList = "exam_id, orderIndex")
+        @Index(name = "idx_questions_exam_order", columnList = "exam_id, orderIndex"),
+        @Index(name = "idx_questions_moderation", columnList = "is_safe, exam_id")
 })
 @Getter
 @Setter
@@ -56,6 +59,17 @@ public class Question {
 
     @Column(columnDefinition = "TEXT")
     private String gradingRubric; // Rubric for teacher grading or future AI context prompt
+
+    // Content moderation governance (Admin review)
+    @Column(name = "is_safe", nullable = false)
+    @Builder.Default
+    private Boolean isSafe = false;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
+
+    @Column(name = "reviewed_by")
+    private UUID reviewedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_id", nullable = false)

@@ -186,4 +186,33 @@ class QuestionServiceTest {
         verify(answerOptionRepository).deleteByQuestionId(sampleQuestion.getId());
         verify(questionRepository).deleteQuestionById(sampleQuestion.getId());
     }
+
+    @Test
+    @DisplayName("Update question should automatically revoke safety flag (isSafe becomes false)")
+    void shouldRevokeSafetyFlagWhenQuestionUpdated() {
+        sampleQuestion.setIsSafe(true);
+        sampleQuestion.setReviewedAt(java.time.LocalDateTime.now());
+        sampleQuestion.setReviewedBy(UUID.randomUUID());
+
+        when(questionRepository.findByIdWithOptionsAndExam(sampleQuestion.getId()))
+                .thenReturn(Optional.of(sampleQuestion));
+        when(questionRepository.save(any(Question.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        com.quicktest.modules.assessment.dto.QuestionUpdateRequest updateRequest =
+                com.quicktest.modules.assessment.dto.QuestionUpdateRequest.builder()
+                        .content("Updated content for biology question")
+                        .questionType(QuestionType.NUMERIC)
+                        .points(3.0)
+                        .sampleAnswer("42")
+                        .numericTolerance(0.1)
+                        .build();
+
+        QuestionResponse response = questionService.updateQuestion(sampleQuestion.getId(), updateRequest, teacher);
+
+        assertNotNull(response);
+        assertFalse(sampleQuestion.getIsSafe());
+        assertNull(sampleQuestion.getReviewedAt());
+        assertNull(sampleQuestion.getReviewedBy());
+        assertFalse(response.getIsSafe());
+    }
 }

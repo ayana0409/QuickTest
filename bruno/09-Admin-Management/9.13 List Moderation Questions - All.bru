@@ -1,0 +1,32 @@
+meta {
+  name: 9.13 List Moderation Questions - All
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/api/admin/moderation/questions?page=0&size=10
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.content && res.body.data.content.length > 0) {
+    const firstQ = res.body.data.content[0];
+    bru.setVar("moderationQuestionId", firstQ.id);
+  }
+}

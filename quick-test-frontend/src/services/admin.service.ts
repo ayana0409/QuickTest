@@ -84,4 +84,58 @@ export const adminService = {
     const res = await apiClient.patch<ApiResponse<AdminUser>>(`/admin/users/${id}/role`, { role });
     return res.data.data;
   },
+
+  /**
+   * Fetch paginated questions for admin content moderation with rich filtering.
+   */
+  async getModerationQuestions(
+    params?: import('@/types/admin').ModerationFilterParams
+  ): Promise<PageResponse<import('@/types/admin').AdminModerationQuestion>> {
+    const apiParams: Record<string, any> = { ...params };
+    if (typeof apiParams.search === 'string') {
+      const trimmed = apiParams.search.trim();
+      if (trimmed) {
+        apiParams.search = trimmed;
+      } else {
+        delete apiParams.search;
+      }
+    }
+    const res = await apiClient.get<ApiResponse<PageResponse<import('@/types/admin').AdminModerationQuestion>>>(
+      '/admin/moderation/questions',
+      { params: apiParams }
+    );
+    return res.data.data;
+  },
+
+  /**
+   * Retrieve aggregate moderation metrics for KPI cards.
+   */
+  async getModerationStats(): Promise<import('@/types/admin').AdminModerationStats> {
+    const res = await apiClient.get<ApiResponse<import('@/types/admin').AdminModerationStats>>(
+      '/admin/moderation/stats'
+    );
+    return res.data.data;
+  },
+
+  /**
+   * Toggle or update the safety flag for a question.
+   */
+  async updateQuestionSafety(
+    id: string,
+    isSafe: boolean
+  ): Promise<import('@/types/admin').AdminModerationQuestion> {
+    const res = await apiClient.patch<ApiResponse<import('@/types/admin').AdminModerationQuestion>>(
+      `/admin/moderation/questions/${id}/safety`,
+      { isSafe }
+    );
+    return res.data.data;
+  },
+
+  /**
+   * Permanently delete an unsafe or policy-violating question.
+   */
+  async deleteModerationQuestion(id: string): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>(`/admin/moderation/questions/${id}`);
+  },
 };
+

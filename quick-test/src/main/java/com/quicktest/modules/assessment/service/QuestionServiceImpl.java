@@ -186,6 +186,11 @@ public class QuestionServiceImpl implements QuestionService {
             question.setOrderIndex(request.getOrderIndex());
         }
 
+        // Auto revoke content safety flag when question is modified
+        question.setIsSafe(false);
+        question.setReviewedAt(null);
+        question.setReviewedBy(null);
+
         // Configure type-specific attributes
         if (request.getQuestionType() == QuestionType.NUMERIC) {
             String sampleAnswer = request.getSampleAnswer() != null
@@ -369,6 +374,11 @@ public class QuestionServiceImpl implements QuestionService {
 
         question.setImageUrl(uploadRes.getUrl());
         question.setImagePublicId(uploadRes.getPublicId());
+
+        // Auto revoke content safety flag when question image is modified
+        question.setIsSafe(false);
+        question.setReviewedAt(null);
+        question.setReviewedBy(null);
 
         Question saved = questionRepository.save(question);
         log.info("Question ID: {} image directly updated: newUrl={}", questionId, uploadRes.getUrl());

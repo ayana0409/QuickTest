@@ -1,0 +1,23 @@
+meta {
+  name: 9.18 Admin Delete Question
+  type: http
+  seq: 27
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/moderation/questions/{{moderationQuestionId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: in [200, 400, 404]
+}

@@ -1,0 +1,32 @@
+meta {
+  name: 9.17 Revoke Question Safety Flag
+  type: http
+  seq: 26
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/moderation/questions/{{moderationQuestionId}}/safety
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "isSafe": false
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.isSafe: eq false
+}

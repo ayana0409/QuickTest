@@ -19,6 +19,7 @@ import {
   ChevronRight,
   X,
   User as UserIcon,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -32,6 +33,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   ADMIN: [
     { label: 'System Overview', href: '/admin', icon: LayoutDashboard },
     { label: 'User Management', href: '/admin/users', icon: Users },
+    { label: 'Content Moderation', href: '/admin/moderation', icon: ShieldAlert },
     { label: 'Exam Monitoring', href: '/admin/exams', icon: Shield },
     { label: 'System Settings', href: '/admin/settings', icon: Settings },
   ],
