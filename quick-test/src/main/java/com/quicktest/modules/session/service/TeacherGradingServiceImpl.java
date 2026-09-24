@@ -1,5 +1,6 @@
 package com.quicktest.modules.session.service;
 
+import com.quicktest.config.CacheConfig;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
@@ -17,6 +18,8 @@ import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -183,6 +186,9 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
 
     @Override
     @Transactional
+    // Evict all grading-stats entries: essay score changes affect aggregated stats (avg, min, max, gradedCount)
+    // allEntries=true because the exact exam+teacher key is not directly available from the request object
+    @CacheEvict(value = CacheConfig.CACHE_GRADING_STATS, allEntries = true)
     public GradingResultResponse submitEssayGrades(GradeEssaySubmissionRequest request, User currentTeacher) {
         UUID attemptId = request.getAttemptId();
         log.info("Teacher {} submitting manual grades for attemptId: {}", currentTeacher.getId(), attemptId);
@@ -269,6 +275,12 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
 
     @Override
     @Transactional(readOnly = true)
+    // Cache aggregation stats per exam+teacher: single SQL aggregation with 15 computed columns
+    // Key includes currentTeacher.id to prevent cross-teacher cache leaks
+    @Cacheable(
+            value = CacheConfig.CACHE_GRADING_STATS,
+            key = "#examId + ':' + #currentTeacher.id"
+    )
     public ExamAttemptStatsResponse getExamAttemptStats(UUID examId, User currentTeacher) {
         log.debug("Computing attempt statistics for examId: {}, teacherId: {}", examId, currentTeacher.getId());
 

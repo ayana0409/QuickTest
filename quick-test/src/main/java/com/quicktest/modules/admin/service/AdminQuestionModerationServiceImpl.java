@@ -1,5 +1,6 @@
 package com.quicktest.modules.admin.service;
 
+import com.quicktest.config.CacheConfig;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.MediaDeleteProducer;
@@ -17,6 +18,9 @@ import com.quicktest.modules.iam.repository.UserRepository;
 import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +53,11 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
 
     @Override
     @Transactional(readOnly = true)
+    // Cache paginated moderation list: FTS + 3 batch queries per page (IDs, questions+options, candidateAnswers)
+    @Cacheable(
+            value = CacheConfig.CACHE_ADMIN_MODERATION_QUESTIONS,
+            key = "(#isSafe != null ? #isSafe : 'null') + ':' + (#hasImage != null ? #hasImage : 'null') + ':' + (#questionType != null ? #questionType.name() : 'ALL') + ':' + (#search != null ? #search.trim() : '') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize"
+    )
     public Page<AdminQuestionModerationResponse> getModerationQuestions(
             Boolean isSafe,
             Boolean hasImage,
@@ -123,6 +132,8 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
 
     @Override
     @Transactional(readOnly = true)
+    // Cache moderation stats: 4 COUNT queries on question table, changes only after flag update or delete
+    @Cacheable(value = CacheConfig.CACHE_ADMIN_MODERATION_STATS, key = "'global'")
     public AdminModerationStatsResponse getModerationStats() {
         log.info("Calculating aggregate moderation statistics");
 
@@ -141,6 +152,11 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
 
     @Override
     @Transactional
+    // Evict both caches: isSafe flag changes affect stats counts and list filters
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_STATS, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_QUESTIONS, allEntries = true)
+    })
     public AdminQuestionModerationResponse updateSafetyFlag(UUID questionId, boolean isSafe, User adminUser) {
         log.info("Admin ID: {} updating safety flag for question ID: {} to {}",
                 adminUser.getId(), questionId, isSafe);
@@ -162,6 +178,11 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
 
     @Override
     @Transactional
+    // Evict both caches: total question count changes and deleted question must disappear from list
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_STATS, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_QUESTIONS, allEntries = true)
+    })
     public void deleteQuestionByAdmin(UUID questionId, User adminUser) {
         log.warn("Admin ID: {} deleting question ID: {} for content violation",
                 adminUser.getId(), questionId);

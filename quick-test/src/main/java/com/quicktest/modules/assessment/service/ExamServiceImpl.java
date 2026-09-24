@@ -1,5 +1,6 @@
 package com.quicktest.modules.assessment.service;
 
+import com.quicktest.config.CacheConfig;
 import com.quicktest.config.RabbitMQConfig;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
@@ -25,6 +26,9 @@ import com.quicktest.modules.session.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -101,6 +105,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    // Evict teacher-exams, admin-exams and admin-dashboard: totalExams count and exam list change
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    })
     public ExamDetailResponse updateExam(UUID examId, ExamUpdateRequest request, User teacher) {
         log.info("Updating exam ID: {} by teacher ID: {}", examId, teacher.getId());
 
@@ -149,6 +159,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    // Evict teacher-exams + admin-exams + admin-dashboard: exam count and list change after deletion
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    })
     public void deleteExam(UUID examId, User teacher) {
         log.info("Attempting to delete exam ID: {} by teacher ID: {}", examId, teacher.getId());
 
@@ -193,6 +209,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional(readOnly = true)
+    // Cache teacher exam list: single paginated query per teacher filtered by status/search
+    // Key includes teacher.id to prevent cross-teacher cache leaks
+    @Cacheable(
+            value = CacheConfig.CACHE_TEACHER_EXAMS,
+            key = "#teacher.id + ':' + (#search != null ? #search.trim() : '') + ':' + (#status != null ? #status.name() : 'ALL') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize"
+    )
     public Page<ExamSummaryResponse> getTeacherExams(User teacher, String search, ExamStatus status, Pageable pageable) {
         String pattern = (search != null && !search.trim().isBlank())
                 ? "%" + search.trim().toLowerCase() + "%"
@@ -218,6 +240,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    // Evict caches: exam status changes (DRAFT→PUBLISHED) affect list filters and admin dashboard stats
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    })
     public ExamDetailResponse publishExam(UUID examId, User teacher) {
         log.info("Publishing exam ID: {} by teacher ID: {}", examId, teacher.getId());
 
@@ -253,6 +281,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    // Evict caches: exam status changes (PUBLISHED→CLOSED) affect list filters and admin dashboard stats
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    })
     public ExamDetailResponse closeExam(UUID examId, User teacher) {
         log.info("Closing exam ID: {} by teacher ID: {}", examId, teacher.getId());
 
@@ -276,6 +310,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    // Evict caches: exam status changes (CLOSED→PUBLISHED) affect list filters and admin dashboard stats
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    })
     public ExamDetailResponse republishExam(UUID examId, ExamRepublishRequest request, User teacher) {
         log.info("Republishing exam ID: {} by teacher ID: {}", examId, teacher.getId());
 
@@ -328,6 +368,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    // Evict teacher-exams + admin-exams + admin-dashboard: a new duplicate exam appears in the list
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    })
     public ExamDetailResponse duplicateExam(UUID examId, ExamDuplicateRequest request, User teacher) {
         log.info("Duplicating exam ID: {} by teacher ID: {}", examId, teacher.getId());
 

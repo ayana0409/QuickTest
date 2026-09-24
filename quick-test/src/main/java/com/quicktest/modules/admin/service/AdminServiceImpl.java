@@ -1,5 +1,6 @@
 package com.quicktest.modules.admin.service;
 
+import com.quicktest.config.CacheConfig;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.exception.UserAlreadyExistsException;
@@ -20,6 +21,9 @@ import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import com.quicktest.modules.session.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -90,6 +94,8 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
+    // Evict dashboard cache: user count metrics change after a new user is created
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     public AdminUserSummaryResponse createUser(AdminCreateUserRequest request) {
         String username = request.getUsername().trim();
         String email = request.getEmail().trim().toLowerCase();
@@ -171,6 +177,8 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
+    // Evict dashboard cache: activeUsers / inactiveUsers counters change
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     public AdminUserSummaryResponse toggleUserStatus(UUID userId, UUID currentAdminId) {
         if (userId.equals(currentAdminId)) {
             throw new AppException("Administrators cannot toggle their own active status", HttpStatus.BAD_REQUEST);
@@ -193,6 +201,8 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
+    // Evict dashboard cache: role-based counts (totalTeachers / totalStudents / totalAdmins) change
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     public AdminUserSummaryResponse updateUserRole(UUID userId, UpdateUserRoleRequest request, UUID currentAdminId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
@@ -223,6 +233,11 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
+    // Cache exam list: pagination + 2 extra batch queries (attemptCounts, questionCounts)
+    @Cacheable(
+            value = CacheConfig.CACHE_ADMIN_EXAMS,
+            key = "(#status != null ? #status.name() : 'ALL') + ':' + (#keyword != null ? #keyword.trim() : '') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize"
+    )
     public Page<AdminExamSummaryResponse> listExams(ExamStatus status, String keyword, Pageable pageable) {
         Page<Exam> exams;
         boolean hasKeyword = keyword != null && !keyword.isBlank();
@@ -266,6 +281,11 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
+    // Evict both dashboard (publishedExams/closedExams change) and exam list cache
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true)
+    })
     public void forceCloseExam(UUID examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
@@ -285,6 +305,11 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
+    // Evict dashboard (totalExams changes) and exam list cache
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true)
+    })
     public void deleteExam(UUID examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
@@ -312,6 +337,8 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
+    // Cache dashboard: executes 15+ COUNT queries across 5 tables on every call
+    @Cacheable(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     public AdminDashboardResponse getDashboard() {
         // User metrics
         long totalUsers = userRepository.count();
