@@ -98,9 +98,8 @@ export default function AdminUsersPage() {
       setUsers(data.content || []);
       setTotalPages(data.totalPages || 0);
       setTotalElements(data.totalElements || 0);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to fetch user list:', error);
-      toast.error(error?.response?.data?.message || 'Failed to load user accounts');
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +142,7 @@ export default function AdminUsersPage() {
         role: createForm.role,
       });
 
-      toast.success('User account created successfully');
+      // Notification is handled automatically by axios interceptor
       setIsCreateModalOpen(false);
       setCreateForm({
         username: '',
@@ -153,8 +152,8 @@ export default function AdminUsersPage() {
         role: 'STUDENT',
       });
       fetchUsers();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to create user account');
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsSubmittingCreate(false);
     }
@@ -174,11 +173,11 @@ export default function AdminUsersPage() {
       await adminService.resetUserPassword(selectedTargetUser.id, {
         newPassword: newPasswordInput,
       });
-      toast.success(`Password reset successfully for @${selectedTargetUser.username}`);
+      // Notification is handled automatically by axios interceptor
       setIsResetPasswordModalOpen(false);
       setNewPasswordInput('');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to reset password');
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsSubmittingReset(false);
     }
@@ -197,11 +196,11 @@ export default function AdminUsersPage() {
     setIsSubmittingRole(true);
     try {
       await adminService.updateUserRole(selectedTargetUser.id, newRoleSelect);
-      toast.success(`Role updated to ${newRoleSelect} for @${selectedTargetUser.username}`);
+      // Notification is handled automatically by axios interceptor
       setIsChangeRoleModalOpen(false);
       fetchUsers();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update user role');
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsSubmittingRole(false);
     }
@@ -218,13 +217,12 @@ export default function AdminUsersPage() {
 
     setIsSubmittingToggle(true);
     try {
-      const updated = await adminService.toggleUserStatus(selectedTargetUser.id);
-      const actionName = updated.isActive ? 'activated' : 'deactivated';
-      toast.success(`Account @${selectedTargetUser.username} has been ${actionName}`);
+      await adminService.toggleUserStatus(selectedTargetUser.id);
+      // Notification is handled automatically by axios interceptor
       setIsToggleStatusModalOpen(false);
       fetchUsers();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update account status');
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsSubmittingToggle(false);
     }

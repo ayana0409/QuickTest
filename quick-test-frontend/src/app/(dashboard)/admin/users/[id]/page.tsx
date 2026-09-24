@@ -75,8 +75,8 @@ export default function AdminUserDetailPage({ params }: PageProps) {
         email: data.email || '',
       });
       setSelectedRole(data.role);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to load user details');
+    } catch (error) {
+      console.error('Failed to load user details:', error);
       router.push('/admin/users');
     } finally {
       setIsLoading(false);
@@ -115,9 +115,9 @@ export default function AdminUserDetailPage({ params }: PageProps) {
         email: profileForm.email.trim(),
       });
       setUser(updated);
-      toast.success('User profile updated successfully');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update profile');
+      // Notification is handled automatically by axios interceptor
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsSavingProfile(false);
     }
@@ -136,9 +136,9 @@ export default function AdminUserDetailPage({ params }: PageProps) {
     try {
       const updated = await adminService.updateUserRole(userId, selectedRole);
       setUser(updated);
-      toast.success(`Role changed to ${selectedRole} successfully`);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update role');
+      // Notification is handled automatically by axios interceptor
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsSavingRole(false);
     }
@@ -163,11 +163,11 @@ export default function AdminUserDetailPage({ params }: PageProps) {
     setIsSavingPassword(true);
     try {
       await adminService.resetUserPassword(userId, { newPassword });
-      toast.success('User password has been updated');
+      // Notification is handled automatically by axios interceptor
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to reset password');
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsSavingPassword(false);
     }
@@ -185,10 +185,9 @@ export default function AdminUserDetailPage({ params }: PageProps) {
     try {
       const updated = await adminService.toggleUserStatus(userId);
       setUser(updated);
-      const actionName = updated.isActive ? 'activated' : 'deactivated';
-      toast.success(`Account has been ${actionName}`);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to toggle account status');
+      // Notification is handled automatically by axios interceptor
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsTogglingStatus(false);
     }
