@@ -1,0 +1,24 @@
+meta {
+  name: 9.21 Reset AI Moderation Cursor - Success
+  type: http
+  seq: 30
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/moderation/ai-cursor
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: in [200, 409]
+  res.body.message: isDefined
+}

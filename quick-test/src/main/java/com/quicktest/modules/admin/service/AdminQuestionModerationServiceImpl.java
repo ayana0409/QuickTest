@@ -1,9 +1,11 @@
 package com.quicktest.modules.admin.service;
 
+import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.admin.dto.AdminModerationStatsResponse;
 import com.quicktest.modules.admin.dto.AdminQuestionModerationResponse;
+import com.quicktest.modules.admin.dto.AiModerationJobStatusResponse;
 import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
@@ -17,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -40,6 +43,7 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
     private final CandidateAnswerRepository candidateAnswerRepository;
     private final UserRepository userRepository;
     private final MediaDeleteProducer mediaDeleteProducer;
+    private final AiModerationAsyncWorker aiModerationAsyncWorker;
 
     @Override
     @Transactional(readOnly = true)
@@ -225,5 +229,66 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
         } else {
             mediaDeleteProducer.sendDeleteBatches(examId, cleanMedia, source);
         }
+    }
+
+    @Override
+    public AiModerationJobStatusResponse triggerAiModeration() {
+        // Prevent double-triggering: check if job is already running
+        if (aiModerationAsyncWorker.isJobRunning()) {
+            log.warn("AI moderation job is already running. Ignoring duplicate trigger.");
+            return AiModerationJobStatusResponse.builder()
+                    .running(true)
+                    .lastProcessedId(aiModerationAsyncWorker.getLastProcessedId())
+                    .message("AI moderation job is already running. Please wait for it to finish.")
+                    .build();
+        }
+
+        log.info("Triggering AI content moderation job in background...");
+        // Fire-and-forget: runs on the 'aiModerationExecutor' thread pool
+        aiModerationAsyncWorker.runModerationJob();
+
+        return AiModerationJobStatusResponse.builder()
+                .running(true)
+                .processedCount(0)
+                .safeCount(0)
+                .unsafeCount(0)
+                .lastProcessedId(aiModerationAsyncWorker.getLastProcessedId())
+                .message("AI content moderation job started successfully in the background.")
+                .build();
+    }
+
+    @Override
+    public AiModerationJobStatusResponse getAiModerationJobStatus() {
+        boolean running = aiModerationAsyncWorker.isJobRunning();
+        String lastId = aiModerationAsyncWorker.getLastProcessedId();
+        int processed = aiModerationAsyncWorker.getProcessedCount();
+        int safe = aiModerationAsyncWorker.getSafeCount();
+        int unsafe = aiModerationAsyncWorker.getUnsafeCount();
+
+        String message = running
+                ? "AI moderation job is currently running."
+                : (lastId != null
+                        ? "Job is idle. Last processed question ID: " + lastId
+                        : "No moderation job has been run yet, or cursor has been reset.");
+
+        return AiModerationJobStatusResponse.builder()
+                .running(running)
+                .processedCount(processed)
+                .safeCount(safe)
+                .unsafeCount(unsafe)
+                .lastProcessedId(lastId)
+                .message(message)
+                .build();
+    }
+
+    @Override
+    public void resetAiModerationCursor() {
+        if (aiModerationAsyncWorker.isJobRunning()) {
+            throw new AppException(
+                    "Cannot reset cursor while a moderation job is running. Please wait for the job to finish.",
+                    HttpStatus.CONFLICT);
+        }
+        aiModerationAsyncWorker.resetCursor();
+        log.info("AI moderation cursor reset by admin.");
     }
 }

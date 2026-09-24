@@ -105,3 +105,12 @@ export interface ModerationFilterParams {
   sort?: string;
 }
 
+export interface AiModerationJobStatusResponse {
+  running: boolean;
+  processedCount: number;
+  safeCount: number;
+  unsafeCount: number;
+  lastProcessedId: string | null;
+  message: string;
+}
+

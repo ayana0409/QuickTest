@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -149,7 +150,7 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
                               OR LOWER(u.full_name) LIKE LOWER(CAST(:likePattern AS VARCHAR))
                               OR LOWER(u.username) LIKE LOWER(CAST(:likePattern AS VARCHAR))
                           )
-                        ORDER BY q.id DESC
+                        ORDER BY e.created_at DESC, q.order_index ASC, q.id DESC
                         """, countQuery = """
                         SELECT COUNT(q.id) FROM questions q
                         JOIN exams e ON q.exam_id = e.id
@@ -196,4 +197,55 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
          * Count questions by safety flag status.
          */
         long countByIsSafe(Boolean isSafe);
+
+        /**
+         * Fetch a page of text-only (no image on question AND no image on any option),
+         * unreviewed (is_safe = false) questions for AI batch moderation.
+         *
+         * Uses cursor-based pagination via lastProcessedId (UUID string) for efficient
+         * scanning of large tables without OFFSET. Ordered by id ASC so we can resume
+         * from where we left off on the next invocation.
+         *
+         * Conditions for "text-only":
+         *   - question.image_url IS NULL
+         *   - No answer_options with image_url IS NOT NULL for this question
+         */
+        @Query(value = """
+                SELECT CAST(q.id AS VARCHAR)
+                FROM questions q
+                WHERE q.is_safe = false
+                  AND q.image_url IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM answer_options ao
+                      WHERE ao.question_id = q.id
+                        AND ao.image_url IS NOT NULL
+                  )
+                  AND (CAST(:lastId AS UUID) IS NULL OR q.id > CAST(:lastId AS UUID))
+                ORDER BY q.id ASC
+                LIMIT :batchSize
+                """, nativeQuery = true)
+        List<String> findTextOnlyUnreviewedForModeration(
+                        @Param("lastId") String lastId,
+                        @Param("batchSize") int batchSize);
+
+        /**
+         * High-performance bulk mark as SAFE for a list of question IDs.
+         * Sets is_safe=true and reviewed_at=now() in a single UPDATE statement.
+         * reviewed_by remains NULL to indicate AI (system) reviewed.
+         */
+        @Transactional
+        @Modifying(clearAutomatically = true)
+        @Query(value = "UPDATE questions SET is_safe = true, reviewed_at = NOW() WHERE id = ANY(CAST(:ids AS uuid[]))",
+                nativeQuery = true)
+        int bulkMarkAsSafe(@Param("ids") String ids);
+
+        /**
+         * High-performance bulk mark as UNSAFE for a list of question IDs.
+         * Sets is_safe=false and clears reviewed_at in a single UPDATE statement.
+         */
+        @Transactional
+        @Modifying(clearAutomatically = true)
+        @Query(value = "UPDATE questions SET is_safe = false, reviewed_at = NULL WHERE id = ANY(CAST(:ids AS uuid[]))",
+                nativeQuery = true)
+        int bulkMarkAsUnsafe(@Param("ids") String ids);
 }

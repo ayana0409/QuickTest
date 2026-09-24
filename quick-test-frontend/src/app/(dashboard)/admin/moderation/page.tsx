@@ -22,12 +22,17 @@ import {
   Hash,
   Layers,
   Sparkles,
+  Bot,
+  History,
+  Check,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { adminService } from '@/services/admin.service';
 import type {
   AdminModerationQuestion,
   AdminModerationStats,
   ModerationFilterParams,
+  AiModerationJobStatusResponse,
 } from '@/types/admin';
 import type { QuestionType } from '@/types/exam';
 
@@ -87,6 +92,12 @@ export default function AdminContentModerationPage() {
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
+  // AI Moderation state
+  const [aiJobStatus, setAiJobStatus] = useState<AiModerationJobStatusResponse | null>(null);
+  const [isTriggeringAi, setIsTriggeringAi] = useState<boolean>(false);
+  const [showResetCursorModal, setShowResetCursorModal] = useState<boolean>(false);
+  const [isResettingCursor, setIsResettingCursor] = useState<boolean>(false);
+
   // Load KPI Stats
   const loadStats = useCallback(async () => {
     try {
@@ -128,6 +139,13 @@ export default function AdminContentModerationPage() {
       }
 
       const res = await adminService.getModerationQuestions(params);
+
+      // Auto-fallback: If current page has no content but earlier pages exist
+      if ((!res.content || res.content.length === 0) && currentPage > 0 && (res.totalElements || 0) > 0) {
+        setCurrentPage((prev) => Math.max(0, prev - 1));
+        return;
+      }
+
       setQuestions(res.content || []);
       setTotalPages(res.totalPages || 1);
       setTotalElements(res.totalElements || 0);
@@ -145,6 +163,79 @@ export default function AdminContentModerationPage() {
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
+
+  // Check AI Moderation status
+  const checkAiStatus = useCallback(async () => {
+    try {
+      const status = await adminService.getAiModerationStatus();
+      setAiJobStatus(status);
+      return status;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    checkAiStatus();
+  }, [checkAiStatus]);
+
+  // Polling when AI moderation background job is running
+  useEffect(() => {
+    if (!aiJobStatus?.running) return;
+
+    let isMounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const status = await adminService.getAiModerationStatus();
+        if (!isMounted) return;
+        setAiJobStatus(status);
+        if (!status.running) {
+          clearInterval(interval);
+          loadQuestions();
+          loadStats();
+          toast.success(
+            `AI Moderation completed: ${status.processedCount} questions evaluated (${status.safeCount} safe, ${status.unsafeCount} flagged).`,
+            { id: 'ai-moderation-complete' }
+          );
+        }
+      } catch {
+        // Silently continue polling
+      }
+    }, 2500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [aiJobStatus?.running, loadQuestions, loadStats]);
+
+  // Trigger AI Moderation background job (toast is automatically handled by apiClient interceptor)
+  const handleTriggerAiModeration = async () => {
+    try {
+      setIsTriggeringAi(true);
+      const res = await adminService.triggerAiModeration();
+      setAiJobStatus(res);
+    } catch {
+      // Error handled by global axios interceptor
+    } finally {
+      setIsTriggeringAi(false);
+    }
+  };
+
+  // Reset AI Moderation Cursor (toast is automatically handled by apiClient interceptor)
+  const handleConfirmResetCursor = async () => {
+    try {
+      setIsResettingCursor(true);
+      await adminService.resetAiModerationCursor();
+      setShowResetCursorModal(false);
+      const updatedStatus = await adminService.getAiModerationStatus();
+      setAiJobStatus(updatedStatus);
+    } catch {
+      // Error handled by global axios interceptor
+    } finally {
+      setIsResettingCursor(false);
+    }
+  };
 
   // Handle Search Input Submission
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -196,7 +287,13 @@ export default function AdminContentModerationPage() {
       setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
       await adminService.deleteModerationQuestion(deleteModal.question.id);
       setDeleteModal({ isOpen: false, question: null, isDeleting: false });
-      loadQuestions();
+      
+      // If we are deleting the last remaining question on this page (and not on page 0), decrement page
+      if (questions.length <= 1 && currentPage > 0) {
+        setCurrentPage((prev) => Math.max(0, prev - 1));
+      } else {
+        loadQuestions();
+      }
       loadStats();
     } catch {
       // Error toast is automatically handled by apiClient interceptor
@@ -295,11 +392,23 @@ export default function AdminContentModerationPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* AI Auto-Moderation Button */}
+          <button
+            type="button"
+            onClick={handleTriggerAiModeration}
+            disabled={aiJobStatus?.running || isTriggeringAi}
+            className="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all duration-200 disabled:opacity-75 disabled:cursor-not-allowed border border-violet-400/30 group"
+          >
+            <Sparkles className={`w-4 h-4 ${aiJobStatus?.running ? 'animate-spin text-amber-300' : 'text-violet-200 group-hover:scale-110 transition-transform'}`} />
+            <span>{aiJobStatus?.running ? 'AI Moderating...' : 'Run AI Moderation'}</span>
+          </button>
+
           <button
             onClick={() => {
               loadQuestions();
               loadStats();
+              checkAiStatus();
             }}
             disabled={isLoading}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-border bg-card hover:bg-accent/50 text-foreground transition-all duration-200 disabled:opacity-60 shadow-sm"
@@ -309,6 +418,89 @@ export default function AdminContentModerationPage() {
           </button>
         </div>
       </div>
+
+      {/* AI Moderation Interactive Hub (Double-Bezel Architecture) */}
+      {aiJobStatus && (
+        <div className="p-1.5 rounded-2xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10 ring-1 ring-violet-500/20 dark:ring-violet-400/20 transition-all duration-300">
+          <div className="p-4 sm:p-5 rounded-[calc(1rem-0.125rem)] bg-card border border-violet-200/50 dark:border-violet-900/40 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              {/* Left Column: Status Beacon & Descriptive Info */}
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-violet-600/10 dark:bg-violet-400/10 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800/60 flex items-center justify-center shrink-0">
+                  {aiJobStatus.running ? (
+                    <Sparkles className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Bot className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-foreground">
+                      Gemini AI Content Moderation
+                    </span>
+                    {aiJobStatus.running ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                        </span>
+                        Processing Batches
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-500/10 text-muted-foreground border border-border">
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        Ready
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
+                    {aiJobStatus.message ||
+                      'Automated LLM content policy analysis for unreviewed text-only questions.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Column: Live Counters & Reset Cursor Action */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Metric Badges */}
+                <div className="flex items-center gap-2">
+                  <div className="px-3 py-1.5 rounded-xl bg-muted/60 border border-border/50 text-xs">
+                    <span className="text-muted-foreground">Processed: </span>
+                    <strong className="text-foreground font-bold">{aiJobStatus.processedCount}</strong>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-300/40 dark:border-emerald-800/40 text-xs text-emerald-700 dark:text-emerald-300">
+                    <span>Safe: </span>
+                    <strong className="font-bold">{aiJobStatus.safeCount}</strong>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-300/40 dark:border-rose-800/40 text-xs text-rose-700 dark:text-rose-300">
+                    <span>Flagged: </span>
+                    <strong className="font-bold">{aiJobStatus.unsafeCount}</strong>
+                  </div>
+                </div>
+
+                {/* Reset Cursor Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowResetCursorModal(true)}
+                  disabled={aiJobStatus.running}
+                  title="Reset scan cursor back to the beginning"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted border border-border/60 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>Reset Cursor</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Subtle Progress Bar when running */}
+            {aiJobStatus.running && (
+              <div className="mt-3.5 w-full bg-violet-100 dark:bg-violet-950/40 rounded-full h-1.5 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-violet-600 via-indigo-500 to-purple-600 rounded-full animate-pulse w-full" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* KPI Bento Stat Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1139,6 +1331,56 @@ export default function AdminContentModerationPage() {
                   <>
                     <Trash2 className="w-4 h-4" />
                     <span>Delete Question Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Cursor Confirmation Modal */}
+      {showResetCursorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700/50">
+                <History className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Reset AI Moderation Cursor</h3>
+                <p className="text-xs text-muted-foreground">Reposition AI review pointer to beginning</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Resetting the cursor will clear the checkpoint marker ({aiJobStatus?.lastProcessedId ? `currently at ID: ${aiJobStatus.lastProcessedId.substring(0, 8)}...` : 'not set'}). The next AI moderation run will re-evaluate from the very first unreviewed question.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetCursorModal(false)}
+                disabled={isResettingCursor}
+                className="px-4 py-2 rounded-xl text-sm font-semibold border border-border bg-card hover:bg-muted text-foreground transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmResetCursor}
+                disabled={isResettingCursor}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20 active:scale-[0.98] transition-all disabled:opacity-60"
+              >
+                {isResettingCursor ? (
+                  <>
+                    <RotateCcw className="w-4 h-4 animate-spin" />
+                    <span>Resetting...</span>
+                  </>
+                ) : (
+                  <>
+                    <History className="w-4 h-4" />
+                    <span>Confirm Reset</span>
                   </>
                 )}
               </button>

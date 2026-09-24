@@ -2,6 +2,7 @@ package com.quicktest.modules.admin.service;
 
 import com.quicktest.modules.admin.dto.AdminModerationStatsResponse;
 import com.quicktest.modules.admin.dto.AdminQuestionModerationResponse;
+import com.quicktest.modules.admin.dto.AiModerationJobStatusResponse;
 import com.quicktest.modules.assessment.entity.QuestionType;
 import com.quicktest.modules.iam.entity.User;
 import org.springframework.data.domain.Page;
@@ -39,4 +40,27 @@ public interface AdminQuestionModerationService {
      * candidate submissions, and images on Cloudinary via RabbitMQ.
      */
     void deleteQuestionByAdmin(UUID questionId, User adminUser);
+
+    /**
+     * Trigger the AI batch content moderation job in the background.
+     * Only text-only (no image) unreviewed questions are eligible.
+     * Resumes from last cursor saved in Redis if a prior run was interrupted.
+     *
+     * @return current job status response (running=true immediately after trigger)
+     */
+    AiModerationJobStatusResponse triggerAiModeration();
+
+    /**
+     * Get the current status of the AI content moderation background job.
+     * Includes running state, last processed cursor, and basic counts.
+     *
+     * @return status DTO with running flag, cursor, and message
+     */
+    AiModerationJobStatusResponse getAiModerationJobStatus();
+
+    /**
+     * Reset the AI moderation cursor in Redis, so the next run starts from scratch.
+     * Useful when admin wants to re-check all questions, not just new ones.
+     */
+    void resetAiModerationCursor();
 }

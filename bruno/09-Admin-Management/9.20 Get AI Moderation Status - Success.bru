@@ -1,0 +1,29 @@
+meta {
+  name: 9.20 Get AI Moderation Status - Success
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{baseUrl}}/api/admin/moderation/ai-status
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.running: isDefined
+  res.body.data.processedCount: gte 0
+  res.body.data.safeCount: gte 0
+  res.body.data.unsafeCount: gte 0
+  res.body.data.message: isDefined
+}

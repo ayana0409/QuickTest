@@ -1,0 +1,19 @@
+meta {
+  name: 9.24 Reset AI Moderation Cursor - Unauthorized
+  type: http
+  seq: 33
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/moderation/ai-cursor
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 401
+}

@@ -1,10 +1,13 @@
 package com.quicktest.modules.admin;
 
+import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.admin.dto.AdminModerationStatsResponse;
 import com.quicktest.modules.admin.dto.AdminQuestionModerationResponse;
+import com.quicktest.modules.admin.dto.AiModerationJobStatusResponse;
 import com.quicktest.modules.admin.service.AdminQuestionModerationServiceImpl;
+import com.quicktest.modules.admin.service.AiModerationAsyncWorker;
 import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
@@ -27,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +62,9 @@ class AdminQuestionModerationServiceTest {
 
     @Mock
     private MediaDeleteProducer mediaDeleteProducer;
+
+    @Mock
+    private AiModerationAsyncWorker aiModerationAsyncWorker;
 
     @InjectMocks
     private AdminQuestionModerationServiceImpl moderationService;
@@ -240,5 +247,97 @@ class AdminQuestionModerationServiceTest {
                 moderationService.deleteQuestionByAdmin(randomId, admin));
 
         verify(questionRepository, never()).deleteQuestionById(any());
+    }
+
+    @Test
+    @DisplayName("triggerAiModeration: starts background job when worker is not running")
+    void triggerAiModeration_WhenIdle_StartsJob() {
+        when(aiModerationAsyncWorker.isJobRunning()).thenReturn(false);
+        when(aiModerationAsyncWorker.getLastProcessedId()).thenReturn(null);
+        doNothing().when(aiModerationAsyncWorker).runModerationJob();
+
+        AiModerationJobStatusResponse response = moderationService.triggerAiModeration();
+
+        assertNotNull(response);
+        assertTrue(response.isRunning());
+        assertEquals("AI content moderation job started successfully in the background.", response.getMessage());
+        verify(aiModerationAsyncWorker).runModerationJob();
+    }
+
+    @Test
+    @DisplayName("triggerAiModeration: returns active status without starting duplicate if already running")
+    void triggerAiModeration_WhenAlreadyRunning_DoesNotStartDuplicate() {
+        when(aiModerationAsyncWorker.isJobRunning()).thenReturn(true);
+        when(aiModerationAsyncWorker.getLastProcessedId()).thenReturn("last-uuid");
+
+        AiModerationJobStatusResponse response = moderationService.triggerAiModeration();
+
+        assertNotNull(response);
+        assertTrue(response.isRunning());
+        assertEquals("last-uuid", response.getLastProcessedId());
+        assertEquals("AI moderation job is already running. Please wait for it to finish.", response.getMessage());
+        verify(aiModerationAsyncWorker, never()).runModerationJob();
+    }
+
+    @Test
+    @DisplayName("getAiModerationJobStatus: returns running message when job is active")
+    void getAiModerationJobStatus_WhenRunning() {
+        when(aiModerationAsyncWorker.isJobRunning()).thenReturn(true);
+        when(aiModerationAsyncWorker.getLastProcessedId()).thenReturn("uuid-123");
+        when(aiModerationAsyncWorker.getProcessedCount()).thenReturn(10);
+        when(aiModerationAsyncWorker.getSafeCount()).thenReturn(8);
+        when(aiModerationAsyncWorker.getUnsafeCount()).thenReturn(2);
+
+        AiModerationJobStatusResponse response = moderationService.getAiModerationJobStatus();
+
+        assertNotNull(response);
+        assertTrue(response.isRunning());
+        assertEquals("uuid-123", response.getLastProcessedId());
+        assertEquals(10, response.getProcessedCount());
+        assertEquals(8, response.getSafeCount());
+        assertEquals(2, response.getUnsafeCount());
+        assertEquals("AI moderation job is currently running.", response.getMessage());
+    }
+
+    @Test
+    @DisplayName("getAiModerationJobStatus: returns idle message with cursor when job is completed")
+    void getAiModerationJobStatus_WhenIdleWithCursor() {
+        when(aiModerationAsyncWorker.isJobRunning()).thenReturn(false);
+        when(aiModerationAsyncWorker.getLastProcessedId()).thenReturn("uuid-456");
+        when(aiModerationAsyncWorker.getProcessedCount()).thenReturn(30);
+        when(aiModerationAsyncWorker.getSafeCount()).thenReturn(28);
+        when(aiModerationAsyncWorker.getUnsafeCount()).thenReturn(2);
+
+        AiModerationJobStatusResponse response = moderationService.getAiModerationJobStatus();
+
+        assertNotNull(response);
+        assertFalse(response.isRunning());
+        assertEquals("uuid-456", response.getLastProcessedId());
+        assertEquals(30, response.getProcessedCount());
+        assertEquals(28, response.getSafeCount());
+        assertEquals(2, response.getUnsafeCount());
+        assertTrue(response.getMessage().contains("Job is idle. Last processed question ID: uuid-456"));
+    }
+
+    @Test
+    @DisplayName("resetAiModerationCursor: calls worker reset when idle")
+    void resetAiModerationCursor_WhenIdle_Success() {
+        when(aiModerationAsyncWorker.isJobRunning()).thenReturn(false);
+        doNothing().when(aiModerationAsyncWorker).resetCursor();
+
+        assertDoesNotThrow(() -> moderationService.resetAiModerationCursor());
+        verify(aiModerationAsyncWorker).resetCursor();
+    }
+
+    @Test
+    @DisplayName("resetAiModerationCursor: throws HttpStatus.CONFLICT when job is running")
+    void resetAiModerationCursor_WhenRunning_ThrowsConflict() {
+        when(aiModerationAsyncWorker.isJobRunning()).thenReturn(true);
+
+        AppException ex = assertThrows(AppException.class, () ->
+                moderationService.resetAiModerationCursor());
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        verify(aiModerationAsyncWorker, never()).resetCursor();
     }
 }

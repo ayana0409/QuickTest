@@ -1,0 +1,41 @@
+meta {
+  name: 9.23 Get AI Moderation Status - Forbidden For Student
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/api/admin/moderation/ai-status
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('studentToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'student@quicktest.com',
+        password: 'Student@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('studentToken', token);
+        bru.setEnvVar('studentToken', token);
+      }
+    } catch (e) {}
+  }
+}

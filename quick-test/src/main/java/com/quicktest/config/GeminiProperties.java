@@ -35,6 +35,18 @@ public class GeminiProperties {
     private int batchSize = 5;
 
     /**
+     * Batch size for AI-based content moderation (text-only questions).
+     * Controls how many questions are sent per single Gemini prompt.
+     */
+    private int moderationBatchSize = 30;
+
+    /**
+     * Maximum input tokens per minute to respect Gemini API rate limits.
+     * Default 50,000 tokens/minute as per user configuration.
+     */
+    private int maxInputTokensPerMinute = 50000;
+
+    /**
      * Maximum response tokens per prompt.
      */
     private int maxTokens = 4000;

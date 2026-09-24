@@ -137,5 +137,34 @@ export const adminService = {
   async deleteModerationQuestion(id: string): Promise<void> {
     await apiClient.delete<ApiResponse<void>>(`/admin/moderation/questions/${id}`);
   },
+
+  /**
+   * Trigger an asynchronous background AI moderation job.
+   */
+  async triggerAiModeration(): Promise<import('@/types/admin').AiModerationJobStatusResponse> {
+    const res = await apiClient.post<ApiResponse<import('@/types/admin').AiModerationJobStatusResponse>>(
+      '/admin/moderation/ai-run'
+    );
+    return res.data.data;
+  },
+
+  /**
+   * Get the current status and metrics of the AI moderation background job.
+   * Suppresses automatic notifications during polling.
+   */
+  async getAiModerationStatus(): Promise<import('@/types/admin').AiModerationJobStatusResponse> {
+    const res = await apiClient.get<ApiResponse<import('@/types/admin').AiModerationJobStatusResponse>>(
+      '/admin/moderation/ai-status',
+      { silent: true } as any
+    );
+    return res.data.data;
+  },
+
+  /**
+   * Reset the AI moderation cursor to process from the beginning.
+   */
+  async resetAiModerationCursor(): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>('/admin/moderation/ai-cursor');
+  },
 };
 

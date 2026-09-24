@@ -7,6 +7,7 @@ import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.admin.dto.AdminModerationStatsResponse;
 import com.quicktest.modules.admin.dto.AdminQuestionModerationResponse;
 import com.quicktest.modules.admin.dto.AdminSafetyFlagRequest;
+import com.quicktest.modules.admin.dto.AiModerationJobStatusResponse;
 import com.quicktest.modules.admin.service.AdminQuestionModerationService;
 import com.quicktest.modules.assessment.entity.QuestionType;
 import com.quicktest.modules.iam.entity.User;
@@ -93,5 +94,42 @@ public class AdminQuestionModerationController {
     private User getAuthenticatedAdmin(UserDetailsImpl currentUser) {
         return userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUser.getId()));
+    }
+
+    // =========================================================================
+    // AI CONTENT MODERATION
+    // =========================================================================
+
+    /**
+     * Trigger the AI batch content moderation job in the background.
+     * Only text-only (no image) unreviewed questions are eligible.
+     * Resumes from the last Redis cursor if a prior run was interrupted.
+     * Idempotent: returns the current running status if already active.
+     */
+    @PostMapping("/ai-run")
+    public ResponseEntity<ApiResponse<AiModerationJobStatusResponse>> triggerAiModeration() {
+        AiModerationJobStatusResponse status = moderationService.triggerAiModeration();
+        return ResponseEntity.accepted().body(ApiResponse.success(status, status.getMessage()));
+    }
+
+    /**
+     * Get the current status of the AI content moderation background job.
+     * Includes running state, last processed cursor, and message.
+     */
+    @GetMapping("/ai-status")
+    public ResponseEntity<ApiResponse<AiModerationJobStatusResponse>> getAiModerationStatus() {
+        AiModerationJobStatusResponse status = moderationService.getAiModerationJobStatus();
+        return ResponseEntity.ok(ApiResponse.success(status, "AI moderation job status retrieved"));
+    }
+
+    /**
+     * Reset the AI moderation cursor in Redis.
+     * Forces the next run to start from the beginning of the unreviewed question list.
+     * Returns 409 CONFLICT if a job is currently running.
+     */
+    @DeleteMapping("/ai-cursor")
+    public ResponseEntity<ApiResponse<Void>> resetAiModerationCursor() {
+        moderationService.resetAiModerationCursor();
+        return ResponseEntity.ok(ApiResponse.success(null, "AI moderation cursor reset. Next run will start from the beginning."));
     }
 }

@@ -1,0 +1,25 @@
+meta {
+  name: 9.25 List Moderation Questions - Search Keyword
+  type: http
+  seq: 34
+}
+
+get {
+  url: {{baseUrl}}/api/admin/moderation/questions?search=Toán&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+}
