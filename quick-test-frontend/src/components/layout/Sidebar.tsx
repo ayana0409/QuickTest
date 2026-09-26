@@ -36,7 +36,8 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'User Management', href: '/admin/users', icon: Users },
     { label: 'Content Moderation', href: '/admin/moderation', icon: ShieldAlert },
     { label: 'Exam Monitoring', href: '/admin/exams', icon: Shield },
-    { label: 'System Logs', href: '/admin/logs', icon: Activity },
+    { label: 'System Logs', href: '/admin/logs', icon: FileCheck },
+    { label: 'System Health', href: '/admin/health', icon: Activity },
     { label: 'System Settings', href: '/admin/settings', icon: Settings },
   ],
   TEACHER: [
