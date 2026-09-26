@@ -36,4 +36,22 @@ public class AsyncConfig {
         log.info("AI Moderation thread pool executor initialized: coreSize=1, maxSize=1, queue=1");
         return executor;
     }
+
+    /**
+     * Dedicated thread pool executor for asynchronous database logging.
+     * Prevents audit writes from interfering with core business transactions or web responses.
+     */
+    @Bean(name = "loggingExecutor")
+    public Executor loggingExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("audit-log-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        log.info("Centralized logging thread pool executor initialized: coreSize=2, maxSize=10, queue=1000");
+        return executor;
+    }
 }

@@ -3,6 +3,7 @@ package com.quicktest.modules.admin.service;
 import com.quicktest.config.CacheConfig;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.admin.dto.AdminModerationStatsResponse;
 import com.quicktest.modules.admin.dto.AdminQuestionModerationResponse;
@@ -64,9 +65,6 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
             QuestionType questionType,
             String search,
             Pageable pageable) {
-
-        log.info("Admin fetching moderation questions: isSafe={}, hasImage={}, type={}, search='{}'",
-                isSafe, hasImage, questionType, search);
 
         String cleanSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
         String codePattern = cleanSearch != null ? cleanSearch + "%" : null;
@@ -135,8 +133,6 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
     // Cache moderation stats: 4 COUNT queries on question table, changes only after flag update or delete
     @Cacheable(value = CacheConfig.CACHE_ADMIN_MODERATION_STATS, key = "'global'")
     public AdminModerationStatsResponse getModerationStats() {
-        log.info("Calculating aggregate moderation statistics");
-
         long total = questionRepository.count();
         long withImages = questionRepository.countQuestionsWithImages();
         long safe = questionRepository.countByIsSafe(true);
@@ -157,10 +153,8 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_STATS, key = "'global'"),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_QUESTIONS, allEntries = true)
     })
+    @AuditLog(module = "MODERATION", action = "UPDATE_SAFETY_FLAG")
     public AdminQuestionModerationResponse updateSafetyFlag(UUID questionId, boolean isSafe, User adminUser) {
-        log.info("Admin ID: {} updating safety flag for question ID: {} to {}",
-                adminUser.getId(), questionId, isSafe);
-
         Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
 
@@ -172,7 +166,6 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
         long attemptsCount = candidateAnswerRepository.countByQuestionId(questionId);
         String reviewerName = isSafe ? (adminUser.getFullName() != null ? adminUser.getFullName() : adminUser.getUsername()) : null;
 
-        log.info("Question ID: {} safety flag successfully set to: {}", questionId, isSafe);
         return AdminQuestionModerationResponse.fromEntity(saved, reviewerName, attemptsCount);
     }
 
@@ -183,10 +176,8 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_STATS, key = "'global'"),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_MODERATION_QUESTIONS, allEntries = true)
     })
+    @AuditLog(module = "MODERATION", action = "DELETE_QUESTION")
     public void deleteQuestionByAdmin(UUID questionId, User adminUser) {
-        log.warn("Admin ID: {} deleting question ID: {} for content violation",
-                adminUser.getId(), questionId);
-
         Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
 
@@ -217,8 +208,6 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
 
         // 4. Delete question itself
         questionRepository.deleteQuestionById(questionId);
-
-        log.info("Question ID: {} and all associated candidate answers deleted from DB by Admin", questionId);
 
         // 5. Schedule Cloudinary media purge asynchronously strictly after transaction commit
         if (!mediaToDelete.isEmpty()) {
@@ -255,10 +244,10 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
     }
 
     @Override
+    @AuditLog(module = "MODERATION", action = "TRIGGER_AI_MODERATION")
     public AiModerationJobStatusResponse triggerAiModeration() {
         // Prevent double-triggering: check if job is already running
         if (aiModerationAsyncWorker.isJobRunning()) {
-            log.warn("AI moderation job is already running. Ignoring duplicate trigger.");
             return AiModerationJobStatusResponse.builder()
                     .running(true)
                     .lastProcessedId(aiModerationAsyncWorker.getLastProcessedId())
@@ -266,7 +255,6 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
                     .build();
         }
 
-        log.info("Queueing AI content moderation job into RabbitMQ...");
         AiModerationJobMessage message = AiModerationJobMessage.builder()
                 .jobId(UUID.randomUUID())
                 .triggeredAt(LocalDateTime.now())
@@ -308,6 +296,7 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
     }
 
     @Override
+    @AuditLog(module = "MODERATION", action = "RESET_AI_CURSOR")
     public void resetAiModerationCursor() {
         if (aiModerationAsyncWorker.isJobRunning()) {
             throw new AppException(
@@ -315,6 +304,5 @@ public class AdminQuestionModerationServiceImpl implements AdminQuestionModerati
                     HttpStatus.CONFLICT);
         }
         aiModerationAsyncWorker.resetCursor();
-        log.info("AI moderation cursor reset by admin.");
     }
 }

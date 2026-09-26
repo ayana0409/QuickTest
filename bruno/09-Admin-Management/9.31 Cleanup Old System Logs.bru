@@ -1,0 +1,30 @@
+meta {
+  name: 9.31 Cleanup Old System Logs
+  type: http
+  seq: 42
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/logs/cleanup?days=90
+  body: none
+  auth: bearer
+}
+
+params:query {
+  days: 90
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.deletedCount: gte 0
+  res.body.data.retentionDaysKept: eq 90
+}

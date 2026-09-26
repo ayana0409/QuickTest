@@ -1,0 +1,34 @@
+meta {
+  name: 9.28 Filter System Logs - Multi-Criteria
+  type: http
+  seq: 38
+}
+
+get {
+  url: {{baseUrl}}/api/admin/logs?level=INFO&status=SUCCESS&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  level: INFO
+  status: SUCCESS
+  page: 0
+  size: 10
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+  res.body.data.page: eq 0
+  res.body.data.size: eq 10
+}

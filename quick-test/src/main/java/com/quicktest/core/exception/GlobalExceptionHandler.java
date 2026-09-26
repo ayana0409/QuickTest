@@ -1,7 +1,13 @@
 package com.quicktest.core.exception;
 
 import com.quicktest.core.common.ApiResponse;
+import com.quicktest.core.logging.LogLevel;
+import com.quicktest.core.logging.LogStatus;
+import com.quicktest.core.logging.SystemLog;
+import com.quicktest.core.logging.SystemLogService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -22,6 +28,9 @@ import java.util.Map;
 @RestControllerAdvice
 @SuppressWarnings("null")
 public class GlobalExceptionHandler {
+
+    @Autowired(required = false)
+    private SystemLogService systemLogService;
 
     /**
      * Handle business application exceptions.
@@ -198,8 +207,29 @@ public class GlobalExceptionHandler {
      * Fallback handler for all uncaught exceptions.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
+    public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex, HttpServletRequest request) {
         log.error("Internal server error: ", ex);
+
+        if (systemLogService != null) {
+            try {
+                SystemLog errorLog = SystemLog.builder()
+                        .level(LogLevel.ERROR)
+                        .status(LogStatus.FAILURE)
+                        .module("GLOBAL_EXCEPTION")
+                        .action("UNCAUGHT_SERVER_ERROR")
+                        .endpoint(request != null ? request.getRequestURI() : null)
+                        .httpMethod(request != null ? request.getMethod() : null)
+                        .errorMessage(ex.getMessage() != null ? ex.getMessage() : ex.toString())
+                        .details(systemLogService.safeSerialize(Map.of(
+                                "exceptionClass", ex.getClass().getName(),
+                                "message", String.valueOf(ex.getMessage())
+                        )))
+                        .build();
+                systemLogService.logAsync(errorLog);
+            } catch (Exception ignored) {
+            }
+        }
+
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),

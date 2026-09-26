@@ -1,0 +1,29 @@
+meta {
+  name: 9.30 Get System Log Stats
+  type: http
+  seq: 40
+}
+
+get {
+  url: {{baseUrl}}/api/admin/logs/stats
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.totalLogs: gte 0
+  res.body.data.successCount: gte 0
+  res.body.data.failureCount: gte 0
+  res.body.data.errorRate: gte 0
+  res.body.data.averageExecutionTimeMs: gte 0
+}

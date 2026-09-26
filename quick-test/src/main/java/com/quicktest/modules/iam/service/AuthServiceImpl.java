@@ -3,6 +3,7 @@ package com.quicktest.modules.iam.service;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.exception.UserAlreadyExistsException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.core.security.JwtTokenProvider;
 import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.iam.dto.AuthResponse;
@@ -43,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    @AuditLog(module = "AUTH", action = "REGISTER")
     public AuthResponse register(RegisterRequest request) {
         String username = request.getUsername().trim();
         String email = request.getEmail().trim().toLowerCase();
@@ -69,7 +71,6 @@ public class AuthServiceImpl implements AuthService {
         );
 
         User savedUser = userRepository.save(newUser);
-        log.info("Successfully registered new user with id: {} and role: {}", savedUser.getId(), savedUser.getRole());
 
         // 3. Generate JWT access and refresh tokens
         String token = jwtTokenProvider.generateToken(
@@ -96,6 +97,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    @AuditLog(module = "AUTH", action = "LOGIN")
     public AuthResponse login(LoginRequest request) {
         String usernameOrEmail = request.getUsernameOrEmail().trim();
 
@@ -122,7 +124,6 @@ public class AuthServiceImpl implements AuthService {
                 user.getUsername(),
                 user.getEmail()
         );
-        log.info("User {} successfully logged in at {}", user.getUsername(), user.getLastLoginAt());
 
         return AuthResponse.builder()
                 .accessToken(token)

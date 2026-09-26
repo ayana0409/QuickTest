@@ -22,14 +22,12 @@ public class MediaDeleteConsumer {
      *
      * @param message batch message containing list of public IDs or URLs
      */
+    @com.quicktest.core.logging.AuditLog(module = "WORKER_MEDIA_DELETE", action = "DELETE_MEDIA_BATCH")
     @RabbitListener(queues = RabbitMQConfig.MEDIA_DELETE_QUEUE)
     public void processMediaDeleteBatch(MediaBatchDeleteMessage message) {
         if (message == null || message.getPublicIdsOrUrls() == null || message.getPublicIdsOrUrls().isEmpty()) {
             return;
         }
-
-        log.info("Processing media delete batch for examId={}, source={}, count={}",
-                message.getExamId(), message.getSource(), message.getPublicIdsOrUrls().size());
 
         // Batch delete all images in this message in a SINGLE Cloudinary API call
         try {

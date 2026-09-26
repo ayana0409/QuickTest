@@ -4,6 +4,7 @@ import com.quicktest.config.CacheConfig;
 import com.quicktest.config.RabbitMQConfig;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage;
 import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage.ImageCloneItem;
 import com.quicktest.modules.assessment.dto.ExamCreateRequest;
@@ -68,9 +69,8 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    @AuditLog(module = "EXAM", action = "CREATE_EXAM")
     public ExamDetailResponse createExam(ExamCreateRequest request, User teacher) {
-        log.info("Creating new exam '{}' for teacher ID: {}", request.getTitle(), teacher.getId());
-
         // 1. Validate start and end time constraints
         validateTimeWindow(request.getStartTime(), request.getEndTime());
 
@@ -97,9 +97,6 @@ public class ExamServiceImpl implements ExamService {
                 .build();
 
         Exam savedExam = examRepository.save(exam);
-        log.info("Exam created successfully with ID: {} and accessCode: {}", savedExam.getId(),
-                savedExam.getAccessCode());
-
         return ExamDetailResponse.fromEntity(savedExam);
     }
 
@@ -111,9 +108,8 @@ public class ExamServiceImpl implements ExamService {
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     })
+    @AuditLog(module = "EXAM", action = "UPDATE_EXAM")
     public ExamDetailResponse updateExam(UUID examId, ExamUpdateRequest request, User teacher) {
-        log.info("Updating exam ID: {} by teacher ID: {}", examId, teacher.getId());
-
         Exam exam = findExamWithCreatorOrThrow(examId);
         verifyOwnership(exam, teacher);
 
@@ -151,8 +147,6 @@ public class ExamServiceImpl implements ExamService {
         exam.setEndTime(request.getEndTime());
 
         Exam updatedExam = examRepository.save(exam);
-        log.info("Exam ID: {} successfully updated", examId);
-
         List<QuestionResponse> questions = fetchQuestionsWithOptions(examId);
         return ExamDetailResponse.fromEntityWithQuestions(updatedExam, questions);
     }
@@ -165,9 +159,8 @@ public class ExamServiceImpl implements ExamService {
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     })
+    @AuditLog(module = "EXAM", action = "DELETE_EXAM")
     public void deleteExam(UUID examId, User teacher) {
-        log.info("Attempting to delete exam ID: {} by teacher ID: {}", examId, teacher.getId());
-
         Exam exam = findExamWithCreatorOrThrow(examId);
         verifyOwnership(exam, teacher);
 
@@ -186,8 +179,6 @@ public class ExamServiceImpl implements ExamService {
         answerOptionRepository.deleteByExamId(examId);
         questionRepository.deleteByExamId(examId);
         examRepository.deleteExamById(examId);
-
-        log.info("Exam ID: {} and all associated entities successfully deleted", examId);
 
         // 3. Offload media deletions to RabbitMQ strictly AFTER transaction commits
         if (!mediaIdentifiers.isEmpty()) {
@@ -246,9 +237,8 @@ public class ExamServiceImpl implements ExamService {
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     })
+    @AuditLog(module = "EXAM", action = "PUBLISH_EXAM")
     public ExamDetailResponse publishExam(UUID examId, User teacher) {
-        log.info("Publishing exam ID: {} by teacher ID: {}", examId, teacher.getId());
-
         Exam exam = findExamWithCreatorOrThrow(examId);
         verifyOwnership(exam, teacher);
 
@@ -273,7 +263,6 @@ public class ExamServiceImpl implements ExamService {
 
         exam.setStatus(ExamStatus.PUBLISHED);
         Exam publishedExam = examRepository.save(exam);
-        log.info("Exam ID: {} published successfully", examId);
 
         List<QuestionResponse> questions = fetchQuestionsWithOptions(examId);
         return ExamDetailResponse.fromEntityWithQuestions(publishedExam, questions);
@@ -287,9 +276,8 @@ public class ExamServiceImpl implements ExamService {
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     })
+    @AuditLog(module = "EXAM", action = "CLOSE_EXAM")
     public ExamDetailResponse closeExam(UUID examId, User teacher) {
-        log.info("Closing exam ID: {} by teacher ID: {}", examId, teacher.getId());
-
         Exam exam = findExamWithCreatorOrThrow(examId);
         verifyOwnership(exam, teacher);
 
@@ -299,7 +287,6 @@ public class ExamServiceImpl implements ExamService {
 
         exam.setStatus(ExamStatus.CLOSED);
         Exam closedExam = examRepository.save(exam);
-        log.info("Exam ID: {} closed successfully", examId);
 
         // Automatically collect and submit all active in-progress attempts for this closed exam
         examSessionService.autoSubmitActiveAttemptsForExam(examId, "Exam closed by teacher");
@@ -374,8 +361,8 @@ public class ExamServiceImpl implements ExamService {
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     })
+    @AuditLog(module = "EXAM", action = "DUPLICATE_EXAM")
     public ExamDetailResponse duplicateExam(UUID examId, ExamDuplicateRequest request, User teacher) {
-        log.info("Duplicating exam ID: {} by teacher ID: {}", examId, teacher.getId());
 
         Exam sourceExam = findExamWithCreatorOrThrow(examId);
         verifyOwnership(sourceExam, teacher);

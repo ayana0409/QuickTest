@@ -1,0 +1,33 @@
+meta {
+  name: 9.27 Search System Logs - Full-Text Search
+  type: http
+  seq: 37
+}
+
+get {
+  url: {{baseUrl}}/api/admin/logs?search=exam&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  search: exam
+  page: 0
+  size: 10
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+  res.body.data.page: eq 0
+  res.body.data.size: eq 10
+}

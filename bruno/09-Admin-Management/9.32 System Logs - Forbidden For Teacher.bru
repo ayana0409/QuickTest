@@ -1,0 +1,23 @@
+meta {
+  name: 9.32 System Logs - Forbidden For Teacher
+  type: http
+  seq: 43
+}
+
+get {
+  url: {{baseUrl}}/api/admin/logs
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+assert {
+  res.status: eq 403
+}

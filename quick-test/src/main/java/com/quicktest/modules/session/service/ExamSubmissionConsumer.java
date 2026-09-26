@@ -40,11 +40,11 @@ public class ExamSubmissionConsumer {
     /**
      * Consume exam submission message from RabbitMQ.
      */
+    @com.quicktest.core.logging.AuditLog(module = "WORKER_SUBMISSION", action = "PROCESS_SUBMISSION")
     @RabbitListener(queues = RabbitMQConfig.SUBMISSION_QUEUE)
     public void processSubmission(SubmissionMessage message) {
         UUID attemptId = message.getAttemptId();
         UUID examId = message.getExamId();
-        log.info("Received submission message from RabbitMQ: attemptId={}, examId={}", attemptId, examId);
 
         try {
             // 1. Retrieve master exam grading key from Redis Cache (or populate on cache miss)
@@ -177,10 +177,6 @@ public class ExamSubmissionConsumer {
             // 5. Cleanup Redis draft answers and lock
             redisExamSessionService.clearDraftAnswers(attemptId);
             redisExamSessionService.releaseSubmissionLock(attemptId);
-
-            log.info("Finished background processing for attemptId: {}, status: {}, score: {}",
-                    attemptId, finalStatus, finalScore);
-
         } catch (Exception ex) {
             log.error("Fatal error processing submission for attemptId: {}", attemptId, ex);
             redisExamSessionService.releaseSubmissionLock(attemptId);

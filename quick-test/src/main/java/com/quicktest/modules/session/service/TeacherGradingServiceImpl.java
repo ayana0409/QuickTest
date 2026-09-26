@@ -4,6 +4,7 @@ import com.quicktest.config.CacheConfig;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
@@ -189,9 +190,9 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
     // Evict all grading-stats entries: essay score changes affect aggregated stats (avg, min, max, gradedCount)
     // allEntries=true because the exact exam+teacher key is not directly available from the request object
     @CacheEvict(value = CacheConfig.CACHE_GRADING_STATS, allEntries = true)
+    @AuditLog(module = "GRADING", action = "SUBMIT_ESSAY_GRADES")
     public GradingResultResponse submitEssayGrades(GradeEssaySubmissionRequest request, User currentTeacher) {
         UUID attemptId = request.getAttemptId();
-        log.info("Teacher {} submitting manual grades for attemptId: {}", currentTeacher.getId(), attemptId);
 
         ExamAttempt attempt = examAttemptRepository.findByIdWithExamAndUser(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("ExamAttempt", "id", attemptId));
@@ -239,12 +240,9 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
         if (remainingPending == 0) {
             attempt.setStatus(AttemptStatus.SUBMITTED);
             attempt.setTotalScore(totalScore);
-            log.info("All essays graded for attemptId: {}. Final status SUBMITTED, totalScore: {}",
-                    attemptId, totalScore);
         } else {
             attempt.setStatus(AttemptStatus.AWAITING_MANUAL_GRADING);
             attempt.setTotalScore(null);
-            log.info("Partially graded attemptId: {}. Remaining pending essays: {}", attemptId, remainingPending);
         }
 
         examAttemptRepository.save(attempt);

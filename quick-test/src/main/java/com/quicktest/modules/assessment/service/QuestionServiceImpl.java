@@ -2,6 +2,7 @@ package com.quicktest.modules.assessment.service;
 
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.core.service.CloudinaryStorageService;
 import com.quicktest.core.service.MediaDeleteProducer;
 import com.quicktest.modules.assessment.dto.AnswerOptionDto;
@@ -55,9 +56,8 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     @Transactional
+    @AuditLog(module = "QUESTION", action = "ADD_QUESTION")
     public QuestionResponse addQuestionToExam(UUID examId, QuestionCreateRequest request, User teacher) {
-        log.info("Adding question to exam ID: {} by teacher ID: {}", examId, teacher.getId());
-
         Exam exam = examRepository.findByIdWithCreatedBy(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
 
@@ -129,16 +129,13 @@ public class QuestionServiceImpl implements QuestionService {
         }
 
         Question savedQuestion = questionRepository.save(question);
-        log.info("Question created successfully with ID: {} in exam ID: {}", savedQuestion.getId(), examId);
-
         return QuestionResponse.fromEntity(savedQuestion);
     }
 
     @Override
     @Transactional
+    @AuditLog(module = "QUESTION", action = "UPDATE_QUESTION")
     public QuestionResponse updateQuestion(UUID questionId, QuestionUpdateRequest request, User teacher) {
-        log.info("Updating question ID: {} by teacher ID: {}", questionId, teacher.getId());
-
         Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
 
@@ -293,7 +290,6 @@ public class QuestionServiceImpl implements QuestionService {
         }
 
         Question updatedQuestion = questionRepository.save(question);
-        log.info("Question ID: {} successfully updated", questionId);
 
         // Schedule deletion of removed media strictly AFTER transaction commits
         if (!mediaToDelete.isEmpty()) {
@@ -305,9 +301,8 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     @Transactional
+    @AuditLog(module = "QUESTION", action = "DELETE_QUESTION")
     public void deleteQuestion(UUID questionId, User teacher) {
-        log.info("Deleting question ID: {} by teacher ID: {}", questionId, teacher.getId());
-
         Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
 
@@ -339,8 +334,6 @@ public class QuestionServiceImpl implements QuestionService {
 
         // 2. Bulk delete question itself in 1 SQL query
         questionRepository.deleteQuestionById(questionId);
-        log.info("Question ID: {} and its answer options successfully deleted from database via bulk queries",
-                questionId);
 
         // Schedule media deletion strictly AFTER transaction commit succeeds
         if (!mediaToDelete.isEmpty()) {
@@ -350,10 +343,9 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     @Transactional
+    @AuditLog(module = "QUESTION", action = "UPDATE_QUESTION_IMAGE")
     public QuestionResponse updateQuestionImage(UUID questionId, org.springframework.web.multipart.MultipartFile file,
             User teacher) {
-        log.info("Directly updating image for question ID: {} by teacher ID: {}", questionId, teacher.getId());
-
         Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
 
@@ -381,7 +373,6 @@ public class QuestionServiceImpl implements QuestionService {
         question.setReviewedBy(null);
 
         Question saved = questionRepository.save(question);
-        log.info("Question ID: {} image directly updated: newUrl={}", questionId, uploadRes.getUrl());
 
         // Schedule old media deletion strictly AFTER transaction commits
         if (!mediaToDelete.isEmpty()) {
@@ -546,12 +537,9 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     @Transactional
+    @AuditLog(module = "QUESTION", action = "IMPORT_FROM_BANK")
     public List<QuestionResponse> importQuestionsFromBank(
             UUID targetExamId, List<UUID> questionIds, User teacher) {
-
-        log.info("Importing {} question(s) into exam ID: {} by teacher ID: {}",
-                questionIds.size(), targetExamId, teacher.getId());
-
         // 1. Validate target exam ownership and draft status
         Exam targetExam = examRepository.findByIdWithCreatedBy(targetExamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", targetExamId));

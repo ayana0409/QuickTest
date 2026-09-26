@@ -4,6 +4,7 @@ import com.quicktest.config.GeminiProperties;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
@@ -181,11 +182,9 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
 
     @Override
     @Transactional
+    @AuditLog(module = "GRADING", action = "SAVE_MANUAL_GRADES")
     public ManualBatchGradeResponse saveManualGrades(
             UUID questionId, ManualBatchGradeRequest request, User teacher) {
-
-        log.info("Teacher {} manually grading {} answers for question ID: {}",
-                teacher.getId(), request.getItems().size(), questionId);
 
         Question question = questionRepository.findByIdWithOptionsAndExam(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
@@ -236,10 +235,8 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
 
     @Override
     @Transactional
+    @AuditLog(module = "GRADING", action = "TRIGGER_AI_GRADING")
     public TriggerAiGradingResponse triggerAiGrading(TriggerAiGradingRequest request, User teacher) {
-        log.info("Teacher {} triggered AI grading for exam ID: {}, scope: {}",
-                teacher.getId(), request.getExamId(), request.getScope());
-
         // Fail-fast in production: Validate Gemini API key is configured before accepting async job
         String apiKey = geminiProperties.getApiKey() != null ? geminiProperties.getApiKey().trim() : "";
         if (apiKey.isEmpty() || apiKey.equalsIgnoreCase("xxx") || apiKey.contains("YOUR_")) {

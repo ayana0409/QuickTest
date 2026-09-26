@@ -25,12 +25,9 @@ public class AiModerationConsumer {
      *
      * @param message moderation task message
      */
+    @com.quicktest.core.logging.AuditLog(module = "WORKER_AI_MODERATION", action = "PROCESS_JOB")
     @RabbitListener(queues = RabbitMQConfig.AI_MODERATION_QUEUE, concurrency = "1")
     public void processModerationJob(AiModerationJobMessage message) {
-        log.info("[AI Moderation Consumer] Received moderation task: jobId={}, triggeredAt={}",
-                message != null ? message.getJobId() : null,
-                message != null ? message.getTriggeredAt() : null);
-
         try {
             aiModerationAsyncWorker.runModerationJob();
         } catch (Exception e) {

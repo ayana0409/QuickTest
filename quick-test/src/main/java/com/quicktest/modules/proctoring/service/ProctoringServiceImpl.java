@@ -3,6 +3,7 @@ package com.quicktest.modules.proctoring.service;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.iam.entity.User;
@@ -295,10 +296,8 @@ public class ProctoringServiceImpl implements ProctoringService {
 
     @Override
     @Transactional
+    @AuditLog(module = "PROCTORING", action = "DISQUALIFY_ATTEMPT")
     public void disqualifyAttempt(UUID attemptId, String reason, User currentTeacher) {
-        log.info("Teacher {} manually disqualifying attemptId: {}, reason: {}",
-                currentTeacher.getId(), attemptId, reason);
-
         ExamAttempt attempt = examAttemptRepository.findByIdWithExamAndUser(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("ExamAttempt", "id", attemptId));
 

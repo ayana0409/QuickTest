@@ -4,6 +4,7 @@ import com.quicktest.config.CacheConfig;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.exception.UserAlreadyExistsException;
+import com.quicktest.core.logging.AuditLog;
 import com.quicktest.modules.admin.dto.*;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
 import com.quicktest.modules.assessment.entity.Exam;
@@ -96,6 +97,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     // Evict dashboard cache: user count metrics change after a new user is created
     @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    @AuditLog(module = "ADMIN", action = "CREATE_USER")
     public AdminUserSummaryResponse createUser(AdminCreateUserRequest request) {
         String username = request.getUsername().trim();
         String email = request.getEmail().trim().toLowerCase();
@@ -117,12 +119,12 @@ public class AdminServiceImpl implements AdminService {
         );
 
         User savedUser = userRepository.save(newUser);
-        log.info("Admin created new user {} with role {}", savedUser.getUsername(), savedUser.getRole());
         return AdminUserSummaryResponse.fromEntity(savedUser);
     }
 
     @Override
     @Transactional
+    @AuditLog(module = "ADMIN", action = "UPDATE_USER_PROFILE")
     public AdminUserSummaryResponse updateUserProfile(UUID userId, AdminUpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
@@ -155,12 +157,12 @@ public class AdminServiceImpl implements AdminService {
         }
 
         User updatedUser = userRepository.save(user);
-        log.info("Admin updated profile for user {} (ID: {})", updatedUser.getUsername(), userId);
         return AdminUserSummaryResponse.fromEntity(updatedUser);
     }
 
     @Override
     @Transactional
+    @AuditLog(module = "ADMIN", action = "RESET_USER_PASSWORD")
     public void resetUserPassword(UUID userId, AdminResetPasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
@@ -171,7 +173,6 @@ public class AdminServiceImpl implements AdminService {
 
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        log.info("Admin reset password for user {} (ID: {})", user.getUsername(), userId);
     }
 
 
@@ -179,6 +180,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     // Evict dashboard cache: activeUsers / inactiveUsers counters change
     @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    @AuditLog(module = "ADMIN", action = "TOGGLE_USER_STATUS")
     public AdminUserSummaryResponse toggleUserStatus(UUID userId, UUID currentAdminId) {
         if (userId.equals(currentAdminId)) {
             throw new AppException("Administrators cannot toggle their own active status", HttpStatus.BAD_REQUEST);
@@ -189,10 +191,8 @@ public class AdminServiceImpl implements AdminService {
 
         if (Boolean.TRUE.equals(user.getIsActive())) {
             user.deactivate();
-            log.info("User {} (ID: {}) deactivated by admin ID: {}", user.getUsername(), userId, currentAdminId);
         } else {
             user.activate();
-            log.info("User {} (ID: {}) activated by admin ID: {}", user.getUsername(), userId, currentAdminId);
         }
 
         User updatedUser = userRepository.save(user);
@@ -203,6 +203,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     // Evict dashboard cache: role-based counts (totalTeachers / totalStudents / totalAdmins) change
     @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    @AuditLog(module = "ADMIN", action = "UPDATE_USER_ROLE")
     public AdminUserSummaryResponse updateUserRole(UUID userId, UpdateUserRoleRequest request, UUID currentAdminId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
@@ -222,8 +223,6 @@ public class AdminServiceImpl implements AdminService {
 
         user.setRole(request.getRole());
         User updatedUser = userRepository.save(user);
-        log.info("User {} (ID: {}) role updated to {} by admin ID: {}", user.getUsername(), userId, request.getRole(),
-                currentAdminId);
         return AdminUserSummaryResponse.fromEntity(updatedUser);
     }
 
@@ -286,18 +285,17 @@ public class AdminServiceImpl implements AdminService {
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true)
     })
+    @AuditLog(module = "ADMIN", action = "FORCE_CLOSE_EXAM")
     public void forceCloseExam(UUID examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
 
         if (exam.getStatus() == ExamStatus.CLOSED) {
-            log.info("Exam ID: {} is already CLOSED", examId);
             return;
         }
 
         exam.setStatus(ExamStatus.CLOSED);
         examRepository.save(exam);
-        log.info("Exam ID: {} force-closed by administrator", examId);
 
         // Automatically collect and submit all active in-progress attempts for this force-closed exam
         examSessionService.autoSubmitActiveAttemptsForExam(examId, "Exam force-closed by administrator");
@@ -310,6 +308,7 @@ public class AdminServiceImpl implements AdminService {
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true)
     })
+    @AuditLog(module = "ADMIN", action = "DELETE_EXAM")
     public void deleteExam(UUID examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
@@ -328,7 +327,6 @@ public class AdminServiceImpl implements AdminService {
         }
 
         examRepository.delete(exam);
-        log.info("Exam ID: {} successfully deleted by administrator", examId);
     }
 
     // =========================================================================

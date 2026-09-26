@@ -39,12 +39,9 @@ public class ExamCloneConsumer {
      *
      * @param message metadata containing the new exam ID and list of images to duplicate
      */
+    @com.quicktest.core.logging.AuditLog(module = "WORKER_EXAM_CLONE", action = "CLONE_EXAM_IMAGES")
     @RabbitListener(queues = RabbitMQConfig.EXAM_CLONE_QUEUE)
     public void processExamClone(ExamCloneTaskMessage message) {
-        log.info("Processing exam clone task for newExamId={}, teacherId={}, imageCount={}",
-                message.getNewExamId(), message.getTeacherId(),
-                message.getItems() != null ? message.getItems().size() : 0);
-
         if (message.getItems() != null && !message.getItems().isEmpty()) {
             for (ImageCloneItem item : message.getItems()) {
                 try {

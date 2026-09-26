@@ -1,0 +1,29 @@
+meta {
+  name: 9.29 Get System Log Detail
+  type: http
+  seq: 39
+}
+
+get {
+  url: {{baseUrl}}/api/admin/logs/{{targetLogId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.id: eq {{targetLogId}}
+  res.body.data.level: isDefined
+  res.body.data.module: isDefined
+  res.body.data.action: isDefined
+  res.body.data.status: isDefined
+}

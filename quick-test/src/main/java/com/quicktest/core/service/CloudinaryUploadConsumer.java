@@ -30,12 +30,11 @@ public class CloudinaryUploadConsumer {
      *
      * @param message task metadata containing file bytes and target folder
      */
+    @com.quicktest.core.logging.AuditLog(module = "WORKER_MEDIA_UPLOAD", action = "UPLOAD_IMAGE")
     @RabbitListener(queues = RabbitMQConfig.MEDIA_UPLOAD_QUEUE)
     public void processMediaUpload(MediaUploadTaskMessage message) {
         String batchId = message.getBatchId();
         String filename = message.getOriginalFilename();
-
-        log.info("Processing media upload task from RabbitMQ: batchId={}, file={}", batchId, filename);
 
         try {
             MediaUploadResponse response = cloudinaryStorageService.uploadFromBytes(

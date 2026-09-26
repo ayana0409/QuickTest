@@ -63,5 +63,48 @@ public class DatabaseConstraintFixer implements ApplicationRunner {
         } catch (Exception e) {
             log.warn("[DB CONSTRAINT] Could not add proctoring columns to exams table: {}", e.getMessage());
         }
+
+        try {
+            jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS system_logs (" +
+                "  id UUID PRIMARY KEY, " +
+                "  level VARCHAR(10) NOT NULL, " +
+                "  module VARCHAR(60) NOT NULL, " +
+                "  action VARCHAR(100) NOT NULL, " +
+                "  status VARCHAR(10) NOT NULL, " +
+                "  actor_id UUID, " +
+                "  actor_username VARCHAR(100), " +
+                "  actor_role VARCHAR(50), " +
+                "  endpoint VARCHAR(255), " +
+                "  http_method VARCHAR(10), " +
+                "  ip_address VARCHAR(45), " +
+                "  details TEXT, " +
+                "  error_message TEXT, " +
+                "  execution_time_ms BIGINT, " +
+                "  created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()" +
+                ");"
+            );
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_syslog_created_at ON system_logs (created_at DESC);");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_syslog_module_action ON system_logs (module, action);");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_syslog_actor ON system_logs (actor_id);");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_syslog_level ON system_logs (level);");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_syslog_status ON system_logs (status);");
+            jdbcTemplate.execute(
+                "CREATE INDEX IF NOT EXISTS idx_syslog_fts ON system_logs USING GIN (" +
+                "  to_tsvector('simple', " +
+                "    coalesce(module, '') || ' ' || " +
+                "    coalesce(action, '') || ' ' || " +
+                "    coalesce(actor_username, '') || ' ' || " +
+                "    coalesce(ip_address, '') || ' ' || " +
+                "    coalesce(cast(actor_id as text), '') || ' ' || " +
+                "    coalesce(details, '') || ' ' || " +
+                "    coalesce(error_message, '')" +
+                "  )" +
+                ");"
+            );
+            log.info("[DB CONSTRAINT] system_logs table and performance GIN FTS indexes verified.");
+        } catch (Exception e) {
+            log.warn("[DB CONSTRAINT] Could not verify/create system_logs table: {}", e.getMessage());
+        }
     }
 }

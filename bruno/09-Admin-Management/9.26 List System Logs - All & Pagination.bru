@@ -1,0 +1,42 @@
+meta {
+  name: 9.26 List System Logs - All & Pagination
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{baseUrl}}/api/admin/logs?page=0&size=10&sort=createdAt,desc
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+  sort: createdAt,desc
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.content: isDefined
+  res.body.data.page: eq 0
+  res.body.data.size: eq 10
+  res.body.data.totalElements: gte 0
+}
+
+script:post-response {
+  let logs = res.body?.data?.content || [];
+  if (logs.length > 0) {
+    bru.setVar("targetLogId", logs[0].id);
+    bru.setEnvVar("targetLogId", logs[0].id);
+  }
+}

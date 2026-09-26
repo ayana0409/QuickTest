@@ -1,0 +1,26 @@
+meta {
+  name: 9.30b Get System Log Metadata
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{baseUrl}}/api/admin/logs/metadata
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.modules: isDefined
+  res.body.data.actions: isDefined
+}

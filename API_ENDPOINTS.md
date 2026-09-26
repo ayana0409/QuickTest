@@ -1,6 +1,6 @@
 # QuickTest Online Exam System - Comprehensive API Documentation
 
-Tài liệu đặc tả toàn bộ **47 RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL, Redis, RabbitMQ, Cloudinary, Google Gemini AI).
+Tài liệu đặc tả toàn bộ **52+ RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL Full-Text Search, Redis, RabbitMQ, Cloudinary, Google Gemini AI, Centralized Audit Logging).
 
 ---
 
@@ -105,6 +105,11 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 44 | | `DELETE` | `/api/admin/exams/{id}` | `ADMIN` | Xóa đề thi (chỉ DRAFT/CLOSED và chưa có lượt thi) |
 | 45 | **Student History** | `GET` | `/api/student/attempts` | `STUDENT` | Lấy danh sách lịch sử thi phân trang của sinh viên |
 | 46 | | `GET` | `/api/student/attempts/{attemptId}` | `STUDENT` | Xem chi tiết bài làm, điểm từng câu, đáp án & vi phạm quy chế |
+| 47 | **Admin System Logs** | `GET` | `/api/admin/logs` | `ADMIN` | Tìm kiếm FTS & Lọc nhật ký đa tiêu chí (phân trang 2 bước) |
+| 48 | | `GET` | `/api/admin/logs/{id}` | `ADMIN` | Xem chi tiết nhật ký kiểm toán, Payload JSON và Stacktrace |
+| 49 | | `GET` | `/api/admin/logs/stats` | `ADMIN` | Thống kê phân tích KPI nhật ký, tỉ lệ lỗi và độ trễ |
+| 50 | | `GET` | `/api/admin/logs/metadata` | `ADMIN` | Lấy danh mục distinct module & action phục vụ lọc động |
+| 51 | | `DELETE` | `/api/admin/logs/cleanup` | `ADMIN` | Dọn dẹp nhật ký cũ theo chu kỳ ngày lưu trữ retention |
 
 ---
 
@@ -1287,6 +1292,216 @@ Cung cấp cho thí sinh (học sinh / sinh viên đã đăng ký) khả năng t
       ]
     },
     "timestamp": "2026-09-19T12:00:00"
+  }
+  ```
+
+---
+
+### Module 11: Quản Trị Hệ Thống - Quản Lý Nhật Ký Tập Trung (System Logs Management)
+
+Toàn bộ hoạt động quan trọng trong hệ thống (tạo/sửa/xóa bài thi, câu hỏi, nộp bài, đăng nhập, vi phạm viễn trắc, lỗi ngoại lệ hệ thống và tiến trình worker) được tự động ghi nhận tập trung vào bảng `system_logs` thông qua `SystemLoggingAspect` (AOP), bảo vệ thông tin nhạy cảm (auto-masking mật khẩu/token) và hỗ trợ tìm kiếm toàn văn PostgreSQL Full-Text Search (GIN index `idx_syslog_fts`) cùng phân trang 2 bước hiệu năng cao.
+
+---
+
+#### 47. Tìm kiếm & Lọc nhật ký hệ thống (Search System Logs)
+- **Method**: `GET`
+- **Endpoint**: `/api/admin/logs` (hoặc `/api/v1/admin/logs`)
+- **Quyền hạn**: `ADMIN`
+- **Mô tả**: Tìm kiếm toàn văn (FTS) trên các trường `module`, `action`, `actorUsername`, `ipAddress`, `actorId`, `details`, `errorMessage` kết hợp lọc theo tiêu chí `level`, `status`, `module`, `action`, `actorId`, khoảng thời gian `startDate` / `endDate`. Phân trang 2 bước: quét ID qua index GIN trước, sau đó batch-fetch entity để tối ưu băng thông và bộ nhớ.
+- **Query Parameters**:
+  - `search` (string, optional): Từ khóa tìm kiếm Full-Text Search.
+  - `level` (string, optional): Severity (`INFO`, `WARN`, `ERROR`, `DEBUG`).
+  - `status` (string, optional): Trạng thái kết quả (`SUCCESS`, `FAILURE`).
+  - `module` (string, optional): Module nghiệp vụ (`ASSESSMENT`, `IAM`, `PROCTORING`, v.v.).
+  - `action` (string, optional): Tên hành vi (`CREATE_EXAM`, `LOGIN`, `SUBMIT_EXAM`, v.v.).
+  - `actorId` (UUID, optional): Định danh tài khoản người thực hiện.
+  - `startDate` (ISO LocalDateTime, optional): Thời điểm bắt đầu lọc.
+  - `endDate` (ISO LocalDateTime, optional): Thời điểm kết thúc lọc.
+  - `page` (int, default: 0): Số thứ tự trang.
+  - `size` (int, default: 20): Số lượng bản ghi mỗi trang.
+  - `sort` (string, default: `createdAt,desc`): Thứ tự sắp xếp.
+- **Request Headers**:
+  ```http
+  Authorization: Bearer <admin_jwt_token>
+  Accept: application/json
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "status": 200,
+    "message": "System logs retrieved successfully",
+    "data": {
+      "content": [
+        {
+          "id": "c7f99999-8888-4444-9999-1234567890ab",
+          "level": "INFO",
+          "module": "ASSESSMENT",
+          "action": "CREATE_EXAM",
+          "status": "SUCCESS",
+          "actorId": "b4e0bb18-d7b5-40ef-bb71-1b63868fbd5c",
+          "actorUsername": "teacher1",
+          "actorRole": "TEACHER",
+          "endpoint": "/api/teacher/exams",
+          "httpMethod": "POST",
+          "ipAddress": "192.168.1.10",
+          "errorMessage": null,
+          "executionTimeMs": 48,
+          "createdAt": "2026-09-26T18:40:00",
+          "hasDetails": true
+        }
+      ],
+      "page": 0,
+      "size": 20,
+      "totalElements": 1,
+      "totalPages": 1,
+      "isFirst": true,
+      "isLast": true,
+      "hasNext": false,
+      "hasPrevious": false
+    },
+    "timestamp": "2026-09-26T18:40:01"
+  }
+  ```
+
+---
+
+#### 48. Xem chi tiết nhật ký kiểm toán (Get System Log Detail)
+- **Method**: `GET`
+- **Endpoint**: `/api/admin/logs/{id}`
+- **Quyền hạn**: `ADMIN`
+- **Mô tả**: Xem đầy đủ dữ liệu ngữ cảnh thực thi của một bản ghi nhật ký, bao gồm toàn bộ payload chi tiết JSON (đã che các trường nhạy cảm như password/token) và ngoại lệ/stacktrace lỗi nếu có.
+- **Request Headers**:
+  ```http
+  Authorization: Bearer <admin_jwt_token>
+  Accept: application/json
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "status": 200,
+    "message": "System log detail retrieved successfully",
+    "data": {
+      "id": "c7f99999-8888-4444-9999-1234567890ab",
+      "level": "ERROR",
+      "module": "PROCTORING",
+      "action": "RECORD_VIOLATION",
+      "status": "FAILURE",
+      "actorId": "b4e0bb18-d7b5-40ef-bb71-1b63868fbd5c",
+      "actorUsername": "student_01",
+      "actorRole": "STUDENT",
+      "endpoint": "/api/session/proctoring/violations",
+      "httpMethod": "POST",
+      "ipAddress": "14.241.12.8",
+      "details": "{\"violationType\":\"TAB_SWITCH\",\"attemptId\":\"a18057c8-da00-49e1-9ada-1e4b8b62104a\"}",
+      "errorMessage": "Attempt is not IN_PROGRESS (status: SUBMITTED). Rejecting violation recording.",
+      "executionTimeMs": 14,
+      "createdAt": "2026-09-26T18:40:00"
+    },
+    "timestamp": "2026-09-26T18:40:01"
+  }
+  ```
+
+---
+
+#### 49. Thống kê phân tích KPI nhật ký (Get System Log Stats)
+- **Method**: `GET`
+- **Endpoint**: `/api/admin/logs/stats`
+- **Quyền hạn**: `ADMIN`
+- **Mô tả**: Trả về số liệu phân tích tổng quan phục vụ các thẻ KPI trên Dashboard: tổng số log, số lần thành công/thất bại, tỷ lệ lỗi (error rate %), độ trễ thực thi trung bình và số lượng log phân bổ theo từng module.
+- **Request Headers**:
+  ```http
+  Authorization: Bearer <admin_jwt_token>
+  Accept: application/json
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "status": 200,
+    "message": "System log stats retrieved successfully",
+    "data": {
+      "totalLogs": 1540,
+      "successCount": 1480,
+      "failureCount": 60,
+      "errorRate": 3.9,
+      "infoCount": 1420,
+      "warnCount": 60,
+      "errorCount": 60,
+      "averageExecutionTimeMs": 42.6,
+      "moduleCounts": {
+        "ASSESSMENT": 620,
+        "IAM": 450,
+        "PROCTORING": 290,
+        "STORAGE": 180
+      }
+    },
+    "timestamp": "2026-09-26T18:40:01"
+  }
+  ```
+
+---
+
+#### 50. Danh mục module & action động (Get System Log Metadata)
+- **Method**: `GET`
+- **Endpoint**: `/api/admin/logs/metadata`
+- **Quyền hạn**: `ADMIN`
+- **Mô tả**: Lấy danh sách các module và action hiện có thực tế trong cơ sở dữ liệu để tự động điền vào các dropdown bộ lọc trên giao diện frontend.
+- **Request Headers**:
+  ```http
+  Authorization: Bearer <admin_jwt_token>
+  Accept: application/json
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "status": 200,
+    "message": "System log metadata retrieved successfully",
+    "data": {
+      "modules": [
+        "ADMIN_USER",
+        "ASSESSMENT",
+        "GRADING",
+        "IAM",
+        "PROCTORING",
+        "STORAGE"
+      ],
+      "actions": [
+        "CREATE_EXAM",
+        "DELETE_EXAM",
+        "LOGIN",
+        "PUBLISH_EXAM",
+        "RECORD_VIOLATION",
+        "SUBMIT_EXAM",
+        "UPDATE_USER_ROLE"
+      ]
+    },
+    "timestamp": "2026-09-26T18:40:01"
+  }
+  ```
+
+---
+
+#### 51. Dọn dẹp nhật ký kiểm toán cũ (Cleanup Old System Logs)
+- **Method**: `DELETE`
+- **Endpoint**: `/api/admin/logs/cleanup`
+- **Quyền hạn**: `ADMIN`
+- **Mô tả**: Tiến hành dọn dẹp các bản ghi nhật ký kiểm toán cũ hơn số ngày quy định (mặc định 30 ngày) để giải phóng không gian lưu trữ của database.
+- **Query Parameters**:
+  - `days` (int, default: 30): Số ngày lưu giữ (các bản ghi trước mốc `now - days` sẽ bị xóa).
+- **Request Headers**:
+  ```http
+  Authorization: Bearer <admin_jwt_token>
+  Accept: application/json
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "status": 200,
+    "message": "Log cleanup executed successfully",
+    "data": {
+      "deletedCount": 320,
+      "retentionDaysKept": 30
+    },
+    "timestamp": "2026-09-26T18:40:01"
   }
   ```
 
