@@ -1,0 +1,50 @@
+meta {
+  name: 11.03 Trigger 429 Too Many Requests
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "usernameOrEmail": "rate_limit_probe@quicktest.com",
+    "password": "WrongPassword@123"
+  }
+}
+
+script:pre-request {
+  // Rapidly fire 5 requests to consume the login quota of 5 req/min
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  
+  for (let i = 0; i < 5; i++) {
+    try {
+      await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: "rate_limit_probe@quicktest.com",
+        password: "WrongPassword@123"
+      }, {
+        validateStatus: () => true
+      });
+    } catch (e) {
+      // Ignore intermediate errors
+    }
+  }
+}
+
+assert {
+  res.status: eq 429
+  res.headers['retry-after']: isDefined
+  res.headers['x-ratelimit-limit']: eq "5"
+  res.headers['x-ratelimit-remaining']: eq "0"
+  res.body.status: eq 429
+}

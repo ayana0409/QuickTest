@@ -140,6 +140,34 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle rate limit exceeded (HTTP 429).
+     */
+    @ExceptionHandler(com.quicktest.core.ratelimit.exception.RateLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleRateLimitExceeded(
+            com.quicktest.core.ratelimit.exception.RateLimitExceededException ex) {
+        log.warn("Rate limit exceeded: {}", ex.getMessage());
+
+        Map<String, Object> details = Map.of(
+                "limit", ex.getLimit(),
+                "remaining", ex.getRemaining(),
+                "resetSeconds", ex.getResetSeconds(),
+                "retryAfterSeconds", ex.getRetryAfterSeconds()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .header("X-RateLimit-Limit", String.valueOf(ex.getLimit()))
+                .header("X-RateLimit-Remaining", String.valueOf(ex.getRemaining()))
+                .header("X-RateLimit-Reset", String.valueOf(resultOrZero(ex.getResetSeconds())))
+                .body(ApiResponse.error(HttpStatus.TOO_MANY_REQUESTS.value(), ex.getMessage(), details));
+    }
+
+    private long resultOrZero(long value) {
+        return Math.max(0, value);
+    }
+
+    /**
      * Handle missing multipart part or missing request parameter.
      */
     @ExceptionHandler({

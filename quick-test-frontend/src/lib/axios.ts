@@ -124,6 +124,13 @@ export function extractErrorMessage(error: AxiosError): string {
       return 'Dữ liệu đã tồn tại hoặc xảy ra xung đột hệ thống.';
     case 422:
       return 'Dữ liệu gửi lên không thể xử lý.';
+    case 429: {
+      const retryAfter = error.response?.headers?.['retry-after'];
+      if (retryAfter) {
+        return `Bạn đang thao tác quá nhanh. Vui lòng đợi ${retryAfter} giây trước khi thử lại!`;
+      }
+      return 'Bạn đang thao tác quá nhanh hoặc vượt quá giới hạn tần suất. Vui lòng thử lại sau giây lát!';
+    }
     case 500:
       return 'Lỗi hệ thống máy chủ nội bộ. Vui lòng thử lại sau.';
     case 502:

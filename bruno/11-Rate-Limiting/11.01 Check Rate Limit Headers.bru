@@ -1,0 +1,29 @@
+meta {
+  name: 11.01 Check Rate Limit Headers
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "usernameOrEmail": "nonexistent_rate_limit_probe@quicktest.com",
+    "password": "WrongPassword@123"
+  }
+}
+
+assert {
+  res.headers['x-ratelimit-limit']: isDefined
+  res.headers['x-ratelimit-remaining']: isDefined
+  res.headers['x-ratelimit-reset']: isDefined
+}

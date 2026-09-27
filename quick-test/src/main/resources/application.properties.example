@@ -102,3 +102,48 @@ app.admin.username=${APP_ADMIN_USERNAME:admin}
 app.admin.email=${APP_ADMIN_EMAIL:admin@quicktest.com}
 app.admin.password=${APP_ADMIN_PASSWORD:Admin@123}
 app.admin.full-name=${APP_ADMIN_FULL_NAME:System Administrator}
+
+# Rate Limiting Configuration (Purely externalized - zero changes to business code)
+app.rate-limit.enabled=${APP_RATE_LIMIT_ENABLED:true}
+app.rate-limit.global.enabled=${APP_RATE_LIMIT_GLOBAL_ENABLED:true}
+app.rate-limit.global.limit=${APP_RATE_LIMIT_GLOBAL_LIMIT:120}
+app.rate-limit.global.period-seconds=${APP_RATE_LIMIT_GLOBAL_PERIOD_SECONDS:60}
+
+# Auth endpoint limits
+app.rate-limit.endpoints.auth-login.path=/api/auth/login
+app.rate-limit.endpoints.auth-login.method=POST
+app.rate-limit.endpoints.auth-login.limit=${RATE_LIMIT_AUTH_LOGIN_LIMIT:5}
+
+app.rate-limit.endpoints.auth-register.path=/api/auth/register
+app.rate-limit.endpoints.auth-register.method=POST
+app.rate-limit.endpoints.auth-register.limit=${RATE_LIMIT_AUTH_REGISTER_LIMIT:3}
+
+app.rate-limit.endpoints.auth-refresh.path=/api/auth/refresh
+app.rate-limit.endpoints.auth-refresh.method=POST
+app.rate-limit.endpoints.auth-refresh.limit=${RATE_LIMIT_AUTH_REFRESH_LIMIT:15}
+
+# Exam session limits
+app.rate-limit.endpoints.session-save.path=/api/session/*/save
+app.rate-limit.endpoints.session-save.method=PUT
+app.rate-limit.endpoints.session-save.limit=${RATE_LIMIT_SESSION_SAVE_LIMIT:60}
+
+app.rate-limit.endpoints.session-submit.path=/api/session/*/submit
+app.rate-limit.endpoints.session-submit.method=POST
+app.rate-limit.endpoints.session-submit.limit=${RATE_LIMIT_SESSION_SUBMIT_LIMIT:5}
+
+# Teacher media upload limits
+app.rate-limit.endpoints.media-upload.path=/api/teacher/media/upload
+app.rate-limit.endpoints.media-upload.method=POST
+app.rate-limit.endpoints.media-upload.limit=${RATE_LIMIT_MEDIA_UPLOAD_LIMIT:10}
+app.rate-limit.endpoints.media-upload.key-type=USER_OR_IP
+
+app.rate-limit.endpoints.media-batch.path=/api/teacher/media/batch-upload
+app.rate-limit.endpoints.media-batch.method=POST
+app.rate-limit.endpoints.media-batch.limit=${RATE_LIMIT_MEDIA_BATCH_LIMIT:5}
+app.rate-limit.endpoints.media-batch.key-type=USER_OR_IP
+
+# Admin AI moderation run
+app.rate-limit.endpoints.moderation-ai.path=/api/admin/moderation/ai-run
+app.rate-limit.endpoints.moderation-ai.method=POST
+app.rate-limit.endpoints.moderation-ai.limit=${RATE_LIMIT_MODERATION_AI_LIMIT:2}
+app.rate-limit.endpoints.moderation-ai.key-type=USER_OR_IP

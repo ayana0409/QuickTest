@@ -1,0 +1,21 @@
+meta {
+  name: 11.02 Global Rate Limit - Check Headers
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/session/non-existent-attempt/resume
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.headers['x-ratelimit-limit']: isDefined
+  res.headers['x-ratelimit-remaining']: isDefined
+  res.headers['x-ratelimit-reset']: isDefined
+}
