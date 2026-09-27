@@ -10,6 +10,7 @@
     "dev": "npm run dev --workspace=quick-test-frontend",
     "build": "npm run build --workspace=quick-test-frontend",
     "start": "npm run start --workspace=quick-test-frontend",
-    "lint": "npm run lint --workspace=quick-test-frontend"
+    "lint": "npm run lint --workspace=quick-test-frontend",
+    "patch-bruno": "node scripts/patch-bruno-extension.js"
   }
 }
