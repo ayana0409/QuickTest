@@ -17,7 +17,10 @@ import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -203,21 +206,80 @@ public class ProctoringServiceImpl implements ProctoringService {
             attemptsPage = examAttemptRepository.findByExamId(examId, pageable);
         }
 
-        Page<AttemptMonitorResponse> responsePage = attemptsPage.map(ea -> AttemptMonitorResponse.builder()
-                .attemptId(ea.getId())
-                .examId(examId)
-                .userId(ea.getUser() != null ? ea.getUser().getId() : null)
-                .candidateName(resolveCandidateName(ea))
-                .candidateIdentifier(resolveCandidateIdentifier(ea))
-                .status(ea.getStatus())
-                .violationCount(getEffectiveViolationCount(ea))
-                .isDisqualified(ea.getStatus() == AttemptStatus.DISQUALIFIED)
-                .startTime(ea.getStartTime())
-                .expireAt(ea.getExpireAt())
-                .submitTime(ea.getSubmitTime())
-                .isOnline(isCandidateOnline(ea.getId()))
-                .build());
+        List<ExamAttempt> attempts = attemptsPage.getContent();
+        if (attempts.isEmpty()) {
+            return PageResponse.from(attemptsPage.map(ea -> null));
+        }
 
+        // Pipelined Redis batch fetch: retrieve all violation counts and online heartbeats in a SINGLE network round-trip!
+        final int n = attempts.size();
+        List<Object> pipelinedResults = null;
+        try {
+            pipelinedResults = stringRedisTemplate.executePipelined(new SessionCallback<Object>() {
+                @Override
+                @SuppressWarnings("unchecked")
+                public <K, V> Object execute(RedisOperations<K, V> operations) {
+                    RedisOperations<String, String> ops = (RedisOperations<String, String>) operations;
+                    // 1. Queue all violation count GETs [indices 0 .. n-1]
+                    for (ExamAttempt ea : attempts) {
+                        ops.opsForValue().get(String.format(KEY_VIOLATIONS_COUNT, ea.getId()));
+                    }
+                    // 2. Queue all heartbeat HASKEYs [indices n .. 2n-1]
+                    for (ExamAttempt ea : attempts) {
+                        ops.hasKey(String.format(KEY_HEARTBEAT, ea.getId()));
+                    }
+                    return null;
+                }
+            });
+        } catch (Exception ex) {
+            log.warn("Redis pipelining failed during proctoring monitoring fetch. Falling back to DB state. Error: {}", ex.getMessage());
+        }
+
+        // Map results back using index correlation without executing single-key Redis queries in a loop
+        List<AttemptMonitorResponse> content = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            ExamAttempt ea = attempts.get(i);
+
+            // Extract violation count from pipelined batch
+            int effectiveViolationCount = ea.getViolationCount() != null ? ea.getViolationCount() : 0;
+            if (pipelinedResults != null && i < pipelinedResults.size()) {
+                Object countObj = pipelinedResults.get(i);
+                if (countObj != null) {
+                    try {
+                        effectiveViolationCount = Integer.parseInt(countObj.toString());
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+
+            // Extract online status from pipelined batch
+            boolean isOnline = false;
+            int heartbeatIdx = n + i;
+            if (pipelinedResults != null && heartbeatIdx < pipelinedResults.size()) {
+                Object onlineObj = pipelinedResults.get(heartbeatIdx);
+                if (onlineObj instanceof Boolean b) {
+                    isOnline = b;
+                } else if (onlineObj != null) {
+                    isOnline = Boolean.parseBoolean(onlineObj.toString());
+                }
+            }
+
+            content.add(AttemptMonitorResponse.builder()
+                    .attemptId(ea.getId())
+                    .examId(examId)
+                    .userId(ea.getUser() != null ? ea.getUser().getId() : null)
+                    .candidateName(resolveCandidateName(ea))
+                    .candidateIdentifier(resolveCandidateIdentifier(ea))
+                    .status(ea.getStatus())
+                    .violationCount(effectiveViolationCount)
+                    .isDisqualified(ea.getStatus() == AttemptStatus.DISQUALIFIED)
+                    .startTime(ea.getStartTime())
+                    .expireAt(ea.getExpireAt())
+                    .submitTime(ea.getSubmitTime())
+                    .isOnline(isOnline)
+                    .build());
+        }
+
+        Page<AttemptMonitorResponse> responsePage = new PageImpl<>(content, pageable, attemptsPage.getTotalElements());
         return PageResponse.from(responsePage);
     }
 

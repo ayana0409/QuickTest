@@ -6,8 +6,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuration properties for Google Gemini AI integration.
+ * Legacy configuration properties for Google Gemini AI integration.
+ * @deprecated Use {@link GeminiPoolProperties} for multi-key and multi-model rotation.
  */
+@Deprecated
 @Getter
 @Setter
 @Configuration

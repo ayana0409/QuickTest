@@ -1,6 +1,6 @@
 package com.quicktest.modules.session;
 
-import com.quicktest.config.GeminiProperties;
+import com.quicktest.core.service.GeminiRotationService;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.service.GeminiGradingService;
 import com.quicktest.modules.assessment.entity.Exam;
@@ -31,7 +31,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import com.quicktest.core.service.AiMetricsRedisService;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,10 +62,19 @@ class QuestionGradingTest {
     private QuestionGradingAsyncWorker asyncWorker;
 
     @Mock
-    private GeminiProperties geminiProperties;
+    private GeminiRotationService geminiRotationService;
 
     @Mock
     private GeminiGradingService geminiGradingService;
+
+    @Mock
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Mock
+    private ValueOperations<String, String> valueOperations;
+
+    @Mock
+    private AiMetricsRedisService aiMetricsRedisService;
 
     @InjectMocks
     private QuestionGradingServiceImpl questionGradingService;
@@ -265,7 +279,7 @@ class QuestionGradingTest {
     }
 
     @Test
-    @DisplayName("Should trigger AI grading for a single essay question, dispatch to background worker, and return ACCEPTED")
+    @DisplayName("Should trigger AI grading for a single essay question, acquire Redis lock, queue job, and return ACCEPTED")
     void testTriggerAiGrading_SingleQuestion_Success() {
         CandidateAnswer ans1 = CandidateAnswer.builder().id(UUID.randomUUID()).question(essayQuestion).build();
         CandidateAnswer ans2 = CandidateAnswer.builder().id(UUID.randomUUID()).question(essayQuestion).build();
@@ -277,8 +291,10 @@ class QuestionGradingTest {
                 .batchSize(5)
                 .build();
 
-        when(geminiProperties.getApiKey()).thenReturn("test-gemini-api-key");
+        when(geminiRotationService.hasAvailableSlots()).thenReturn(true);
         when(examRepository.findByIdWithCreatedBy(exam.getId())).thenReturn(Optional.of(exam));
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
         when(questionRepository.findByIdWithOptionsAndExam(essayQuestion.getId())).thenReturn(Optional.of(essayQuestion));
         when(candidateAnswerRepository.findPendingByQuestionId(essayQuestion.getId(), GradingStatus.PENDING_MANUAL))
                 .thenReturn(List.of(ans1, ans2));
@@ -289,7 +305,58 @@ class QuestionGradingTest {
         assertEquals("ACCEPTED", response.getStatus());
         assertEquals(1, response.getTotalQuestionsScheduled());
         assertEquals(2, response.getTotalSubmissionsScheduled());
-        verify(asyncWorker, times(1)).executeAiGradingAsync(anyMap(), eq(5));
+        verify(aiMetricsRedisService, times(1)).registerActiveJob(
+                anyString(), eq("AI_GRADING"), eq(exam.getId()), eq(exam.getTitle()), eq(1), eq(2), eq("QUEUED"));
+        verify(asyncWorker, times(1)).executeAiGradingAsync(anyString(), eq(exam.getId()), anyMap(), eq(5));
+    }
+
+    @Test
+    @DisplayName("Should throw CONFLICT when concurrent AI grading job is already locked on the same exam")
+    void testTriggerAiGrading_DuplicateLock_ThrowsConflict() {
+        TriggerAiGradingRequest request = TriggerAiGradingRequest.builder()
+                .examId(exam.getId())
+                .questionId(essayQuestion.getId())
+                .scope("SINGLE_QUESTION")
+                .batchSize(5)
+                .build();
+
+        when(geminiRotationService.hasAvailableSlots()).thenReturn(true);
+        when(examRepository.findByIdWithCreatedBy(exam.getId())).thenReturn(Optional.of(exam));
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(false);
+
+        AppException ex = assertThrows(AppException.class, () ->
+                questionGradingService.triggerAiGrading(request, teacher));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertTrue(ex.getMessage().contains("already has an active or queued AI grading task"));
+        verify(asyncWorker, never()).executeAiGradingAsync(any(), any(), any(), anyInt());
+    }
+
+    @Test
+    @DisplayName("Should release lock and return ACCEPTED with zero submissions when no pending submissions exist")
+    void testTriggerAiGrading_NoPendingSubmissions_ReleasesLock() {
+        TriggerAiGradingRequest request = TriggerAiGradingRequest.builder()
+                .examId(exam.getId())
+                .questionId(essayQuestion.getId())
+                .scope("SINGLE_QUESTION")
+                .batchSize(5)
+                .build();
+
+        when(geminiRotationService.hasAvailableSlots()).thenReturn(true);
+        when(examRepository.findByIdWithCreatedBy(exam.getId())).thenReturn(Optional.of(exam));
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
+        when(questionRepository.findByIdWithOptionsAndExam(essayQuestion.getId())).thenReturn(Optional.of(essayQuestion));
+        when(candidateAnswerRepository.findPendingByQuestionId(essayQuestion.getId(), GradingStatus.PENDING_MANUAL))
+                .thenReturn(Collections.emptyList());
+
+        TriggerAiGradingResponse response = questionGradingService.triggerAiGrading(request, teacher);
+
+        assertNotNull(response);
+        assertEquals(0, response.getTotalSubmissionsScheduled());
+        verify(stringRedisTemplate, times(1)).delete("ai:grading:lock:exam:" + exam.getId());
+        verify(asyncWorker, never()).executeAiGradingAsync(any(), any(), any(), anyInt());
     }
 
     @Test
@@ -302,7 +369,7 @@ class QuestionGradingTest {
                 .batchSize(5)
                 .build();
 
-        when(geminiProperties.getApiKey()).thenReturn("xxx");
+        when(geminiRotationService.hasAvailableSlots()).thenReturn(false);
 
         AppException ex = assertThrows(AppException.class, () ->
                 questionGradingService.triggerAiGrading(request, teacher));

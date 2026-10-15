@@ -88,11 +88,38 @@ cloudinary.upload.allowed-formats=jpg,jpeg,png,webp,gif
 spring.servlet.multipart.max-file-size=5MB
 spring.servlet.multipart.max-request-size=100MB
 
-# Google Gemini AI Configuration
-gemini.api-key=xxx
+# Google Gemini AI Multi-Key / Multi-Model Rotation Pool Configuration
+# Key 1: Primary key with multiple models
+gemini.keys[0].api-key=${GEMINI_KEY_1:xxx}
+gemini.keys[0].models[0].name=gemini-3.5-flash-lite
+gemini.keys[0].models[0].rpm=15
+gemini.keys[0].models[0].tpm=200000
+gemini.keys[0].models[1].name=gemini-3.1-flash-lite
+gemini.keys[0].models[1].rpm=15
+gemini.keys[0].models[1].tpm=200000
+gemini.keys[0].models[2].name=gemini-2.5-flash-lite
+gemini.keys[0].models[2].rpm=15
+gemini.keys[0].models[2].tpm=200000
+
+# Key 2: Optional secondary key configured via GEMINI_KEY_2 environment variable
+gemini.keys[1].api-key=${GEMINI_KEY_2:}
+gemini.keys[1].models[0].name=gemini-3.5-flash-lite
+gemini.keys[1].models[0].rpm=15
+gemini.keys[1].models[0].tpm=200000
+gemini.keys[1].models[1].name=gemini-3.1-flash-lite
+gemini.keys[1].models[1].rpm=15
+gemini.keys[1].models[1].tpm=200000
+gemini.keys[1].models[2].name=gemini-2.5-flash-lite
+gemini.keys[1].models[2].rpm=15
+gemini.keys[1].models[2].tpm=200000
+
+# Legacy fallback and shared settings
+gemini.api-key=${GEMINI_API_KEY:xxx}
 gemini.model=gemini-3.5-flash-lite
 gemini.base-url=https://generativelanguage.googleapis.com/v1beta/models
 gemini.batch-size=5
+gemini.moderation-batch-size=30
+gemini.max-input-tokens-per-minute=50000
 gemini.max-tokens=4000
 gemini.timeout-seconds=60
 

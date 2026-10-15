@@ -1,6 +1,6 @@
 package com.quicktest.modules.session.service;
 
-import com.quicktest.config.GeminiProperties;
+import com.quicktest.core.service.GeminiRotationService;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
@@ -41,6 +41,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.quicktest.core.service.AiMetricsRedisService;
+import java.time.Duration;
+
 import com.quicktest.core.service.GeminiGradingService;
 import com.quicktest.modules.session.dto.AiBatchGradingResultDto;
 import com.quicktest.modules.session.dto.AiSingleGradeDto;
@@ -58,22 +62,28 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     private final QuestionRepository questionRepository;
     private final CandidateAnswerRepository candidateAnswerRepository;
     private final QuestionGradingAsyncWorker asyncWorker;
-    private final GeminiProperties geminiProperties;
+    private final GeminiRotationService geminiRotationService;
     private final GeminiGradingService geminiGradingService;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final AiMetricsRedisService aiMetricsRedisService;
 
     public QuestionGradingServiceImpl(
             ExamRepository examRepository,
             QuestionRepository questionRepository,
             CandidateAnswerRepository candidateAnswerRepository,
             QuestionGradingAsyncWorker asyncWorker,
-            GeminiProperties geminiProperties,
-            GeminiGradingService geminiGradingService) {
+            GeminiRotationService geminiRotationService,
+            GeminiGradingService geminiGradingService,
+            StringRedisTemplate stringRedisTemplate,
+            AiMetricsRedisService aiMetricsRedisService) {
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.candidateAnswerRepository = candidateAnswerRepository;
         this.asyncWorker = asyncWorker;
-        this.geminiProperties = geminiProperties;
+        this.geminiRotationService = geminiRotationService;
         this.geminiGradingService = geminiGradingService;
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.aiMetricsRedisService = aiMetricsRedisService;
     }
 
 
@@ -267,12 +277,11 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     @Transactional
     @AuditLog(module = "GRADING", action = "TRIGGER_AI_GRADING")
     public TriggerAiGradingResponse triggerAiGrading(TriggerAiGradingRequest request, User teacher) {
-        // Fail-fast in production: Validate Gemini API key is configured before accepting async job
-        String apiKey = geminiProperties.getApiKey() != null ? geminiProperties.getApiKey().trim() : "";
-        if (apiKey.isEmpty() || apiKey.equalsIgnoreCase("xxx") || apiKey.contains("YOUR_")) {
+        // Fail-fast in production: Validate Gemini API key / rotation pool is configured before accepting async job
+        if (!geminiRotationService.hasAvailableSlots()) {
             throw new AppException(
                     "Google Gemini API key is not configured. Cannot perform AI grading. " +
-                    "Please configure 'gemini.api-key' in application.properties or set the GEMINI_API_KEY environment variable.",
+                    "Please configure 'gemini.keys' or 'gemini.api-key' in application.properties or set the GEMINI_KEY_1 environment variable.",
                     HttpStatus.BAD_REQUEST);
         }
 
@@ -293,54 +302,85 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", targetExamId));
         verifyExamOwnership(exam, teacher);
 
-
-
-        int batchSize = (request.getBatchSize() != null && request.getBatchSize() >= 1 && request.getBatchSize() <= 20)
-                ? request.getBatchSize() : 5;
-
-        Map<UUID, List<UUID>> questionToAnswerIdsMap = new LinkedHashMap<>();
-
-        if ("ENTIRE_EXAM".equalsIgnoreCase(request.getScope())) {
-            List<CandidateAnswer> allPending = candidateAnswerRepository.findPendingByExamId(
-                    exam.getId(), GradingStatus.PENDING_MANUAL);
-
-            for (CandidateAnswer ca : allPending) {
-                questionToAnswerIdsMap.computeIfAbsent(ca.getQuestion().getId(), k -> new ArrayList<>())
-                        .add(ca.getId());
-            }
-        } else {
-            // Scope: SINGLE_QUESTION
-            if (request.getQuestionId() == null) {
-                throw new AppException("questionId is required when scope is SINGLE_QUESTION", HttpStatus.BAD_REQUEST);
-            }
-
-            Question question = questionRepository.findByIdWithOptionsAndExam(request.getQuestionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Question", "id", request.getQuestionId()));
-            verifyExamOwnership(question.getExam(), teacher);
-
-            List<CandidateAnswer> pending = candidateAnswerRepository.findPendingByQuestionId(
-                    request.getQuestionId(), GradingStatus.PENDING_MANUAL);
-
-            if (!pending.isEmpty()) {
-                questionToAnswerIdsMap.put(question.getId(), pending.stream().map(CandidateAnswer::getId).toList());
-            }
+        // Acquire Redis Distributed Lock to prevent duplicate concurrent grading requests on the same exam
+        String lockKey = "ai:grading:lock:exam:" + targetExamId;
+        String lockOwner = (teacher.getUsername() != null && !teacher.getUsername().isBlank())
+                ? teacher.getUsername() : teacher.getId().toString();
+        Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, lockOwner, Duration.ofMinutes(15));
+        if (!Boolean.TRUE.equals(acquired)) {
+            log.warn("Duplicate AI grading rejected for exam ID: {} by teacher: {}", targetExamId, lockOwner);
+            throw new AppException(
+                    "This exam already has an active or queued AI grading task in progress. Please wait for it to complete before submitting again!",
+                    HttpStatus.CONFLICT);
         }
 
-        int totalSubmissions = questionToAnswerIdsMap.values().stream().mapToInt(List::size).sum();
-        int totalQuestions = questionToAnswerIdsMap.keySet().size();
+        try {
+            int batchSize = (request.getBatchSize() != null && request.getBatchSize() >= 1 && request.getBatchSize() <= 20)
+                    ? request.getBatchSize() : 5;
 
-        // Asynchronously execute AI grading in the background via QuestionGradingAsyncWorker (Spring @Async proxy)
-        if (totalSubmissions > 0) {
-            asyncWorker.executeAiGradingAsync(questionToAnswerIdsMap, batchSize);
+            Map<UUID, List<UUID>> questionToAnswerIdsMap = new LinkedHashMap<>();
+
+            if ("ENTIRE_EXAM".equalsIgnoreCase(request.getScope())) {
+                List<CandidateAnswer> allPending = candidateAnswerRepository.findPendingByExamId(
+                        exam.getId(), GradingStatus.PENDING_MANUAL);
+
+                for (CandidateAnswer ca : allPending) {
+                    questionToAnswerIdsMap.computeIfAbsent(ca.getQuestion().getId(), k -> new ArrayList<>())
+                            .add(ca.getId());
+                }
+            } else {
+                // Scope: SINGLE_QUESTION
+                if (request.getQuestionId() == null) {
+                    throw new AppException("questionId is required when scope is SINGLE_QUESTION", HttpStatus.BAD_REQUEST);
+                }
+
+                Question question = questionRepository.findByIdWithOptionsAndExam(request.getQuestionId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Question", "id", request.getQuestionId()));
+                verifyExamOwnership(question.getExam(), teacher);
+
+                List<CandidateAnswer> pending = candidateAnswerRepository.findPendingByQuestionId(
+                        request.getQuestionId(), GradingStatus.PENDING_MANUAL);
+
+                if (!pending.isEmpty()) {
+                    questionToAnswerIdsMap.put(question.getId(), pending.stream().map(CandidateAnswer::getId).toList());
+                }
+            }
+
+            int totalSubmissions = questionToAnswerIdsMap.values().stream().mapToInt(List::size).sum();
+            int totalQuestions = questionToAnswerIdsMap.keySet().size();
+
+            if (totalSubmissions == 0) {
+                // Release lock immediately if there are no pending submissions
+                stringRedisTemplate.delete(lockKey);
+                return TriggerAiGradingResponse.builder()
+                        .status("ACCEPTED")
+                        .message("No pending essay submissions found to grade for this exam.")
+                        .totalQuestionsScheduled(0)
+                        .totalSubmissionsScheduled(0)
+                        .build();
+            }
+
+            String jobId = UUID.randomUUID().toString();
+            // Register as QUEUED in Redis metrics dashboard
+            aiMetricsRedisService.registerActiveJob(
+                    jobId, "AI_GRADING", targetExamId, exam.getTitle(), totalQuestions, totalSubmissions, "QUEUED");
+
+            // Dispatch task to dedicated single-thread aiGradingExecutor queue
+            asyncWorker.executeAiGradingAsync(jobId, targetExamId, questionToAnswerIdsMap, batchSize);
+
+            return TriggerAiGradingResponse.builder()
+                    .status("ACCEPTED")
+                    .message(String.format("AI grading queued for %d essay question(s) with %d submission(s) using batch size %d.",
+                            totalQuestions, totalSubmissions, batchSize))
+                    .totalQuestionsScheduled(totalQuestions)
+                    .totalSubmissionsScheduled(totalSubmissions)
+                    .build();
+
+        } catch (Exception e) {
+            // Guarantee lock release if error occurs before background worker starts
+            stringRedisTemplate.delete(lockKey);
+            throw e;
         }
-
-        return TriggerAiGradingResponse.builder()
-                .status("ACCEPTED")
-                .message(String.format("AI grading scheduled for %d essay question(s) with %d submission(s) using batch size %d.",
-                        totalQuestions, totalSubmissions, batchSize))
-                .totalQuestionsScheduled(totalQuestions)
-                .totalSubmissionsScheduled(totalSubmissions)
-                .build();
     }
 
     @Override

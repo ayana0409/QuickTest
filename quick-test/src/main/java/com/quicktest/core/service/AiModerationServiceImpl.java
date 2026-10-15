@@ -2,7 +2,7 @@ package com.quicktest.core.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quicktest.config.GeminiProperties;
+import com.quicktest.config.GeminiPoolProperties;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.modules.admin.dto.AiModerationResultDto;
 import com.quicktest.modules.assessment.entity.AnswerOption;
@@ -10,18 +10,14 @@ import com.quicktest.modules.assessment.entity.Question;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
 
-import java.time.Duration;
 import java.util.*;
 
 /**
  * Concrete implementation of AiModerationService.
- * Sends text-only questions/answers to Google Gemini for content safety classification.
+ * Sends text-only questions/answers to Google Gemini for content safety classification
+ * using automatic multi-key and multi-model rotation.
  * Returns per-question verdicts: safe (true) or unsafe (false).
  */
 @Slf4j
@@ -30,7 +26,8 @@ import java.util.*;
 @SuppressWarnings("null")
 public class AiModerationServiceImpl implements AiModerationService {
 
-    private final GeminiProperties geminiProperties;
+    private final GeminiRotationService geminiRotationService;
+    private final GeminiPoolProperties geminiPoolProperties;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -39,68 +36,14 @@ public class AiModerationServiceImpl implements AiModerationService {
             return AiModerationResultDto.builder().results(Collections.emptyList()).build();
         }
 
-        // Validate API key is configured before making an API call
-        String apiKey = geminiProperties.getApiKey() != null ? geminiProperties.getApiKey().trim() : "";
-        if (apiKey.isEmpty() || apiKey.equalsIgnoreCase("xxx") || apiKey.contains("YOUR_")) {
-            String errMsg = "Google Gemini API key is not configured. Cannot perform AI moderation. " +
-                    "Please configure 'gemini.api-key' in application.properties.";
-            log.error(errMsg);
-            throw new AppException(errMsg, HttpStatus.BAD_REQUEST);
-        }
-
         // Build a single structured prompt for the entire batch
         String prompt = buildModerationPrompt(questions);
-        String url = String.format("%s/%s:generateContent?key=%s",
-                geminiProperties.getBaseUrl(),
-                geminiProperties.getModel(),
-                apiKey);
 
-        log.info("[AI Moderation] Sending batch of {} questions to Gemini for content safety analysis",
+        log.info("[AI Moderation] Sending batch of {} questions to Gemini rotation pool for content safety analysis",
                 questions.size());
 
-        // Build request payload with JSON mode enabled for structured output
-        Map<String, Object> requestPayload = Map.of(
-                "contents", List.of(
-                        Map.of("parts", List.of(Map.of("text", prompt)))
-                ),
-                "generationConfig", Map.of(
-                        "responseMimeType", "application/json",
-                        "temperature", 0.1,   // Very low temperature for deterministic safety decisions
-                        "maxOutputTokens", geminiProperties.getMaxTokens()
-                )
-        );
-
-        // Configure HTTP client with timeout
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        int timeoutMs = geminiProperties.getTimeoutSeconds() > 0 ? geminiProperties.getTimeoutSeconds() * 1000 : 60000;
-        requestFactory.setConnectTimeout(Duration.ofMillis(timeoutMs));
-        requestFactory.setReadTimeout(Duration.ofMillis(timeoutMs));
-
-        RestClient restClient = RestClient.builder()
-                .requestFactory(requestFactory)
-                .build();
-
-        // Execute the API call with full error capture
-        String responseBody;
-        try {
-            responseBody = restClient.post()
-                    .uri(url)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestPayload)
-                    .retrieve()
-                    .body(String.class);
-
-        } catch (RestClientResponseException ex) {
-            String errorMsg = String.format("[AI Moderation] Gemini API returned HTTP error [%s]: %s",
-                    ex.getStatusCode(), ex.getResponseBodyAsString());
-            log.error(errorMsg, ex);
-            throw new AppException(errorMsg, HttpStatus.SERVICE_UNAVAILABLE);
-
-        } catch (Exception e) {
-            String errorMsg = "[AI Moderation] Failed to connect to Gemini AI service: " + e.getMessage();
-            log.error(errorMsg, e);
-            throw new AppException(errorMsg, HttpStatus.SERVICE_UNAVAILABLE);
-        }
+        int maxTokens = geminiPoolProperties.getMaxTokens() > 0 ? geminiPoolProperties.getMaxTokens() : 4000;
+        String responseBody = geminiRotationService.executeWithRotation(prompt, 0.1, maxTokens);
 
         // Validate non-empty response
         if (responseBody == null || responseBody.isBlank()) {
@@ -109,7 +52,7 @@ public class AiModerationServiceImpl implements AiModerationService {
             throw new AppException(errMsg, HttpStatus.SERVICE_UNAVAILABLE);
         }
 
-        log.info("[AI Moderation] Received response from Gemini. Parsing safety verdicts...");
+        log.info("[AI Moderation] Received response from Gemini rotation pool. Parsing safety verdicts...");
         return parseGeminiModerationResponse(responseBody, questions);
     }
 

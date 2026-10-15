@@ -6,6 +6,7 @@ import com.quicktest.modules.session.entity.ExamAttempt;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -69,13 +70,23 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
     @Query("SELECT ea FROM ExamAttempt ea JOIN FETCH ea.exam e LEFT JOIN FETCH ea.user u WHERE ea.id = :id")
     Optional<ExamAttempt> findByIdWithExamAndUser(@Param("id") UUID id);
 
+    /**
+     * Eagerly fetch ExamAttempt with User to eliminate N+1 queries during monitoring list view.
+     */
+    @EntityGraph(attributePaths = {"user"})
     Page<ExamAttempt> findByExamId(UUID examId, Pageable pageable);
 
+    /**
+     * Eagerly fetch ExamAttempt with User for status-filtered monitoring list view.
+     */
+    @EntityGraph(attributePaths = {"user"})
     Page<ExamAttempt> findByExamIdAndStatus(UUID examId, AttemptStatus status, Pageable pageable);
 
     /**
      * Search exam attempts by candidate keyword without status filter.
+     * Uses @EntityGraph to eagerly fetch user and prevent N+1 queries.
      */
+    @EntityGraph(attributePaths = {"user"})
     @Query("SELECT ea FROM ExamAttempt ea " +
            "LEFT JOIN ea.user u " +
            "WHERE ea.exam.id = :examId " +
@@ -90,7 +101,9 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
 
     /**
      * Search exam attempts by candidate keyword and specific attempt status.
+     * Uses @EntityGraph to eagerly fetch user and prevent N+1 queries.
      */
+    @EntityGraph(attributePaths = {"user"})
     @Query("SELECT ea FROM ExamAttempt ea " +
            "LEFT JOIN ea.user u " +
            "WHERE ea.exam.id = :examId " +

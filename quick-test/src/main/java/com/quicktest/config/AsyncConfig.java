@@ -38,6 +38,26 @@ public class AsyncConfig {
     }
 
     /**
+     * Dedicated single-thread executor for AI essay grading jobs.
+     * Core size 1 and max size 1 guarantee serialized, single-thread execution
+     * to dedicate 100% of API quota to one exam at a time without multi-worker race conditions.
+     * Queue capacity of 100 allows queuing upcoming grading requests from different teachers.
+     */
+    @Bean(name = "aiGradingExecutor")
+    public Executor aiGradingExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("ai-grading-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(300);
+        executor.initialize();
+        log.info("AI Grading thread pool executor initialized: coreSize=1, maxSize=1, queue=100");
+        return executor;
+    }
+
+    /**
      * Dedicated thread pool executor for asynchronous database logging.
      * Prevents audit writes from interfering with core business transactions or web responses.
      */

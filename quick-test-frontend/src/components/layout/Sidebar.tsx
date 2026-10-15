@@ -21,6 +21,7 @@ import {
   User as UserIcon,
   ShieldAlert,
   Activity,
+  Cpu,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -33,6 +34,7 @@ interface NavItem {
 const roleNavItems: Record<string, NavItem[]> = {
   ADMIN: [
     { label: 'System Overview', href: '/admin', icon: LayoutDashboard },
+    { label: 'AI Management', href: '/admin/ai', icon: Cpu },
     { label: 'User Management', href: '/admin/users', icon: Users },
     { label: 'Content Moderation', href: '/admin/moderation', icon: ShieldAlert },
     { label: 'Exam Monitoring', href: '/admin/exams', icon: Shield },
