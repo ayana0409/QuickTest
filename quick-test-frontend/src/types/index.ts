@@ -9,3 +9,4 @@ export * from './candidateAnswer';
 export * from './exam';
 export * from './proctoring';
 export * from './admin';
+export * from './aiGenerate';

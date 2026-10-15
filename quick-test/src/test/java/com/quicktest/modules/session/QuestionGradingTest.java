@@ -307,11 +307,11 @@ class QuestionGradingTest {
         assertEquals(2, response.getTotalSubmissionsScheduled());
         verify(aiMetricsRedisService, times(1)).registerActiveJob(
                 anyString(), eq("AI_GRADING"), eq(exam.getId()), eq(exam.getTitle()), eq(1), eq(2), eq("QUEUED"));
-        verify(asyncWorker, times(1)).executeAiGradingAsync(anyString(), eq(exam.getId()), anyMap(), eq(5));
+        verify(asyncWorker, times(1)).executeAiGradingAsync(anyString(), eq(exam.getId()), eq(teacher.getId()), anyMap(), eq(5));
     }
 
     @Test
-    @DisplayName("Should throw CONFLICT when concurrent AI grading job is already locked on the same exam")
+    @DisplayName("Should throw CONFLICT when concurrent AI grading job is already locked on the same user or exam")
     void testTriggerAiGrading_DuplicateLock_ThrowsConflict() {
         TriggerAiGradingRequest request = TriggerAiGradingRequest.builder()
                 .examId(exam.getId())
@@ -329,8 +329,8 @@ class QuestionGradingTest {
                 questionGradingService.triggerAiGrading(request, teacher));
 
         assertEquals(HttpStatus.CONFLICT, ex.getStatus());
-        assertTrue(ex.getMessage().contains("already has an active or queued AI grading task"));
-        verify(asyncWorker, never()).executeAiGradingAsync(any(), any(), any(), anyInt());
+        assertTrue(ex.getMessage().contains("tác vụ AI"));
+        verify(asyncWorker, never()).executeAiGradingAsync(any(), any(), any(), any(), anyInt());
     }
 
     @Test
@@ -356,7 +356,8 @@ class QuestionGradingTest {
         assertNotNull(response);
         assertEquals(0, response.getTotalSubmissionsScheduled());
         verify(stringRedisTemplate, times(1)).delete("ai:grading:lock:exam:" + exam.getId());
-        verify(asyncWorker, never()).executeAiGradingAsync(any(), any(), any(), anyInt());
+        verify(stringRedisTemplate, times(1)).delete("ai:lock:user:" + teacher.getId());
+        verify(asyncWorker, never()).executeAiGradingAsync(any(), any(), any(), any(), anyInt());
     }
 
     @Test

@@ -220,13 +220,22 @@ public class AdminAiServiceImpl implements AdminAiService {
             }
             aiMetricsRedisService.removeActiveJob(job.getJobId());
         }
+        try {
+            java.util.Set<String> userLocks = stringRedisTemplate.keys("ai:lock:user:*");
+            if (userLocks != null && !userLocks.isEmpty()) {
+                stringRedisTemplate.delete(userLocks);
+                log.info("[AdminAi] Cleared {} orphan user lock(s).", userLocks.size());
+            }
+        } catch (Exception e) {
+            log.warn("[AdminAi] Error scanning user locks during clearAllJobs: {}", e.getMessage());
+        }
         log.info("[AdminAi] Cleared all ({}) background jobs and released corresponding Redis locks.", jobs.size());
     }
 
     /**
      * Automatically cleans up stale or orphaned background grading jobs and releases any
-     * leftover Redis exam locks when the Spring Boot server boots up.
-     * Prevents aborted JVM sessions from blocking future grading attempts.
+     * leftover Redis exam and user locks when the Spring Boot server boots up.
+     * Prevents aborted JVM sessions from blocking future grading or generation attempts.
      */
     @EventListener(ApplicationReadyEvent.class)
     public void cleanupOrphanJobsOnStartup() {
@@ -236,7 +245,14 @@ public class AdminAiServiceImpl implements AdminAiService {
                 log.info("[AI STARTUP CLEANUP] Detected {} orphan AI background job(s) from previous server run. Cleaning up...",
                         orphanJobs.size());
                 clearAllJobs();
-                log.info("[AI STARTUP CLEANUP] Successfully cleared orphan background jobs and released exam locks.");
+                log.info("[AI STARTUP CLEANUP] Successfully cleared orphan background jobs and released locks.");
+            } else {
+                // Ensure no stale user locks persist across server restarts
+                java.util.Set<String> userLocks = stringRedisTemplate.keys("ai:lock:user:*");
+                if (userLocks != null && !userLocks.isEmpty()) {
+                    stringRedisTemplate.delete(userLocks);
+                    log.info("[AI STARTUP CLEANUP] Cleared {} lingering user AI lock(s) on reboot.", userLocks.size());
+                }
             }
         } catch (Exception e) {
             log.warn("[AI STARTUP CLEANUP] Failed to cleanup orphan background jobs on startup: {}", e.getMessage());

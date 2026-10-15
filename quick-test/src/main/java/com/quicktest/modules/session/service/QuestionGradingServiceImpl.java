@@ -302,15 +302,27 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", targetExamId));
         verifyExamOwnership(exam, teacher);
 
-        // Acquire Redis Distributed Lock to prevent duplicate concurrent grading requests on the same exam
+        // Enforce: exactly ONE active AI task per user account at any time (shared between grading & quiz generation)
+        String userLockKey = "ai:lock:user:" + teacher.getId();
+        Boolean userAcquired = stringRedisTemplate.opsForValue().setIfAbsent(userLockKey, "LOCKED", Duration.ofHours(8));
+        if (!Boolean.TRUE.equals(userAcquired)) {
+            log.warn("[AI Grading] User {} attempted to spawn concurrent AI task while another AI job is active/queued.", teacher.getId());
+            throw new AppException(
+                    "Tài khoản của bạn hiện đang có một tác vụ AI (chấm bài hoặc soạn đề) đang được xử lý hoặc xếp hàng. " +
+                    "Vui lòng chờ tác vụ hiện tại hoàn tất trước khi tạo thêm!",
+                    HttpStatus.CONFLICT);
+        }
+
+        // Acquire Redis Distributed Lock to prevent duplicate concurrent grading requests on the same exam (8-hour TTL)
         String lockKey = "ai:grading:lock:exam:" + targetExamId;
         String lockOwner = (teacher.getUsername() != null && !teacher.getUsername().isBlank())
                 ? teacher.getUsername() : teacher.getId().toString();
-        Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, lockOwner, Duration.ofMinutes(15));
+        Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, lockOwner, Duration.ofHours(8));
         if (!Boolean.TRUE.equals(acquired)) {
+            stringRedisTemplate.delete(userLockKey);
             log.warn("Duplicate AI grading rejected for exam ID: {} by teacher: {}", targetExamId, lockOwner);
             throw new AppException(
-                    "This exam already has an active or queued AI grading task in progress. Please wait for it to complete before submitting again!",
+                    "Đề thi này đã có một tác vụ chấm AI đang xử lý hoặc đang xếp hàng. Vui lòng chờ hoàn tất!",
                     HttpStatus.CONFLICT);
         }
 
@@ -350,8 +362,9 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             int totalQuestions = questionToAnswerIdsMap.keySet().size();
 
             if (totalSubmissions == 0) {
-                // Release lock immediately if there are no pending submissions
+                // Release locks immediately if there are no pending submissions
                 stringRedisTemplate.delete(lockKey);
+                stringRedisTemplate.delete(userLockKey);
                 return TriggerAiGradingResponse.builder()
                         .status("ACCEPTED")
                         .message("No pending essay submissions found to grade for this exam.")
@@ -366,7 +379,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                     jobId, "AI_GRADING", targetExamId, exam.getTitle(), totalQuestions, totalSubmissions, "QUEUED");
 
             // Dispatch task to dedicated single-thread aiGradingExecutor queue
-            asyncWorker.executeAiGradingAsync(jobId, targetExamId, questionToAnswerIdsMap, batchSize);
+            asyncWorker.executeAiGradingAsync(jobId, targetExamId, teacher.getId(), questionToAnswerIdsMap, batchSize);
 
             return TriggerAiGradingResponse.builder()
                     .status("ACCEPTED")
@@ -379,6 +392,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         } catch (Exception e) {
             // Guarantee lock release if error occurs before background worker starts
             stringRedisTemplate.delete(lockKey);
+            stringRedisTemplate.delete(userLockKey);
             throw e;
         }
     }

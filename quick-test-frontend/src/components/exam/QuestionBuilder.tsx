@@ -23,6 +23,7 @@ import { Badge } from '@/components/common/Badge';
 import { Card } from '@/components/common/Card';
 import { Modal } from '@/components/common/Modal';
 import { QuestionBankModal } from '@/components/exam/QuestionBankModal';
+import { AiQuizGeneratorModal } from '@/components/exam/AiQuizGeneratorModal';
 import { examService } from '@/services/exam.service';
 import type {
   QuestionResponse,
@@ -97,6 +98,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -599,6 +601,14 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         {!isLocked && (
           <div className="flex items-center gap-2">
             <Button
+              size="sm"
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md shadow-indigo-500/20 border-0"
+              leftIcon={<Sparkles className="w-4 h-4 animate-pulse" />}
+              onClick={() => setIsAiModalOpen(true)}
+            >
+              Soạn đề AI
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               leftIcon={<Layers className="w-4 h-4 text-indigo-500" />}
@@ -629,6 +639,14 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
           </p>
           {!isLocked && (
             <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md shadow-indigo-500/20 border-0"
+                leftIcon={<Sparkles className="w-4 h-4 animate-pulse" />}
+                onClick={() => setIsAiModalOpen(true)}
+              >
+                ✨ Soạn đề bằng AI từ tài liệu
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -1233,6 +1251,16 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       <QuestionBankModal
         isOpen={isBankModalOpen}
         onClose={() => setIsBankModalOpen(false)}
+        examId={examId}
+        onImportSuccess={() => {
+          onQuestionsChange();
+        }}
+      />
+
+      {/* AI Document-to-Exam Generator Modal */}
+      <AiQuizGeneratorModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
         examId={examId}
         onImportSuccess={() => {
           onQuestionsChange();

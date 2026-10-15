@@ -81,10 +81,19 @@ public class QuestionGradingAsyncWorker {
      */
     @Async("aiGradingExecutor")
     public void executeAiGradingAsync(String jobId, UUID examId, Map<UUID, List<UUID>> questionToAnswerIdsMap, int batchSize) {
+        executeAiGradingAsync(jobId, examId, null, questionToAnswerIdsMap, batchSize);
+    }
+
+    /**
+     * Executes AI evaluation for questions and candidate answers sequentially in the background.
+     * Releases both exam-level lock and user-level lock upon completion or error.
+     */
+    @Async("aiGradingExecutor")
+    public void executeAiGradingAsync(String jobId, UUID examId, UUID teacherId, Map<UUID, List<UUID>> questionToAnswerIdsMap, int batchSize) {
         // Transition job status from QUEUED to PROCESSING in Redis metrics dashboard
         aiMetricsRedisService.updateJobStatus(jobId, "PROCESSING", Thread.currentThread().getName());
-        log.info("[BACKGROUND WORKER] Started processing AI grading job [{}] for exam [{}] on thread [{}]",
-                jobId, examId, Thread.currentThread().getName());
+        log.info("[BACKGROUND WORKER] Started processing AI grading job [{}] for exam [{}] on thread [{}] (teacher: {})",
+                jobId, examId, Thread.currentThread().getName(), teacherId);
 
         int totalQuestions = questionToAnswerIdsMap.size();
         int totalAnswers = questionToAnswerIdsMap.values().stream().mapToInt(List::size).sum();
@@ -214,6 +223,10 @@ public class QuestionGradingAsyncWorker {
             if (examId != null) {
                 stringRedisTemplate.delete("ai:grading:lock:exam:" + examId);
                 log.info("[BACKGROUND WORKER] AI grading job [{}] completed. Released Redis lock for exam ID {}", jobId, examId);
+            }
+            if (teacherId != null) {
+                stringRedisTemplate.delete("ai:lock:user:" + teacherId);
+                log.info("[BACKGROUND WORKER] AI grading job [{}] completed. Released Redis lock for teacher ID {}", jobId, teacherId);
             }
         }
     }
