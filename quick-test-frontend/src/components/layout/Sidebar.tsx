@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Activity,
   Cpu,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -45,6 +46,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   TEACHER: [
     { label: 'Exam Management', href: '/teacher/exams', icon: BookOpen },
     { label: 'Essay Grading', href: '/teacher/grading', icon: FileCheck },
+    { label: 'Tác vụ AI', href: '/teacher/ai-tasks', icon: Sparkles },
     { label: 'Thông tin cá nhân', href: '/teacher/profile', icon: UserIcon },
   ],
   STUDENT: [

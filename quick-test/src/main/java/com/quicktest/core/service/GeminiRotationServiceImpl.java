@@ -387,4 +387,12 @@ public class GeminiRotationServiceImpl implements GeminiRotationService {
         // Capped at 25 submissions per batch to guarantee JSON feedback never exceeds Gemini's max output tokens (8192)
         return 25;
     }
+
+    @Override
+    public void advanceToNextSlot() {
+        if (!slots.isEmpty()) {
+            int next = (currentSlotIndex.incrementAndGet()) % slots.size();
+            log.info("[GeminiRotation] Manually advanced sticky slot index to {}", next);
+        }
+    }
 }

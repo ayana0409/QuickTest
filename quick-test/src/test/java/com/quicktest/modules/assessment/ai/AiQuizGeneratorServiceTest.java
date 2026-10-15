@@ -20,6 +20,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.atLeastOnce;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiQuizGeneratorService Unit Tests")
@@ -125,5 +127,103 @@ class AiQuizGeneratorServiceTest {
                 aiQuizGeneratorService.generateQuestions("Valid document text...", request));
 
         assertEquals(503, ex.getStatus().value());
+    }
+
+    @Test
+    @DisplayName("Should successfully accumulate questions across multiple passes when requested count exceeds single batch")
+    void testGenerateQuestions_MultiPass_AccumulatesAndRotates() {
+        String batch1Response = """
+                {
+                  "questions": [
+                    {
+                      "content": "Câu hỏi số 1: Trình bày khái niệm A?",
+                      "questionType": "SINGLE_CHOICE",
+                      "points": 1.0,
+                      "difficulty": "EASY",
+                      "explanation": "Giải thích câu 1",
+                      "options": [
+                        { "orderIndex": 0, "content": "Đáp án 1A", "isCorrect": true },
+                        { "orderIndex": 1, "content": "Đáp án 1B", "isCorrect": false }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        String batch2Response = """
+                {
+                  "questions": [
+                    {
+                      "content": "Câu hỏi số 2: Trình bày khái niệm B?",
+                      "questionType": "SINGLE_CHOICE",
+                      "points": 1.0,
+                      "difficulty": "MEDIUM",
+                      "explanation": "Giải thích câu 2",
+                      "options": [
+                        { "orderIndex": 0, "content": "Đáp án 2A", "isCorrect": true },
+                        { "orderIndex": 1, "content": "Đáp án 2B", "isCorrect": false }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        when(geminiRotationService.executeWithRotation(anyString(), anyDouble(), anyInt()))
+                .thenReturn(batch1Response)
+                .thenReturn(batch2Response);
+
+        AiGenerateQuizRequest request = AiGenerateQuizRequest.builder()
+                .totalQuestions(2)
+                .difficulty("BALANCED")
+                .language("vi")
+                .targetQuestionTypes(List.of(QuestionType.SINGLE_CHOICE))
+                .build();
+
+        List<AiGeneratedQuestionDto> questions = aiQuizGeneratorService.generateQuestions("Tài liệu bài học...", request);
+
+        assertNotNull(questions);
+        assertEquals(2, questions.size());
+        assertEquals("ai-q-1", questions.get(0).getTempId());
+        assertEquals("ai-q-2", questions.get(1).getTempId());
+        verify(geminiRotationService, atLeastOnce()).advanceToNextSlot();
+    }
+
+    @Test
+    @DisplayName("Should gracefully fallback to accumulated questions when subsequent pass fails")
+    void testGenerateQuestions_ContinuationError_FallbacksGracefully() {
+        String batch1Response = """
+                {
+                  "questions": [
+                    {
+                      "content": "Câu hỏi số 1 duy nhất tạo được: Khái niệm C?",
+                      "questionType": "SINGLE_CHOICE",
+                      "points": 1.0,
+                      "difficulty": "EASY",
+                      "explanation": "Giải thích câu 1",
+                      "options": [
+                        { "orderIndex": 0, "content": "Đáp án đúng", "isCorrect": true },
+                        { "orderIndex": 1, "content": "Đáp án sai", "isCorrect": false }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        when(geminiRotationService.executeWithRotation(anyString(), anyDouble(), anyInt()))
+                .thenReturn(batch1Response)
+                .thenThrow(new RuntimeException("Rate limit 429 on all slots"));
+
+        AiGenerateQuizRequest request = AiGenerateQuizRequest.builder()
+                .totalQuestions(3)
+                .difficulty("EASY")
+                .language("vi")
+                .targetQuestionTypes(List.of(QuestionType.SINGLE_CHOICE))
+                .build();
+
+        List<AiGeneratedQuestionDto> questions = aiQuizGeneratorService.generateQuestions("Tài liệu...", request);
+
+        assertNotNull(questions);
+        assertEquals(1, questions.size(), "Should safely fallback to 1 accumulated question instead of failing");
+        assertEquals("ai-q-1", questions.get(0).getTempId());
     }
 }

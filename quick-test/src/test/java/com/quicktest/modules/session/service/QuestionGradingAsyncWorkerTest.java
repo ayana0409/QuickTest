@@ -62,6 +62,9 @@ class QuestionGradingAsyncWorkerTest {
     @Mock
     private StringRedisTemplate stringRedisTemplate;
 
+    @Mock
+    private com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService;
+
     private QuestionGradingAsyncWorker asyncWorker;
 
     private Question question;
@@ -96,7 +99,8 @@ class QuestionGradingAsyncWorkerTest {
                 geminiRotationService,
                 aiMetricsRedisService,
                 directTxManager,
-                stringRedisTemplate
+                stringRedisTemplate,
+                teacherAiTaskService
         );
 
         exam = Exam.builder().id(UUID.randomUUID()).title("Science Exam").build();

@@ -75,4 +75,10 @@ public interface GeminiRotationService {
      * Returns the maximum safe candidate count per batch to prevent exceeding Gemini's max output tokens (8192).
      */
     int getMaxBatchCandidateCount();
+
+    /**
+     * Explicitly advances the rotation pointer to the next configured slot.
+     * Useful for multi-pass tasks to balance token and rate limit loads across different keys/models.
+     */
+    void advanceToNextSlot();
 }

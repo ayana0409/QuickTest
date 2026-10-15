@@ -41,6 +41,7 @@ public class AiGenerateServiceImpl implements AiGenerateService {
     private final AiMetricsRedisService aiMetricsRedisService;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+    private final TeacherAiTaskService teacherAiTaskService;
 
     @Override
     public AiGenerateJobResponse submitQuizGenerationJob(
@@ -102,6 +103,22 @@ public class AiGenerateServiceImpl implements AiGenerateService {
                 questionCount,
                 "QUEUED");
 
+        // Register task in Teacher Tasks monitoring index (accessible from /teacher/ai-tasks)
+        teacherAiTaskService.createTask(TeacherAiTaskDto.builder()
+                .taskId(jobId)
+                .type("AI_QUIZ_GEN")
+                .teacherId(teacher.getId())
+                .title(fileName)
+                .targetExamId(request.getExamId())
+                .targetExamTitle(request.getExamId() != null ? "Đề thi: " + request.getExamId() : null)
+                .status("QUEUED")
+                .progressPercent(0)
+                .currentStep("Đã xếp hàng vào luồng xử lý AI duy nhất.")
+                .totalItems(questionCount)
+                .processedItems(0)
+                .createdAt(Instant.now().toString())
+                .build());
+
         // Dispatch to shared single-thread executor
         asyncWorker.executeQuizGenerationAsync(jobId, teacher.getId(), documentText, fileName, request);
 
@@ -148,6 +165,9 @@ public class AiGenerateServiceImpl implements AiGenerateService {
         // Mark as FAILED / CANCELLED in Redis
         asyncWorker.updateJobStatus(jobId, "Cancelled", "FAILED", 0,
                 "Tiến trình tạo đề đã bị hủy bởi giáo viên.", null, "User cancelled job");
+
+        // Cancel in teacher tasks tracking
+        teacherAiTaskService.cancelTask(jobId, teacher.getId());
 
         aiMetricsRedisService.removeActiveJob(jobId);
         log.info("[AiGenerate] User {} cancelled quiz generation job {}", teacher.getId(), jobId);

@@ -76,6 +76,9 @@ class QuestionGradingTest {
     @Mock
     private AiMetricsRedisService aiMetricsRedisService;
 
+    @Mock
+    private com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService;
+
     @InjectMocks
     private QuestionGradingServiceImpl questionGradingService;
 

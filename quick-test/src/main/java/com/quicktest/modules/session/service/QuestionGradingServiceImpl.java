@@ -46,6 +46,8 @@ import com.quicktest.core.service.AiMetricsRedisService;
 import java.time.Duration;
 
 import com.quicktest.core.service.GeminiGradingService;
+import com.quicktest.modules.assessment.ai.dto.TeacherAiTaskDto;
+import com.quicktest.modules.assessment.ai.service.TeacherAiTaskService;
 import com.quicktest.modules.session.dto.AiBatchGradingResultDto;
 import com.quicktest.modules.session.dto.AiSingleGradeDto;
 
@@ -66,6 +68,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     private final GeminiGradingService geminiGradingService;
     private final StringRedisTemplate stringRedisTemplate;
     private final AiMetricsRedisService aiMetricsRedisService;
+    private final TeacherAiTaskService teacherAiTaskService;
 
     public QuestionGradingServiceImpl(
             ExamRepository examRepository,
@@ -75,7 +78,8 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             GeminiRotationService geminiRotationService,
             GeminiGradingService geminiGradingService,
             StringRedisTemplate stringRedisTemplate,
-            AiMetricsRedisService aiMetricsRedisService) {
+            AiMetricsRedisService aiMetricsRedisService,
+            TeacherAiTaskService teacherAiTaskService) {
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.candidateAnswerRepository = candidateAnswerRepository;
@@ -84,6 +88,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         this.geminiGradingService = geminiGradingService;
         this.stringRedisTemplate = stringRedisTemplate;
         this.aiMetricsRedisService = aiMetricsRedisService;
+        this.teacherAiTaskService = teacherAiTaskService;
     }
 
 
@@ -377,6 +382,22 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             // Register as QUEUED in Redis metrics dashboard
             aiMetricsRedisService.registerActiveJob(
                     jobId, "AI_GRADING", targetExamId, exam.getTitle(), totalQuestions, totalSubmissions, "QUEUED");
+
+            // Register task in Teacher Tasks monitoring index (accessible from /teacher/ai-tasks)
+            teacherAiTaskService.createTask(TeacherAiTaskDto.builder()
+                    .taskId(jobId)
+                    .type("AI_GRADING")
+                    .teacherId(teacher.getId())
+                    .title("Chấm thi: " + exam.getTitle())
+                    .targetExamId(targetExamId)
+                    .targetExamTitle(exam.getTitle())
+                    .status("QUEUED")
+                    .progressPercent(0)
+                    .currentStep(String.format("Xếp hàng chấm %d bài làm tự luận.", totalSubmissions))
+                    .totalItems(totalSubmissions)
+                    .processedItems(0)
+                    .createdAt(java.time.Instant.now().toString())
+                    .build());
 
             // Dispatch task to dedicated single-thread aiGradingExecutor queue
             asyncWorker.executeAiGradingAsync(jobId, targetExamId, teacher.getId(), questionToAnswerIdsMap, batchSize);

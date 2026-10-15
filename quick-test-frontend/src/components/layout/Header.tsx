@@ -124,6 +124,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
     if (pathname.startsWith('/admin')) return 'Admin Workspace';
     if (pathname.startsWith('/teacher/exams')) return 'Exam Management';
     if (pathname.startsWith('/teacher/grading')) return 'Essay Grading';
+    if (pathname.startsWith('/teacher/ai-tasks')) return 'Tiến trình Tác vụ AI';
     if (pathname.startsWith('/teacher')) return 'Teacher Hub';
     if (pathname.startsWith('/student/history')) return 'Submission History';
     if (pathname.startsWith('/student/results')) return 'Certificates & Results';

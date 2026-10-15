@@ -36,6 +36,7 @@ public class AiQuizGeneratorAsyncWorker {
     private final AiMetricsRedisService aiMetricsRedisService;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+    private final TeacherAiTaskService teacherAiTaskService;
 
     /**
      * Executes the quiz generation asynchronously in the single-thread queue.
@@ -60,27 +61,42 @@ public class AiQuizGeneratorAsyncWorker {
         String userLockKey = REDIS_USER_LOCK_PREFIX + userId;
         String jobRedisKey = REDIS_QUIZ_JOB_PREFIX + jobId;
 
-        try {
-            // Update status to PROCESSING
-            updateJobStatus(jobId, fileName, "PROCESSING", 35,
-                    "AI đang phân tích cấu trúc bài học và soạn thảo câu hỏi...", null, null);
-            aiMetricsRedisService.updateJobStatus(jobId, "PROCESSING", Thread.currentThread().getName());
+        int targetCount = request.getTotalQuestions() != null ? request.getTotalQuestions() : 10;
 
-            // Execute AI prompt generation via Gemini Rotation Pool
-            List<AiGeneratedQuestionDto> questions = aiQuizGeneratorService.generateQuestions(documentText, request);
+        try {
+            // Update initial status to PROCESSING
+            updateJobStatus(jobId, fileName, "PROCESSING", 20,
+                    "AI đang phân tích cấu trúc bài học và chuẩn bị soạn câu hỏi...", null, null);
+            aiMetricsRedisService.updateJobStatus(jobId, "PROCESSING", Thread.currentThread().getName());
+            teacherAiTaskService.updateTaskProgress(jobId, 20, 0,
+                    "AI đang phân tích cấu trúc bài học và chuẩn bị soạn câu hỏi...");
+
+            // Execute adaptive multi-pass AI generation with rotation and progress callbacks
+            List<AiGeneratedQuestionDto> questions = aiQuizGeneratorService.generateQuestions(
+                    documentText,
+                    request,
+                    (currentCount, message) -> {
+                        int pct = Math.min(95, 25 + (int) (((double) currentCount / Math.max(1, targetCount)) * 70));
+                        updateJobStatus(jobId, fileName, "PROCESSING", pct, message, null, null);
+                        teacherAiTaskService.updateTaskProgress(jobId, pct, currentCount, message);
+                    });
 
             // Save COMPLETED state with questions payload into Redis
-            updateJobStatus(jobId, fileName, "COMPLETED", 100,
-                    String.format("Đã soạn thành công %d câu hỏi từ tài liệu.", questions.size()),
-                    questions, null);
+            String completionMsg = questions.size() >= targetCount
+                    ? String.format("Đã soạn thành công %d câu hỏi từ tài liệu.", questions.size())
+                    : String.format("Đã hoàn thành %d/%d câu hỏi (tối đa theo nội dung tài liệu).", questions.size(), targetCount);
 
-            log.info("[AI QUIZ WORKER] Job [{}] COMPLETED successfully with {} questions for user [{}]",
-                    jobId, questions.size(), userId);
+            updateJobStatus(jobId, fileName, "COMPLETED", 100, completionMsg, questions, null);
+            teacherAiTaskService.completeQuizGenTask(jobId, questions);
+
+            log.info("[AI QUIZ WORKER] Job [{}] COMPLETED successfully with {} questions (requested: {}) for user [{}]",
+                    jobId, questions.size(), targetCount, userId);
 
         } catch (Exception e) {
             log.error("[AI QUIZ WORKER] Job [{}] FAILED: {}", jobId, e.getMessage(), e);
             updateJobStatus(jobId, fileName, "FAILED", 0,
                     "Soạn đề thi thất bại: " + e.getMessage(), null, e.getMessage());
+            teacherAiTaskService.failTask(jobId, e.getMessage());
 
         } finally {
             // Guarantee release of the per-user concurrency lock so the teacher can trigger another AI task

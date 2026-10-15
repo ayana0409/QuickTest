@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Sparkles,
   UploadCloud,
@@ -59,6 +60,8 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
   examId,
   onImportSuccess,
 }) => {
+  const router = useRouter();
+
   // Wizard state
   const [currentStep, setCurrentStep] = useState<WizardStep>('CONFIG');
   const [inputTab, setInputTab] = useState<'FILE' | 'TEXT'>('FILE');
@@ -361,10 +364,12 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
       isOpen={isOpen}
       onClose={() => {
         if (currentStep === 'POLLING') {
-          if (confirm('Tác vụ AI đang chạy nền. Bạn có chắc muốn đóng hộp thoại?')) {
-            stopPolling();
-            onClose();
-          }
+          stopPolling();
+          onClose();
+          toast.success(
+            'Tác vụ AI đang tiếp tục xử lý trong hàng đợi nền! Bạn có thể xem lại tại trang "Tác vụ AI".',
+            { duration: 5000, icon: '⚡' }
+          );
         } else {
           onClose();
         }
@@ -697,10 +702,14 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
           </div>
 
           {/* Action Footer */}
-          <div className="pt-2 flex items-center justify-end gap-3 border-t border-zinc-100 dark:border-zinc-800">
-            <Button variant="outline" size="sm" onClick={onClose} disabled={isSubmitting}>
-              Đóng
-            </Button>
+          <div className="pt-2 flex items-center justify-between gap-3 border-t border-zinc-100 dark:border-zinc-800">
+            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 hidden sm:inline">
+              ⚡ Tác vụ sẽ tự động xếp vào hàng đợi nền an toàn
+            </span>
+            <div className="flex items-center gap-2.5 ml-auto">
+              <Button variant="outline" size="sm" onClick={onClose} disabled={isSubmitting}>
+                Đóng
+              </Button>
             <Button
               size="sm"
               className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-lg shadow-indigo-500/25 border-0"
@@ -716,6 +725,7 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
             >
               {isSubmitting ? 'Đang gửi tài liệu...' : 'Bắt đầu soạn đề AI'}
             </Button>
+            </div>
           </div>
         </div>
       )}
@@ -793,19 +803,64 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
             </div>
           )}
 
-          {/* Cancel button during active or queued states */}
+          {/* Action buttons during active or queued states */}
           {jobSnapshot?.status !== 'FAILED' && (
-            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-red-600 hover:text-red-700 border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/30"
-                onClick={handleCancelJob}
-                disabled={isCancelling}
-                leftIcon={isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-              >
-                {isCancelling ? 'Đang hủy...' : 'Hủy tác vụ này'}
-              </Button>
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
+              <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 text-xs text-indigo-900 dark:text-indigo-200 text-left flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5 animate-pulse" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-indigo-950 dark:text-indigo-200">
+                    Tác vụ đang chạy trong hàng đợi ngầm
+                  </p>
+                  <p className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80 leading-relaxed">
+                    Bạn không cần phải giữ cửa sổ này! Hãy thoải mái đóng hộp thoại để tiếp tục làm việc khác, hệ thống sẽ lưu kết quả vào trang <strong>Tác vụ AI</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    stopPolling();
+                    onClose();
+                    toast.success('Tác vụ đang tiếp tục chạy ngầm! Bạn có thể xem lại tại trang "Tác vụ AI".', {
+                      duration: 5000,
+                      icon: '⚡',
+                    });
+                  }}
+                  className="w-full sm:w-auto text-xs rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+                  leftIcon={<Layers className="w-3.5 h-3.5" />}
+                >
+                  Chạy ngầm & Đóng
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    stopPolling();
+                    onClose();
+                    router.push('/teacher/ai-tasks');
+                  }}
+                  className="w-full sm:w-auto text-xs rounded-xl border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  leftIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                >
+                  Đến trang Tác vụ AI
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto text-xs text-red-600 hover:text-red-700 border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl"
+                  onClick={handleCancelJob}
+                  disabled={isCancelling}
+                  leftIcon={isCancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                >
+                  {isCancelling ? 'Đang hủy...' : 'Hủy tác vụ'}
+                </Button>
+              </div>
             </div>
           )}
         </div>

@@ -52,6 +52,7 @@ public class QuestionGradingAsyncWorker {
     private final AiMetricsRedisService aiMetricsRedisService;
     private final TransactionTemplate transactionTemplate;
     private final StringRedisTemplate stringRedisTemplate;
+    private final com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService;
 
     public QuestionGradingAsyncWorker(
             QuestionRepository questionRepository,
@@ -62,7 +63,8 @@ public class QuestionGradingAsyncWorker {
             GeminiRotationService geminiRotationService,
             AiMetricsRedisService aiMetricsRedisService,
             PlatformTransactionManager transactionManager,
-            StringRedisTemplate stringRedisTemplate) {
+            StringRedisTemplate stringRedisTemplate,
+            com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService) {
         this.questionRepository = questionRepository;
         this.candidateAnswerRepository = candidateAnswerRepository;
         this.examAttemptRepository = examAttemptRepository;
@@ -72,6 +74,7 @@ public class QuestionGradingAsyncWorker {
         this.aiMetricsRedisService = aiMetricsRedisService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.stringRedisTemplate = stringRedisTemplate;
+        this.teacherAiTaskService = teacherAiTaskService;
     }
 
     /**
@@ -198,6 +201,10 @@ public class QuestionGradingAsyncWorker {
                         processedAnswersTotal += batchAnswers.size();
                         aiMetricsRedisService.updateJobProgress(jobId, processedAnswersTotal);
 
+                        int pct = totalAnswers > 0 ? Math.min(99, (processedAnswersTotal * 100) / totalAnswers) : 0;
+                        teacherAiTaskService.updateTaskProgress(jobId, pct, processedAnswersTotal,
+                                String.format("Đã chấm %d/%d bài làm tự luận.", processedAnswersTotal, totalAnswers));
+
                         log.info("[BACKGROUND WORKER] COMMITTED dynamic AI batch to DB for question {}: {} answers graded and saved (Progress: {}/{}).",
                                 questionId, batchAnswers.size(), processedAnswersTotal, totalAnswers);
 
@@ -216,8 +223,13 @@ public class QuestionGradingAsyncWorker {
                     log.info("[BACKGROUND WORKER] Completed async AI grading. Finalized {} exam attempt(s).", finalizedCount);
                 });
             }
+
+            // Mark task completed in TeacherAiTaskService
+            teacherAiTaskService.completeGradingTask(jobId);
+
         } catch (Exception e) {
             log.error("[BACKGROUND WORKER] Fatal error in async AI grading job {}: {}", jobId, e.getMessage(), e);
+            teacherAiTaskService.failTask(jobId, e.getMessage());
         } finally {
             aiMetricsRedisService.removeActiveJob(jobId);
             if (examId != null) {
