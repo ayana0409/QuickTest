@@ -54,4 +54,14 @@ public interface AdminAiService {
      * Explicitly triggers an immediate rotation pool reload from Database or fallback environment.
      */
     void reloadPool();
+
+    /**
+     * Cancels an active or stalled background grading job and releases its Redis exam lock.
+     */
+    void cancelJob(String jobId);
+
+    /**
+     * Clears all active or stalled background jobs and releases all associated exam locks.
+     */
+    void clearAllJobs();
 }

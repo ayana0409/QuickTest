@@ -109,4 +109,22 @@ public class AdminAiController {
         adminAiService.reloadPool();
         return ResponseEntity.ok(ApiResponse.success(null, "AI rotation pool reloaded successfully"));
     }
+
+    /**
+     * Cancels an active or stalled background grading job and frees its exam lock.
+     */
+    @DeleteMapping("/jobs/{jobId}")
+    public ResponseEntity<ApiResponse<Void>> cancelJob(@PathVariable String jobId) {
+        adminAiService.cancelJob(jobId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Background job cancelled and lock released successfully"));
+    }
+
+    /**
+     * Clears all active or stalled background jobs and frees all corresponding exam locks.
+     */
+    @DeleteMapping("/jobs")
+    public ResponseEntity<ApiResponse<Void>> clearAllJobs() {
+        adminAiService.clearAllJobs();
+        return ResponseEntity.ok(ApiResponse.success(null, "All background jobs cleared and locks released successfully"));
+    }
 }

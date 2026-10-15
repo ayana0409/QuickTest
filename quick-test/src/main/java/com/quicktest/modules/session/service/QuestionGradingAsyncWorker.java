@@ -109,8 +109,8 @@ public class QuestionGradingAsyncWorker {
                     // Dynamic Token-Aware Batch Packing: evaluate active slot budget and pack submissions greedily
                     int tokenBudget = geminiRotationService.getOptimalBatchTokenBudget();
                     int maxCandidatesAllowed = geminiRotationService.getMaxBatchCandidateCount();
-                    // Respect explicit small batch size if teacher requested a low batch limit <= 20
-                    int maxBatchLimit = (batchSize > 0 && batchSize < maxCandidatesAllowed) ? batchSize : maxCandidatesAllowed;
+                    // If explicit custom batchSize was passed and it is not the legacy 5, respect it up to maxCandidatesAllowed; otherwise pack dynamically up to 25
+                    int maxBatchLimit = (batchSize > 0 && batchSize != 5) ? Math.min(batchSize, maxCandidatesAllowed) : maxCandidatesAllowed;
 
                     int basePromptTokens = GeminiTokenEstimator.estimateQuestionBaseTokens(question);
                     List<CandidateAnswer> batchAnswers = new ArrayList<>();

@@ -315,8 +315,8 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         }
 
         try {
-            int batchSize = (request.getBatchSize() != null && request.getBatchSize() >= 1 && request.getBatchSize() <= 20)
-                    ? request.getBatchSize() : 5;
+            int batchSize = (request.getBatchSize() != null && request.getBatchSize() >= 1 && request.getBatchSize() <= 50)
+                    ? request.getBatchSize() : 25;
 
             Map<UUID, List<UUID>> questionToAnswerIdsMap = new LinkedHashMap<>();
 

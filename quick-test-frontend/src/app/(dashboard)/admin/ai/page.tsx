@@ -80,6 +80,7 @@ export default function AdminAiDashboardPage() {
 
   // Delete Confirm Modal State
   const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null);
+  const [isCancellingJob, setIsCancellingJob] = useState<string | null>(null);
 
   const isMountedRef = useRef<boolean>(true);
 
@@ -281,6 +282,33 @@ export default function AdminAiDashboardPage() {
       await fetchAll(true);
     } catch {
       // Handled by Axios interceptor
+    }
+  };
+
+  // Cancel single background job and release lock
+  const handleCancelJob = async (jobId: string) => {
+    if (!confirm('Bạn có chắc muốn hủy tiến trình này và giải phóng khóa đề thi không?')) return;
+    setIsCancellingJob(jobId);
+    try {
+      await aiManagementService.cancelJob(jobId);
+      toast.success('Đã hủy tiến trình và giải phóng khóa đề thi thành công!');
+      await fetchStatus(true);
+    } catch (err: any) {
+      toast.error('Lỗi khi hủy tiến trình: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsCancellingJob(null);
+    }
+  };
+
+  // Clear all background jobs and release all locks
+  const handleClearAllJobs = async () => {
+    if (!confirm('Bạn có chắc muốn dọn sạch tất cả các tiến trình chấm AI và giải phóng toàn bộ khóa đề thi không?')) return;
+    try {
+      await aiManagementService.clearAllJobs();
+      toast.success('Đã dọn dẹp sạch tất cả các tiến trình nền!');
+      await fetchStatus(true);
+    } catch (err: any) {
+      toast.error('Lỗi khi dọn dẹp tiến trình: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -518,7 +546,7 @@ export default function AdminAiDashboardPage() {
           {status && status.activeBackgroundJobs && status.activeBackgroundJobs.length > 0 && (
             <div className="p-1 rounded-[1.75rem] bg-amber-500/20 border border-amber-500/30">
               <div className="p-6 rounded-[calc(1.75rem-0.25rem)] bg-white dark:bg-zinc-950 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center animate-spin">
                       <RefreshCw className="w-4 h-4" />
@@ -535,6 +563,13 @@ export default function AdminAiDashboardPage() {
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={handleClearAllJobs}
+                    className="px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/80 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Dọn sạch tất cả job treo
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -574,9 +609,19 @@ export default function AdminAiDashboardPage() {
                                 : `Thread: ${job.threadName} • Bắt đầu: ${new Date(job.startedAt).toLocaleTimeString()}`}
                             </p>
                           </div>
-                          <span className={`text-sm font-bold ${isQueued ? 'text-indigo-600 dark:text-indigo-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                            {isQueued ? 'Chờ' : `${pct}%`}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${isQueued ? 'text-indigo-600 dark:text-indigo-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {isQueued ? 'Chờ' : `${pct}%`}
+                            </span>
+                            <button
+                              onClick={() => handleCancelJob(job.jobId)}
+                              disabled={isCancellingJob === job.jobId}
+                              title="Hủy tiến trình và giải phóng khóa đề thi"
+                              className="p-1 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors disabled:opacity-50"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Progress Bar */}

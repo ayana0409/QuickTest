@@ -10,6 +10,9 @@ import com.quicktest.modules.admin.repository.AiApiKeyRepository;
 import com.quicktest.modules.admin.repository.AiModelConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,7 @@ public class AdminAiServiceImpl implements AdminAiService {
     private final AiModelConfigRepository aiModelConfigRepository;
     private final GeminiRotationService geminiRotationService;
     private final AiMetricsRedisService aiMetricsRedisService;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private volatile String lastReloadedAt = Instant.now().toString();
 
@@ -188,6 +192,55 @@ public class AdminAiServiceImpl implements AdminAiService {
     public void reloadPool() {
         geminiRotationService.reloadSlots();
         this.lastReloadedAt = Instant.now().toString();
+    }
+
+    @Override
+    public void cancelJob(String jobId) {
+        if (jobId == null || jobId.isBlank()) return;
+        List<AiBackgroundJobDto> jobs = aiMetricsRedisService.getActiveJobs();
+        for (AiBackgroundJobDto job : jobs) {
+            if (jobId.equalsIgnoreCase(job.getJobId())) {
+                if (job.getExamId() != null && !job.getExamId().isBlank()) {
+                    stringRedisTemplate.delete("ai:grading:lock:exam:" + job.getExamId());
+                    log.info("[AdminAi] Released Redis lock for exam ID: {}", job.getExamId());
+                }
+                break;
+            }
+        }
+        aiMetricsRedisService.removeActiveJob(jobId);
+        log.info("[AdminAi] Cancelled/removed background job ID: {}", jobId);
+    }
+
+    @Override
+    public void clearAllJobs() {
+        List<AiBackgroundJobDto> jobs = aiMetricsRedisService.getActiveJobs();
+        for (AiBackgroundJobDto job : jobs) {
+            if (job.getExamId() != null && !job.getExamId().isBlank()) {
+                stringRedisTemplate.delete("ai:grading:lock:exam:" + job.getExamId());
+            }
+            aiMetricsRedisService.removeActiveJob(job.getJobId());
+        }
+        log.info("[AdminAi] Cleared all ({}) background jobs and released corresponding Redis locks.", jobs.size());
+    }
+
+    /**
+     * Automatically cleans up stale or orphaned background grading jobs and releases any
+     * leftover Redis exam locks when the Spring Boot server boots up.
+     * Prevents aborted JVM sessions from blocking future grading attempts.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void cleanupOrphanJobsOnStartup() {
+        try {
+            List<AiBackgroundJobDto> orphanJobs = aiMetricsRedisService.getActiveJobs();
+            if (!orphanJobs.isEmpty()) {
+                log.info("[AI STARTUP CLEANUP] Detected {} orphan AI background job(s) from previous server run. Cleaning up...",
+                        orphanJobs.size());
+                clearAllJobs();
+                log.info("[AI STARTUP CLEANUP] Successfully cleared orphan background jobs and released exam locks.");
+            }
+        } catch (Exception e) {
+            log.warn("[AI STARTUP CLEANUP] Failed to cleanup orphan background jobs on startup: {}", e.getMessage());
+        }
     }
 
     private AiKeyResponse mapToKeyResponse(AiApiKey entity) {

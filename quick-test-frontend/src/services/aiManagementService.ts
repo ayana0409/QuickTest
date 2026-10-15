@@ -164,4 +164,18 @@ export const aiManagementService = {
   async reloadPool(): Promise<void> {
     await apiClient.post<ApiResponse<void>>('/admin/ai/reload');
   },
+
+  /**
+   * Cancels a specific background job and frees its exam lock.
+   */
+  async cancelJob(jobId: string): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>(`/admin/ai/jobs/${jobId}`);
+  },
+
+  /**
+   * Clears all active or stalled background jobs and releases all exam locks.
+   */
+  async clearAllJobs(): Promise<void> {
+    await apiClient.delete<ApiResponse<void>>('/admin/ai/jobs');
+  },
 };

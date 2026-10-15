@@ -348,7 +348,7 @@ export const useGradingStore = create<GradingState>((set, get) => ({
         examId: resolvedExamId,
         questionId: questionId || undefined,
         scope: questionId ? 'SINGLE_QUESTION' : 'ENTIRE_EXAM',
-        batchSize: 5,
+        batchSize: 25,
       });
 
       set({ isTriggeringAi: false });

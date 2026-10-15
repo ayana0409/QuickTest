@@ -37,10 +37,10 @@ public class TriggerAiGradingRequest {
     private String scope = "SINGLE_QUESTION";
 
     /**
-     * Batch size of answers sent to AI in one prompt (default 5, range 1 - 20).
+     * Batch size of answers sent to AI in one prompt (default 25, range 1 - 50).
      */
     @Min(value = 1, message = "Batch size must be at least 1")
-    @Max(value = 20, message = "Batch size cannot exceed 20")
+    @Max(value = 50, message = "Batch size cannot exceed 50")
     @Builder.Default
-    private Integer batchSize = 5;
+    private Integer batchSize = 25;
 }
