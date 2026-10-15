@@ -25,7 +25,7 @@ import toast from 'react-hot-toast';
  * Public portal allowing both authenticated candidates and anonymous guests
  * to join an exam using an Access Code without mandatory login.
  */
-export default function ExamEntryPage() {
+function ExamEntryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialCode = searchParams.get('code') || '';
@@ -287,5 +287,19 @@ export default function ExamEntryPage() {
         © {new Date().getFullYear()} Quick Test. All rights reserved.
       </footer>
     </div>
+  );
+}
+
+export default function ExamEntryPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0D1117] flex items-center justify-center text-zinc-400">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <ExamEntryContent />
+    </React.Suspense>
   );
 }

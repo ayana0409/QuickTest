@@ -29,7 +29,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Tabs } from '@/components/common/Tabs';
 import { Modal } from '@/components/common/Modal';
 import { QuestionBuilder } from '@/components/exam/QuestionBuilder';
-import { ExamAttemptsTab } from '@/components/exam/ExamAttemptsTab';
 import { examService } from '@/services/exam.service';
 import { formatDateTimeForPayload } from '@/lib/utils';
 import type { ExamDetailResponse, ExamUpdateRequest } from '@/types/exam';
@@ -56,7 +55,7 @@ export default function EditExamPage() {
 
   const [exam, setExam] = useState<ExamDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'questions' | 'settings' | 'attempts'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'settings'>('questions');
   const [isCopied, setIsCopied] = useState(false);
 
   const [isPublishing, setIsPublishing] = useState(false);
@@ -373,6 +372,17 @@ export default function EditExamPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
+          <Link href={`/teacher/exams/${exam.id}/proctoring`}>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
+              title="Mở phòng giám sát thí sinh và xem kết quả nộp bài"
+            >
+              Phòng thi & Kết quả
+            </Button>
+          </Link>
+
           <Button
             variant="outline"
             size="sm"
@@ -451,14 +461,9 @@ export default function EditExamPage() {
               label: 'Cài đặt đề thi',
               icon: <Settings className="w-4 h-4" />,
             },
-            {
-              id: 'attempts',
-              label: 'Phiên thi',
-              icon: <Users className="w-4 h-4" />,
-            },
           ]}
           activeId={activeTab}
-          onChange={(id) => setActiveTab(id as 'questions' | 'settings' | 'attempts')}
+          onChange={(id) => setActiveTab(id as 'questions' | 'settings')}
         />
 
         {!isDraft && (
@@ -680,14 +685,6 @@ export default function EditExamPage() {
             </form>
           </CardContent>
         </Card>
-      )}
-
-      {/* Tab 3: Candidate Attempts Sessions */}
-      {activeTab === 'attempts' && (
-        <ExamAttemptsTab
-          examId={exam.id}
-          totalPoints={exam.totalPoints}
-        />
       )}
 
       {/* Delete Confirmation Modal */}

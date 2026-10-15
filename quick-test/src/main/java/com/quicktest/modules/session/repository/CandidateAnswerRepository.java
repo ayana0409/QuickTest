@@ -139,4 +139,17 @@ public interface CandidateAnswerRepository extends JpaRepository<CandidateAnswer
          */
         @Query("SELECT ca.question.id, COUNT(ca.id) FROM CandidateAnswer ca WHERE ca.question.id IN :questionIds GROUP BY ca.question.id")
         List<Object[]> countAttemptsByQuestionIds(@Param("questionIds") List<UUID> questionIds);
+
+        /**
+         * Batch aggregate total, pending manual, and graded submission counts grouped by questionId in a single query.
+         * Returns List of [questionId (UUID), totalCount (Long), pendingCount (Long), gradedCount (Long)].
+         */
+        @Query("SELECT ca.question.id, " +
+                        "COUNT(ca.id), " +
+                        "SUM(CASE WHEN ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL THEN 1L ELSE 0L END), " +
+                        "SUM(CASE WHEN ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.GRADED THEN 1L ELSE 0L END) " +
+                        "FROM CandidateAnswer ca " +
+                        "WHERE ca.question.id IN :questionIds " +
+                        "GROUP BY ca.question.id")
+        List<Object[]> getGradingCountsByQuestionIds(@Param("questionIds") List<UUID> questionIds);
 }

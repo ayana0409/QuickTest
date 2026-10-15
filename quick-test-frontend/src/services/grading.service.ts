@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/axios';
 import type { ApiResponse } from '@/types/auth';
 import type {
   QuestionGradingSummaryResponse,
+  ExamGradingQuestionsResponse,
   QuestionSubmissionsDetailResponse,
   ManualBatchGradeRequest,
   ManualBatchGradeResponse,
@@ -63,13 +64,13 @@ export interface GetSubmissionsParams {
  */
 export const gradingService = {
   /**
-   * Fetch all essay questions for a given exam along with their grading status summaries.
+   * Fetch all essay questions and exam metadata for a given exam along with their grading status summaries.
    *
    * @param examId The unique identifier of the target exam
-   * @returns Array of question summaries with submission counts and grading progress
+   * @returns Exam metadata bundled with array of question summaries and submission metrics
    */
-  async getQuestionsForGrading(examId: string): Promise<QuestionGradingSummaryResponse[]> {
-    const response = await apiClient.get<ApiResponse<QuestionGradingSummaryResponse[]>>(
+  async getQuestionsForGrading(examId: string): Promise<ExamGradingQuestionsResponse> {
+    const response = await apiClient.get<ApiResponse<ExamGradingQuestionsResponse>>(
       `/teacher/grading/exams/${examId}/questions`
     );
     return response.data.data;

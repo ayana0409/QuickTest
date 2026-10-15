@@ -98,32 +98,25 @@ class QuestionGradingTest {
     @Test
     @DisplayName("Should retrieve only essay questions with accurate grading statistics")
     void testGetQuestionsForGrading_Success() {
-        Question singleChoiceQ = Question.builder()
-                .id(UUID.randomUUID())
-                .exam(exam)
-                .orderIndex(2)
-                .content("Which year did WW1 start?")
-                .questionType(QuestionType.SINGLE_CHOICE)
-                .points(1.0)
-                .build();
-
         when(examRepository.findByIdWithCreatedBy(exam.getId())).thenReturn(Optional.of(exam));
-        when(questionRepository.findByExamIdOrderByOrderIndexAsc(exam.getId()))
-                .thenReturn(List.of(essayQuestion, singleChoiceQ));
+        when(questionRepository.findByExamIdAndQuestionTypeOrderByOrderIndexAsc(exam.getId(), QuestionType.ESSAY_TEXT))
+                .thenReturn(List.of(essayQuestion));
 
-        when(candidateAnswerRepository.countByQuestionIdAndGradingStatus(essayQuestion.getId(), GradingStatus.PENDING_MANUAL))
-                .thenReturn(3L);
-        when(candidateAnswerRepository.countByQuestionIdAndGradingStatus(essayQuestion.getId(), GradingStatus.GRADED))
-                .thenReturn(7L);
-        when(candidateAnswerRepository.countByQuestionId(essayQuestion.getId()))
-                .thenReturn(10L);
+        List<Object[]> countRows = List.<Object[]>of(
+                new Object[]{essayQuestion.getId(), 10L, 3L, 7L}
+        );
+        when(candidateAnswerRepository.getGradingCountsByQuestionIds(List.of(essayQuestion.getId())))
+                .thenReturn(countRows);
 
-        List<QuestionGradingSummaryResponse> summaries =
+        ExamGradingQuestionsResponse response =
                 questionGradingService.getQuestionsForGrading(exam.getId(), teacher);
 
-        assertNotNull(summaries);
-        assertEquals(1, summaries.size(), "Only essay questions should be returned for grading");
-        QuestionGradingSummaryResponse summary = summaries.get(0);
+        assertNotNull(response);
+        assertEquals(exam.getId(), response.getExamId());
+        assertEquals(exam.getTitle(), response.getExamTitle());
+        assertEquals(1, response.getTotalEssayQuestions());
+        assertEquals(1, response.getQuestions().size(), "Only essay questions should be returned for grading");
+        QuestionGradingSummaryResponse summary = response.getQuestions().get(0);
         assertEquals(essayQuestion.getId(), summary.getQuestionId());
         assertEquals(3L, summary.getPendingCount());
         assertEquals(7L, summary.getGradedCount());

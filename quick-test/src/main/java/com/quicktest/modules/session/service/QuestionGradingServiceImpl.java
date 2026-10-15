@@ -12,6 +12,7 @@ import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.session.dto.CandidateSubmissionItemDto;
+import com.quicktest.modules.session.dto.ExamGradingQuestionsResponse;
 import com.quicktest.modules.session.dto.ManualBatchGradeRequest;
 import com.quicktest.modules.session.dto.ManualBatchGradeResponse;
 import com.quicktest.modules.session.dto.ManualGradeItemRequest;
@@ -78,38 +79,67 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<QuestionGradingSummaryResponse> getQuestionsForGrading(UUID examId, User teacher) {
+    public ExamGradingQuestionsResponse getQuestionsForGrading(UUID examId, User teacher) {
         log.info("Teacher {} fetching essay questions for grading in exam ID: {}", teacher.getId(), examId);
 
         Exam exam = examRepository.findByIdWithCreatedBy(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
         verifyExamOwnership(exam, teacher);
 
-        List<Question> questions = questionRepository.findByExamIdOrderByOrderIndexAsc(examId);
+        // Fetch ONLY essay questions directly in SQL
+        List<Question> essayQuestions = questionRepository
+                .findByExamIdAndQuestionTypeOrderByOrderIndexAsc(examId, QuestionType.ESSAY_TEXT);
 
-        List<QuestionGradingSummaryResponse> summaries = new ArrayList<>();
-        for (Question q : questions) {
-            if (q.getQuestionType() == QuestionType.ESSAY_TEXT) {
-                long pendingCount = candidateAnswerRepository.countByQuestionIdAndGradingStatus(
-                        q.getId(), GradingStatus.PENDING_MANUAL);
-                long gradedCount = candidateAnswerRepository.countByQuestionIdAndGradingStatus(
-                        q.getId(), GradingStatus.GRADED);
-                long total = candidateAnswerRepository.countByQuestionId(q.getId());
-
-                summaries.add(QuestionGradingSummaryResponse.builder()
-                        .questionId(q.getId())
-                        .orderIndex(q.getOrderIndex())
-                        .content(q.getContent())
-                        .imageUrl(q.getImageUrl())
-                        .maxPoints(q.getPoints() != null ? q.getPoints() : 0.0)
-                        .pendingCount(pendingCount)
-                        .gradedCount(gradedCount)
-                        .totalSubmissions(total)
-                        .build());
-            }
+        if (essayQuestions.isEmpty()) {
+            return ExamGradingQuestionsResponse.builder()
+                    .examId(exam.getId())
+                    .examTitle(exam.getTitle())
+                    .examStatus(exam.getStatus())
+                    .totalEssayQuestions(0)
+                    .questions(java.util.Collections.emptyList())
+                    .build();
         }
 
-        return summaries;
+        List<UUID> questionIds = essayQuestions.stream()
+                .map(Question::getId)
+                .toList();
+
+        // Single batch aggregation query: [questionId, totalCount, pendingCount, gradedCount]
+        List<Object[]> countRows = candidateAnswerRepository.getGradingCountsByQuestionIds(questionIds);
+
+        // Map counts by questionId: Map<UUID, long[]{total, pending, graded}>
+        Map<UUID, long[]> countMap = new java.util.HashMap<>(countRows.size());
+        for (Object[] row : countRows) {
+            UUID qId = (UUID) row[0];
+            long total = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+            long pending = row[2] != null ? ((Number) row[2]).longValue() : 0L;
+            long graded = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+            countMap.put(qId, new long[]{total, pending, graded});
+        }
+
+        List<QuestionGradingSummaryResponse> summaries = new ArrayList<>(essayQuestions.size());
+        for (Question q : essayQuestions) {
+            long[] counts = countMap.getOrDefault(q.getId(), new long[]{0L, 0L, 0L});
+
+            summaries.add(QuestionGradingSummaryResponse.builder()
+                    .questionId(q.getId())
+                    .orderIndex(q.getOrderIndex())
+                    .content(q.getContent())
+                    .imageUrl(q.getImageUrl())
+                    .maxPoints(q.getPoints() != null ? q.getPoints() : 0.0)
+                    .totalSubmissions(counts[0])
+                    .pendingCount(counts[1])
+                    .gradedCount(counts[2])
+                    .build());
+        }
+
+        return ExamGradingQuestionsResponse.builder()
+                .examId(exam.getId())
+                .examTitle(exam.getTitle())
+                .examStatus(exam.getStatus())
+                .totalEssayQuestions(summaries.size())
+                .questions(summaries)
+                .build();
     }
 
     @Override

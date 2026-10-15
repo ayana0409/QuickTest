@@ -803,7 +803,7 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 ### Module 9: Chấm Điểm Tự Luận Tập Trung Theo Câu Hỏi & AI Grading (Question-Centric & Gemini AI)
 
 #### 9.1. Lấy danh sách câu hỏi cần chấm (`GET /api/teacher/grading/exams/{examId}/questions`)
-- **Mô tả:** Lấy toàn bộ các câu hỏi tự luận (`ESSAY_TEXT`) của đề thi kèm thống kê số lượng bài chờ chấm (`pendingCount`), đã chấm (`gradedCount`), và tổng số bài (`totalSubmissions`).
+- **Mô tả:** Lấy thông tin tóm tắt đề thi (`examId`, `examTitle`, `examStatus`, `totalEssayQuestions`) cùng toàn bộ danh sách câu hỏi tự luận (`ESSAY_TEXT`) kèm thống kê số lượng bài chờ chấm (`pendingCount`), đã chấm (`gradedCount`), và tổng số bài (`totalSubmissions`). Giúp Frontend hiển thị tiêu đề và trạng thái trực tiếp mà không cần thêm một lượt gọi `GET /api/teacher/exams/{id}` (loại bỏ overfetching toàn bộ cây câu hỏi và options).
 - **Quyền hạn:** `TEACHER`
 - **Path Variable:** `examId` (UUID)
 - **Response (200 OK):**
@@ -811,18 +811,24 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
   {
     "status": 200,
     "message": "Essay questions retrieved successfully",
-    "data": [
-      {
-        "questionId": "7662cbf7-fffa-4da6-a6fe-4fbe9cf2bbf6",
-        "orderIndex": 1,
-        "content": "Phân tích nguyên nhân thắng lợi của Cách mạng Tháng Tám 1945.",
-        "imageUrl": null,
-        "maxPoints": 4.0,
-        "pendingCount": 15,
-        "gradedCount": 25,
-        "totalSubmissions": 40
-      }
-    ],
+    "data": {
+      "examId": "7662cbf7-fffa-4da6-a6fe-4fbe9cf2bbf6",
+      "examTitle": "Kỳ thi Cuối kỳ Lịch sử 12",
+      "examStatus": "PUBLISHED",
+      "totalEssayQuestions": 1,
+      "questions": [
+        {
+          "questionId": "7662cbf7-fffa-4da6-a6fe-4fbe9cf2bbf6",
+          "orderIndex": 1,
+          "content": "Phân tích nguyên nhân thắng lợi của Cách mạng Tháng Tám 1945.",
+          "imageUrl": null,
+          "maxPoints": 4.0,
+          "pendingCount": 15,
+          "gradedCount": 25,
+          "totalSubmissions": 40
+        }
+      ]
+    },
     "timestamp": "2026-09-12T12:00:00"
   }
   ```

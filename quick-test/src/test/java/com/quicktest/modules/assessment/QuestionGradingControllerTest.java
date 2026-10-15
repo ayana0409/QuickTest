@@ -7,6 +7,7 @@ import com.quicktest.modules.assessment.controller.QuestionGradingController;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
+import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.session.dto.*;
 import com.quicktest.modules.session.service.QuestionGradingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,7 +107,7 @@ class QuestionGradingControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/teacher/grading/exams/{examId}/questions: Should return 200 with essay questions summary")
+    @DisplayName("GET /api/teacher/grading/exams/{examId}/questions: Should return 200 with essay questions summary and exam metadata")
     void getQuestionsForGrading_Success() throws Exception {
         UUID examId = UUID.randomUUID();
         QuestionGradingSummaryResponse summary = QuestionGradingSummaryResponse.builder()
@@ -119,14 +120,23 @@ class QuestionGradingControllerTest {
                 .totalSubmissions(7L)
                 .build();
 
+        ExamGradingQuestionsResponse response = ExamGradingQuestionsResponse.builder()
+                .examId(examId)
+                .examTitle("English Literature Exam")
+                .examStatus(ExamStatus.PUBLISHED)
+                .totalEssayQuestions(1)
+                .questions(List.of(summary))
+                .build();
+
         when(questionGradingService.getQuestionsForGrading(eq(examId), any(User.class)))
-                .thenReturn(List.of(summary));
+                .thenReturn(response);
 
         mockMvc.perform(get("/api/teacher/grading/exams/" + examId + "/questions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data[0].maxPoints").value(10.0))
-                .andExpect(jsonPath("$.data[0].pendingCount").value(2));
+                .andExpect(jsonPath("$.data.examTitle").value("English Literature Exam"))
+                .andExpect(jsonPath("$.data.questions[0].maxPoints").value(10.0))
+                .andExpect(jsonPath("$.data.questions[0].pendingCount").value(2));
     }
 
     @Test

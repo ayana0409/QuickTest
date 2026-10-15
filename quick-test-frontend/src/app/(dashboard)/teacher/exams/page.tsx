@@ -24,6 +24,8 @@ import {
   RotateCcw,
   Calendar,
   X,
+  ShieldAlert,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -544,6 +546,32 @@ export default function TeacherExamsPage() {
                       Soạn đề & Cài đặt
                     </Button>
                   </Link>
+
+                  {isPublished && (
+                    <Link href={`/teacher/exams/${exam.id}/proctoring?tab=live`}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        leftIcon={<ShieldAlert className="w-3.5 h-3.5" />}
+                        title="Mở phòng giám sát thí sinh trực tiếp & xem kết quả"
+                      >
+                        Phòng thi & Giám sát
+                      </Button>
+                    </Link>
+                  )}
+
+                  {exam.status === 'CLOSED' && (
+                    <Link href={`/teacher/exams/${exam.id}/proctoring?tab=attempts`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        leftIcon={<BarChart3 className="w-3.5 h-3.5" />}
+                        title="Xem danh sách bài thi, chấm điểm và xuất Excel kết quả"
+                      >
+                        Xem kết quả & Bài nộp
+                      </Button>
+                    </Link>
+                  )}
 
                   <Button
                     variant="outline"

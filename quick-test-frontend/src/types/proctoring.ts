@@ -1,3 +1,5 @@
+import type { AttemptStatus } from './exam';
+
 /**
  * Supported violation events detected by proctoring subsystem.
  */
@@ -46,16 +48,82 @@ export interface HeartbeatMessage {
 }
 
 /**
- * Candidate status summary for teacher live proctoring dashboard.
+ * Candidate status summary for teacher live proctoring dashboard list.
  */
-export interface AttemptRealtimeStatus {
+export interface AttemptMonitorItem {
   attemptId: string;
+  examId: string;
+  userId?: string;
   candidateName: string;
   candidateIdentifier?: string;
-  status: string;
+  status: AttemptStatus;
   violationCount: number;
   isDisqualified: boolean;
-  lastHeartbeatAt?: string;
+  startTime: string;
+  expireAt: string;
+  submitTime?: string;
+  isOnline: boolean;
+}
+
+/**
+ * Audit log entry for a recorded candidate violation.
+ */
+export interface ViolationLogEntry {
+  id: string;
+  attemptId: string;
+  violationType: ViolationType;
+  description: string;
+  timestamp: string;
+}
+
+/**
+ * Detailed real-time telemetry status for candidate attempt inspector.
+ */
+export interface AttemptRealtimeStatusDetail {
+  attemptId: string;
+  examId: string;
+  candidateName: string;
+  candidateIdentifier?: string;
+  status: AttemptStatus;
+  violationCount: number;
+  isDisqualified: boolean;
+  isOnline: boolean;
+  lastHeartbeat?: string;
+  violationBreakdown: Partial<Record<ViolationType, number>>;
+  recentViolations: ViolationLogEntry[];
+}
+
+/**
+ * WebSocket event broadcast to teacher monitoring room when candidate violation is recorded.
+ */
+export interface CandidateViolationEvent {
+  attemptId: string;
+  examId: string;
+  candidateName: string;
+  candidateIdentifier?: string;
+  violationType: ViolationType;
+  violationCount: number;
+  description: string;
+  disqualified: boolean;
+  timestamp: string;
+}
+
+/**
+ * Request payload for manually disqualifying a candidate.
+ */
+export interface DisqualifyAttemptRequest {
+  reason?: string;
+}
+
+/**
+ * Query parameters for fetching exam monitoring list.
+ */
+export interface ExamMonitoringParams {
+  status?: AttemptStatus;
+  search?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
 }
 
 /**

@@ -1,5 +1,5 @@
 import type { QuestionType } from './question';
-import type { PageResponse } from './exam';
+import type { PageResponse, ExamStatus } from './exam';
 
 /**
  * Grading review status for individual candidate answers.
@@ -47,6 +47,17 @@ export interface QuestionGradingSummaryResponse {
   pendingCount: number;
   gradedCount: number;
   totalSubmissions: number;
+}
+
+/**
+ * Combined response for exam essay questions grading overview page.
+ */
+export interface ExamGradingQuestionsResponse {
+  examId: string;
+  examTitle: string;
+  examStatus: ExamStatus;
+  totalEssayQuestions: number;
+  questions: QuestionGradingSummaryResponse[];
 }
 
 /**

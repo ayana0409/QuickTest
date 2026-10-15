@@ -39,15 +39,15 @@ public class QuestionGradingController {
     private final UserRepository userRepository;
 
     /**
-     * Retrieve all essay questions in an exam with grading progress summary.
+     * Retrieve all essay questions in an exam with grading progress summary and exam metadata.
      */
     @GetMapping("/exams/{examId}/questions")
-    public ResponseEntity<ApiResponse<List<QuestionGradingSummaryResponse>>> getQuestionsForGrading(
+    public ResponseEntity<ApiResponse<ExamGradingQuestionsResponse>> getQuestionsForGrading(
             @PathVariable("examId") UUID examId,
             @AuthenticationPrincipal UserDetailsImpl currentUser) {
 
         User teacher = getAuthenticatedTeacher(currentUser);
-        List<QuestionGradingSummaryResponse> response =
+        ExamGradingQuestionsResponse response =
                 questionGradingService.getQuestionsForGrading(examId, teacher);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Essay questions retrieved successfully"));

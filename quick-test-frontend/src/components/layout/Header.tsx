@@ -120,6 +120,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
   // Derive dynamic page title from pathname
   const getPageTitle = (): string => {
     if (pathname.endsWith('/profile')) return 'Thông tin cá nhân';
+    if (pathname.includes('/proctoring')) return 'Phòng thi & Kết quả';
     if (pathname.startsWith('/admin')) return 'Admin Workspace';
     if (pathname.startsWith('/teacher/exams')) return 'Exam Management';
     if (pathname.startsWith('/teacher/grading')) return 'Essay Grading';

@@ -17,7 +17,10 @@ auth:bearer {
 assert {
   res.status: eq 200
   res.body.status: eq 200
-  res.body.data: isDefined
+  res.body.data.examId: isDefined
+  res.body.data.examTitle: isDefined
+  res.body.data.examStatus: isDefined
+  res.body.data.questions: isDefined
 }
 
 script:pre-request {
@@ -75,8 +78,10 @@ script:pre-request {
 }
 
 script:post-response {
-  if (res.body && res.body.data && Array.isArray(res.body.data) && res.body.data.length > 0) {
-    const q = res.body.data[0];
+  const data = res.body && res.body.data;
+  const questions = (data && (Array.isArray(data.questions) ? data.questions : (Array.isArray(data) ? data : []))) || [];
+  if (questions.length > 0) {
+    const q = questions[0];
     bru.setVar('essayQuestionId', q.questionId);
     bru.setEnvVar('essayQuestionId', q.questionId);
   }

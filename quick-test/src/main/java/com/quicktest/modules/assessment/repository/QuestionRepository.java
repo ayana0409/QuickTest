@@ -24,6 +24,8 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
 
         List<Question> findByExamIdOrderByOrderIndexAsc(UUID examId);
 
+        List<Question> findByExamIdAndQuestionTypeOrderByOrderIndexAsc(UUID examId, QuestionType questionType);
+
         /**
          * Fetch questions with their answer options in a single SQL query using LEFT
          * JOIN FETCH,

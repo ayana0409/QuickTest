@@ -14,9 +14,9 @@ import java.util.UUID;
 public interface QuestionGradingService {
 
     /**
-     * Retrieve all essay questions of an exam along with grading progress statistics.
+     * Retrieve all essay questions of an exam along with grading progress statistics and exam metadata.
      */
-    List<QuestionGradingSummaryResponse> getQuestionsForGrading(UUID examId, User teacher);
+    ExamGradingQuestionsResponse getQuestionsForGrading(UUID examId, User teacher);
 
     /**
      * Retrieve paginated candidate submissions for a specific essay question with rubric details.

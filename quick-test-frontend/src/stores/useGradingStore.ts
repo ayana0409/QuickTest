@@ -21,6 +21,8 @@ export interface AnswerDraft {
 export interface GradingState {
   // Exam-level questions state
   currentExamId: string | null;
+  currentExamTitle: string | null;
+  currentExamStatus: string | null;
   questions: QuestionGradingSummaryResponse[];
   isLoadingQuestions: boolean;
 
@@ -62,6 +64,8 @@ export interface GradingState {
 
 export const useGradingStore = create<GradingState>((set, get) => ({
   currentExamId: null,
+  currentExamTitle: null,
+  currentExamStatus: null,
   questions: [],
   isLoadingQuestions: false,
 
@@ -84,7 +88,17 @@ export const useGradingStore = create<GradingState>((set, get) => ({
     set({ isLoadingQuestions: true, currentExamId: examId });
     try {
       const data = await gradingService.getQuestionsForGrading(examId);
-      set({ questions: data, isLoadingQuestions: false });
+      const raw = data as any;
+      const questionList = Array.isArray(raw)
+        ? raw
+        : (Array.isArray(raw?.questions) ? raw.questions : []);
+
+      set({
+        questions: questionList,
+        currentExamTitle: raw?.examTitle || '',
+        currentExamStatus: raw?.examStatus,
+        isLoadingQuestions: false,
+      });
     } catch {
       set({ isLoadingQuestions: false });
     }
@@ -422,6 +436,8 @@ export const useGradingStore = create<GradingState>((set, get) => ({
   resetStore: () => {
     set({
       currentExamId: null,
+      currentExamTitle: null,
+      currentExamStatus: null,
       questions: [],
       isLoadingQuestions: false,
       currentQuestionDetail: null,

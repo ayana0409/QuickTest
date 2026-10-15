@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, use } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -10,13 +10,10 @@ import {
   FileQuestion,
   TrendingUp,
 } from 'lucide-react';
-import { examService } from '@/services/exam.service';
 import { useGradingStore } from '@/stores/useGradingStore';
 import { QuestionGradingOverviewCard } from '@/components/grading/QuestionGradingOverviewCard';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
-import type { ExamDetailResponse } from '@/types/exam';
-
 
 interface ExamGradingQuestionsPageProps {
   params: Promise<{
@@ -27,16 +24,16 @@ interface ExamGradingQuestionsPageProps {
 /**
  * Exam-Level Grading Overview Page.
  * Displays all essay questions belonging to a specific exam with completion progress and batch AI actions.
+ * Optimized to use a single streamlined backend query bundling questions and exam metadata.
  */
 export default function ExamGradingQuestionsPage({ params }: ExamGradingQuestionsPageProps) {
   const resolvedParams = use(params);
   const examId = resolvedParams.examId;
 
-  const [examDetail, setExamDetail] = useState<ExamDetailResponse | null>(null);
-  const [isLoadingExam, setIsLoadingExam] = useState(true);
-
   const {
     questions,
+    currentExamTitle,
+    currentExamStatus,
     isLoadingQuestions,
     isTriggeringAi,
     fetchQuestions,
@@ -44,31 +41,7 @@ export default function ExamGradingQuestionsPage({ params }: ExamGradingQuestion
   } = useGradingStore();
 
   useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      try {
-        setIsLoadingExam(true);
-        const detail = await examService.getExamDetail(examId);
-        if (isMounted) {
-          setExamDetail(detail);
-        }
-      } catch {
-        if (isMounted) {
-          setExamDetail(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingExam(false);
-        }
-      }
-    };
-
-    loadData();
     fetchQuestions(examId);
-
-    return () => {
-      isMounted = false;
-    };
   }, [examId, fetchQuestions]);
 
   const handleTriggerEntireExamAi = async () => {
@@ -99,13 +72,13 @@ export default function ExamGradingQuestionsPage({ params }: ExamGradingQuestion
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {isLoadingExam ? 'Đang tải thông tin đề thi...' : examDetail?.title || 'Chấm điểm bài thi'}
+                {isLoadingQuestions ? 'Đang tải thông tin đề thi...' : currentExamTitle || 'Chấm điểm bài thi'}
               </h1>
-              {examDetail && (
-                <Badge variant={examDetail.status} size="sm" dot>
-                  {examDetail.status === 'PUBLISHED'
+              {currentExamStatus && (
+                <Badge variant={currentExamStatus as any} size="sm" dot>
+                  {currentExamStatus === 'PUBLISHED'
                     ? 'Đang diễn ra'
-                    : examDetail.status === 'CLOSED'
+                    : currentExamStatus === 'CLOSED'
                     ? 'Đã kết thúc'
                     : 'Bản nháp'}
                 </Badge>

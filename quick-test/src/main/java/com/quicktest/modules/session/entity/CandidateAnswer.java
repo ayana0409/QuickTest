@@ -17,6 +17,9 @@ import java.util.UUID;
     name = "candidate_answers",
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_candidate_answers_attempt_question", columnNames = {"attempt_id", "question_id"})
+    },
+    indexes = {
+        @Index(name = "idx_ca_question_grading_status", columnList = "question_id, grading_status")
     }
 )
 @Getter
