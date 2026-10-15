@@ -1,5 +1,6 @@
 package com.quicktest.modules.assessment.ai.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quicktest.config.GeminiPoolProperties;
@@ -46,8 +47,9 @@ public class AiQuizGeneratorService {
         log.info("[AiQuizGenerator] Prompting Gemini Rotation Pool for {} questions (language: {}, difficulty: {})...",
                 totalCount, request.getLanguage(), request.getDifficulty());
 
-        // Target up to 4,000 max output tokens for questions JSON
-        int maxTokens = geminiPoolProperties.getMaxTokens() > 0 ? geminiPoolProperties.getMaxTokens() : 4000;
+        // Target 8,192 max output tokens so Gemini has sufficient headroom for detailed questions & explanations
+        int requestedTokens = Math.max(8192, totalCount * 800);
+        int maxTokens = Math.min(16384, Math.max(geminiPoolProperties.getMaxTokens(), requestedTokens));
         String responseJson = geminiRotationService.executeWithRotation(prompt, 0.3, maxTokens);
 
         if (responseJson == null || responseJson.isBlank()) {
@@ -133,8 +135,26 @@ public class AiQuizGeneratorService {
      */
     private List<AiGeneratedQuestionDto> parseGeminiResponse(String responseJson) {
         try {
-            // Strip any surrounding markdown code block if present
-            String cleaned = responseJson.trim();
+            String rawJsonText = responseJson;
+            try {
+                JsonNode root = objectMapper.readTree(responseJson);
+                if (root.has("candidates")) {
+                    JsonNode candidates = root.path("candidates");
+                    if (!candidates.isArray() || candidates.isEmpty()) {
+                        throw new AppException("Google Gemini response does not contain valid generation candidates",
+                                HttpStatus.SERVICE_UNAVAILABLE);
+                    }
+                    JsonNode textPart = candidates.get(0).path("content").path("parts").get(0).path("text");
+                    rawJsonText = textPart.asText();
+                }
+            } catch (AppException ae) {
+                throw ae;
+            } catch (Exception ignored) {
+                // Not a top-level Gemini wrapper, use responseJson as-is
+            }
+
+            // Strip any surrounding markdown code block or extraneous leading/trailing text
+            String cleaned = rawJsonText.trim();
             if (cleaned.startsWith("```json")) {
                 cleaned = cleaned.substring(7);
             } else if (cleaned.startsWith("```")) {
@@ -145,8 +165,24 @@ public class AiQuizGeneratorService {
             }
             cleaned = cleaned.trim();
 
-            JsonNode rootNode = objectMapper.readTree(cleaned);
-            JsonNode questionsNode = rootNode.has("questions") ? rootNode.get("questions") : rootNode;
+            // Locate JSON object or array boundaries if surrounded by conversational prose
+            int firstBrace = cleaned.indexOf("{");
+            int firstBracket = cleaned.indexOf("[");
+            int startIdx = -1;
+            if (firstBrace != -1 && firstBracket != -1) {
+                startIdx = Math.min(firstBrace, firstBracket);
+            } else if (firstBrace != -1) {
+                startIdx = firstBrace;
+            } else if (firstBracket != -1) {
+                startIdx = firstBracket;
+            }
+
+            if (startIdx != -1) {
+                cleaned = cleaned.substring(startIdx);
+            }
+
+            JsonNode contentNode = parseOrRepairJson(cleaned);
+            JsonNode questionsNode = contentNode.has("questions") ? contentNode.get("questions") : contentNode;
 
             if (!questionsNode.isArray()) {
                 throw new AppException("Invalid response format: 'questions' array not found in Gemini output",
@@ -189,10 +225,10 @@ public class AiQuizGeneratorService {
                             boolean isCorrect = optNode.path("isCorrect").asBoolean(false);
                             if (isCorrect) hasCorrect = true;
                             options.add(AiGeneratedOptionDto.builder()
-                                    .orderIndex(optIdx++)
-                                    .content(optContent.trim())
-                                    .isCorrect(isCorrect)
-                                    .build());
+                                     .orderIndex(optIdx++)
+                                     .content(optContent.trim())
+                                     .isCorrect(isCorrect)
+                                     .build());
                         }
                     }
                     // Safety: Ensure choice questions have at least 1 correct option
@@ -229,6 +265,63 @@ public class AiQuizGeneratorService {
             log.error("[AiQuizGenerator] Failed to parse Gemini response JSON: {}. Response snippet: {}",
                     e.getMessage(), responseJson.length() > 500 ? responseJson.substring(0, 500) : responseJson, e);
             throw new AppException("Failed to parse AI quiz response: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Attempts standard JSON parsing, and if truncated, repairs the JSON by closing any open "questions" array.
+     */
+    private JsonNode parseOrRepairJson(String cleaned) throws JsonProcessingException {
+        try {
+            return objectMapper.readTree(cleaned);
+        } catch (JsonProcessingException initialEx) {
+            log.warn("[AiQuizGenerator] Standard JSON parse encountered an issue ({}), attempting truncation recovery...",
+                    initialEx.getMessage());
+
+            // 1. Try appending closing markers directly if just the tail was truncated
+            try {
+                return objectMapper.readTree(cleaned + "\n  ]\n}");
+            } catch (Exception ignored) {
+            }
+
+            try {
+                return objectMapper.readTree(cleaned + "\n}");
+            } catch (Exception ignored) {
+            }
+
+            // 2. Scan backwards for the last closed question object '}' and close the array
+            int questionsArrayStart = cleaned.indexOf("\"questions\"");
+            if (questionsArrayStart == -1) {
+                questionsArrayStart = cleaned.indexOf("[");
+            }
+
+            if (questionsArrayStart != -1) {
+                int searchPos = cleaned.length() - 1;
+                while (searchPos > questionsArrayStart) {
+                    int lastBrace = cleaned.lastIndexOf('}', searchPos);
+                    if (lastBrace == -1 || lastBrace <= questionsArrayStart) {
+                        break;
+                    }
+
+                    // Candidate repair: take content up to this complete '}' and close the array and root object
+                    String candidate = cleaned.substring(0, lastBrace + 1) + "\n  ]\n}";
+                    try {
+                        JsonNode repairedNode = objectMapper.readTree(candidate);
+                        JsonNode qNode = repairedNode.has("questions") ? repairedNode.get("questions") : repairedNode;
+                        if (qNode.isArray() && !qNode.isEmpty()) {
+                            log.info("[AiQuizGenerator] Successfully recovered {} complete questions from truncated JSON output.",
+                                    qNode.size());
+                            return repairedNode;
+                        }
+                    } catch (Exception ignored) {
+                        // Keep scanning backwards for a valid parent question boundary
+                    }
+
+                    searchPos = lastBrace - 1;
+                }
+            }
+
+            throw initialEx;
         }
     }
 }

@@ -553,13 +553,13 @@ export default function AdminAiDashboardPage() {
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        Đang xử lý tác vụ chấm thi nền ({status.activeBackgroundJobs.length})
+                        Đang xử lý tác vụ nền AI ({status.activeBackgroundJobs.length})
                         <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full">
-                          BACKGROUND ASYNC
+                          SINGLE-THREAD QUEUE
                         </span>
                       </h3>
                       <p className="text-xs text-zinc-500">
-                        AI đang đọc các câu hỏi tự luận và commit từng batch vào CSDL.
+                        Hệ thống đang điều phối tuần tự các tác vụ chấm thi tự luận và soạn đề AI trên luồng đơn tối ưu hạn mức.
                       </p>
                     </div>
                   </div>
@@ -575,6 +575,7 @@ export default function AdminAiDashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {status.activeBackgroundJobs.map((job) => {
                     const isQueued = job.status === 'QUEUED';
+                    const isQuizGen = job.type === 'AI_QUIZ_GEN';
                     const pct = job.totalAnswers > 0 ? Math.round((job.processedAnswers / job.totalAnswers) * 100) : 0;
                     return (
                       <div
@@ -582,19 +583,35 @@ export default function AdminAiDashboardPage() {
                         className={`p-4 rounded-xl border space-y-3 transition-colors ${
                           isQueued
                             ? 'border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/30 dark:bg-indigo-950/20'
+                            : isQuizGen
+                            ? 'border-purple-200 dark:border-purple-800/60 bg-purple-50/20 dark:bg-purple-950/20'
                             : 'border-amber-200 dark:border-amber-800/60 bg-amber-50/20 dark:bg-amber-950/20'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                                Đề thi: {job.examTitle || 'Không tên'}
-                              </p>
+                              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate flex items-center gap-1.5">
+                                {isQuizGen ? (
+                                  <>
+                                    <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                                    <span>Tài liệu: {job.examTitle || 'Chưa đặt tên'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>Đề thi: {job.examTitle || 'Không tên'}</span>
+                                  </>
+                                )}
+                              </span>
                               {isQueued ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                                   <Clock className="w-3 h-3" />
-                                  Đang xếp hàng (Queued)
+                                  {isQuizGen ? 'Chờ tạo đề (Queued)' : 'Đang xếp hàng (Queued)'}
+                                </span>
+                              ) : isQuizGen ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-ping" />
+                                  Đang tạo đề AI
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
@@ -610,13 +627,19 @@ export default function AdminAiDashboardPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${isQueued ? 'text-indigo-600 dark:text-indigo-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                              {isQueued ? 'Chờ' : `${pct}%`}
+                            <span className={`text-sm font-bold ${
+                              isQueued 
+                                ? 'text-indigo-600 dark:text-indigo-400' 
+                                : isQuizGen
+                                ? 'text-purple-600 dark:text-purple-400'
+                                : 'text-amber-600 dark:text-amber-400'
+                            }`}>
+                              {isQueued ? 'Chờ' : isQuizGen ? 'Đang chạy' : `${pct}%`}
                             </span>
                             <button
                               onClick={() => handleCancelJob(job.jobId)}
                               disabled={isCancellingJob === job.jobId}
-                              title="Hủy tiến trình và giải phóng khóa đề thi"
+                              title="Hủy tiến trình và giải phóng khóa"
                               className="p-1 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors disabled:opacity-50"
                             >
                               <X className="w-4 h-4" />
@@ -630,19 +653,30 @@ export default function AdminAiDashboardPage() {
                             className={`h-2 rounded-full transition-all duration-300 ease-out ${
                               isQueued
                                 ? 'bg-indigo-400/60 dark:bg-indigo-500/40 animate-pulse'
+                                : isQuizGen
+                                ? 'bg-purple-500 animate-pulse'
                                 : 'bg-amber-500'
                             }`}
-                            style={{ width: isQueued ? '100%' : `${Math.min(100, Math.max(5, pct))}%` }}
+                            style={{ width: isQueued ? '100%' : isQuizGen ? '100%' : `${Math.min(100, Math.max(5, pct))}%` }}
                           />
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
-                          <span>
-                            {isQueued
-                              ? `Tổng số bài cần chấm: ${job.totalAnswers} bài`
-                              : `Đã chấm: ${job.processedAnswers} / ${job.totalAnswers} bài làm`}
-                          </span>
-                          <span>{job.totalQuestions} câu hỏi tự luận</span>
+                          {isQuizGen ? (
+                            <>
+                              <span>Mục tiêu: {job.totalAnswers} câu hỏi</span>
+                              <span className="font-medium text-purple-600 dark:text-purple-400">Soạn đề từ tài liệu</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>
+                                {isQueued
+                                  ? `Tổng số bài cần chấm: ${job.totalAnswers} bài`
+                                  : `Đã chấm: ${job.processedAnswers} / ${job.totalAnswers} bài làm`}
+                              </span>
+                              <span>{job.totalQuestions} câu hỏi tự luận</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
