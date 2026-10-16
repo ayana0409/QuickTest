@@ -1,0 +1,67 @@
+meta {
+  name: 12.04 Commit Questions To Exam
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/ai-generate/commit-to-exam/{{examId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+body:json {
+  {
+    "questions": [
+      {
+        "content": "Tính chất nào của OOP cho phép một đối tượng có thể có nhiều hình thái biểu hiện khác nhau?",
+        "questionType": "SINGLE_CHOICE",
+        "points": 1.0,
+        "difficulty": "MEDIUM",
+        "explanation": "Đa hình (Polymorphism) cho phép các đối tượng thuộc các lớp khác nhau có thể phản ứng khác nhau đối với cùng một thông điệp.",
+        "options": [
+          { "orderIndex": 0, "content": "Tính đóng gói (Encapsulation)", "isCorrect": false },
+          { "orderIndex": 1, "content": "Tính kế thừa (Inheritance)", "isCorrect": false },
+          { "orderIndex": 2, "content": "Tính đa hình (Polymorphism)", "isCorrect": true },
+          { "orderIndex": 3, "content": "Tính trừu tượng (Abstraction)", "isCorrect": false }
+        ]
+      }
+    ]
+  }
+}
+
+vars:pre-request {
+  examId: {{examId}}
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq 200
+  res.body.data: isDefined
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+}

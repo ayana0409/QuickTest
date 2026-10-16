@@ -1,6 +1,6 @@
 # QuickTest Online Exam System - Comprehensive API Documentation
 
-Tài liệu đặc tả toàn bộ **52+ RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL Full-Text Search, Redis, RabbitMQ, Cloudinary, Google Gemini AI, Centralized Audit Logging).
+Tài liệu đặc tả toàn bộ **70+ RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL Full-Text Search, Redis, RabbitMQ, Cloudinary, Google Gemini AI, Centralized Audit Logging).
 
 ---
 
@@ -110,6 +110,25 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 49 | | `GET` | `/api/admin/logs/stats` | `ADMIN` | Thống kê phân tích KPI nhật ký, tỉ lệ lỗi và độ trễ |
 | 50 | | `GET` | `/api/admin/logs/metadata` | `ADMIN` | Lấy danh mục distinct module & action phục vụ lọc động |
 | 51 | | `DELETE` | `/api/admin/logs/cleanup` | `ADMIN` | Dọn dẹp nhật ký cũ theo chu kỳ ngày lưu trữ retention |
+| 52 | **Teacher AI Quiz Gen** | `POST` | `/api/teacher/ai-generate/from-document` | `TEACHER` | Đưa tài liệu/văn bản vào hàng đợi AI soạn đề thi ngầm (202 Accepted) |
+| 53 | | `GET` | `/api/teacher/ai-generate/jobs/{jobId}` | `TEACHER` | Kiểm tra tiến độ và danh sách câu hỏi xem trước của job tạo đề |
+| 54 | | `POST` | `/api/teacher/ai-generate/jobs/{jobId}/cancel` | `TEACHER` | Hủy tiến trình tạo đề thi ngầm và giải phóng khóa tài khoản |
+| 55 | | `POST` | `/api/teacher/ai-generate/commit-to-exam/{examId}` | `TEACHER` | Lưu các câu hỏi AI đã duyệt trực tiếp vào đề thi |
+| 56 | **Teacher AI Tasks** | `GET` | `/api/teacher/ai-tasks` | `TEACHER` | Lấy danh sách tác vụ AI ngầm của giáo viên (soạn đề & chấm thi) |
+| 57 | | `GET` | `/api/teacher/ai-tasks/{taskId}` | `TEACHER` | Lấy chi tiết tác vụ AI và dữ liệu câu hỏi xem trước |
+| 58 | | `POST` | `/api/teacher/ai-tasks/{taskId}/cancel` | `TEACHER` | Hủy tác vụ AI đang xếp hàng / đang chạy và giải phóng khóa |
+| 59 | | `DELETE` | `/api/teacher/ai-tasks/{taskId}` | `TEACHER` | Xóa tác vụ AI khỏi lịch sử theo dõi |
+| 60 | **Admin AI Pool** | `GET` | `/api/admin/ai/status` | `ADMIN` | Xem tổng quan trạng thái hệ thống AI, slot metrics live & active workers |
+| 61 | | `GET` | `/api/admin/ai/keys` | `ADMIN` | Lấy danh sách toàn bộ AI API Keys và model slots cấu hình |
+| 62 | | `GET` | `/api/admin/ai/keys/{id}` | `ADMIN` | Xem chi tiết cấu hình 1 AI API Key |
+| 63 | | `POST` | `/api/admin/ai/keys` | `ADMIN` | Thêm AI API Key mới kèm giới hạn RPM/TPM từng model |
+| 64 | | `PUT` | `/api/admin/ai/keys/{id}` | `ADMIN` | Cập nhật thông tin AI API Key và model limits |
+| 65 | | `DELETE` | `/api/admin/ai/keys/{id}` | `ADMIN` | Xóa AI API Key khỏi cơ sở dữ liệu và rotation pool |
+| 66 | | `PATCH` | `/api/admin/ai/keys/{id}/toggle` | `ADMIN` | Bật / Tắt kích hoạt AI API Key |
+| 67 | | `PATCH` | `/api/admin/ai/models/{id}/toggle` | `ADMIN` | Bật / Tắt kích hoạt slot model cụ thể |
+| 68 | | `POST` | `/api/admin/ai/reload` | `ADMIN` | Buộc nạp lại toàn bộ slot xoay vòng AI từ Database |
+| 69 | | `DELETE` | `/api/admin/ai/jobs/{jobId}` | `ADMIN` | Hủy khẩn cấp 1 tác vụ chấm thi / soạn đề ngầm bị kẹt |
+| 70 | | `DELETE` | `/api/admin/ai/jobs` | `ADMIN` | Dọn dẹp toàn bộ tác vụ AI đang chạy và giải phóng toàn bộ khóa thi |
 
 ---
 
@@ -1508,6 +1527,467 @@ Toàn bộ hoạt động quan trọng trong hệ thống (tạo/sửa/xóa bài
       "retentionDaysKept": 30
     },
     "timestamp": "2026-09-26T18:40:01"
+  }
+  ```
+
+---
+
+### Module 11: Soạn Đề Thi Tự Động Bằng AI (Teacher AI Document Quiz Generation)
+
+#### 52. Đưa tài liệu vào hàng đợi tạo đề ngầm (`POST /api/teacher/ai-generate/from-document`)
+- **Mô tả:** Tải lên tệp tài liệu bài học (PDF, DOCX, TXT) hoặc nhập nội dung văn bản trực tiếp. Hệ thống xác thực kiểm tra khóa đơn luồng người dùng (mỗi giáo viên chỉ chạy 1 tác vụ AI tại một thời điểm), sau đó đưa tác vụ vào hàng đợi đơn luồng xử lý ngầm và trả về mã tiến trình ngay lập tức.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`, `Content-Type: multipart/form-data`
+- **Multipart Form Data:**
+  - `file` (File, optional): Tệp tài liệu nguồn (PDF, DOCX, TXT).
+  - `rawText` (string, optional): Nội dung văn bản thô (nếu không upload file).
+  - `examId` (UUID, optional): Mã đề thi mục tiêu để liên kết.
+  - `totalQuestions` (integer, default: 10): Số lượng câu hỏi muốn tạo (hệ thống tự động chia nhỏ đợt an toàn qua cơ chế Adaptive Multi-Pass).
+  - `difficulty` (string, default: "BALANCED"): Phân bố độ khó (`EASY`, `MEDIUM`, `HARD`, `BALANCED`).
+  - `language` (string, default: "vi"): Ngôn ngữ đề thi (`vi`, `en`).
+  - `targetQuestionTypes` (list, optional): Các loại câu hỏi cho phép (`SINGLE_CHOICE`, `MULTIPLE_CHOICE`, `ESSAY_TEXT`, `NUMERIC`).
+  - `additionalInstructions` (string, optional): Lời dặn bổ sung cho mô hình AI.
+- **Response `202 Accepted`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Yêu cầu tạo đề thi bằng AI đã được đưa vào hàng đợi xử lý.",
+    "data": {
+      "jobId": "b53f65fa-c38d-4a1e-8e42-7efc926c8b01",
+      "status": "QUEUED",
+      "progressPercent": 0,
+      "currentStep": "Đang xếp hàng chờ luồng AI duy nhất của hệ thống...",
+      "sourceFileName": "Giao_trinh_OOP.pdf",
+      "totalQuestionsGenerated": 0,
+      "errorMessage": null,
+      "createdAt": "2026-10-16T12:00:00Z",
+      "completedAt": null,
+      "questions": null
+    },
+    "timestamp": "2026-10-16T12:00:00.123"
+  }
+  ```
+
+---
+
+#### 53. Kiểm tra tiến độ và kết quả tạo đề ngầm (`GET /api/teacher/ai-generate/jobs/{jobId}`)
+- **Mô tả:** Truy vấn trạng thái tiến trình thời gian thực, tỉ lệ hoàn thành (%) và danh sách các câu hỏi xem trước đã sinh ra sau khi hoàn tất.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`
+- **Response `200 OK` (Khi hoàn thành):**
+  ```json
+  {
+    "status": 200,
+    "message": "Lấy trạng thái tiến trình thành công",
+    "data": {
+      "jobId": "b53f65fa-c38d-4a1e-8e42-7efc926c8b01",
+      "status": "COMPLETED",
+      "progressPercent": 100,
+      "currentStep": "Đã soạn thành công 15 câu hỏi từ tài liệu.",
+      "sourceFileName": "Giao_trinh_OOP.pdf",
+      "totalQuestionsGenerated": 15,
+      "errorMessage": null,
+      "createdAt": "2026-10-16T12:00:00Z",
+      "completedAt": "2026-10-16T12:01:15Z",
+      "questions": [
+        {
+          "tempId": "ai-q-1",
+          "content": "Bốn tính chất cơ bản của lập trình hướng đối tượng là gì?",
+          "questionType": "SINGLE_CHOICE",
+          "points": 1.0,
+          "explanation": "OOP được xây dựng dựa trên 4 trụ cột: Đóng gói, Kế thừa, Đa hình và Trừu tượng.",
+          "difficulty": "EASY",
+          "options": [
+            { "orderIndex": 0, "content": "Đóng gói, Kế thừa, Đa hình, Trừu tượng", "isCorrect": true },
+            { "orderIndex": 1, "content": "Tuần tự, Rẽ nhánh, Lặp, Đệ quy", "isCorrect": false },
+            { "orderIndex": 2, "content": "Lớp, Đối tượng, Thuộc tính, Phương thức", "isCorrect": false },
+            { "orderIndex": 3, "content": "Khai báo, Khởi tạo, Thực thi, Hủy bỏ", "isCorrect": false }
+          ]
+        }
+      ]
+    },
+    "timestamp": "2026-10-16T12:01:16.456"
+  }
+  ```
+
+---
+
+#### 54. Hủy tiến trình tạo đề ngầm (`POST /api/teacher/ai-generate/jobs/{jobId}/cancel`)
+- **Mô tả:** Cho phép giáo viên chủ động hủy một tác vụ đang xếp hàng hoặc đang chạy, lập tức giải phóng khóa độc quyền AI của tài khoản.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Đã hủy tiến trình tạo đề thi thành công",
+    "data": null,
+    "timestamp": "2026-10-16T12:02:00.000"
+  }
+  ```
+
+---
+
+#### 55. Lưu câu hỏi AI đã duyệt vào đề thi (`POST /api/teacher/ai-generate/commit-to-exam/{examId}`)
+- **Mô tả:** Nhập hàng loạt các câu hỏi sau khi giáo viên đã xem lại, chỉnh sửa hoặc chọn lọc từ màn hình xem trước trực tiếp vào cơ sở dữ liệu của đề thi mục tiêu.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "questions": [
+      {
+        "content": "Tính chất nào cho phép che giấu thông tin nội bộ của đối tượng?",
+        "questionType": "SINGLE_CHOICE",
+        "points": 1.0,
+        "difficulty": "EASY",
+        "explanation": "Tính đóng gói (Encapsulation) bảo vệ trạng thái nội bộ bằng cách giới hạn quyền truy cập trực tiếp.",
+        "options": [
+          { "orderIndex": 0, "content": "Đóng gói (Encapsulation)", "isCorrect": true },
+          { "orderIndex": 1, "content": "Đa hình (Polymorphism)", "isCorrect": false },
+          { "orderIndex": 2, "content": "Kế thừa (Inheritance)", "isCorrect": false },
+          { "orderIndex": 3, "content": "Trừu tượng (Abstraction)", "isCorrect": false }
+        ]
+      }
+    ]
+  }
+  ```
+- **Response `201 Created`:**
+  ```json
+  {
+    "status": 201,
+    "message": "Đã thêm thành công 1 câu hỏi vào đề thi.",
+    "data": [
+      {
+        "id": "e3b0c442-98fc-1c14-9afb-4c72e0509a01",
+        "content": "Tính chất nào cho phép che giấu thông tin nội bộ của đối tượng?",
+        "questionType": "SINGLE_CHOICE",
+        "points": 1.0,
+        "orderIndex": 1
+      }
+    ],
+    "timestamp": "2026-10-16T12:03:00.000"
+  }
+  ```
+
+---
+
+### Module 12: Giám Sát Tác Vụ Ngầm AI Giáo Viên (Teacher AI Background Tasks Monitor)
+
+#### 56. Lấy danh sách tác vụ AI ngầm của giáo viên (`GET /api/teacher/ai-tasks`)
+- **Mô tả:** Lấy danh sách toàn bộ các tác vụ nền AI (soạn câu hỏi từ file `AI_QUIZ_GEN` và chấm thi tự luận `AI_GRADING`) của giáo viên trong vòng 48 giờ lưu trữ trên Redis, sắp xếp theo thời gian mới nhất.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Lấy danh sách tác vụ AI thành công",
+    "data": [
+      {
+        "taskId": "b53f65fa-c38d-4a1e-8e42-7efc926c8b01",
+        "taskType": "AI_QUIZ_GEN",
+        "status": "COMPLETED",
+        "progressPercent": 100,
+        "currentStep": "Đã soạn thành công 15 câu hỏi từ tài liệu.",
+        "fileName": "Giao_trinh_OOP.pdf",
+        "examId": null,
+        "examTitle": null,
+        "totalItems": 15,
+        "processedItems": 15,
+        "errorMessage": null,
+        "createdAt": "2026-10-16T12:00:00Z",
+        "completedAt": "2026-10-16T12:01:15Z"
+      }
+    ],
+    "timestamp": "2026-10-16T12:04:00.000"
+  }
+  ```
+
+---
+
+#### 57. Lấy chi tiết tác vụ AI ngầm (`GET /api/teacher/ai-tasks/{taskId}`)
+- **Mô tả:** Lấy chi tiết đầy đủ của một tác vụ cụ thể, bao gồm toàn bộ mảng dữ liệu câu hỏi xem trước (đối với tác vụ tạo đề) để giáo viên duyệt lại hoặc khôi phục.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Lấy chi tiết tác vụ AI thành công",
+    "data": {
+      "taskId": "b53f65fa-c38d-4a1e-8e42-7efc926c8b01",
+      "taskType": "AI_QUIZ_GEN",
+      "status": "COMPLETED",
+      "progressPercent": 100,
+      "currentStep": "Đã soạn thành công 15 câu hỏi từ tài liệu.",
+      "questions": [ ... ],
+      "createdAt": "2026-10-16T12:00:00Z",
+      "completedAt": "2026-10-16T12:01:15Z"
+    },
+    "timestamp": "2026-10-16T12:04:30.000"
+  }
+  ```
+
+---
+
+#### 58. Hủy tác vụ AI ngầm (`POST /api/teacher/ai-tasks/{taskId}/cancel`)
+- **Mô tả:** Hủy khẩn cấp một tác vụ AI đang chạy hoặc xếp hàng từ màn hình giám sát, đồng thời giải phóng khóa phân tán tương ứng.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Đã hủy tác vụ AI thành công",
+    "data": null,
+    "timestamp": "2026-10-16T12:05:00.000"
+  }
+  ```
+
+---
+
+#### 59. Xóa tác vụ khỏi lịch sử (`DELETE /api/teacher/ai-tasks/{taskId}`)
+- **Mô tả:** Xóa một tác vụ đã hoàn thành hoặc thất bại khỏi danh sách theo dõi của giáo viên trên Redis.
+- **Quyền hạn:** `TEACHER`, `ADMIN`
+- **Headers:** `Authorization: Bearer <teacher_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Đã xóa tác vụ khỏi lịch sử",
+    "data": null,
+    "timestamp": "2026-10-16T12:05:30.000"
+  }
+  ```
+
+---
+
+### Module 13: Quản Trị Hệ Thống AI & Quản Lý Khóa Xoay Vòng (Admin AI Pool Management)
+
+#### 60. Trạng thái hệ thống AI và Slot Metrics live (`GET /api/admin/ai/status`)
+- **Mô tả:** Cung cấp thông tin tổng quan về Rotation Pool: nguồn cấu hình (`DATABASE` hoặc `ENV_FALLBACK`), tổng số slot, số slot đang hoạt động, danh sách chi tiết từng slot kèm chỉ số RPM/TPM live đọc trực tiếp từ Redis Sliding Window, thời gian cooldown còn lại, và danh sách các background jobs đang chạy.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI system status retrieved successfully",
+    "data": {
+      "configSource": "DATABASE",
+      "totalSlots": 2,
+      "activeSlots": 2,
+      "totalKeys": 2,
+      "optimalBatchTokenBudget": 30000,
+      "maxBatchCandidateCount": 25,
+      "slots": [
+        {
+          "slotIndex": 0,
+          "keyName": "Primary Key",
+          "maskedKey": "AIzaSy...4x8a",
+          "modelName": "gemini-1.5-flash",
+          "rpmCurrent": 1,
+          "rpmMax": 15,
+          "tpmCurrent": 3200,
+          "tpmMax": 1000000,
+          "isExhausted": false,
+          "cooldownRemainingSeconds": 0,
+          "totalRequests": 45,
+          "successCount": 45,
+          "failureCount": 0
+        }
+      ],
+      "activeJobs": []
+    },
+    "timestamp": "2026-10-16T12:06:00.000"
+  }
+  ```
+
+---
+
+#### 61. Danh sách AI API Keys (`GET /api/admin/ai/keys`)
+- **Mô tả:** Lấy danh sách toàn bộ các API Key cấu hình trong cơ sở dữ liệu cùng các model slot con và thông số giới hạn RPM/TPM.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI keys retrieved successfully",
+    "data": [
+      {
+        "id": "7fa1bc82-9921-4d10-8201-1b948df921a0",
+        "name": "Production Primary Gemini",
+        "maskedKey": "AIzaSy...7890",
+        "provider": "GEMINI",
+        "isActive": true,
+        "orderIndex": 0,
+        "models": [
+          {
+            "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+            "modelName": "gemini-1.5-flash",
+            "rpm": 15,
+            "tpm": 1000000,
+            "isActive": true,
+            "orderIndex": 0
+          }
+        ]
+      }
+    ],
+    "timestamp": "2026-10-16T12:06:30.000"
+  }
+  ```
+
+---
+
+#### 62. Tạo mới AI API Key (`POST /api/admin/ai/keys`)
+- **Mô tả:** Đăng ký thêm API Key mới vào hệ thống kèm các model được phép sử dụng và hạn mức. Sau khi lưu, hệ thống tự động làm mới Rotation Pool ngay lập tức.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "name": "Secondary Gemini Backup",
+    "apiKey": "AIzaSyAnotherKeyHere1234567890",
+    "provider": "GEMINI",
+    "isActive": true,
+    "orderIndex": 1,
+    "models": [
+      {
+        "modelName": "gemini-1.5-flash",
+        "rpm": 15,
+        "tpm": 1000000,
+        "isActive": true,
+        "orderIndex": 0
+      }
+    ]
+  }
+  ```
+- **Response `201 Created`:**
+  ```json
+  {
+    "status": 201,
+    "message": "AI key created and rotation pool refreshed",
+    "data": {
+      "id": "8cb2de91-1122-4a33-9122-2c059ef032b1",
+      "name": "Secondary Gemini Backup",
+      "maskedKey": "AIzaSy...7890",
+      "isActive": true
+    },
+    "timestamp": "2026-10-16T12:07:00.000"
+  }
+  ```
+
+---
+
+#### 63. Cập nhật AI API Key (`PUT /api/admin/ai/keys/{id}`)
+- **Mô tả:** Cập nhật thông tin khóa, thay đổi token bí mật hoặc điều chỉnh hạn mức RPM/TPM của các model.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`, `Content-Type: application/json`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI key updated and rotation pool refreshed",
+    "data": { ... },
+    "timestamp": "2026-10-16T12:07:30.000"
+  }
+  ```
+
+---
+
+#### 64. Bật / Tắt kích hoạt AI Key (`PATCH /api/admin/ai/keys/{id}/toggle`)
+- **Mô tả:** Bật hoặc tắt trạng thái hoạt động của một API Key. Các model thuộc key bị tắt sẽ tạm thời không nhận tải request.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI key status toggled successfully",
+    "data": { "id": "...", "isActive": false },
+    "timestamp": "2026-10-16T12:08:00.000"
+  }
+  ```
+
+---
+
+#### 65. Bật / Tắt kích hoạt Model Slot (`PATCH /api/admin/ai/models/{id}/toggle`)
+- **Mô tả:** Tắt hoặc bật một model cụ thể (ví dụ tạm dừng `gemini-1.5-pro` khi quá đắt, chỉ chạy `gemini-1.5-flash`).
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI model status toggled successfully",
+    "data": { "id": "...", "isActive": false },
+    "timestamp": "2026-10-16T12:08:30.000"
+  }
+  ```
+
+---
+
+#### 66. Nạp lại Rotation Pool từ DB (`POST /api/admin/ai/reload`)
+- **Mô tả:** Buộc hệ thống tái nạp toàn bộ cấu hình khóa và model từ Database, đồng bộ lại các bộ đếm vào Redis.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI rotation pool reloaded successfully",
+    "data": null,
+    "timestamp": "2026-10-16T12:09:00.000"
+  }
+  ```
+
+---
+
+#### 67. Hủy tác vụ chấm/tạo đề ngầm khẩn cấp (`DELETE /api/admin/ai/jobs/{jobId}`)
+- **Mô tả:** Quản trị viên can thiệp hủy một tác vụ AI đang bị treo hoặc quá hạn, đồng thời giải phóng khóa phân tán Redis tương ứng của đề thi hoặc giáo viên.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Background job cancelled and lock released successfully",
+    "data": null,
+    "timestamp": "2026-10-16T12:09:30.000"
+  }
+  ```
+
+---
+
+#### 68. Xóa toàn bộ tác vụ AI ngầm và giải phóng khóa (`DELETE /api/admin/ai/jobs`)
+- **Mô tả:** Hủy toàn bộ tất cả tác vụ nền đang chạy trên hệ thống và giải phóng toàn bộ khóa phân tán trên Redis (dùng trong trường hợp bảo trì hoặc hệ thống khởi động lại).
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "All background jobs cleared and locks released successfully",
+    "data": null,
+    "timestamp": "2026-10-16T12:10:00.000"
+  }
+  ```
+
+---
+
+#### 69. Xóa AI API Key (`DELETE /api/admin/ai/keys/{id}`)
+- **Mô tả:** Xóa vĩnh viễn một AI Key khỏi Database và loại bỏ khỏi Rotation Pool.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI key deleted and rotation pool refreshed",
+    "data": null,
+    "timestamp": "2026-10-16T12:10:30.000"
   }
   ```
 

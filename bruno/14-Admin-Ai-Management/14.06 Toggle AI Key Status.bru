@@ -1,0 +1,43 @@
+meta {
+  name: 14.06 Toggle AI Key Status
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/admin/ai/keys/{{createdAiKeyId}}/toggle
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+vars:pre-request {
+  createdAiKeyId: {{createdAiKeyId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.id: isDefined
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('adminToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'admin@quicktest.com',
+        password: 'Admin@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('adminToken', token);
+        bru.setEnvVar('adminToken', token);
+      }
+    } catch (e) {}
+  }
+}

@@ -1,0 +1,77 @@
+meta {
+  name: 14.03 Create AI Key
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/admin/ai/keys
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "name": "Backup Gemini Key (Testing)",
+    "apiKey": "AIzaSyDummyKeyForTestingOnly1234567890",
+    "provider": "GEMINI",
+    "isActive": true,
+    "orderIndex": 10,
+    "models": [
+      {
+        "modelName": "gemini-1.5-flash",
+        "rpm": 15,
+        "tpm": 1000000,
+        "isActive": true,
+        "orderIndex": 0
+      },
+      {
+        "modelName": "gemini-2.0-flash-lite",
+        "rpm": 30,
+        "tpm": 2000000,
+        "isActive": true,
+        "orderIndex": 1
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq 200
+  res.body.data.id: isDefined
+  res.body.data.models: isDefined
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('adminToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'admin@quicktest.com',
+        password: 'Admin@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('adminToken', token);
+        bru.setEnvVar('adminToken', token);
+      }
+    } catch (e) {}
+  }
+}
+
+script:post-response {
+  if (res.body?.data?.id) {
+    bru.setVar('createdAiKeyId', res.body.data.id);
+    bru.setEnvVar('createdAiKeyId', res.body.data.id);
+  }
+}

@@ -1,0 +1,56 @@
+meta {
+  name: 12.01 Submit Quiz Generation Job - Raw Text
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/ai-generate/from-document
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+body:multipart-form {
+  rawText: Lập trình hướng đối tượng (OOP) là một mô hình lập trình dựa trên khái niệm về đối tượng (object), có chứa dữ liệu dưới dạng các trường thuộc tính (attributes/properties) và mã nguồn dưới dạng các phương thức (methods). Bốn trụ cột chính của OOP gồm: Đóng gói (Encapsulation), Kế thừa (Inheritance), Đa hình (Polymorphism), và Trừu tượng (Abstraction).
+  totalQuestions: 5
+  difficulty: BALANCED
+  language: vi
+  targetQuestionTypes: SINGLE_CHOICE
+  additionalInstructions: Tập trung câu hỏi vào 4 tính chất cơ bản của OOP.
+}
+
+assert {
+  res.status: eq 202
+  res.body.status: eq 200
+  res.body.data.jobId: isDefined
+  res.body.data.status: in ["QUEUED", "PROCESSING"]
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  if (!bru.getEnvVar('teacherToken')) {
+    try {
+      const res = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      const token = res.data?.data?.accessToken || res.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+}
+
+script:post-response {
+  if (res.body?.data?.jobId) {
+    bru.setVar('aiQuizJobId', res.body.data.jobId);
+    bru.setEnvVar('aiQuizJobId', res.body.data.jobId);
+  }
+}
