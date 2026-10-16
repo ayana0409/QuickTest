@@ -278,6 +278,57 @@ class ExamSubmissionConsumerTest {
         }
 
         @Test
+        @DisplayName("processSubmission should auto-grade essay with 0 score and status SUBMITTED when candidate leaves essay blank")
+        void processSubmission_EssayQuestion_WhenEmptyText_AutoGradedAndSubmitsNormally() {
+                List<QuestionGradingDto> keysWithEssay = new ArrayList<>(cachedGradingKey);
+                keysWithEssay.add(QuestionGradingDto.builder()
+                                .questionId(essayQId)
+                                .questionType(QuestionType.ESSAY_TEXT)
+                                .points(5.0)
+                                .build());
+
+                when(redisExamSessionService.getExamGradingKey(examId)).thenReturn(keysWithEssay);
+
+                Map<UUID, SaveAnswerRequest> answers = new HashMap<>();
+                // Correct single choice (2.0 pts)
+                answers.put(singleChoiceQId, SaveAnswerRequest.builder()
+                                .questionId(singleChoiceQId)
+                                .selectedOptionIds(Set.of(optB))
+                                .build());
+                // Empty essay response
+                answers.put(essayQId, SaveAnswerRequest.builder()
+                                .questionId(essayQId)
+                                .textAnswer("   ")
+                                .build());
+
+                SubmissionMessage message = SubmissionMessage.builder()
+                                .attemptId(attemptId)
+                                .examId(examId)
+                                .examTitle("Physics and Essay Exam")
+                                .submitTime(LocalDateTime.now())
+                                .answers(answers)
+                                .build();
+
+                examSubmissionConsumer.processSubmission(message);
+
+                // Should finalize attempt as SUBMITTED immediately with 2.0 total score
+                verify(examPersistenceService, times(1)).persistGradedAnswersAndStatus(
+                                eq(attemptId),
+                                argThat((List<CandidateAnswer> list) -> {
+                                        if (list == null || list.size() != 4) return false;
+                                        CandidateAnswer essayAns = list.stream()
+                                                .filter(a -> a.getQuestion().getId().equals(essayQId))
+                                                .findFirst().orElse(null);
+                                        return essayAns != null
+                                                && essayAns.getGradingStatus() == GradingStatus.AUTO_GRADED
+                                                && essayAns.getAwardedScore() == 0.0;
+                                }),
+                                eq(AttemptStatus.SUBMITTED),
+                                eq(2.0),
+                                any(LocalDateTime.class));
+        }
+
+        @Test
         @DisplayName("processSubmission should create zero-score CandidateAnswer for unanswered questions")
         void processSubmission_UnansweredQuestions_PersistsZeroScoreCandidateAnswers() {
                 when(redisExamSessionService.getExamGradingKey(examId)).thenReturn(cachedGradingKey);

@@ -73,6 +73,7 @@ public class ExamSubmissionConsumer {
                             .selectedOptions(Collections.emptySet())
                             .textAnswer(null)
                             .awardedScore(0.0)
+                            .teacherFeedback("Thí sinh không làm bài (để trống)")
                             .gradingStatus(GradingStatus.AUTO_GRADED)
                             .build();
                     candidateAnswers.add(unanswered);
@@ -141,9 +142,17 @@ public class ExamSubmissionConsumer {
                 } else if (qDto.getQuestionType() == QuestionType.ESSAY_TEXT) {
                     String text = answerDraft.getTextAnswer() != null ? answerDraft.getTextAnswer().trim() : "";
                     candidateAnswer.setTextAnswer(text);
-                    candidateAnswer.setAwardedScore(0.0);
-                    candidateAnswer.setGradingStatus(GradingStatus.PENDING_MANUAL);
-                    hasPendingManualGrading = true;
+
+                    // If candidate left the essay blank, skip manual grading and automatically score 0
+                    if (text.isEmpty()) {
+                        candidateAnswer.setAwardedScore(0.0);
+                        candidateAnswer.setGradingStatus(GradingStatus.AUTO_GRADED);
+                        candidateAnswer.setTeacherFeedback("Thí sinh không làm bài (để trống)");
+                    } else {
+                        candidateAnswer.setAwardedScore(0.0);
+                        candidateAnswer.setGradingStatus(GradingStatus.PENDING_MANUAL);
+                        hasPendingManualGrading = true;
+                    }
                 }
 
                 candidateAnswers.add(candidateAnswer);

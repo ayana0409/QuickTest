@@ -94,8 +94,8 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
         );
       case 'AUTO_GRADED':
         return (
-          <Badge variant="info" size="sm" dot>
-            Tự động chấm
+          <Badge variant="neutral" size="sm" dot>
+            Tự động chấm (0 điểm)
           </Badge>
         );
       case 'PENDING_MANUAL':
@@ -159,33 +159,45 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
           <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
             Nội dung bài làm ({wordCount} từ)
           </span>
-          <button
-            type="button"
-            onClick={handleCopyText}
-            className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors py-1 px-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            title="Sao chép câu trả lời"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Đã chép</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Sao chép</span>
-              </>
-            )}
-          </button>
+          {submission.textAnswer && submission.textAnswer.trim().length > 0 && (
+            <button
+              type="button"
+              onClick={handleCopyText}
+              className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors py-1 px-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              title="Sao chép câu trả lời"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Đã chép</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Sao chép</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
-        <div className="p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800/90 bg-zinc-50/50 dark:bg-zinc-950/50 text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed font-sans whitespace-pre-wrap select-text selection:bg-indigo-100 dark:selection:bg-indigo-900/50 min-h-[90px]">
+        <div className="p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800/90 bg-zinc-50/50 dark:bg-zinc-950/50 text-sm font-sans min-h-[90px]">
           {submission.textAnswer && submission.textAnswer.trim().length > 0 ? (
-            submission.textAnswer
-          ) : (
-            <span className="italic text-zinc-400 dark:text-zinc-500">
-              (Thí sinh không điền câu trả lời cho câu hỏi này)
+            <span className="text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap select-text selection:bg-indigo-100 dark:selection:bg-indigo-900/50">
+              {submission.textAnswer}
             </span>
+          ) : (
+            <div className="flex items-start gap-2.5 text-zinc-500 dark:text-zinc-400 py-1">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-medium text-zinc-700 dark:text-zinc-300">
+                  Thí sinh không làm câu hỏi này (để trống)
+                </p>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                  Hệ thống đã tự động tính 0 điểm và bỏ qua việc yêu cầu giáo viên chấm điểm.
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>

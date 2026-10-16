@@ -84,13 +84,63 @@ public interface CandidateAnswerRepository extends JpaRepository<CandidateAnswer
         long countByQuestionIdAndGradingStatus(UUID questionId, GradingStatus status);
 
         /**
+         * Paginated candidate answers for a specific question filtered by multiple grading statuses.
+         */
+        @Query(value = "SELECT ca FROM CandidateAnswer ca " +
+                        "JOIN FETCH ca.examAttempt a " +
+                        "LEFT JOIN FETCH a.user u " +
+                        "WHERE ca.question.id = :questionId AND ca.gradingStatus IN :statuses " +
+                        "ORDER BY a.submitTime DESC NULLS LAST", countQuery = "SELECT COUNT(ca) FROM CandidateAnswer ca WHERE ca.question.id = :questionId AND ca.gradingStatus IN :statuses")
+        Page<CandidateAnswer> findByQuestionIdAndGradingStatusInWithAttemptAndUser(
+                        @Param("questionId") UUID questionId,
+                        @Param("statuses") List<GradingStatus> statuses,
+                        Pageable pageable);
+
+        /**
+         * Paginated pending manual submissions for a question that have actual candidate text (non-empty).
+         */
+        @Query(value = "SELECT ca FROM CandidateAnswer ca " +
+                        "JOIN FETCH ca.examAttempt a " +
+                        "LEFT JOIN FETCH a.user u " +
+                        "WHERE ca.question.id = :questionId " +
+                        "AND ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL " +
+                        "AND ca.textAnswer IS NOT NULL AND TRIM(ca.textAnswer) <> '' " +
+                        "ORDER BY a.submitTime DESC NULLS LAST", countQuery = "SELECT COUNT(ca) FROM CandidateAnswer ca WHERE ca.question.id = :questionId AND ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL AND ca.textAnswer IS NOT NULL AND TRIM(ca.textAnswer) <> ''")
+        Page<CandidateAnswer> findPendingManualSubmissionsWithAttemptAndUser(
+                        @Param("questionId") UUID questionId,
+                        Pageable pageable);
+
+        /**
+         * Find all pending answers with empty text for a question (candidates who left essay blank).
+         */
+        @Query("SELECT ca FROM CandidateAnswer ca " +
+                        "JOIN FETCH ca.examAttempt a " +
+                        "WHERE ca.question.id = :questionId " +
+                        "AND ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL " +
+                        "AND (ca.textAnswer IS NULL OR TRIM(ca.textAnswer) = '')")
+        List<CandidateAnswer> findEmptyPendingByQuestionId(@Param("questionId") UUID questionId);
+
+        /**
+         * Find all pending answers with empty text for an entire exam (candidates who left essay blank).
+         */
+        @Query("SELECT ca FROM CandidateAnswer ca " +
+                        "JOIN FETCH ca.examAttempt a " +
+                        "JOIN ca.question q " +
+                        "WHERE q.exam.id = :examId " +
+                        "AND q.questionType = com.quicktest.modules.assessment.entity.QuestionType.ESSAY_TEXT " +
+                        "AND ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL " +
+                        "AND (ca.textAnswer IS NULL OR TRIM(ca.textAnswer) = '')")
+        List<CandidateAnswer> findEmptyPendingByExamId(@Param("examId") UUID examId);
+
+        /**
          * Find all pending candidate answers for a specific question to feed into AI
-         * batch grading.
+         * batch grading (must have non-empty text).
          */
         @Query("SELECT ca FROM CandidateAnswer ca " +
                         "JOIN FETCH ca.question q " +
                         "JOIN FETCH ca.examAttempt a " +
                         "WHERE q.id = :questionId AND ca.gradingStatus = :status " +
+                        "AND ca.textAnswer IS NOT NULL AND TRIM(ca.textAnswer) <> '' " +
                         "ORDER BY a.submitTime ASC NULLS LAST")
         List<CandidateAnswer> findPendingByQuestionId(
                         @Param("questionId") UUID questionId,
@@ -98,13 +148,14 @@ public interface CandidateAnswerRepository extends JpaRepository<CandidateAnswer
 
         /**
          * Find all pending essay answers across all questions in an exam for
-         * entire-exam AI grading.
+         * entire-exam AI grading (must have non-empty text).
          */
         @Query("SELECT ca FROM CandidateAnswer ca " +
                         "JOIN FETCH ca.question q " +
                         "JOIN FETCH ca.examAttempt a " +
                         "WHERE q.exam.id = :examId AND q.questionType = com.quicktest.modules.assessment.entity.QuestionType.ESSAY_TEXT AND ca.gradingStatus = :status "
                         +
+                        "AND ca.textAnswer IS NOT NULL AND TRIM(ca.textAnswer) <> '' " +
                         "ORDER BY q.orderIndex ASC, a.submitTime ASC NULLS LAST")
         List<CandidateAnswer> findPendingByExamId(
                         @Param("examId") UUID examId,
@@ -142,12 +193,13 @@ public interface CandidateAnswerRepository extends JpaRepository<CandidateAnswer
 
         /**
          * Batch aggregate total, pending manual, and graded submission counts grouped by questionId in a single query.
+         * Ensures empty essay responses are counted in gradedCount and excluded from pendingCount.
          * Returns List of [questionId (UUID), totalCount (Long), pendingCount (Long), gradedCount (Long)].
          */
         @Query("SELECT ca.question.id, " +
                         "COUNT(ca.id), " +
-                        "SUM(CASE WHEN ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL THEN 1L ELSE 0L END), " +
-                        "SUM(CASE WHEN ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.GRADED THEN 1L ELSE 0L END) " +
+                        "SUM(CASE WHEN ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL AND ca.textAnswer IS NOT NULL AND TRIM(ca.textAnswer) <> '' THEN 1L ELSE 0L END), " +
+                        "SUM(CASE WHEN ca.gradingStatus IN (com.quicktest.modules.session.entity.GradingStatus.GRADED, com.quicktest.modules.session.entity.GradingStatus.AUTO_GRADED) OR (ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL AND (ca.textAnswer IS NULL OR TRIM(ca.textAnswer) = '')) THEN 1L ELSE 0L END) " +
                         "FROM CandidateAnswer ca " +
                         "WHERE ca.question.id IN :questionIds " +
                         "GROUP BY ca.question.id")

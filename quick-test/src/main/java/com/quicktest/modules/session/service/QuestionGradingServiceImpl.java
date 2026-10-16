@@ -93,13 +93,16 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
 
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ExamGradingQuestionsResponse getQuestionsForGrading(UUID examId, User teacher) {
         log.info("Teacher {} fetching essay questions for grading in exam ID: {}", teacher.getId(), examId);
 
         Exam exam = examRepository.findByIdWithCreatedBy(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
         verifyExamOwnership(exam, teacher);
+
+        // Self-heal: auto-resolve any legacy empty pending essay answers for this exam
+        autoResolveEmptyPendingAnswersForExam(examId);
 
         // Fetch ONLY essay questions directly in SQL
         List<Question> essayQuestions = questionRepository
@@ -158,7 +161,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public QuestionSubmissionsDetailResponse getQuestionSubmissions(
             UUID questionId, GradingStatus filterStatus, Pageable pageable, User teacher) {
 
@@ -173,17 +176,25 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             throw new AppException("Only essay questions support submission grading view", HttpStatus.BAD_REQUEST);
         }
 
+        // Self-heal: auto-resolve any legacy empty pending essay answers for this specific question
+        autoResolveEmptyPendingAnswers(questionId);
+
         // Use un-sorted PageRequest because the JPQL query defines its own deterministic ORDER BY a.submitTime DESC NULLS LAST
         Pageable safePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
 
         Page<CandidateAnswer> answerPage;
-        if (filterStatus != null) {
+        if (filterStatus == GradingStatus.PENDING_MANUAL) {
+            answerPage = candidateAnswerRepository.findPendingManualSubmissionsWithAttemptAndUser(
+                    questionId, safePageable);
+        } else if (filterStatus == GradingStatus.GRADED) {
+            answerPage = candidateAnswerRepository.findByQuestionIdAndGradingStatusInWithAttemptAndUser(
+                    questionId, List.of(GradingStatus.GRADED, GradingStatus.AUTO_GRADED), safePageable);
+        } else if (filterStatus != null) {
             answerPage = candidateAnswerRepository.findByQuestionIdAndGradingStatusWithAttemptAndUser(
                     questionId, filterStatus, safePageable);
         } else {
             answerPage = candidateAnswerRepository.findByQuestionIdWithAttemptAndUser(questionId, safePageable);
         }
-
 
         Page<CandidateSubmissionItemDto> dtoPage = answerPage.map(ca -> {
             ExamAttempt attempt = ca.getExamAttempt();
@@ -461,6 +472,62 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     private void verifyExamOwnership(Exam exam, User teacher) {
         if (exam == null || exam.getCreatedBy() == null || !exam.getCreatedBy().getId().equals(teacher.getId())) {
             throw new AppException("You do not have permission to grade or access this exam", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * Automatically resolves pending essay answers that candidates left empty for a specific question.
+     * Transitions them to AUTO_GRADED with 0 score and finalizes attempts if no pending questions remain.
+     */
+    private void autoResolveEmptyPendingAnswers(UUID questionId) {
+        try {
+            List<CandidateAnswer> emptyAnswers = candidateAnswerRepository.findEmptyPendingByQuestionId(questionId);
+            if (!emptyAnswers.isEmpty()) {
+                Set<UUID> affectedAttemptIds = new HashSet<>();
+                for (CandidateAnswer ca : emptyAnswers) {
+                    ca.setAwardedScore(0.0);
+                    ca.setGradingStatus(GradingStatus.AUTO_GRADED);
+                    ca.setTeacherFeedback("Thí sinh không làm bài (để trống)");
+                    if (ca.getExamAttempt() != null) {
+                        affectedAttemptIds.add(ca.getExamAttempt().getId());
+                    }
+                }
+                candidateAnswerRepository.saveAll(emptyAnswers);
+                if (!affectedAttemptIds.isEmpty()) {
+                    asyncWorker.finalizeAffectedAttempts(affectedAttemptIds);
+                }
+                log.info("Auto-resolved {} empty pending essay answers for question ID: {}", emptyAnswers.size(), questionId);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to auto-resolve empty pending answers for question {}: {}", questionId, ex.getMessage());
+        }
+    }
+
+    /**
+     * Automatically resolves pending essay answers that candidates left empty across an entire exam.
+     * Transitions them to AUTO_GRADED with 0 score and finalizes attempts if no pending questions remain.
+     */
+    private void autoResolveEmptyPendingAnswersForExam(UUID examId) {
+        try {
+            List<CandidateAnswer> emptyAnswers = candidateAnswerRepository.findEmptyPendingByExamId(examId);
+            if (!emptyAnswers.isEmpty()) {
+                Set<UUID> affectedAttemptIds = new HashSet<>();
+                for (CandidateAnswer ca : emptyAnswers) {
+                    ca.setAwardedScore(0.0);
+                    ca.setGradingStatus(GradingStatus.AUTO_GRADED);
+                    ca.setTeacherFeedback("Thí sinh không làm bài (để trống)");
+                    if (ca.getExamAttempt() != null) {
+                        affectedAttemptIds.add(ca.getExamAttempt().getId());
+                    }
+                }
+                candidateAnswerRepository.saveAll(emptyAnswers);
+                if (!affectedAttemptIds.isEmpty()) {
+                    asyncWorker.finalizeAffectedAttempts(affectedAttemptIds);
+                }
+                log.info("Auto-resolved {} empty pending essay answers for exam ID: {}", emptyAnswers.size(), examId);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to auto-resolve empty pending answers for exam {}: {}", examId, ex.getMessage());
         }
     }
 }
