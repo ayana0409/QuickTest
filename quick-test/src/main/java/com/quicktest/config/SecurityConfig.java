@@ -167,6 +167,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public error dispatcher and endpoints
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/", "/ping", "/api/ping").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/session/**").permitAll()
                         .requestMatchers("/ws-exam/**").permitAll()

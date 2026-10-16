@@ -137,6 +137,7 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 76 | | `GET` | `/api/admin/moderation/ai-status` | `ADMIN` | Kiểm tra tiến độ tác vụ AI kiểm duyệt nội dung |
 | 77 | | `DELETE` | `/api/admin/moderation/ai-cursor` | `ADMIN` | Đặt lại con trỏ duyệt AI trên Redis để quét lại từ đầu |
 | 78 | **Admin Health** | `GET` | `/api/admin/system/health` | `ADMIN` | Kiểm tra trạng thái sức khỏe hệ thống (Database, Redis, Disk, RAM) |
+| 79 | **Public Ping Probe** | `GET` | `/api/ping` (hoặc `/`, `/ping`) | Công khai | Kiểm tra kết nối, trạng thái máy chủ, trả về JSON hoặc HTML Dashboard |
 
 ---
 
@@ -2191,6 +2192,35 @@ Toàn bộ hoạt động quan trọng trong hệ thống (tạo/sửa/xóa bài
       "diskFreeGb": 45.2
     },
     "timestamp": "2026-10-16T12:18:30.000"
+  }
+  ```
+
+---
+
+### Module 16: Public Ping & Cold-Start Probe (Hạ Tầng & Khởi Động)
+
+#### 16.1. Ping kiểm tra máy chủ & Đánh thức Cold-Start (`GET /api/ping` hoặc `/`, `/ping`)
+- **Mô tả:** Endpoint công khai phục vụ kiểm tra sức khỏe cơ bản, giám sát Uptime, và cho phép Frontend (Vercel) gửi tín hiệu đánh thức máy chủ Backend miễn phí (Render, Railway, Koyeb) khi ở chế độ ngủ (Cold Start).
+- **Phân quyền:** Công khai (`permitAll()`).
+- **Nội dung trả về:**
+  - Nếu gửi `Accept: application/json`: Trả về JSON trạng thái hệ thống.
+  - Nếu truy cập trực tiếp bằng trình duyệt (`Accept: text/html`): Trả về giao diện Dashboard HTML Dark Mode hiển thị trực quan trạng thái máy chủ, JVM Uptime, RAM usage.
+- **Headers:**
+  ```http
+  GET /api/ping HTTP/1.1
+  Host: localhost:8080
+  Accept: application/json
+  ```
+- **Response `200 OK` (JSON):**
+  ```json
+  {
+    "status": "UP",
+    "message": "QuickTest Backend is Live & Healthy",
+    "service": "quick-test",
+    "version": "1.0.0",
+    "uptimeSeconds": 154,
+    "usedMemoryMb": 182,
+    "timestamp": "2026-10-16T14:15:00.000Z"
   }
   ```
 
