@@ -52,10 +52,22 @@ public class ExamPersistenceService {
 
         // 2. Associate candidate answers with the managed ExamAttempt and batch insert
         if (answers != null && !answers.isEmpty()) {
-            for (CandidateAnswer ans : answers) {
-                ans.setExamAttempt(attempt);
+            // Delete any existing answers for this attempt (ensures idempotency on retries/stale submissions)
+            List<CandidateAnswer> existingAnswers = candidateAnswerRepository.findByExamAttemptId(attemptId);
+            if (!existingAnswers.isEmpty()) {
+                candidateAnswerRepository.deleteAll(existingAnswers);
+                candidateAnswerRepository.flush();
             }
-            candidateAnswerRepository.saveAll(answers);
+
+            // Deduplicate incoming answers by questionId in memory to prevent duplicate key constraint violations
+            java.util.Map<UUID, CandidateAnswer> uniqueAnswers = new java.util.LinkedHashMap<>();
+            for (CandidateAnswer ans : answers) {
+                if (ans.getQuestion() != null && ans.getQuestion().getId() != null) {
+                    ans.setExamAttempt(attempt);
+                    uniqueAnswers.put(ans.getQuestion().getId(), ans);
+                }
+            }
+            candidateAnswerRepository.saveAll(uniqueAnswers.values());
         }
 
         log.info("Successfully persisted attempt ID: {} with status: {}, score: {}", attemptId, finalStatus, totalScore);
