@@ -133,7 +133,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
           <CheckSquare className="w-4 h-4 text-purple-400 shrink-0" />
           <span>
-            <strong className="text-purple-200">Câu hỏi nhiều đáp án:</strong> Thí sinh có thể chọn một hoặc nhiều phương án đúng (sử dụng ô kiểm vuông).
+            Thí sinh có thể chọn một hoặc nhiều phương án đúng.
           </span>
         </div>
       )}
@@ -141,7 +141,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       {isSingle && (
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-medium mb-3 sm:mb-4 w-fit">
           <CircleDot className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-          <span>Chỉ chọn 1 đáp án duy nhất (nút tròn)</span>
+          <span>Chỉ chọn 1 đáp án duy nhất</span>
         </div>
       )}
 
@@ -163,8 +163,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                       ? 'border-purple-500 bg-purple-950/40 text-purple-100 ring-1 ring-purple-500/50 shadow-sm shadow-purple-900/30'
                       : 'border-[#30363D] hover:border-purple-500/40 bg-zinc-900/50 hover:bg-zinc-850/60 text-zinc-300'
                     : isSelected
-                    ? 'border-blue-500 bg-blue-950/40 text-blue-100 ring-1 ring-blue-500/50 shadow-sm shadow-blue-900/30'
-                    : 'border-[#30363D] hover:border-blue-500/40 bg-zinc-900/50 hover:bg-zinc-850/60 text-zinc-300'
+                      ? 'border-blue-500 bg-blue-950/40 text-blue-100 ring-1 ring-blue-500/50 shadow-sm shadow-blue-900/30'
+                      : 'border-[#30363D] hover:border-blue-500/40 bg-zinc-900/50 hover:bg-zinc-850/60 text-zinc-300'
                 )}
               >
                 {/* Front Option Selector Badge: Circle (rounded-full) for Single Choice, Square (rounded-lg) for Multiple Choice */}
@@ -177,8 +177,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                         ? 'bg-purple-600 text-white border border-purple-400 shadow-md shadow-purple-600/30 ring-2 ring-purple-500/25'
                         : 'bg-zinc-850 text-zinc-300 border border-zinc-600 group-hover:border-purple-400 group-hover:text-purple-300'
                       : isSelected
-                      ? 'bg-blue-600 text-white border border-blue-400 shadow-md shadow-blue-600/30 ring-2 ring-blue-500/25'
-                      : 'bg-zinc-850 text-zinc-300 border border-zinc-600 group-hover:border-blue-400 group-hover:text-blue-300'
+                        ? 'bg-blue-600 text-white border border-blue-400 shadow-md shadow-blue-600/30 ring-2 ring-blue-500/25'
+                        : 'bg-zinc-850 text-zinc-300 border border-zinc-600 group-hover:border-blue-400 group-hover:text-blue-300'
                   )}
                 >
                   {letterLabel}

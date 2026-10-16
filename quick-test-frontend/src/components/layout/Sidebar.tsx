@@ -109,9 +109,12 @@ export function Sidebar({
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800">
         <Link href="/" className="flex items-center gap-3 overflow-hidden">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-sm shadow-indigo-600/30 shrink-0">
-            Q
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="QuickTest Logo"
+            className="w-9 h-9 object-contain rounded-xl shrink-0"
+          />
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-100">

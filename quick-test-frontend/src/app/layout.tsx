@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Quick Test - Hệ Thống Thi Trực Tuyến & Giám Sát Thông Minh',
   description: 'Nền tảng thi trắc nghiệm, tự luận trực tuyến với giám sát thông minh AI và chống gian lận đa tầng.',
+  icons: {
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+      { url: '/favicon.ico' },
+    ],
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 import { AuthProvider } from '@/components/providers/AuthProvider';
@@ -28,6 +36,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="shortcut icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
         <ServerWakeupProvider>
           <AuthProvider>{children}</AuthProvider>

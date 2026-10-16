@@ -155,10 +155,13 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-indigo-600/30">
-              Q
-            </div>
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-4 group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="QuickTest Logo"
+              className="w-11 h-11 object-contain rounded-xl shadow-md shadow-indigo-600/20 group-hover:scale-105 transition-transform"
+            />
             <span className="font-bold text-2xl tracking-tight text-zinc-900 dark:text-zinc-100">
               Quick<span className="text-indigo-600">Test</span>
             </span>

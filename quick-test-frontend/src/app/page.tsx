@@ -10,14 +10,17 @@ export default function HomePage() {
       {/* Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-indigo-600/30">
-              Q
-            </div>
+          <Link href="/" className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="QuickTest Logo"
+              className="w-9 h-9 object-contain rounded-xl shadow-md shadow-indigo-600/20"
+            />
             <span className="font-bold text-xl tracking-tight text-zinc-900 dark:text-zinc-100">
               Quick<span className="text-indigo-600">Test</span>
             </span>
-          </div>
+          </Link>
 
           <AuthNav />
         </div>

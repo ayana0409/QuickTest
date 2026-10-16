@@ -127,9 +127,12 @@ function ExamEntryContent() {
       <header className="w-full border-b border-[#30363D] bg-[#161B22]/60 backdrop-blur-md px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-base shadow-md shadow-indigo-600/30">
-              Q
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="QuickTest Logo"
+              className="w-9 h-9 object-contain rounded-xl shadow-md shadow-indigo-500/20"
+            />
             <span className="font-bold text-lg tracking-tight text-white">
               Quick<span className="text-indigo-400">Test</span>
             </span>
