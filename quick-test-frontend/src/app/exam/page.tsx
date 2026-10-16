@@ -157,8 +157,8 @@ function ExamEntryContent() {
       </header>
 
       {/* Center Form Card */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-lg bg-[#161B22] border border-[#30363D] rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+      <main className="flex-1 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12">
+        <div className="w-full max-w-lg bg-[#161B22] border border-[#30363D] rounded-3xl p-4 sm:p-10 shadow-2xl relative overflow-hidden">
           {/* Subtle Ambient Glow */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-b-full shadow-[0_0_20px_rgba(99,102,241,0.5)]" />
 

@@ -10,6 +10,8 @@ import {
   Maximize2,
   ShieldAlert,
   AlertTriangle,
+  X,
+  ListChecks,
 } from 'lucide-react';
 import { useExamStore, type CandidateAnswerState } from '@/stores/examStore';
 import { candidateSessionService } from '@/services/candidateSession.service';
@@ -109,6 +111,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
 
   // Guest Candidate Prompt State
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -709,10 +712,10 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         />
 
         {/* Main Workspace */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 overflow-x-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-start">
             {/* Left Column: Active Question Workspace */}
-            <div className="lg:col-span-8 xl:col-span-9 flex flex-col space-y-6">
+            <div className="lg:col-span-8 xl:col-span-9 flex flex-col space-y-4 sm:space-y-6 min-w-0">
               {/* Question Card */}
               {currentQuestion && (
                 <QuestionCard
@@ -726,46 +729,58 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
               )}
 
               {/* Bottom Question Controls / Navigation Bar */}
-              <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-[#161B22] border border-[#30363D] shadow-xl">
+              <div className="flex items-center justify-between gap-2 sm:gap-4 p-2.5 sm:p-4 rounded-2xl bg-[#161B22] border border-[#30363D] shadow-xl max-w-full">
                 <button
                   type="button"
                   onClick={prevQuestion}
                   disabled={isFirstQuestion}
-                  className="py-2.5 px-4 rounded-xl bg-[#0D1117] hover:bg-[#21262D] text-zinc-300 border border-[#30363D] text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="py-2 px-3 sm:py-2.5 sm:px-4 rounded-xl bg-[#0D1117] hover:bg-[#21262D] text-zinc-300 border border-[#30363D] text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 shrink-0"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Câu trước</span>
+                  <ChevronLeft className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Câu trước</span>
+                  <span className="sm:hidden">Trước</span>
                 </button>
 
-                <div className="text-xs font-mono font-medium text-zinc-400">
-                  Câu <span className="text-[#E6EDF3] font-bold">{currentQuestionIndex + 1}</span> / {examPaper.questions.length}
-                </div>
+                {/* Question index indicator / Mobile drawer trigger */}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileNav(true)}
+                  className="py-1.5 px-2.5 sm:py-2 sm:px-3 rounded-xl bg-[#0D1117] hover:bg-[#21262D] text-zinc-300 border border-[#30363D] text-xs font-mono font-medium transition-colors flex items-center gap-1.5 cursor-pointer hover:border-indigo-500/40"
+                  title="Bấm để mở danh sách toàn bộ câu hỏi"
+                >
+                  <ListChecks className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span>
+                    Câu <strong className="text-[#E6EDF3] font-bold">{currentQuestionIndex + 1}</strong>
+                    <span className="text-zinc-500">/{examPaper.questions.length}</span>
+                  </span>
+                </button>
 
                 {isLastQuestion ? (
                   <button
                     type="button"
                     onClick={handleOpenSubmitModal}
                     disabled={isSubmitting}
-                    className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="py-2 px-3 sm:py-2.5 sm:px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer disabled:opacity-50 shrink-0"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>Nộp bài thi</span>
+                    <Send className="w-4 h-4 shrink-0" />
+                    <span>Nộp bài</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={nextQuestion}
-                    className="py-2.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all flex items-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="py-2 px-3 sm:py-2.5 sm:px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 shrink-0"
                   >
-                    <span>Câu tiếp theo</span>
-                    <ChevronRight className="w-4 h-4" />
+                    <span className="hidden sm:inline">Câu tiếp theo</span>
+                    <span className="sm:hidden">Tiếp</span>
+                    <ChevronRight className="w-4 h-4 shrink-0" />
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Right Column: Question Navigator Sidebar */}
-            <div className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24">
+            {/* Right Column: Question Navigator Sidebar (Visible on desktop) */}
+            <div className="hidden lg:block lg:col-span-4 xl:col-span-3 lg:sticky lg:top-24">
               <QuestionNavigator
                 questions={examPaper.questions}
                 currentIndex={currentQuestionIndex}
@@ -777,6 +792,40 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
             </div>
           </div>
         </main>
+
+        {/* Mobile Question Navigator Drawer / Modal */}
+        {showMobileNav && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 select-none animate-in fade-in duration-200"
+            onClick={() => setShowMobileNav(false)}
+          >
+            <div
+              className="w-full max-w-lg bg-[#161B22] border-t sm:border border-[#30363D] rounded-t-3xl sm:rounded-2xl p-4 sm:p-5 shadow-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-250"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex-1 overflow-y-auto pr-1">
+                <QuestionNavigator
+                  questions={examPaper.questions}
+                  currentIndex={currentQuestionIndex}
+                  answers={answers}
+                  onSelectQuestion={(idx) => {
+                    setCurrentQuestionIndex(idx);
+                    setShowMobileNav(false);
+                  }}
+                  onSubmitClick={() => {
+                    setShowMobileNav(false);
+                    handleOpenSubmitModal();
+                  }}
+                  onClose={() => setShowMobileNav(false)}
+                  isSubmitting={isSubmitting}
+                  className="border-0 p-0 shadow-none bg-transparent"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Initial Fullscreen Prompt Modal */}
         {showFullscreenPrompt && (

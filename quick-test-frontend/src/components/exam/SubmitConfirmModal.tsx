@@ -60,7 +60,7 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
       aria-labelledby="submit-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 select-none animate-in fade-in duration-200"
     >
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#161B22] border border-[#30363D] shadow-2xl p-6 text-zinc-100 overflow-hidden">
+      <div className="relative w-full max-w-lg rounded-2xl bg-[#161B22] border border-[#30363D] shadow-2xl p-4 sm:p-6 text-zinc-100 overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between pb-4 mb-4 border-b border-[#30363D]">
           <div className="flex items-center gap-3">
@@ -162,12 +162,12 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
         </p>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#30363D]">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-[#30363D]">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="py-2.5 px-4 rounded-xl bg-[#0D1117] hover:bg-[#21262D] text-zinc-300 border border-[#30363D] text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-[#0D1117] hover:bg-[#21262D] text-zinc-300 border border-[#30363D] text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 text-center"
           >
             Tiếp tục làm bài
           </button>
@@ -176,7 +176,7 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all duration-150 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

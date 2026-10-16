@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, Send, ListChecks } from 'lucide-react';
+import { CheckCircle2, Send, ListChecks, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuestionInPaper } from '@/types/exam';
 import type { CandidateAnswerState } from '@/stores/examStore';
@@ -13,6 +13,7 @@ interface QuestionNavigatorProps {
   onSelectQuestion: (index: number) => void;
   onSubmitClick: () => void;
   isSubmitting?: boolean;
+  onClose?: () => void;
   className?: string;
 }
 
@@ -28,6 +29,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
   onSelectQuestion,
   onSubmitClick,
   isSubmitting = false,
+  onClose,
   className,
 }) => {
   const isQuestionAnswered = (question: QuestionInPaper): boolean => {
@@ -63,15 +65,28 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
       )}
     >
       {/* Header & Progress Info */}
-      <div className="pb-4 mb-4 border-b border-[#30363D]">
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#E6EDF3]">
-            <ListChecks className="w-4 h-4 text-indigo-400" />
+      <div className="pb-3.5 mb-3.5 border-b border-[#30363D]">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-sm sm:text-base font-bold text-[#E6EDF3]">
+            <ListChecks className="w-4 h-4 text-indigo-400 shrink-0" />
             <span>Mục lục câu hỏi</span>
           </div>
-          <span className="text-xs font-mono font-medium text-zinc-400">
-            {answeredCount}/{totalCount} ({progressPercent}%)
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-medium text-zinc-400">
+              {answeredCount}/{totalCount} ({progressPercent}%)
+            </span>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#21262D] transition-colors cursor-pointer"
+                aria-label="Đóng mục lục"
+                title="Đóng"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -120,16 +135,16 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
       </div>
 
       {/* Status Legend */}
-      <div className="pt-4 mt-4 border-t border-[#30363D] grid grid-cols-3 gap-2 text-[11px] text-zinc-400">
-        <div className="flex items-center gap-1.5">
+      <div className="pt-3.5 mt-3.5 border-t border-[#30363D] flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-400">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <span className="w-2.5 h-2.5 rounded-md bg-emerald-500/30 border border-emerald-500/50 inline-block shrink-0" />
           <span>Đã làm</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <span className="w-2.5 h-2.5 rounded-md bg-indigo-600 border border-indigo-400 inline-block shrink-0" />
           <span>Đang xem</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <span className="w-2.5 h-2.5 rounded-md bg-[#0D1117] border border-[#30363D] inline-block shrink-0" />
           <span>Chưa làm</span>
         </div>

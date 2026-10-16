@@ -50,15 +50,15 @@ export const ExamTopBar: React.FC<ExamTopBarProps> = ({
   const isProctoringActive = proctoringSettings?.enabled ?? false;
 
   return (
-    <header className="sticky top-0 z-40 w-full h-16 bg-[#161B22]/95 backdrop-blur-md border-b border-[#30363D] px-4 sm:px-6 flex items-center justify-between select-none">
+    <header className="sticky top-0 z-40 w-full h-14 sm:h-16 bg-[#161B22]/95 backdrop-blur-md border-b border-[#30363D] px-3 sm:px-6 flex items-center justify-between select-none max-w-full">
       {/* Left Section: Exam Title, Candidate Info & Proctoring Badge */}
-      <div className="flex items-center gap-4 min-w-0 max-w-[48%] sm:max-w-[45%]">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             {/* Read-only Proctoring Indicator Capsule */}
             <div
               className={cn(
-                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border shrink-0 transition-all select-none',
+                'inline-flex items-center gap-1 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full border shrink-0 transition-all select-none',
                 isProctoringActive
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                   : 'bg-zinc-800/60 border-zinc-700/50 text-zinc-400'
@@ -71,36 +71,40 @@ export const ExamTopBar: React.FC<ExamTopBarProps> = ({
             >
               <span
                 className={cn(
-                  'w-1.5 h-1.5 rounded-full',
+                  'w-1.5 h-1.5 rounded-full shrink-0',
                   isProctoringActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'
                 )}
               />
-              <span className="text-[11px] font-semibold">
+              <span className="text-[10px] sm:text-[11px] font-semibold hidden sm:inline">
                 {isProctoringActive ? 'Giám sát: BẬT' : 'Giám sát: TẮT'}
+              </span>
+              <span className="text-[10px] font-semibold sm:hidden">
+                {isProctoringActive ? 'BẬT' : 'TẮT'}
               </span>
             </div>
 
             <h1
-              className="text-sm sm:text-base font-bold text-[#E6EDF3] truncate tracking-tight"
+              className="text-xs sm:text-base font-bold text-[#E6EDF3] truncate tracking-tight"
               title={examTitle}
             >
               {examTitle}
             </h1>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 truncate mt-0.5">
-            <User className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
+          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">
+            <User className="w-3 h-3 shrink-0 text-zinc-500" />
             <span className="truncate">
-              Thí sinh: <strong className="text-zinc-300">{candidateName || 'Khách dự thi'}</strong>
+              <span className="hidden sm:inline">Thí sinh: </span>
+              <strong className="text-zinc-300 font-medium">{candidateName || 'Khách dự thi'}</strong>
             </span>
           </div>
         </div>
       </div>
 
       {/* Center/Right Section: Auto-Save Status, Timer, Actions */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         {/* Auto-Save Indicator */}
-        <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-400 bg-[#0D1117] border border-[#30363D] px-3 py-1.5 rounded-xl">
+        <div className="hidden lg:flex items-center gap-1.5 text-xs text-zinc-400 bg-[#0D1117] border border-[#30363D] px-3 py-1.5 rounded-xl">
           {isSaving ? (
             <>
               <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
@@ -122,7 +126,7 @@ export const ExamTopBar: React.FC<ExamTopBarProps> = ({
             remainingSeconds={remainingSeconds}
             totalDurationSeconds={totalDurationSeconds}
             onExpire={onTimerExpire}
-            className="py-1 px-3 sm:px-4 text-xs sm:text-sm bg-[#0D1117] border-[#30363D]"
+            className="py-1 px-2 sm:px-3 text-xs bg-[#0D1117] border-[#30363D]"
           />
         </div>
 
@@ -148,7 +152,7 @@ export const ExamTopBar: React.FC<ExamTopBarProps> = ({
           type="button"
           onClick={onSubmitClick}
           disabled={isSubmitting}
-          className="py-2 px-3 sm:px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all duration-150 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="py-1.5 px-2.5 sm:py-2 sm:px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all duration-150 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 shrink-0"
         >
           {isSubmitting ? (
             <RefreshCw className="w-3.5 h-3.5 animate-spin" />

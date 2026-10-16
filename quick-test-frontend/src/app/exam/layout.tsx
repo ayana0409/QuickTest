@@ -17,7 +17,7 @@ export default function ExamLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen w-full bg-[#0D1117] text-[#E6EDF3] antialiased selection:bg-indigo-600/30 selection:text-indigo-200">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#0D1117] text-[#E6EDF3] antialiased selection:bg-indigo-600/30 selection:text-indigo-200">
       {children}
     </div>
   );

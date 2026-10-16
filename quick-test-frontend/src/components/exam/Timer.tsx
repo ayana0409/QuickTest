@@ -36,7 +36,7 @@ export const Timer: React.FC<TimerProps> = ({
   return (
     <div
       className={cn(
-        'flex flex-col gap-1.5 px-4 py-2.5 rounded-xl border transition-all duration-300 backdrop-blur-md select-none',
+        'flex flex-col gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl border transition-all duration-300 backdrop-blur-md select-none',
         isExpired && 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400',
         isCritical &&
           'bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400 animate-pulse ring-2 ring-red-500/20',
@@ -48,19 +48,19 @@ export const Timer: React.FC<TimerProps> = ({
         className
       )}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
           {isCritical ? (
-            <AlertTriangle className="w-4 h-4 text-red-500 animate-bounce" />
+            <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-bounce shrink-0" />
           ) : (
-            <Clock className={cn('w-4 h-4', isWarning ? 'text-amber-500' : 'text-indigo-500')} />
+            <Clock className={cn('w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0', isWarning ? 'text-amber-500' : 'text-indigo-500')} />
           )}
-          <span className="text-xs font-semibold uppercase tracking-wider opacity-80">
-            {isExpired ? 'Hết giờ thi' : 'Thời gian còn lại'}
+          <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider opacity-80 hidden sm:inline">
+            {isExpired ? 'Hết giờ' : 'Thời gian còn lại'}
           </span>
         </div>
 
-        <span className="font-mono text-lg font-bold tracking-tight">
+        <span className="font-mono text-xs sm:text-base lg:text-lg font-bold tracking-tight shrink-0">
           {formatSeconds(remainingSeconds)}
         </span>
       </div>
