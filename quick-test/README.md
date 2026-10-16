@@ -222,6 +222,8 @@ Hệ thống hỗ trợ ghi đè cấu hình linh hoạt thông qua các biến 
 | `SPRING_RABBITMQ_PORT` | `5672` | Cổng máy chủ RabbitMQ |
 | `APP_JWT_SECRET` | *(256-bit Hex Key)* | Khóa bí mật ký mã hóa JWT token |
 | `APP_JWT_EXPIRATION_MS` | `86400000` (24 giờ) | Thời gian sống của Access Token |
+| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173,...` | Danh sách domain client được phép gọi API (phân tách bởi dấu phẩy) |
+| `APP_CORS_ALLOWED_ORIGIN_PATTERNS` | `""` | Mẫu wildcard domain cho phép (ví dụ: `https://*.yourdomain.com`) |
 | `GEMINI_API_KEY` | `""` | Khóa API Google Gemini dự phòng (Env fallback) |
 | `CLOUDINARY_CLOUD_NAME` | `""` | Tên Cloudinary Cloud Name |
 | `CLOUDINARY_API_KEY` | `""` | Cloudinary API Key |

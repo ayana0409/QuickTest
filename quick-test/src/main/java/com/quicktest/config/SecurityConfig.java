@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,7 +25,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Spring Security 6 configuration establishing stateless JWT security filter chain,
@@ -41,6 +44,12 @@ public class SecurityConfig {
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final com.quicktest.core.ratelimit.filter.GlobalRateLimitFilter globalRateLimitFilter;
+
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:4173,http://127.0.0.1:3000,http://127.0.0.1:5173}")
+    private List<String> allowedOrigins;
+
+    @Value("${app.cors.allowed-origin-patterns:}")
+    private List<String> allowedOriginPatterns;
 
     /**
      * Password encoder bean utilizing BCrypt hashing algorithm.
@@ -80,18 +89,45 @@ public class SecurityConfig {
     }
 
     /**
-     * CORS configuration allowing requests from React development servers.
+     * CORS configuration allowing requests from configured web clients and production domains.
+     * Supports both explicit origins and wildcard origin patterns dynamically.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:4173",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:5173"
-        ));
+
+        List<String> explicitOrigins = new ArrayList<>();
+        List<String> patternOrigins = new ArrayList<>();
+
+        if (allowedOrigins != null) {
+            for (String origin : allowedOrigins) {
+                String trimmed = origin != null ? origin.trim() : "";
+                if (!trimmed.isEmpty()) {
+                    if (trimmed.contains("*")) {
+                        patternOrigins.add(trimmed);
+                    } else {
+                        explicitOrigins.add(trimmed);
+                    }
+                }
+            }
+        }
+
+        if (allowedOriginPatterns != null) {
+            for (String pattern : allowedOriginPatterns) {
+                String trimmed = pattern != null ? pattern.trim() : "";
+                if (!trimmed.isEmpty()) {
+                    patternOrigins.add(trimmed);
+                }
+            }
+        }
+
+        if (!explicitOrigins.isEmpty()) {
+            configuration.setAllowedOrigins(explicitOrigins);
+        }
+        if (!patternOrigins.isEmpty()) {
+            configuration.setAllowedOriginPatterns(patternOrigins);
+        }
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin", "X-Guest-Identifier"));
         configuration.setExposedHeaders(Arrays.asList(

@@ -60,6 +60,14 @@ app.jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
 app.jwt.expiration-ms=86400000
 
 # -------------------------------------------------------------------
+# CORS Configuration (Allowed origins for web clients & production domains)
+# -------------------------------------------------------------------
+# Comma-separated list of allowed origins or origin patterns.
+# Example production: https://quicktest.yourdomain.com,https://exam.university.edu.vn
+app.cors.allowed-origins=${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:4173,http://127.0.0.1:3000,http://127.0.0.1:5173}
+app.cors.allowed-origin-patterns=${APP_CORS_ALLOWED_ORIGIN_PATTERNS:}
+
+# -------------------------------------------------------------------
 # OAuth2 Resource Server / SSO (QuickBite / ABP Framework Identity Server)
 # -------------------------------------------------------------------
 # Uncomment when connecting to QuickBite OpenIddict / Identity Server
