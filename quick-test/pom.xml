@@ -104,6 +104,12 @@
 			<groupId>com.cloudinary</groupId>
 			<artifactId>cloudinary-http45</artifactId>
 			<version>1.38.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- Apache POI for Excel and Word Processing -->
@@ -111,6 +117,12 @@
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.3.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- Apache PDFBox for Document Ingestion -->
