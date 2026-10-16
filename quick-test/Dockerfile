@@ -61,24 +61,15 @@ EXPOSE 8080
 # 8. -XX:TieredStopAtLevel=1: C1 JIT compiler only (slashes boot CPU time & saves ~30MB).
 # 9. -Djava.security.egd=file:/dev/./urandom: Fast non-blocking entropy generation.
 # 10. -Dspring.main.lazy-initialization=true: On-demand bean init, cuts boot time by 50%.
-# 11. -XX:+ExitOnOutOfMemoryError: Immediate restart on OOM to prevent zombie state.
+# 11. -Dspring.jmx.enabled=false & -Dspring.jpa.hibernate.ddl-auto=none: Avoids remote schema scan.
+# 12. -XX:+ExitOnOutOfMemoryError: Immediate restart on OOM to prevent zombie state.
 # -----------------------------------------------------------------------------
-ENV JAVA_OPTS="-XX:+UseContainerSupport \
-               -Xms48m \
-               -Xmx160m \
-               -XX:MaxMetaspaceSize=192m \
-               -XX:CompressedClassSpaceSize=64m \
-               -XX:ReservedCodeCacheSize=40m \
-               -Xss256k \
-               -XX:+UseSerialGC \
-               -XX:TieredStopAtLevel=1 \
-               -Djava.security.egd=file:/dev/./urandom \
-               -Dspring.main.lazy-initialization=true \
-               -XX:+ExitOnOutOfMemoryError"
+ENV JAVA_OPTS="-XX:+UseContainerSupport -Xms48m -Xmx160m -XX:MaxMetaspaceSize=192m -XX:CompressedClassSpaceSize=64m -XX:ReservedCodeCacheSize=40m -Xss256k -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Djava.security.egd=file:/dev/./urandom -Dspring.main.lazy-initialization=true -Dspring.jmx.enabled=false -Dspring.jpa.hibernate.ddl-auto=none -XX:+ExitOnOutOfMemoryError"
 
 # Container Healthcheck (Respects Render dynamic $PORT or defaults to 8080)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:${PORT:-8080}/api/ping || exit 1
 
 # Execute Spring Boot application
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
+
