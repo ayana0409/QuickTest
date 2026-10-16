@@ -1,0 +1,14 @@
+target/
+.git/
+.gitignore
+.gitattributes
+.mvn/wrapper/maven-wrapper.jar
+*.log
+*.tmp
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+scratch/
+application.properties

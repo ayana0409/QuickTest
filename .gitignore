@@ -54,6 +54,7 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 quick-test/src/main/resources/application.properties
+render.yaml
 
 # ===================================================================
 # Node & Frontend (Shared & Hoisted)

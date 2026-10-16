@@ -6,8 +6,19 @@
 # -------------------------------------------------------------------
 # Server Settings
 # -------------------------------------------------------------------
-server.port=8080
-server.servlet.context-path=/api
+# Server Settings (Respects Render $PORT, Docker $SERVER_PORT, or 8080)
+# -------------------------------------------------------------------
+server.port=${PORT:${SERVER_PORT:8080}}
+# server.servlet.context-path=/api
+
+# Embedded Tomcat Minimal Resource Footprint (Optimized for 512MB RAM & 0.1 vCPU)
+server.tomcat.threads.max=25
+server.tomcat.threads.min-spare=3
+server.tomcat.max-connections=100
+server.tomcat.accept-count=20
+
+# Spring Boot Startup Optimization (Lazy initialization cuts boot time by ~50%)
+spring.main.lazy-initialization=${SPRING_MAIN_LAZY_INITIALIZATION:true}
 
 # -------------------------------------------------------------------
 # PostgreSQL Database Configuration
@@ -17,10 +28,11 @@ spring.datasource.username=postgres
 spring.datasource.password=your_postgres_password
 spring.datasource.driver-class-name=org.postgresql.Driver
 
-# HikariCP Connection Pool Settings
-spring.datasource.hikari.maximum-pool-size=10
-spring.datasource.hikari.minimum-idle=5
+# HikariCP Lightweight Connection Pool (Optimized for low RAM footprint)
+spring.datasource.hikari.maximum-pool-size=4
+spring.datasource.hikari.minimum-idle=1
 spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.max-lifetime=1800000
 spring.datasource.hikari.connection-timeout=20000
 
 # -------------------------------------------------------------------
@@ -28,8 +40,8 @@ spring.datasource.hikari.connection-timeout=20000
 # -------------------------------------------------------------------
 # ddl-auto options: none, validate, update, create, create-drop
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.show-sql=${SPRING_JPA_SHOW_SQL:false}
+spring.jpa.properties.hibernate.format_sql=false
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.open-in-view=false
 
