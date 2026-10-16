@@ -52,21 +52,23 @@ EXPOSE 8080
 # -----------------------------------------------------------------------------
 # JVM Tuning for Render Free Tier (<= 512MB RAM, 0.1 vCPU):
 # 1. -XX:+UseContainerSupport: Accurately respect cgroup RAM limits (512MB).
-# 2. -Xms64m -Xmx224m: Starts at 64MB heap, caps max heap at 224MB.
-# 3. -XX:MaxMetaspaceSize=112m: Bounds class metadata memory to prevent leaks.
-# 4. -XX:ReservedCodeCacheSize=48m: Bounds JIT code cache from 240MB down to 48MB.
-# 5. -Xss256k: 256KB per-thread stack (saves ~25MB with 25 Tomcat threads).
-# 6. -XX:+UseSerialGC: Minimalist single-threaded GC (<3MB overhead vs 60MB+ G1GC).
-# 7. -XX:TieredStopAtLevel=1: C1 JIT compiler only (slashes boot CPU time & saves ~30MB).
-# 8. -Djava.security.egd=file:/dev/./urandom: Fast non-blocking entropy generation.
-# 9. -Dspring.main.lazy-initialization=true: On-demand bean init, cuts boot time by 50%.
-# 10. -XX:+ExitOnOutOfMemoryError: Immediate restart on OOM to prevent zombie state.
+# 2. -Xms48m -Xmx160m: Lean heap (Spring Boot 3 peak heap is ~80MB, leaves RAM for Metaspace).
+# 3. -XX:MaxMetaspaceSize=192m: Ample headroom for Spring Boot 3 + Hibernate + Jackson + RabbitMQ classes.
+# 4. -XX:CompressedClassSpaceSize=64m: Bounds compressed class space to preserve native RAM.
+# 5. -XX:ReservedCodeCacheSize=40m: Bounds JIT code cache for C1 compiler.
+# 6. -Xss256k: 256KB per-thread stack (saves ~25MB with 25 Tomcat threads).
+# 7. -XX:+UseSerialGC: Minimalist single-threaded GC (<3MB overhead vs 60MB+ G1GC).
+# 8. -XX:TieredStopAtLevel=1: C1 JIT compiler only (slashes boot CPU time & saves ~30MB).
+# 9. -Djava.security.egd=file:/dev/./urandom: Fast non-blocking entropy generation.
+# 10. -Dspring.main.lazy-initialization=true: On-demand bean init, cuts boot time by 50%.
+# 11. -XX:+ExitOnOutOfMemoryError: Immediate restart on OOM to prevent zombie state.
 # -----------------------------------------------------------------------------
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
-               -Xms64m \
-               -Xmx224m \
-               -XX:MaxMetaspaceSize=112m \
-               -XX:ReservedCodeCacheSize=48m \
+               -Xms48m \
+               -Xmx160m \
+               -XX:MaxMetaspaceSize=192m \
+               -XX:CompressedClassSpaceSize=64m \
+               -XX:ReservedCodeCacheSize=40m \
                -Xss256k \
                -XX:+UseSerialGC \
                -XX:TieredStopAtLevel=1 \
