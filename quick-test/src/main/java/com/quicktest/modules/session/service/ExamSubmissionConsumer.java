@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@org.springframework.context.annotation.Lazy(false)
 @RequiredArgsConstructor
 @SuppressWarnings("null")
 public class ExamSubmissionConsumer {

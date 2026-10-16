@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
+@org.springframework.context.annotation.Lazy(false)
 @RequiredArgsConstructor
 public class AiModerationConsumer {
 

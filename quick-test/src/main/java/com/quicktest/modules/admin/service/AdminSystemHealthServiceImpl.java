@@ -48,10 +48,18 @@ public class AdminSystemHealthServiceImpl implements AdminSystemHealthService {
 
     @PostConstruct
     public void init() {
-        this.systemInfo = new SystemInfo();
-        this.hal = systemInfo.getHardware();
-        this.processor = hal.getProcessor();
-        this.prevTicks = processor.getSystemCpuLoadTicks();
+        try {
+            this.systemInfo = new SystemInfo();
+            this.hal = systemInfo.getHardware();
+            this.processor = hal.getProcessor();
+            this.prevTicks = processor.getSystemCpuLoadTicks();
+        } catch (Throwable t) {
+            log.warn("OSHI native hardware monitoring not available on this platform (e.g. Android/Termux): {}", t.getMessage());
+            this.systemInfo = null;
+            this.hal = null;
+            this.processor = null;
+            this.prevTicks = null;
+        }
     }
 
     @Override
@@ -164,14 +172,30 @@ public class AdminSystemHealthServiceImpl implements AdminSystemHealthService {
 
     private SystemMetrics checkSystemMetrics() {
         // CPU
-        double cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
-        prevTicks = processor.getSystemCpuLoadTicks(); // update for next call
+        double cpuLoad = 0.0;
+        if (processor != null && prevTicks != null) {
+            try {
+                cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
+                prevTicks = processor.getSystemCpuLoadTicks(); // update for next call
+            } catch (Throwable ignored) {
+            }
+        }
 
         // Memory
-        GlobalMemory memory = hal.getMemory();
-        long totalRam = memory.getTotal();
-        long availableRam = memory.getAvailable();
-        long usedRam = totalRam - availableRam;
+        long totalRam = Runtime.getRuntime().totalMemory();
+        long freeRam = Runtime.getRuntime().freeMemory();
+        long usedRam = totalRam - freeRam;
+        if (hal != null) {
+            try {
+                GlobalMemory memory = hal.getMemory();
+                if (memory != null) {
+                    totalRam = memory.getTotal();
+                    long availableRam = memory.getAvailable();
+                    usedRam = totalRam - availableRam;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
         double ramUsagePercent = totalRam > 0 ? (double) usedRam / totalRam * 100 : 0;
 
         // Disk (Root or current dir)
