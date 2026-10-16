@@ -23,6 +23,8 @@ RUN ./mvnw dependency:go-offline -B || true
 
 # Copy project source files and compile production artifact
 COPY src ./src
+# Ensure application.properties is present for packaging even if excluded by .gitignore
+RUN if [ ! -f src/main/resources/application.properties ]; then cp src/main/resources/application.properties.example src/main/resources/application.properties; fi
 RUN ./mvnw clean package -DskipTests -B
 
 # -----------------------------------------------------------------------------

@@ -29,10 +29,13 @@ public class JwtTokenProvider {
 
     @Autowired
     public JwtTokenProvider(
-            @Value("${app.jwt.secret}") String jwtSecret,
-            @Value("${app.jwt.expiration-ms}") long jwtExpirationMs,
-            @Value("${app.jwt.refresh-expiration-ms:604800000}") long jwtRefreshExpirationMs
+            @Value("${app.jwt.secret:${JWT_SECRET}}") String jwtSecret,
+            @Value("${app.jwt.expiration-ms:${JWT_EXPIRATION_MS:86400000}}") long jwtExpirationMs,
+            @Value("${app.jwt.refresh-expiration-ms:${JWT_REFRESH_EXPIRATION_MS:604800000}}") long jwtRefreshExpirationMs
     ) {
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            throw new IllegalArgumentException("JWT secret key is missing. Please configure 'app.jwt.secret' or 'JWT_SECRET' environment variable.");
+        }
         this.jwtSecret = jwtSecret;
         this.jwtExpirationMs = jwtExpirationMs;
         this.jwtRefreshExpirationMs = jwtRefreshExpirationMs;
