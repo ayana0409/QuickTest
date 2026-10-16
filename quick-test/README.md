@@ -273,4 +273,11 @@ Sau khi khởi chạy ứng dụng lần đầu với cơ sở dữ liệu đã 
 
 ---
 
+## 📄 Bản quyền & Giấy phép (License)
+
+Dự án này được phân phối dưới giấy phép **Proprietary & Confidential — All Rights Reserved**.  
+Toàn bộ mã nguồn và tài sản trí tuệ thuộc quyền sở hữu của **Ayana0409 / QuickTest**.
+
+---
+
 *QuickTest Engine — Developed with excellence.*

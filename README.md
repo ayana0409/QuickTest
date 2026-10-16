@@ -121,4 +121,11 @@ npm run dev
 
 ---
 
+## 📄 Bản quyền & Giấy phép (License)
+
+Dự án này được phân phối dưới giấy phép **Proprietary & Confidential — All Rights Reserved**.  
+Toàn bộ mã nguồn, kiến trúc và tài sản trí tuệ thuộc quyền sở hữu của **Ayana0409 / QuickTest**. Nghiêm cấm sao chép, tái phân phối hoặc thương mại hóa mà không có sự đồng ý bằng văn bản của tác giả.
+
+---
+
 *QuickTest — Built for robust, scalable, and intelligent assessment systems.*

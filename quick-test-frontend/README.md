@@ -246,4 +246,11 @@ Bạn có thể sử dụng các tài khoản định danh sẵn sau để đăn
 
 ---
 
+## 📄 Bản quyền & Giấy phép (License)
+
+Dự án này được phân phối dưới giấy phép **Proprietary & Confidential — All Rights Reserved**.  
+Toàn bộ mã nguồn và tài sản trí tuệ thuộc quyền sở hữu của **Ayana0409 / QuickTest**.
+
+---
+
 *QuickTest Client — Built for modern, high-standard assessment.*
