@@ -1,6 +1,6 @@
 # QuickTest Online Exam System - Comprehensive API Documentation
 
-Tài liệu đặc tả toàn bộ **70+ RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL Full-Text Search, Redis, RabbitMQ, Cloudinary, Google Gemini AI, Centralized Audit Logging).
+Tài liệu đặc tả toàn bộ **78+ RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL Full-Text Search, Redis, RabbitMQ, Cloudinary, Google Gemini AI, Centralized Audit Logging).
 
 ---
 
@@ -129,6 +129,14 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 | 68 | | `POST` | `/api/admin/ai/reload` | `ADMIN` | Buộc nạp lại toàn bộ slot xoay vòng AI từ Database |
 | 69 | | `DELETE` | `/api/admin/ai/jobs/{jobId}` | `ADMIN` | Hủy khẩn cấp 1 tác vụ chấm thi / soạn đề ngầm bị kẹt |
 | 70 | | `DELETE` | `/api/admin/ai/jobs` | `ADMIN` | Dọn dẹp toàn bộ tác vụ AI đang chạy và giải phóng toàn bộ khóa thi |
+| 71 | **Admin Moderation** | `GET` | `/api/admin/moderation/questions` | `ADMIN` | Danh sách câu hỏi kiểm duyệt nội dung (lọc an toàn, ảnh, loại câu, FTS) |
+| 72 | | `GET` | `/api/admin/moderation/stats` | `ADMIN` | Thống kê số lượng câu hỏi an toàn, vi phạm, chờ duyệt |
+| 73 | | `PATCH` | `/api/admin/moderation/questions/{id}/safety` | `ADMIN` | Cập nhật nhãn an toàn (đánh dấu an toàn / thu hồi cờ) |
+| 74 | | `DELETE` | `/api/admin/moderation/questions/{id}` | `ADMIN` | Xóa câu hỏi vi phạm tiêu chuẩn cộng đồng |
+| 75 | | `POST` | `/api/admin/moderation/ai-run` | `ADMIN` | Kích hoạt tác vụ AI quét kiểm duyệt hàng loạt ngầm (202 Accepted) |
+| 76 | | `GET` | `/api/admin/moderation/ai-status` | `ADMIN` | Kiểm tra tiến độ tác vụ AI kiểm duyệt nội dung |
+| 77 | | `DELETE` | `/api/admin/moderation/ai-cursor` | `ADMIN` | Đặt lại con trỏ duyệt AI trên Redis để quét lại từ đầu |
+| 78 | **Admin Health** | `GET` | `/api/admin/system/health` | `ADMIN` | Kiểm tra trạng thái sức khỏe hệ thống (Database, Redis, Disk, RAM) |
 
 ---
 
@@ -1988,6 +1996,201 @@ Toàn bộ hoạt động quan trọng trong hệ thống (tạo/sửa/xóa bài
     "message": "AI key deleted and rotation pool refreshed",
     "data": null,
     "timestamp": "2026-10-16T12:10:30.000"
+  }
+  ```
+
+---
+
+### Module 14: Kiểm Duyệt Nội Dung Câu Hỏi (Admin Question Content Moderation)
+
+#### 71. Danh sách câu hỏi kiểm duyệt nội dung (`GET /api/admin/moderation/questions`)
+- **Mô tả:** Lấy danh sách toàn bộ câu hỏi trong hệ thống kèm cờ an toàn (`isSafe`), trạng thái kiểm duyệt, bộ lọc hình ảnh (`hasImage`), loại câu hỏi và tìm kiếm toàn văn FTS.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Query Parameters:**
+  - `isSafe` (boolean, optional): Lọc theo trạng thái an toàn (`true`: an toàn, `false`: gắn cờ vi phạm).
+  - `hasImage` (boolean, optional): Lọc câu hỏi có đính kèm hình ảnh.
+  - `questionType` (string, optional): Lọc theo loại câu hỏi (`SINGLE_CHOICE`, `MULTIPLE_CHOICE`, `ESSAY_TEXT`, `NUMERIC`).
+  - `search` (string, optional): Từ khóa tìm kiếm nội dung câu hỏi.
+  - `page`, `size`, `sort` (Pageable).
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Moderation questions retrieved successfully",
+    "data": {
+      "content": [
+        {
+          "id": "e3b0c442-98fc-1c14-9afb-4c72e0509a01",
+          "content": "Nội dung câu hỏi...",
+          "questionType": "SINGLE_CHOICE",
+          "points": 1.0,
+          "hasImage": false,
+          "imageUrl": null,
+          "isSafe": true,
+          "moderationStatus": "APPROVED",
+          "moderatedAt": "2026-10-15T10:00:00Z",
+          "moderatedBy": "admin_system"
+        }
+      ],
+      "pageNumber": 0,
+      "pageSize": 10,
+      "totalElements": 150,
+      "totalPages": 15,
+      "last": false
+    },
+    "timestamp": "2026-10-16T12:15:00.000"
+  }
+  ```
+
+---
+
+#### 72. Thống kê kiểm duyệt nội dung (`GET /api/admin/moderation/stats`)
+- **Mô tả:** Cung cấp số liệu tổng hợp: tổng số câu hỏi, số câu an toàn, số câu bị gắn cờ vi phạm, và số câu chưa được duyệt để hiển thị dashboard thẻ thống kê.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Moderation stats retrieved successfully",
+    "data": {
+      "totalQuestions": 450,
+      "safeQuestions": 435,
+      "unsafeQuestions": 5,
+      "pendingReviewQuestions": 10
+    },
+    "timestamp": "2026-10-16T12:15:30.000"
+  }
+  ```
+
+---
+
+#### 73. Cập nhật nhãn an toàn câu hỏi (`PATCH /api/admin/moderation/questions/{id}/safety`)
+- **Mô tả:** Quản trị viên can thiệp thủ công đánh dấu câu hỏi là an toàn (`isSafe = true`) hoặc thu hồi cờ an toàn (`isSafe = false`).
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "isSafe": true
+  }
+  ```
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Question marked as safe successfully",
+    "data": { ... },
+    "timestamp": "2026-10-16T12:16:00.000"
+  }
+  ```
+
+---
+
+#### 74. Xóa câu hỏi vi phạm tiêu chuẩn (`DELETE /api/admin/moderation/questions/{id}`)
+- **Mô tả:** Xóa vĩnh viễn câu hỏi chứa nội dung độc hại hoặc vi phạm chính sách khỏi hệ thống và dọn dẹp các tệp ảnh đính kèm.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Question deleted successfully by administrator",
+    "data": null,
+    "timestamp": "2026-10-16T12:16:30.000"
+  }
+  ```
+
+---
+
+#### 75. Kích hoạt tác vụ AI quét kiểm duyệt hàng loạt (`POST /api/admin/moderation/ai-run`)
+- **Mô tả:** Đưa tác vụ kiểm duyệt AI vào xử lý ngầm trong hàng đợi. AI quét tự động các câu hỏi dạng văn bản chưa kiểm duyệt theo batch và gắn cờ tự động các câu hỏi vi phạm. Hỗ trợ resume từ con trỏ Redis nếu bị gián đoạn.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `202 Accepted`:**
+  ```json
+  {
+    "status": 200,
+    "message": "Tác vụ kiểm duyệt AI đã được kích hoạt thành công",
+    "data": {
+      "isRunning": true,
+      "cursor": "0",
+      "processedCount": 0,
+      "flaggedCount": 0,
+      "message": "AI content moderation batch job is running"
+    },
+    "timestamp": "2026-10-16T12:17:00.000"
+  }
+  ```
+
+---
+
+#### 76. Kiểm tra tiến độ tác vụ AI kiểm duyệt (`GET /api/admin/moderation/ai-status`)
+- **Mô tả:** Tra cứu trạng thái hoạt động của tiến trình quét AI (đang chạy hay đã dừng, vị trí con trỏ Redis hiện tại, thông điệp xử lý).
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI moderation job status retrieved",
+    "data": {
+      "isRunning": false,
+      "cursor": "45",
+      "processedCount": 45,
+      "flaggedCount": 2,
+      "message": "AI moderation job completed successfully"
+    },
+    "timestamp": "2026-10-16T12:17:30.000"
+  }
+  ```
+
+---
+
+#### 77. Đặt lại con trỏ duyệt AI trên Redis (`DELETE /api/admin/moderation/ai-cursor`)
+- **Mô tả:** Xóa con trỏ lưu trữ trên Redis để lần chạy tiếp theo của tác vụ AI kiểm duyệt sẽ quét lại toàn bộ câu hỏi từ đầu. Trả về `409 Conflict` nếu tác vụ đang chạy.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": 200,
+    "message": "AI moderation cursor reset. Next run will start from the beginning.",
+    "data": null,
+    "timestamp": "2026-10-16T12:18:00.000"
+  }
+  ```
+
+---
+
+### Module 15: Kiểm Tra Sức Khỏe Hệ Thống (Admin System Health)
+
+#### 78. Kiểm tra trạng thái sức khỏe hệ thống (`GET /api/admin/system/health`)
+- **Mô tả:** Cung cấp thông tin giám sát thời gian thực về tình trạng kết nối PostgreSQL Database, Redis Caching & Lock Service, mức sử dụng CPU, RAM hệ thống và dung lượng đĩa trống.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_jwt_token>`
+- **Response `200 OK`:**
+  ```json
+  {
+    "status": "UP",
+    "database": {
+      "status": "UP",
+      "database": "PostgreSQL",
+      "latencyMs": 4
+    },
+    "redis": {
+      "status": "UP",
+      "version": "7.2",
+      "latencyMs": 1
+    },
+    "system": {
+      "jvmUptimeSeconds": 86400,
+      "heapMemoryUsedMb": 384,
+      "heapMemoryMaxMb": 2048,
+      "diskFreeGb": 45.2
+    },
+    "timestamp": "2026-10-16T12:18:30.000"
   }
   ```
 

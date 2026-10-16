@@ -12,14 +12,26 @@
   2. `MULTIPLE_CHOICE`: Trắc nghiệm nhiều đáp án đúng (tự động chấm điểm tuyệt đối hoặc từng phần).
   3. `NUMERIC`: Nhập số chính xác (tự động chấm điểm, hỗ trợ dung sai sai số $\pm \epsilon$).
   4. `ESSAY_TEXT`: Nhập câu trả lời văn bản tự luận.
-     - **Giai đoạn hiện tại:** Giáo viên chấm điểm thủ công (Manual Grading) kèm phản hồi/nhận xét.
-     - **Giai đoạn mở rộng sau này (Future AI):** Tích hợp Spring AI / LLM để so khớp ngữ nghĩa và tự động gợi ý điểm dựa trên đáp án mẫu (`sampleAnswer`) và tiêu chí chấm (`gradingRubric`).
+     - **Chấm điểm thủ công (Manual Grading):** Giáo viên vào biểu ghi bài làm theo đề thi hoặc theo từng câu hỏi (`Question-Centric Grading`) để chấm điểm và nhận xét.
+     - **Chấm điểm tự động bằng AI (AI Grading with Google Gemini):** Hàng đợi đơn luồng bất đồng bộ kết hợp khóa phân tán Redis Lock cho từng đề thi. AI phân tích ngữ nghĩa, so khớp bài làm với đáp án mẫu (`sampleAnswer`) và biểu điểm (`gradingRubric`) để gợi ý điểm số, độ tương đồng ngữ nghĩa (`aiSimilarityScore`) và giải thích sư phạm chi tiết (`aiGradingExplanation`).
+- **Soạn đề thi thông minh bằng AI (AI Document-to-Exam Generation):**
+  - Trích xuất tài liệu bài học đa định dạng (PDF, DOCX, TXT) bằng Apache Tika & PDFBox.
+  - Phân tích cấu trúc sư phạm và tạo câu hỏi tự động theo độ khó (`EASY`, `MEDIUM`, `HARD`, `BALANCED`) và ngôn ngữ (`vi`, `en`).
+  - Cơ chế **Adaptive Multi-Pass & Rotation Continuation**: Chia đợt tạo an toàn (tối đa 15 câu/lượt để không chạm trần 8,192 tokens của Gemini), tự động xoay API key/model kế tiếp, đưa danh sách câu đã tạo vào prompt để chống trùng lặp, và fallback giữ nguyên các câu hỏi hoàn chỉnh thu thập được.
+  - Giáo viên xem trước, chỉnh sửa hoặc chọn lọc trực tiếp trên giao diện trước khi commit vào đề thi.
+- **Hệ thống Xoay vòng Khóa AI Thông minh (Gemini Rotation Pool):**
+  - Cấu hình động đa khóa API Key và đa Model (`gemini-1.5-flash`, `gemini-2.0-flash-lite`, `gemini-1.5-pro`) từ Database với fallback biến môi trường.
+  - Giám sát hạn ngạch chủ động (Proactive Quota Window) theo dõi RPM và TPM qua Redis Sliding Window.
+  - Tự động xoay sang slot khác khi gặp lỗi HTTP 429 (Rate Limit) hoặc máy chủ Google quá tải (HTTP 5xx).
+  - Bảng điều khiển Admin theo dõi metrics thời gian thực và quản lý key/model.
 - **Công nghệ nền tảng:**
-  - Backend: Spring Boot 3.x, Spring Data JPA, Hibernate, Spring Security (OAuth2 Resource Server), Spring WebSocket.
-  - Caching & State: Redis (Lưu phiên làm bài, đếm ngược Timer server-side, bộ đếm vi phạm atomic counter).
-  - Database: PostgreSQL (ACID persistence, UUID primary keys, Optimistic Locking).
-  - Messaging (Tùy chọn chịu tải nộp dồn): RabbitMQ / Redis Streams.
-  - Frontend: React + Tailwind CSS + WebSocket client.
+  - **Backend:** Spring Boot 3.4.x, Java 21, Spring Data JPA, Hibernate, Spring Security (JWT & OAuth2 Resource Server), Spring WebSocket.
+  - **AI Engine:** Google Gemini API (1.5 Flash, 2.0 Flash Lite, 1.5 Pro) qua GeminiRotationService.
+  - **Caching & Locks:** Redis 7.x (Session cache, Timer server-side, Distributed Locks cho đề thi và người dùng, TPM/RPM Sliding Window, AI Tasks cache 48h).
+  - **Database:** PostgreSQL (ACID persistence, UUID primary keys, Optimistic Locking, Full-Text Search).
+  - **Storage:** Cloudinary (Lưu trữ ảnh câu hỏi và đáp án).
+  - **Logging:** Centralized Audit Logging (`system_logs`, ghi nhận IP, User Agent, Execution Time).
+  - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS + Lucide Icons + SWR / Polling.
 
 ---
 
@@ -27,44 +39,50 @@
 
 ```text
 com.quicktest
-├── config/                         # Cấu hình Spring Security, Redis, WebSocket, JPA Auditing
-├── core/                           # Thành phần dùng chung toàn hệ thống
-│   ├── exception/                  # GlobalExceptionHandler, BusinessException, ResourceNotFoundException
-│   ├── security/                   # JwtAuthenticationFilter, UserDetailsImpl, SsoClaimsExtractor
+├── config/                         # Cấu hình Spring Security, Redis, WebSocket, JPA Auditing, GeminiPoolProperties
+├── core/                           # Thành phần hạ tầng dùng chung toàn hệ thống
+│   ├── common/                     # ApiResponse, PageResponse
+│   ├── exception/                  # GlobalExceptionHandler, AppException, ResourceNotFoundException
+│   ├── logging/                    # Centralized Audit Logging (@AuditLog, SystemLogService, SystemLogServiceImpl)
+│   ├── security/                   # JwtAuthenticationFilter, UserDetailsImpl, CustomAccessDeniedHandler
+│   ├── service/                    # GeminiRotationService, GeminiModelSlot, AiMetricsRedisService
 │   └── utils/                      # Tiện ích mã hóa, chuỗi, thời gian, toán học
-├── modules/                        # Phân rã nghiệp vụ theo module
-│   ├── common/                     # Shared    ├── admin/                          # System administration and oversight
-│   │   ├── controller/             # AdminUserController, AdminExamController, AdminDashboardController
-│   │   ├── dto/                    # Admin statistics and management DTOs
-│   │   └── service/                # AdminService, StatsService
-    ├── assessment/                 # Quản lý ngân hàng đề & câu hỏi (Teacher)
-│   │   ├── controller/             # ExamController, QuestionController
-│   │   ├── dto/                    # ExamRequest, QuestionRequest, ExamDetailResponse, QuestionBankItemResponse
+├── modules/                        # Phân rã nghiệp vụ theo module độc lập
+│   ├── admin/                      # Quản trị hệ thống, người dùng, kỳ thi, log và AI
+│   │   ├── controller/             # AdminAiController, AdminQuestionModerationController, AdminSystemHealthController, AdminSystemLogController, AdminUserController, AdminExamController, AdminDashboardController
+│   │   ├── dto/                    # Các DTO quản trị AI, kiểm duyệt, logs, user, stats
+│   │   ├── entity/                 # AiKey, AiModel, SystemLog
+│   │   ├── repository/             # AiKeyRepository, AiModelRepository, SystemLogRepository
+│   │   └── service/                # AdminAiService, AdminQuestionModerationService, AdminSystemHealthService, AdminSystemLogService, AdminUserService
+│   ├── assessment/                 # Ngân hàng đề, câu hỏi và AI Document Generator
+│   │   ├── ai/                     # Phân hệ Soạn đề AI & Giám sát tác vụ ngầm
+│   │   │   ├── controller/         # AiGenerateController, TeacherAiTaskController
+│   │   │   ├── dto/                # AiGenerateQuizRequest, AiGeneratedQuestionDto, TeacherAiTaskDto...
+│   │   │   └── service/            # AiGenerateService, AiQuizGeneratorService, TeacherAiTaskService, DocumentParserService, AiQuizGeneratorAsyncWorker
+│   │   ├── controller/             # ExamController, QuestionController, TeacherMediaController, QuestionGradingController
+│   │   ├── dto/                    # ExamCreateRequest, QuestionRequest, AnswerOptionDto...
 │   │   ├── entity/                 # Exam, ExamStatus, Question, QuestionType, AnswerOption
 │   │   ├── repository/             # ExamRepository, QuestionRepository, AnswerOptionRepository
-│   │   └── service/                # ExamService, QuestionService
-    ├── session/                    # Phiên làm bài, chấm điểm & nộp bài (Guest & Student)
-│   │   ├── controller/             # ExamSessionController, GradingController
-│   │   ├── dto/                    # StartSessionRequest, SubmitAnswerDto, GradeEssayDto
-│   │   ├── entity/                 # ExamAttempt, AttemptStatus, CandidateAnswer, GradingStatus
-│   │   ├── repository/             # ExamAttemptRepository, CandidateAnswerRepository
-│   │   └── service/                # ExamSessionService, GradingService, RedisSessionService
-    └── proctoring/                 # Hệ thống telemetry, phát hiện & xử phạt gian lận
-        ├── controller/             # ProctoringTelemetryController
-        ├── dto/                    # ViolationTelemetryDto
-        ├── entity/                 # ViolationLog, ViolationType
-        ├── repository/             # ViolationLogRepository
-        ├── service/                # ProctoringService
-        └── websocket/              # ProctoringWebSocketHandler
-└── QuickTestApplication.java─ repository/             # ExamAttemptRepository, CandidateAnswerRepository
-│   │   └── service/                # ExamSessionService, GradingService, RedisSessionService
-│   └── proctoring/                 # Hệ thống telemetry, phát hiện & xử phạt gian lận
-│       ├── controller/             # ProctoringTelemetryController
-│       ├── dto/                    # ViolationTelemetryDto
-│       ├── entity/                 # ViolationLog, ViolationType
-│       ├── repository/             # ViolationLogRepository
-│       ├── service/                # ProctoringService
-│       └── websocket/              # ProctoringWebSocketHandler
+│   │   └── service/                # ExamService, QuestionService, QuestionGradingService, CloudinaryStorageService
+│   ├── iam/                        # Xác thực & Quản lý danh tính
+│   │   ├── controller/             # AuthController
+│   │   ├── dto/                    # LoginRequest, RegisterRequest, AuthResponse
+│   │   ├── entity/                 # User, Role, AuthProvider
+│   │   ├── repository/             # UserRepository
+│   │   └── service/                # AuthService
+│   ├── proctoring/                 # Viễn trắc giám sát & phát hiện gian lận
+│   │   ├── controller/             # CandidateProctoringController, TeacherProctoringController
+│   │   ├── dto/                    # ViolationTelemetryDto, CandidateHeartbeatDto
+│   │   ├── entity/                 # ViolationLog, ViolationType
+│   │   ├── repository/             # ViolationLogRepository
+│   │   ├── service/                # ProctoringService
+│   │   └── websocket/              # ProctoringWebSocketHandler
+│   └── session/                    # Phiên làm bài thi, nộp bài & chấm thi
+│       ├── controller/             # ExamSessionController, StudentAttemptController, TeacherGradingController
+│       ├── dto/                    # StartSessionRequest, SaveAnswerDto, SubmitGradesRequest
+│       ├── entity/                 # ExamAttempt, AttemptStatus, CandidateAnswer, GradingStatus
+│       ├── repository/             # ExamAttemptRepository, CandidateAnswerRepository
+│       └── service/                # ExamSessionService, GradingService, QuestionGradingAsyncWorker, RedisSessionService
 └── QuickTestApplication.java
 ```
 
@@ -76,12 +94,16 @@ com.quicktest
 | :--- | :--- | :--- |
 | **users** | Tài khoản nội bộ và tài khoản liên kết SSO (QuickBite/ABP). | `sso_subject_id` (Unique, Nullable), `email` (Unique), `username` (Unique, Nullable). |
 | **exams** | Cấu hình kỳ thi, thời lượng, trạng thái phát hành. | `access_code` (Unique), Index `(created_by, created_at)`. Hỗ trợ bật/tắt chống gian lận (`is_proctoring_enabled`) và bảo mật kết quả (`show_results_to_students`). |
-| **questions** | Ngân hàng câu hỏi thuộc đề thi. Hỗ trợ 4 dạng câu hỏi và ảnh đính kèm. | FK `exam_id`, Index `(exam_id, order_index)`. |
-| **answer_options** | Các đáp án lựa chọn cho câu hỏi trắc nghiệm. Hỗ trợ ảnh đính kèm. | FK `question_id`, Index `(question_id, order_index)`. |
+| **questions** | Ngân hàng câu hỏi thuộc đề thi. Hỗ trợ 4 dạng câu hỏi, ảnh Cloudinary, cờ an toàn (`is_safe`, `moderation_status`). | FK `exam_id`, Index `(exam_id, order_index)`. Hỗ trợ `image_url`, `sample_answer`, `grading_rubric`. |
+| **answer_options** | Các đáp án lựa chọn cho câu hỏi trắc nghiệm. Hỗ trợ ảnh đính kèm. | FK `question_id`, Index `(question_id, order_index)`. Hỗ trợ `image_url`. |
 | **exam_attempts** | Phiên làm bài của thí sinh (User hoặc Guest). | Optimistic Lock `@Version`, Check Constraint: `(user_id IS NOT NULL) OR (guest_name IS NOT NULL AND guest_identifier IS NOT NULL)`. |
-| **candidate_answers** | Câu trả lời của thí sinh cho từng câu hỏi. | Unique Constraint: `(attempt_id, question_id)`. |
+| **candidate_answers** | Câu trả lời của thí sinh cho từng câu hỏi, lưu điểm AI, điểm giáo viên và giải thích. | Unique Constraint: `(attempt_id, question_id)`. Các cột: `awarded_score`, `ai_suggested_score`, `ai_similarity_score`, `ai_grading_explanation`. |
 | **candidate_selected_options** | Bảng trung gian lưu danh sách đáp án chọn (Multiple Choice). | Composite PK: `(candidate_answer_id, option_id)`. |
 | **violation_logs** | Lịch sử ghi nhận gian lận (chuyển tab, thoát toàn màn hình,...). | FK `attempt_id`, Index `(attempt_id, timestamp)`. |
+| **ai_keys** | Quản lý các khóa API Google Gemini của hệ thống. | `api_key` (Encrypted/Masked), Index `(is_active, order_index)`. |
+| **ai_models** | Cấu hình các model slot thuộc API Key, hạn ngạch RPM và TPM. | FK `ai_key_id`, Index `(is_active, order_index)`. |
+| **system_logs** | Nhật ký kiểm toán tập trung ghi lại hoạt động người dùng và hệ thống. | Index `(timestamp)`, Index `(module, action)`, Index `(user_id)`. Lưu IP, User Agent, Execution Time. |
+| **tags** / **question_tags** | Hệ thống nhãn phân loại câu hỏi phục vụ tìm kiếm nâng cao. | Composite PK: `(question_id, tag_id)`. |
 
 ---
 
@@ -665,18 +687,40 @@ public class ViolationLog {
    - Truy cập giao diện làm bài nhanh, nhập `accessCode`, `guestName`, `guestIdentifier`.
    - Hệ thống kiểm tra phòng thi hợp lệ, tạo `ExamAttempt` với `user_id = null`, ghi nhận tên và mã định danh tự do để giáo viên đối soát.
 
-### 5.2. Luồng chấm điểm (Hiện tại: Thủ công / Tự động)
+### 5.2. Luồng Chấm Điểm (Trắc Nghiệm, Tự Luận Thủ Công & AI)
 1. **Câu hỏi trắc nghiệm & nhập số:**
    - Hệ thống so khớp tự động ngay khi thí sinh nộp bài.
    - Trắc nghiệm tính điểm tuyệt đối hoặc từng phần dựa trên tập hợp `selectedOptions`.
    - Câu số tính điểm nếu sai số $|x_{thí sinh} - x_{chuẩn}| \le \text{numericTolerance}$.
 2. **Câu hỏi tự luận (`ESSAY_TEXT`):**
-   - Câu hỏi được gán trạng thái `PENDING_MANUAL`.
+   - Khi thí sinh nộp bài, các câu hỏi tự luận được đặt trạng thái `PENDING_MANUAL`.
    - Bài thi chuyển trạng thái `AWAITING_MANUAL_GRADING`.
-   - Giáo viên vào xem bài nộp, đọc hướng dẫn chấm (`gradingRubric`) và nhập `awardedScore` kèm `teacherFeedback`.
-   - Khi hoàn tất chấm tất cả câu hỏi tự luận, hệ thống tổng kết điểm và chuyển `ExamAttempt` sang trạng thái `SUBMITTED`.
+   - **Chế độ 1: Chấm thủ công (Manual Grading):** Giáo viên vào biểu ghi bài làm của từng thí sinh hoặc chấm hàng loạt theo từng câu hỏi (`Question-Centric Grading`), nhập điểm và nhận xét.
+   - **Chế độ 2: Chấm tự động bằng AI (AI Grading via Gemini Rotation Pool):**
+     - Giáo viên kích hoạt chấm AI cho 1 câu hỏi cụ thể (`SINGLE_QUESTION`) hoặc toàn bộ đề thi (`FULL_EXAM`).
+     - Hệ thống kiểm tra và xác lập khóa phân tán Redis Lock cho đề thi (`EXAM_LOCK`) với TTL an toàn 4 giờ, chống xung đột giữa các giáo viên hoặc tác vụ trùng lặp.
+     - Tác vụ được gửi vào hàng đợi xử lý bất đồng bộ đơn luồng (`aiGradingExecutor`) để đảm bảo không bị quá tải quota Gemini.
+     - `QuestionGradingAsyncWorker` tính toán ngân sách token tối ưu (`getOptimalBatchTokenBudget`), chia các bài làm thành từng batch (tối đa 25 bài/batch để không vượt trần 8,192 tokens của Gemini).
+     - Worker gọi Google Gemini qua `GeminiRotationService` kèm prompt chứa câu hỏi, rubric, đáp án mẫu và bài làm của học sinh.
+     - AI trả về điểm số đề xuất (`aiSuggestedScore`), độ tương đồng ngữ nghĩa (`aiSimilarityScore`) và lý do giải thích chi tiết (`aiGradingExplanation`).
+     - Dữ liệu được lưu trực tiếp vào bảng `candidate_answers` và cập nhật tiến độ liên tục vào Redis Task Monitor.
 
-### 5.3. Note: Kế hoạch tích hợp AI tương lai (Future AI Enhancement)
-- **Mô hình triển khai:** Khi kích hoạt cờ tính năng AI, các câu hỏi `ESSAY_TEXT` được đẩy vào Message Queue (`PENDING_AI`).
-- **Xử lý bất đồng bộ:** Worker gọi mô hình ngôn ngữ lớn (Spring AI kết nối với Gemini / GPT-4) kèm prompt gồm: Nội dung câu hỏi, Rubric, Đáp án mẫu và Bài làm của học sinh.
-- **Kết quả gợi ý:** AI trả về điểm số dự kiến, độ tương đồng (`aiSimilarityScore`) và lý do chấm (`aiGradingExplanation`). Giáo viên duyệt nhanh bằng 1 click hoặc điều chỉnh thủ công nếu cần.
+### 5.3. Luồng Soạn Đề Thi Bằng AI (AI Document-to-Exam Generation)
+- **Tải lên & Tiền xử lý tài liệu:** Giáo viên tải lên tệp giáo trình/bài học (PDF, DOCX, TXT) hoặc dán văn bản trực tiếp. `DocumentParserService` trích xuất và làm sạch nội dung.
+- **Khóa đơn luồng giáo viên:** Hệ thống xác lập khóa phân tán `USER_LOCK` trên Redis (mỗi tài khoản giáo viên chỉ chạy 1 tác vụ AI tại một thời điểm) để tránh spam tài nguyên.
+- **Xử lý nền đơn luồng:** `AiQuizGeneratorAsyncWorker` nhận nhiệm vụ và thực thi qua `aiGradingExecutor`.
+- **Cơ chế Adaptive Multi-Pass & Rotation Continuation:**
+  - Nhằm giải quyết triệt để trần 8,192 tokens của Google Gemini (chỉ đủ chứa ~15 câu hỏi tiếng Việt kèm giải thích chi tiết), hệ thống tự động chia đợt tạo (mỗi lượt tối đa 15 câu).
+  - Kết thúc mỗi đợt, hệ thống gọi `geminiRotationService.advanceToNextSlot()` để chuyển con trỏ sang API Key / Model kế tiếp, tránh cạn hạn ngạch TPM/RPM.
+  - Ở các lượt tiếp theo, danh sách câu hỏi đã tạo được tổng hợp và đưa vào prompt chống trùng lặp (`Anti-Duplication Context`).
+  - **Graceful Fallback:** Nếu tài liệu quá ngắn hoặc các slot AI bị cạn quota, hệ thống tự động lưu giữ và trả về toàn bộ số câu hỏi hoàn chỉnh đã tích lũy được thay vì làm hỏng toàn bộ job.
+- **Xem trước và Cam kết (Preview & Commit):** Giáo viên xem lại, chỉnh sửa nội dung/đáp án hoặc lọc bỏ câu không ưng ý trên giao diện, sau đó ấn "Thêm vào đề thi" (`commitToExam`).
+
+### 5.4. Hệ Thống Giám Sát Tác Vụ Ngầm AI (Teacher AI Tasks Monitor)
+- **Lưu trữ trạng thái tập trung:** Toàn bộ tiến trình AI (`AI_QUIZ_GEN` và `AI_GRADING`) được lưu vết snapshot trên Redis với thời gian sống (TTL) 48 giờ.
+- **Cập nhật thời gian thực:** Worker định kỳ cập nhật tỷ lệ hoàn thành (`progressPercent`), bước thực thi hiện tại (`currentStep`), số lượng câu hỏi đã sinh / số bài thi đã chấm.
+- **Giao diện Giám sát (`/teacher/ai-tasks`):**
+  - Hiển thị danh sách thẻ tác vụ sắp xếp theo thời gian mới nhất.
+  - Hỗ trợ lọc theo trạng thái (`PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`).
+  - Cho phép giáo viên hủy tác vụ khẩn cấp (giải phóng khóa phân tán) hoặc xóa khỏi lịch sử.
+  - Cho phép mở Modal duyệt câu hỏi đã tạo ngay từ trang giám sát mà không cần ở lại màn hình tạo ban đầu.
