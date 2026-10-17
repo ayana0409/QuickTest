@@ -18,7 +18,6 @@ import {
   Copy,
   Check,
   Clock,
-  Layers,
   AlertTriangle,
   Radio,
   BarChart3,
@@ -38,7 +37,7 @@ import {
 import { ExamAttemptsTab } from '@/components/exam/ExamAttemptsTab';
 import { teacherProctoringService } from '@/services/teacherProctoring.service';
 import { examService } from '@/services/exam.service';
-import { connectWebSocket, subscribeTopic, disconnectWebSocket } from '@/lib/socket';
+import { connectWebSocket, subscribeTopic } from '@/lib/socket';
 import type {
   AttemptMonitorItem,
   CandidateViolationEvent,
@@ -161,7 +160,7 @@ export default function TeacherLiveProctoringPage() {
       setLoadingCandidates(true);
       const apiStatus =
         statusFilter !== 'ALL' &&
-        statusFilter !== 'VIOLATION'
+          statusFilter !== 'VIOLATION'
           ? (statusFilter as AttemptStatus)
           : undefined;
 
@@ -375,14 +374,14 @@ export default function TeacherLiveProctoringPage() {
                 className="rounded-xl"
                 title="Soạn thảo câu hỏi & Cài đặt thông số đề thi"
               >
-                Soạn đề & Cài đặt
+                Chỉnh sửa
               </Button>
             </Link>
 
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                  {loadingExam ? 'Loading Exam...' : exam?.title || 'Phòng thi & Kết quả'}
+                  {loadingExam ? 'Loading Exam...' : exam?.title || 'Giám sát'}
                 </h1>
 
                 {exam?.status && (
@@ -394,11 +393,11 @@ export default function TeacherLiveProctoringPage() {
                 {exam?.isProctoringEnabled ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/50">
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Shield Active</span>
+                    <span>Đã bật giám sát tự động</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                    Proctoring Off
+                    Đã tắt giám sát tự động
                   </span>
                 )}
               </div>
@@ -408,7 +407,7 @@ export default function TeacherLiveProctoringPage() {
                 {exam?.accessCode && (
                   <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
                     <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
-                      Code: {exam.accessCode}
+                      Mã: {exam.accessCode}
                     </span>
                     <button
                       onClick={() => handleCopyCode(exam.accessCode)}
@@ -427,14 +426,14 @@ export default function TeacherLiveProctoringPage() {
                 {exam?.durationMinutes && (
                   <div className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{exam.durationMinutes} minutes</span>
+                    <span>{exam.durationMinutes} phút</span>
                   </div>
                 )}
 
                 {exam?.maxViolations && (
                   <div className="flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Limit: {exam.maxViolations} violations</span>
+                    <span>Số lần vi phạm tối đa: {exam.maxViolations}</span>
                   </div>
                 )}
               </div>
@@ -463,12 +462,12 @@ export default function TeacherLiveProctoringPage() {
               {isWsConnected ? (
                 <>
                   <Wifi className="w-3.5 h-3.5" />
-                  <span>Telemetry Live</span>
+                  <span>Đã kết nối</span>
                 </>
               ) : (
                 <>
                   <WifiOff className="w-3.5 h-3.5" />
-                  <span>Connecting...</span>
+                  <span>Đang kết nối...</span>
                 </>
               )}
             </div>
@@ -497,7 +496,7 @@ export default function TeacherLiveProctoringPage() {
               leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
               className="rounded-xl"
             >
-              Refresh
+              Làm mới
             </Button>
           </div>
         </div>
@@ -521,7 +520,7 @@ export default function TeacherLiveProctoringPage() {
               activeSubTab === 'live' && 'text-emerald-300 animate-pulse'
             )}
           />
-          <span>Giám sát trực tiếp (Live Monitor)</span>
+          <span>Giám sát trực tiếp</span>
           <span
             className={cn(
               'px-2 py-0.5 rounded-full text-xs font-bold',
@@ -545,7 +544,7 @@ export default function TeacherLiveProctoringPage() {
           )}
         >
           <BarChart3 className="w-4 h-4" />
-          <span>Danh sách bài thi & Kết quả (Attempts & Grading)</span>
+          <span>Danh sách bài thi</span>
           <span
             className={cn(
               'px-2 py-0.5 rounded-full text-xs font-bold',
@@ -585,7 +584,7 @@ export default function TeacherLiveProctoringPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search candidate by name, identifier, email..."
+                placeholder="Tìm kiếm..."
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
             </div>
@@ -593,12 +592,12 @@ export default function TeacherLiveProctoringPage() {
             {/* Status Filter Buttons */}
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
               {[
-                { id: 'ALL', label: 'All Candidates' },
-                { id: 'IN_PROGRESS', label: 'In Progress' },
-                { id: 'VIOLATION', label: 'With Violations' },
-                { id: 'ONLINE', label: 'Online Only' },
-                { id: 'SUBMITTED', label: 'Submitted' },
-                { id: 'DISQUALIFIED', label: 'Disqualified' },
+                { id: 'ALL', label: 'Tất cả' },
+                { id: 'IN_PROGRESS', label: 'Đang thi' },
+                { id: 'VIOLATION', label: 'Vi phạm' },
+                { id: 'ONLINE', label: 'Trực tuyến' },
+                { id: 'SUBMITTED', label: 'Đã nộp' },
+                { id: 'DISQUALIFIED', label: 'Đình chỉ' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -658,12 +657,8 @@ export default function TeacherLiveProctoringPage() {
             <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
               <ShieldAlert className="w-10 h-10 text-zinc-400 mx-auto mb-3" />
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                No candidates match the current filter
+                Không có thí sinh nào phù hợp với bộ lọc hiện tại
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
-                Try clearing the search query or switching your status filter to &quot;All
-                Candidates&quot;.
-              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -673,7 +668,7 @@ export default function TeacherLiveProctoringPage() {
                 }}
                 className="mt-4 rounded-xl"
               >
-                Reset Filters
+                Xóa bộ lọc
               </Button>
             </div>
           ) : viewMode === 'grid' ? (

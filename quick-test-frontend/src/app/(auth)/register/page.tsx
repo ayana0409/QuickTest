@@ -170,7 +170,7 @@ export default function RegisterPage() {
             Tạo tài khoản mới
           </h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-            Bắt đầu tham gia hoặc tổ chức các kỳ thi trực tuyến
+            Tạo tài khoản ngay để tạo bài kiểm tra của riêng bạn
           </p>
         </div>
 
@@ -242,22 +242,20 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, role: 'STUDENT' })}
-                  className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition-all ${
-                    formData.role === 'STUDENT'
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-600/30'
-                      : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
-                  }`}
+                  className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition-all ${formData.role === 'STUDENT'
+                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-600/30'
+                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                    }`}
                 >
                   Thí sinh / Học sinh
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, role: 'TEACHER' })}
-                  className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition-all ${
-                    formData.role === 'TEACHER'
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-600/30'
-                      : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
-                  }`}
+                  className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition-all ${formData.role === 'TEACHER'
+                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-600/30'
+                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                    }`}
                 >
                   Giáo viên / Giám thị
                 </button>

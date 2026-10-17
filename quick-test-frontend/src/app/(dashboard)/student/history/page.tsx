@@ -131,8 +131,8 @@ export default function StudentAttemptHistoryPage() {
     const avgScore =
       scoredList.length > 0
         ? (
-            scoredList.reduce((acc, curr) => acc + (curr.awardedScore || 0), 0) / scoredList.length
-          ).toFixed(1)
+          scoredList.reduce((acc, curr) => acc + (curr.awardedScore || 0), 0) / scoredList.length
+        ).toFixed(1)
         : '—';
 
     const totalViolations = data.content.reduce(
@@ -155,10 +155,10 @@ export default function StudentAttemptHistoryPage() {
               <span>Theo dõi tiến trình học tập</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Lịch sử làm bài & Điểm số
+              Lịch sử làm bài
             </h1>
             <p className="text-sm sm:text-base text-indigo-200/90 max-w-2xl">
-              Xem lại toàn bộ kết quả bài kiểm tra, điểm số chi tiết và nhật ký giám sát quy chế thi của bạn.
+              Xem lại toàn bộ kết quả bài kiểm tra và nhật ký của bạn.
             </p>
           </div>
 
@@ -458,11 +458,10 @@ export default function StudentAttemptHistoryPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className={`text-xs gap-1 ${
-                                  isDisqualified
+                                className={`text-xs gap-1 ${isDisqualified
                                     ? 'border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
                                     : 'border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30'
-                                }`}
+                                  }`}
                               >
                                 <span>{isDisqualified ? 'Xem vi phạm' : 'Xem chi tiết'}</span>
                                 <ExternalLink className="w-3.5 h-3.5" />
@@ -506,11 +505,10 @@ export default function StudentAttemptHistoryPage() {
                       <button
                         key={`page-${i}`}
                         onClick={() => setCurrentPage(i)}
-                        className={`w-8 h-8 rounded-lg font-medium transition-all ${
-                          i === data.page
+                        className={`w-8 h-8 rounded-lg font-medium transition-all ${i === data.page
                             ? 'bg-indigo-600 text-white'
                             : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                        }`}
+                          }`}
                       >
                         {i + 1}
                       </button>

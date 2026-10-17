@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -15,10 +15,8 @@ import {
   Trash2,
   Settings,
   Layers,
-  Sparkles,
   AlertTriangle,
   Info,
-  Users,
   RotateCcw,
   ShieldCheck,
   Eye,
@@ -324,7 +322,7 @@ export default function EditExamPage() {
               className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quản lý Đề thi</span>
+              <span>Quản lý đề thi</span>
             </Link>
             <span>/</span>
             <span className="font-medium text-zinc-900 dark:text-zinc-100 line-clamp-1">
@@ -340,8 +338,8 @@ export default function EditExamPage() {
               {exam.status === 'PUBLISHED'
                 ? 'Đang mở (Published)'
                 : exam.status === 'CLOSED'
-                ? 'Đã đóng (Closed)'
-                : 'Bản nháp (Draft)'}
+                  ? 'Đã đóng (Closed)'
+                  : 'Bản nháp (Draft)'}
             </Badge>
           </div>
 
@@ -379,7 +377,7 @@ export default function EditExamPage() {
               leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
               title="Mở phòng giám sát thí sinh và xem kết quả nộp bài"
             >
-              Phòng thi & Kết quả
+              Giám sát
             </Button>
           </Link>
 
@@ -411,7 +409,7 @@ export default function EditExamPage() {
                 onClick={handlePublish}
                 leftIcon={<Globe className="w-3.5 h-3.5" />}
               >
-                Xuất bản đề thi
+                Xuất bản
               </Button>
             </>
           )}
@@ -424,7 +422,7 @@ export default function EditExamPage() {
               onClick={handleClose}
               leftIcon={<Lock className="w-3.5 h-3.5" />}
             >
-              Đóng đề thi
+              Đóng đề
             </Button>
           )}
 
@@ -436,7 +434,7 @@ export default function EditExamPage() {
               onClick={handleOpenRepublishModal}
               leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
             >
-              Mở lại đề thi
+              Mở lại
             </Button>
           )}
         </div>
@@ -458,7 +456,7 @@ export default function EditExamPage() {
             },
             {
               id: 'settings',
-              label: 'Cài đặt đề thi',
+              label: 'Cài đặt',
               icon: <Settings className="w-4 h-4" />,
             },
           ]}
@@ -471,8 +469,8 @@ export default function EditExamPage() {
             <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span>
               {isClosed
-                ? 'Đề thi đã đóng, câu hỏi ở chế độ chỉ đọc. Bạn có thể cập nhật cài đặt hoặc bấm Mở lại đề thi để học sinh tiếp tục thi.'
-                : 'Đề thi đã xuất bản, chế độ xem câu hỏi chỉ đọc để đảm bảo tính công bằng.'}
+                ? 'Đề thi đã đóng, không thể chỉnh sửa câu hỏi. Bấm Mở lại đề thi để học sinh tiếp tục thi.'
+                : 'Đề thi đã xuất bản, không thể chỉnh sửa câu hỏi.'}
             </span>
           </div>
         )}
@@ -495,7 +493,7 @@ export default function EditExamPage() {
             <div>
               <CardTitle>Cập nhật cài đặt đề thi</CardTitle>
               <CardDescription>
-                Thay đổi tiêu đề, thời lượng và các thiết lập an toàn cho kỳ thi
+                Thay đổi thông tin và các thiết lập an toàn cho kỳ thi
               </CardDescription>
             </div>
           </CardHeader>
@@ -597,7 +595,7 @@ export default function EditExamPage() {
                       className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
                     />
                     <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                      Tự động đảo thứ tự câu hỏi cho từng thí sinh
+                      Tự động đảo thứ tự câu hỏi
                     </span>
                   </label>
 
@@ -608,7 +606,7 @@ export default function EditExamPage() {
                       className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
                     />
                     <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                      Tự động đảo thứ tự các phương án lựa chọn trắc nghiệm
+                      Tự động đảo thứ tự các phương án lựa chọn
                     </span>
                   </label>
                 </div>
@@ -624,10 +622,10 @@ export default function EditExamPage() {
                     <div>
                       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-indigo-500" />
-                        Bật giám sát trực tuyến (Proctoring)
+                        Bật giám sát trực tuyến
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Tự động phát hiện chuyển tab, mở DevTools hoặc mất tiêu điểm và cảnh báo vi phạm.
+                        Tự động phát hiện vi phạm trong kỳ thi.
                       </p>
                     </div>
                   </label>
@@ -635,7 +633,7 @@ export default function EditExamPage() {
                   {watch('isProctoringEnabled') && (
                     <div className="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 space-y-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                        Số lần vi phạm tối đa trước khi đình chỉ
+                        Số lần vi phạm tối đa
                       </label>
                       <div className="flex items-center gap-3">
                         <input
@@ -664,7 +662,7 @@ export default function EditExamPage() {
                     <div>
                       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                         <Eye className="w-4 h-4 text-emerald-500" />
-                        Công bố điểm và đáp án cho thí sinh (Show Results)
+                        Công bố điểm và đáp án cho thí sinh
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                         Cho phép thí sinh xem lại điểm từng câu và đáp án đúng sau khi nộp bài. Tắt tùy chọn này nếu muốn bảo mật đề thi và chống lộ đáp án cho người khác.
@@ -679,7 +677,7 @@ export default function EditExamPage() {
                   type="submit"
                   isLoading={isSavingSettings}
                 >
-                  Lưu thay đổi cài đặt
+                  Lưu thay đổi
                 </Button>
               </div>
             </form>
@@ -713,7 +711,7 @@ export default function EditExamPage() {
         }
       >
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Chỉ những đề thi ở trạng thái <strong>Bản nháp (DRAFT)</strong> mới có thể xóa. Dữ liệu sau khi xóa sẽ không thể phục hồi.
+          Chỉ những đề thi ở trạng thái <strong>Bản nháp</strong> mới có thể xóa. Dữ liệu sau khi xóa sẽ không thể phục hồi.
         </p>
       </Modal>
 

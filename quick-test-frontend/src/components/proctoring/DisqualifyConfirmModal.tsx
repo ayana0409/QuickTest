@@ -44,30 +44,30 @@ export const DisqualifyConfirmModal: React.FC<DisqualifyConfirmModalProps> = ({
       title={
         <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
           <AlertTriangle className="w-5 h-5 text-rose-600" />
-          <span>Confirm Disqualification</span>
+          <span>Xác nhận đình chỉ</span>
         </div>
       }
-      description="Revoking candidate attempt access"
+      description="Thu hồi quyền truy cập bài thi của thí sinh"
     >
       <div className="space-y-4">
         <div className="rounded-xl p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-200 leading-relaxed">
           <p className="font-semibold mb-1">
-            Are you sure you want to disqualify{' '}
+            Bạn có chắc muốn đình chỉ {' '}
             <span className="underline decoration-rose-400 font-bold">
               {candidateName || 'this candidate'}
             </span>
             ?
           </p>
           <p className="text-rose-700 dark:text-rose-300">
-            This action will immediately terminate the candidate&apos;s exam session,
-            change their status to <strong>DISQUALIFIED</strong>, and block further
-            submissions.
+            Hành động này sẽ ngay lập tức kết thúc phiên thi của thí sinh,
+            thay đổi trạng thái của họ thành <strong>DISQUALIFIED</strong>, và chặn
+            việc nộp bài tiếp theo.
           </p>
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
-            Reason for Disqualification (Optional)
+            Lý do đình chỉ (Tùy chọn)
           </label>
           <textarea
             value={reason}
@@ -89,7 +89,7 @@ export const DisqualifyConfirmModal: React.FC<DisqualifyConfirmModalProps> = ({
             }}
             className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors disabled:opacity-50"
           >
-            Cancel
+            Hủy
           </button>
 
           <button
@@ -103,7 +103,7 @@ export const DisqualifyConfirmModal: React.FC<DisqualifyConfirmModalProps> = ({
             ) : (
               <UserX className="w-4 h-4" />
             )}
-            <span>Confirm & Disqualify</span>
+            <span>Xác nhận</span>
           </button>
         </div>
       </div>

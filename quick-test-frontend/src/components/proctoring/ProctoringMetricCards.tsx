@@ -29,8 +29,8 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
   const cards = [
     {
       id: 'IN_PROGRESS',
-      label: 'Active Candidates',
-      sublabel: `${stats.online} connected online`,
+      label: 'Đang làm bài',
+      sublabel: `${stats.online} online`,
       value: stats.inProgress,
       icon: Users,
       badgeIcon: Wifi,
@@ -41,8 +41,8 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
     },
     {
       id: 'VIOLATION',
-      label: 'Violations Detected',
-      sublabel: 'Exceeded warning limits',
+      label: 'Phát hiện vi phạm',
+      sublabel: 'Bị phát hiện',
       value: stats.withViolations,
       icon: AlertTriangle,
       accentBorder: 'hover:border-amber-500/50',
@@ -52,8 +52,8 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
     },
     {
       id: 'DISQUALIFIED',
-      label: 'Disqualified',
-      sublabel: 'Auto / manual revoke',
+      label: 'Đình chỉ',
+      sublabel: 'Bị đình chỉ',
       value: stats.disqualified,
       icon: UserX,
       accentBorder: 'hover:border-rose-500/50',
@@ -63,8 +63,8 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
     },
     {
       id: 'SUBMITTED',
-      label: 'Completed / Submitted',
-      sublabel: 'Session finalized',
+      label: 'Hoàn thành',
+      sublabel: 'Đã nộp',
       value: stats.submitted,
       icon: CheckCircle2,
       accentBorder: 'hover:border-emerald-500/50',

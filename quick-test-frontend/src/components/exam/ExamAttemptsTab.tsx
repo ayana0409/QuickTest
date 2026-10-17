@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Search,
-  Filter,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -13,7 +12,6 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Inbox,
   Award,
   ArrowUpDown,
@@ -251,9 +249,8 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
             </span>
           </div>
           <ChevronDown
-            className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${
-              statsExpanded ? 'rotate-180' : ''
-            }`}
+            className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${statsExpanded ? 'rotate-180' : ''
+              }`}
           />
         </button>
 
@@ -564,8 +561,8 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
                               {attempt.status === 'AWAITING_MANUAL_GRADING'
                                 ? 'Chấm điểm'
                                 : isGradable
-                                ? 'Chấm lại / Xem'
-                                : 'Xem chi tiết'}
+                                  ? 'Chấm lại / Xem'
+                                  : 'Xem chi tiết'}
                             </Button>
                           </Link>
                         </div>

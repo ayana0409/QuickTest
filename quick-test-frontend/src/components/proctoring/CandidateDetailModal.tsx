@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  X,
   AlertTriangle,
   Clock,
   Wifi,
@@ -10,8 +9,6 @@ import {
   ShieldCheck,
   ShieldAlert,
   Loader2,
-  Calendar,
-  Layers,
   FileCheck,
 } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
@@ -98,16 +95,16 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
       title={
         <div className="flex items-center gap-2.5">
           <ShieldAlert className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          <span>Candidate Telemetry Inspector</span>
+          <span>Chi tiết giám sát</span>
         </div>
       }
-      description="Real-time candidate telemetry status, connection heartbeat, and complete violation audit trail."
+      description="Thông tin giám sát theo thời gian thực, kết nối, và lịch sử vi phạm."
     >
       {loading ? (
         <div className="py-16 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Fetching candidate telemetry & violation records...
+            Đang tải thông tin...
           </p>
         </div>
       ) : error ? (
@@ -124,19 +121,19 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                 <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-base flex items-center justify-center border border-indigo-200 dark:border-indigo-800">
                   {statusDetail.candidateName
                     ? statusDetail.candidateName
-                        .split(' ')
-                        .map((w) => w[0])
-                        .slice(-2)
-                        .join('')
-                        .toUpperCase()
+                      .split(' ')
+                      .map((w) => w[0])
+                      .slice(-2)
+                      .join('')
+                      .toUpperCase()
                     : 'U'}
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
-                    {statusDetail.candidateName || 'Anonymous Candidate'}
+                    {statusDetail.candidateName || 'Thí sinh ẩn danh'}
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    {statusDetail.candidateIdentifier || 'No identifier recorded'}
+                    {statusDetail.candidateIdentifier || 'Không có thông tin'}
                   </p>
                 </div>
               </div>
@@ -146,12 +143,12 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <Wifi className="w-3.5 h-3.5" />
-                    <span>Connected Online</span>
+                    <span>Online</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                     <WifiOff className="w-3.5 h-3.5" />
-                    <span>Disconnected Offline</span>
+                    <span>Offline</span>
                   </span>
                 )}
 
@@ -166,26 +163,26 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-zinc-400" />
                 <span>
-                  Last Heartbeat:{' '}
+                  Hoạt động gần nhất:{' '}
                   {statusDetail.lastHeartbeat
                     ? new Date(statusDetail.lastHeartbeat).toLocaleTimeString()
-                    : 'No telemetry pulse'}
+                    : 'Không có dữ liệu'}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <span>Total Violations:</span>
+                <span>Vi phạm:</span>
                 <span
                   className={cn(
                     'font-bold px-2 py-0.5 rounded-full text-xs',
                     statusDetail.violationCount >= maxViolations
                       ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
                       : statusDetail.violationCount > 0
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
-                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
+                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
                   )}
                 >
-                  {statusDetail.violationCount} / {maxViolations} Allowed
+                  {statusDetail.violationCount} / {maxViolations}
                 </span>
               </div>
             </div>
@@ -194,7 +191,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
           {/* Breakdown Section */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2.5">
-              Violation Breakdown by Category
+              Thống kê vi phạm
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {(
@@ -233,14 +230,14 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2.5">
               <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                Complete Audit Trail ({violationLogs.length} Records)
+                Lịch sử vi phạm ({violationLogs.length})
               </h4>
             </div>
 
             {violationLogs.length === 0 ? (
               <div className="py-8 text-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 text-xs text-zinc-400">
                 <ShieldCheck className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
-                <span>No violation incidents recorded for this attempt.</span>
+                <span>Không có vi phạm nào được ghi nhận</span>
               </div>
             ) : (
               <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 scrollbar-thin">
@@ -249,10 +246,10 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   const Icon = meta.icon;
                   const time = log.timestamp
                     ? new Date(log.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })
                     : '--:--:--';
 
                   return (
@@ -294,7 +291,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
             >
-              Close
+              Đóng
             </button>
 
             <div className="flex items-center gap-2">
@@ -320,7 +317,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm shadow-rose-600/20 active:scale-[0.98] transition-all"
                 >
                   <UserX className="w-4 h-4" />
-                  <span>Force Disqualify Candidate</span>
+                  <span>Đình chỉ</span>
                 </button>
               )}
             </div>

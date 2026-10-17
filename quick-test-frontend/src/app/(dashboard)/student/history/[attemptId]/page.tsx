@@ -1,27 +1,21 @@
 'use client';
 
-import React, { useEffect, useState, use, useMemo } from 'react';
+import { useEffect, useState, use, useMemo } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
   Clock,
-  Award,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   ShieldCheck,
   ShieldAlert,
   FileText,
   Calendar,
-  Layers,
-  HelpCircle,
   RefreshCw,
-  Sparkles,
-  BookOpen,
   Lock,
 } from 'lucide-react';
 import { studentService } from '@/services/student.service';
-import type { StudentAttemptDetailResponse, AttemptStatus } from '@/types/exam';
+import type { StudentAttemptDetailResponse } from '@/types/exam';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 
@@ -196,7 +190,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
           className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Quay lại Lịch sử làm bài</span>
+          <span>Quay lại</span>
         </Link>
 
         <div className="flex items-center gap-2">
@@ -210,7 +204,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
           <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">
-              Chế độ bảo mật đề thi (Results Withheld)
+              Chế độ bảo mật đề thi
             </h3>
             <p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
               Giáo viên đã tắt tính năng xem điểm số chi tiết và đáp án đúng để bảo mật nội dung đề thi. Bạn chỉ có thể xem lại câu hỏi và các phương án bạn đã chọn.
@@ -240,8 +234,8 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
 
             <p className="text-xs sm:text-sm text-zinc-400">
               {showResults
-                ? 'Chi tiết đánh giá kết quả bài thi, đáp án thí sinh và nhật ký giám sát quy chế.'
-                : 'Xem lại nội dung bài nộp của bạn. Điểm số và đáp án đúng đang được bảo mật.'}
+                ? 'Xem lại kết quả bài thi và nhật ký của bạn.'
+                : 'Xem lại bài làm của bạn. Điểm số và đáp án đang được bảo mật.'}
             </p>
           </div>
 
@@ -325,7 +319,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
               <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                 {formatDateTime(data.startTime)}
               </div>
-              <p className="text-[11px] text-zinc-400">Khởi tạo bài thi</p>
+              <p className="text-[11px] text-zinc-400">Bắt đầu làm bài</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex items-center justify-center shrink-0">
               <Calendar className="w-5 h-5" />
@@ -359,7 +353,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-indigo-500" />
               <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Nhật ký Giám sát & Cảnh báo Vi phạm
+                Nhật ký giám sát
               </h2>
             </div>
             <span className="text-xs text-zinc-500">
@@ -413,12 +407,12 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               <FileText className="w-5 h-5 text-indigo-500" />
-              <span>Chi tiết từng câu hỏi & Đáp án</span>
+              <span>Chi tiết từng câu hỏi</span>
             </h2>
             <p className="text-xs text-zinc-500">
               {showResults
-                ? 'Kiểm tra chi tiết bài làm của bạn so với đáp án chuẩn và điểm số đạt được từng câu.'
-                : 'Xem lại nội dung các câu hỏi và phần trả lời bạn đã nộp trong bài thi.'}
+                ? 'Kiểm tra chi tiết bài làm của bạn và điểm số đạt được từng câu.'
+                : 'Xem lại nội dung các câu hỏi và phần trả lời.'}
             </p>
           </div>
 
@@ -479,13 +473,12 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                       <div className="flex items-center gap-2">
                         {showResults ? (
                           <div
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
-                              isCorrect
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
-                                : isPartiallyGraded
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${isCorrect
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
+                              : isPartiallyGraded
                                 ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
                                 : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40'
-                            }`}
+                              }`}
                           >
                             {isCorrect ? (
                               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -499,7 +492,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                         ) : (
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
                             <Lock className="w-3.5 h-3.5 text-zinc-400" />
-                            <span>Điểm số bảo mật</span>
+                            <span>Điểm số không được công bố</span>
                           </div>
                         )}
                       </div>
@@ -525,7 +518,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                     {/* Question Answers / Options */}
                     {q.questionType === 'SINGLE_CHOICE' || q.questionType === 'MULTIPLE_CHOICE' ? (
                       <div className="space-y-2 pt-2">
-                        <div className="text-xs font-semibold text-zinc-400 mb-2">Các đáp án lựa chọn:</div>
+                        <div className="text-xs font-semibold text-zinc-400 mb-2">Đáp án:</div>
                         <div className="grid grid-cols-1 gap-2">
                           {q.options.map((opt, optIdx) => {
                             const isSelected = opt.isSelected;
@@ -582,7 +575,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                       /* Numeric or Essay Text Response */
                       <div className="space-y-3 pt-2">
                         <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 p-4 space-y-1.5">
-                          <span className="text-xs font-semibold text-zinc-500">Bài làm của bạn:</span>
+                          <span className="text-xs font-semibold text-zinc-500">Bài làm:</span>
                           <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">
                             {q.textAnswer || <span className="italic text-zinc-400">Thí sinh để trống</span>}
                           </p>
@@ -591,7 +584,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                         {showResults && q.sampleAnswer && (
                           <div className="rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 p-4 space-y-1.5">
                             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                              Đáp án chuẩn / Hướng dẫn giải:
+                              Đáp án chuẩn:
                             </span>
                             <p className="text-xs text-emerald-900 dark:text-emerald-200 whitespace-pre-wrap">
                               {q.sampleAnswer}
@@ -602,7 +595,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                         {showResults && q.teacherFeedback && (
                           <div className="rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 p-4 space-y-1.5">
                             <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                              Nhận xét của giáo viên:
+                              Nhận xét:
                             </span>
                             <p className="text-xs text-amber-900 dark:text-amber-200 whitespace-pre-wrap">
                               {q.teacherFeedback}

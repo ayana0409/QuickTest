@@ -16,7 +16,6 @@ import {
   X,
   Sparkles,
   ImageIcon,
-  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -180,11 +179,11 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       options:
         type === 'SINGLE_CHOICE' || type === 'MULTIPLE_CHOICE'
           ? [
-              { content: '', isCorrect: true, imageUrl: '' },
-              { content: '', isCorrect: false, imageUrl: '' },
-              { content: '', isCorrect: false, imageUrl: '' },
-              { content: '', isCorrect: false, imageUrl: '' },
-            ]
+            { content: '', isCorrect: true, imageUrl: '' },
+            { content: '', isCorrect: false, imageUrl: '' },
+            { content: '', isCorrect: false, imageUrl: '' },
+            { content: '', isCorrect: false, imageUrl: '' },
+          ]
           : [],
     });
     setIsModalOpen(true);
@@ -229,16 +228,16 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       options:
         q.options && q.options.length > 0
           ? q.options.map((opt) => ({
-              id: opt.id,
-              content: opt.content || '',
-              isCorrect: Boolean(opt.isCorrect),
-              imageUrl: opt.imageUrl || '',
-              imagePublicId: opt.imagePublicId || '',
-            }))
+            id: opt.id,
+            content: opt.content || '',
+            isCorrect: Boolean(opt.isCorrect),
+            imageUrl: opt.imageUrl || '',
+            imagePublicId: opt.imagePublicId || '',
+          }))
           : [
-              { content: '', isCorrect: true, imageUrl: '' },
-              { content: '', isCorrect: false, imageUrl: '' },
-            ],
+            { content: '', isCorrect: true, imageUrl: '' },
+            { content: '', isCorrect: false, imageUrl: '' },
+          ],
     });
     setIsModalOpen(true);
   };
@@ -486,29 +485,29 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       const optionsDto: AnswerOptionDto[] | undefined =
         data.questionType === 'SINGLE_CHOICE' || data.questionType === 'MULTIPLE_CHOICE'
           ? data.options.map((opt, idx) => {
-              const optUpload = uploadedResults.find((r) => r.type === 'option' && r.idx === idx);
-              let optImageUrl: string | null = null;
-              let optImagePublicId: string | null = null;
+            const optUpload = uploadedResults.find((r) => r.type === 'option' && r.idx === idx);
+            let optImageUrl: string | null = null;
+            let optImagePublicId: string | null = null;
 
-              if (optUpload) {
-                optImageUrl = optUpload.url;
-                optImagePublicId = optUpload.publicId;
-              } else if (!optionImagesRemoved[idx]) {
-                const existingOpt = editingQuestion?.options?.[idx];
-                optImageUrl =
-                  existingOpt?.imageUrl ||
-                  (opt.imageUrl && !opt.imageUrl.startsWith('blob:') ? opt.imageUrl : null);
-                optImagePublicId = optionPublicIds[idx] || existingOpt?.imagePublicId || null;
-              }
+            if (optUpload) {
+              optImageUrl = optUpload.url;
+              optImagePublicId = optUpload.publicId;
+            } else if (!optionImagesRemoved[idx]) {
+              const existingOpt = editingQuestion?.options?.[idx];
+              optImageUrl =
+                existingOpt?.imageUrl ||
+                (opt.imageUrl && !opt.imageUrl.startsWith('blob:') ? opt.imageUrl : null);
+              optImagePublicId = optionPublicIds[idx] || existingOpt?.imagePublicId || null;
+            }
 
-              return {
-                orderIndex: idx + 1,
-                content: opt.content || '',
-                isCorrect: Boolean(opt.isCorrect),
-                imageUrl: optImageUrl,
-                imagePublicId: optImagePublicId,
-              };
-            })
+            return {
+              orderIndex: idx + 1,
+              content: opt.content || '',
+              isCorrect: Boolean(opt.isCorrect),
+              imageUrl: optImageUrl,
+              imagePublicId: optImagePublicId,
+            };
+          })
           : undefined;
 
       // STEP 4: Save to backend
@@ -645,7 +644,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                 leftIcon={<Sparkles className="w-4 h-4 animate-pulse" />}
                 onClick={() => setIsAiModalOpen(true)}
               >
-                ✨ Soạn đề bằng AI từ tài liệu
+                Soạn đề bằng AI
               </Button>
               <Button
                 variant="outline"
@@ -654,7 +653,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                 leftIcon={<Layers className="w-4 h-4 text-indigo-500" />}
                 onClick={() => setIsBankModalOpen(true)}
               >
-                Nhập từ ngân hàng
+                Nhập từ ngân hàng câu hỏi
               </Button>
               <Button
                 variant="outline"
@@ -733,7 +732,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                           size="sm"
                           className="h-8 px-2.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                           onClick={() => setDeleteConfirmId(question.id)}
-                          title="Xóa câu hỏi (Xóa luôn ảnh trên đám mây)"
+                          title="Xóa câu hỏi"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -767,18 +766,16 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                         {question.options.map((opt, optIdx) => (
                           <div
                             key={opt.id || optIdx}
-                            className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs sm:text-sm transition-all ${
-                              opt.isCorrect
-                                ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-300'
-                                : 'bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200/70 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
-                            }`}
+                            className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs sm:text-sm transition-all ${opt.isCorrect
+                              ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-300'
+                              : 'bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-200/70 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                              }`}
                           >
                             <span
-                              className={`flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold shrink-0 mt-0.5 ${
-                                opt.isCorrect
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'
-                              }`}
+                              className={`flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold shrink-0 mt-0.5 ${opt.isCorrect
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'
+                                }`}
                             >
                               {String.fromCharCode(65 + optIdx)}
                             </span>
@@ -829,7 +826,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                         <div className="p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300">
                           <p className="font-semibold flex items-center gap-1.5 mb-1 text-indigo-600 dark:text-indigo-400">
                             <Sparkles className="w-3.5 h-3.5" />
-                            Barem chấm điểm (Rubric):
+                            Quy tắc chấm điểm:
                           </p>
                           <p className="whitespace-pre-wrap">{question.gradingRubric}</p>
                         </div>
@@ -868,11 +865,10 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                     type="button"
                     disabled={!!editingQuestion}
                     onClick={() => handleTypeSelect(type)}
-                    className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
-                      isSelected
-                        ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/30 ring-1 ring-indigo-600'
-                        : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
-                    } ${editingQuestion ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${isSelected
+                      ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/30 ring-1 ring-indigo-600'
+                      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
+                      } ${editingQuestion ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     <div className="shrink-0 mt-0.5">{config.icon}</div>
                     <div>
@@ -893,7 +889,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                Điểm số câu hỏi *
+                Điểm số *
               </label>
               <input
                 type="number"
@@ -909,7 +905,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
 
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                Hình ảnh minh họa (Lưu tạm - Chỉ tải lên khi bấm Lưu)
+                Hình ảnh minh họa
               </label>
               <div className="flex items-center gap-2">
                 <label className="cursor-pointer">
@@ -961,11 +957,11 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                   <div className="flex items-center gap-2">
                     {pendingImageFile ? (
                       <Badge variant="warning" size="sm" dot>
-                        Ảnh mới (Chờ lưu)
+                        Ảnh mới
                       </Badge>
                     ) : (
                       <Badge variant="info" size="sm" dot>
-                        Ảnh hiện tại trên Cloud
+                        Ảnh hiện tại
                       </Badge>
                     )}
                   </div>
@@ -974,7 +970,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                   </p>
                   {pendingImageFile && (
                     <p className="text-[11px] text-zinc-400">
-                      Dung lượng: {(pendingImageFile.size / 1024).toFixed(1)} KB (Chưa gửi về server)
+                      Dung lượng: {(pendingImageFile.size / 1024).toFixed(1)} KB
                     </p>
                   )}
                 </div>
@@ -1034,11 +1030,10 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                   return (
                     <div
                       key={field.id}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${
-                        isChecked
-                          ? 'border-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20 dark:border-emerald-800'
-                          : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50'
-                      }`}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${isChecked
+                        ? 'border-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20 dark:border-emerald-800'
+                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50'
+                        }`}
                     >
                       {/* Strictly Controlled Selection Control */}
                       {selectedType === 'SINGLE_CHOICE' ? (
@@ -1147,7 +1142,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                  Sai số cho phép (Tolerance ±)
+                  Sai số cho phép
                 </label>
                 <input
                   type="number"
@@ -1168,7 +1163,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
             <div className="space-y-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                  Gợi ý đáp án / Dàn ý chuẩn (Sample Answer)
+                  Gợi ý đáp án
                 </label>
                 <textarea
                   rows={3}
@@ -1181,7 +1176,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1.5 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
-                  Barem điểm chi tiết (Grading Rubric cho GV hoặc AI chấm) *
+                  Hướng dẫn chấm điểm *
                 </label>
                 <textarea
                   rows={3}
@@ -1189,16 +1184,15 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                   {...register('gradingRubric', {
                     validate: (val) => {
                       if (selectedType === 'ESSAY_TEXT' && (!val || !val.trim())) {
-                        return 'Barem điểm chi tiết (Grading Rubric) là bắt buộc cho câu hỏi tự luận';
+                        return 'Hướng dẫn chấm điểm là bắt buộc cho câu hỏi tự luận';
                       }
                       return true;
                     },
                   })}
-                  className={`w-full px-3.5 py-2 rounded-xl border ${
-                    errors.gradingRubric
-                      ? 'border-rose-500 focus:ring-rose-500'
-                      : 'border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500'
-                  } bg-indigo-50/20 dark:bg-indigo-950/20 text-sm focus:ring-2 focus:outline-none`}
+                  className={`w-full px-3.5 py-2 rounded-xl border ${errors.gradingRubric
+                    ? 'border-rose-500 focus:ring-rose-500'
+                    : 'border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500'
+                    } bg-indigo-50/20 dark:bg-indigo-950/20 text-sm focus:ring-2 focus:outline-none`}
                 />
                 {errors.gradingRubric && (
                   <p className="text-xs text-rose-500 mt-1">{errors.gradingRubric.message}</p>
@@ -1243,7 +1237,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         }
       >
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Câu hỏi và toàn bộ hình ảnh đính kèm trên hệ thống đám mây sẽ bị xóa vĩnh viễn ngay lập tức.
+          Câu hỏi này sẽ bị xóa vĩnh viễn.
         </p>
       </Modal>
 

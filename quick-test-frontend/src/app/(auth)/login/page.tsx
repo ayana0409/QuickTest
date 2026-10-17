@@ -99,8 +99,8 @@ function LoginForm() {
           Array.isArray(userInfo.roles) && userInfo.roles.length > 0
             ? userInfo.roles
             : userInfo.role
-            ? [userInfo.role]
-            : [];
+              ? [userInfo.role]
+              : [];
 
         const normalizedRoles = userRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
 
@@ -128,7 +128,7 @@ function LoginForm() {
           value={usernameOrEmail}
           onChange={handleUsernameChange}
           error={errors.usernameOrEmail}
-          placeholder="admin, teacher_demo hoặc email..."
+          placeholder="quicktest"
           leftIcon={<UserIcon className="w-4 h-4" />}
           autoComplete="username"
         />
@@ -162,7 +162,7 @@ function LoginForm() {
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/60 dark:hover:bg-indigo-950/40 text-xs font-semibold transition-all group"
         >
           <KeyRound className="w-4 h-4 text-indigo-500 group-hover:rotate-12 transition-transform" />
-          <span>Làm bài thi bằng mã phòng (Không cần tài khoản)</span>
+          <span>Làm bài thi không cần đăng nhập</span>
         </Link>
       </div>
 
@@ -197,7 +197,7 @@ export default function LoginPage() {
             Đăng nhập hệ thống
           </h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-            Nhập thông tin tài khoản để truy cập kỳ thi và trang quản lý
+            Đăng nhập để truy cập các chức năng nâng cao
           </p>
         </div>
 

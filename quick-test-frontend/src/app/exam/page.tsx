@@ -9,9 +9,7 @@ import {
   IdCard,
   ArrowRight,
   ShieldCheck,
-  Zap,
   LogIn,
-  AlertCircle,
   HelpCircle,
 } from 'lucide-react';
 import { Input } from '@/components/common/Input';

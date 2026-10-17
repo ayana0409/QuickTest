@@ -82,9 +82,9 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-              Live Violation Feed:
+              Giám sát vi phạm:
             </span>
-            <span>No incidents reported yet. Examination room is clean.</span>
+            <span>Chưa có vi phạm nào được ghi nhận.</span>
           </div>
         </div>
       </div>
@@ -101,9 +101,9 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
           </span>
           <div className="flex items-center gap-1.5 font-bold text-sm text-rose-800 dark:text-rose-300">
             <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-            <span>Live Violation Stream</span>
+            <span>Giám sát vi phạm</span>
             <span className="ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-200/60 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300">
-              {events.length} incident{events.length > 1 ? 's' : ''}
+              {events.length}
             </span>
           </div>
         </div>
@@ -115,7 +115,7 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
             title="Clear stream list"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Clear</span>
+            <span>Dọn</span>
           </button>
         )}
       </div>
@@ -126,10 +126,10 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
           const Icon = meta.icon;
           const timeStr = evt.timestamp
             ? new Date(evt.timestamp).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })
             : '';
 
           return (
@@ -160,23 +160,23 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
               </div>
 
               <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
-                {evt.candidateName || 'Anonymous Candidate'}
+                {evt.candidateName || 'Thí sinh ẩn danh'}
               </div>
 
               <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                {evt.description || 'Violation detected during exam attempt'}
+                {evt.description || 'Phát hiện vi phạm trong quá trình làm bài thi'}
               </div>
 
               <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
                 <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                  Violation #{evt.violationCount}
+                  Số lần vi phạm: {evt.violationCount}
                 </span>
 
                 <button
                   onClick={() => onInspectCandidate(evt.attemptId)}
                   className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
                 >
-                  <span>Inspect</span>
+                  <span>Xem</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>

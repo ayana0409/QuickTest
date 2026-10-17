@@ -30,26 +30,25 @@ export default function HomePage() {
       <main className="flex-1 flex flex-col justify-center">
         <section className="relative overflow-hidden py-20 sm:py-28">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-semibold mb-8">
+            {/* <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-semibold mb-8">
               <Zap className="w-3.5 h-3.5" />
-              Nền tảng kiểm tra trực tuyến thế hệ mới
-            </div>
+              Nền tảng kiểm tra trực tuyến nhanh chóng
+            </div> */}
 
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-[1.15] mb-6">
-              Tổ chức thi & Giám sát thông minh <br className="hidden sm:inline" />
+              Nền tảng thông minh <br className="hidden sm:inline" />
               <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Chống gian lận đa tầng
               </span>
             </h1>
 
             <p className="max-w-2xl mx-auto text-lg text-zinc-600 dark:text-zinc-400 mb-10 leading-relaxed">
-              Quick Test kết hợp chấm điểm tự động, hỗ trợ chấm bài tự luận bằng AI, cùng hệ thống
-              giám sát camera, phát hiện chuyển tab và cảnh báo vi phạm thời gian thực qua WebSocket.
+              Quick Test hỗ trợ tạo bài thi và chấm bài tự luận bằng AI. Kết hợp với hệ thống phát hiện chuyển tab và cảnh báo vi phạm thời gian thực.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Button href="/exam" size="lg" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                Vào phòng thi (Nhập mã)
+                Vào phòng thi
               </Button>
               <Button href="/student" variant="outline" size="lg" leftIcon={<UserCheck className="w-4 h-4" />}>
                 Cổng Học sinh
@@ -69,10 +68,9 @@ export default function HomePage() {
                 <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center mb-4">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">Giám sát Real-time</h3>
+                <h3 className="text-lg font-bold mb-2">Giám sát thời gian thực</h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Ghi nhận chuyển tab, thoát toàn màn hình, mở DevTools và truyền dữ liệu cảnh báo vi
-                  phạm trực tiếp tới màn hình giám thị qua STOMP WebSocket.
+                  Ghi nhận chuyển tab, thoát toàn màn hình, mở DevTools và truyền dữ liệu cảnh báo vi phạm trực tiếp tới màn hình giám thị.
                 </p>
               </div>
 
@@ -80,10 +78,9 @@ export default function HomePage() {
                 <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center mb-4">
                   <Zap className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">Auto-save & Fail-safe</h3>
+                <h3 className="text-lg font-bold mb-2">Tự động lưu & Khôi phục</h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Tự động lưu câu trả lời liên tục theo thời gian thực vào Redis & PostgreSQL. Thí
-                  sinh có thể khôi phục phiên làm bài ngay lập tức nếu gặp sự cố mạng.
+                  Tự động lưu câu trả lời liên tục theo thời gian thực. Thí sinh có thể khôi phục phiên làm bài ngay lập tức nếu gặp sự cố.
                 </p>
               </div>
 
@@ -93,8 +90,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-lg font-bold mb-2">Chấm điểm AI & Phân tích</h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Hỗ trợ chấm trắc nghiệm tức thời, trợ lý AI chấm tự luận so khớp rubric chuẩn xác
-                  và xuất thống kê trực quan cho toàn bộ kỳ thi.
+                  Hỗ trợ chấm trắc nghiệm tức thời, trợ lý AI chấm tự luận chính xác, xuất thống kê trực quan cho toàn bộ kỳ thi.
                 </p>
               </div>
             </div>

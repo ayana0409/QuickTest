@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   UserX,
   ExternalLink,
-  ShieldCheck,
   Wifi,
   WifiOff,
 } from 'lucide-react';
@@ -42,11 +41,11 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
 
   const initials = candidate.candidateName
     ? candidate.candidateName
-        .split(' ')
-        .map((w) => w[0])
-        .slice(-2)
-        .join('')
-        .toUpperCase()
+      .split(' ')
+      .map((w) => w[0])
+      .slice(-2)
+      .join('')
+      .toUpperCase()
     : 'U';
 
   return (
@@ -57,10 +56,10 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
         isDisqualified
           ? 'border-rose-400/80 dark:border-rose-800/80'
           : hasHighViolations
-          ? 'border-red-400/80 dark:border-red-800/80'
-          : hasWarnings
-          ? 'border-amber-300/80 dark:border-amber-700/80'
-          : 'border-zinc-200/80 dark:border-zinc-800/80',
+            ? 'border-red-400/80 dark:border-red-800/80'
+            : hasWarnings
+              ? 'border-amber-300/80 dark:border-amber-700/80'
+              : 'border-zinc-200/80 dark:border-zinc-800/80',
         'hover:shadow-lg hover:scale-[1.01]'
       )}
     >
@@ -97,10 +96,10 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
                 isDisqualified
                   ? 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-800'
                   : hasHighViolations
-                  ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950/50 dark:text-red-400 dark:border-red-800'
-                  : hasWarnings
-                  ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800'
-                  : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800/50'
+                    ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-950/50 dark:text-red-400 dark:border-red-800'
+                    : hasWarnings
+                      ? 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-800'
+                      : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800/50'
               )}
             >
               {initials}
@@ -136,8 +135,8 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
                   candidate.violationCount >= maxViolations
                     ? 'text-rose-600 dark:text-rose-400'
                     : candidate.violationCount > 0
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-zinc-500'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-zinc-500'
                 )}
               >
                 {candidate.violationCount} / {maxViolations}
@@ -152,8 +151,8 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
                   candidate.violationCount >= maxViolations
                     ? 'bg-rose-500'
                     : candidate.violationCount > 0
-                    ? 'bg-amber-500'
-                    : 'bg-emerald-500'
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
                 )}
                 style={{ width: `${Math.max(5, violationPercent)}%` }}
               />
@@ -165,18 +164,18 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3 text-zinc-400" />
               <span>
-                Start:{' '}
+                Bắt đầu:{' '}
                 {candidate.startTime
                   ? new Date(candidate.startTime).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
                   : '--:--'}
               </span>
             </div>
             {candidate.submitTime && (
               <span>
-                Submit:{' '}
+                Nộp bài:{' '}
                 {new Date(candidate.submitTime).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -193,7 +192,7 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
             className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:text-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            <span>Inspect</span>
+            <span>Theo dõi</span>
           </button>
 
           {isInProgress && !isDisqualified && (
@@ -203,13 +202,13 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
               title="Disqualify this candidate"
             >
               <UserX className="w-3.5 h-3.5" />
-              <span>Disqualify</span>
+              <span>Đình chỉ</span>
             </button>
           )}
 
           {isDisqualified && (
             <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 px-2 py-1 bg-rose-50 dark:bg-rose-950/30 rounded-lg">
-              Revoked
+              Bị đình chỉ
             </span>
           )}
         </div>

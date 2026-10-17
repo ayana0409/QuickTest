@@ -5,8 +5,6 @@ import {
   AlertTriangle,
   UserX,
   ExternalLink,
-  Clock,
-  ArrowUpDown,
 } from 'lucide-react';
 import type { AttemptMonitorItem } from '@/types/proctoring';
 import { Badge } from '@/components/common/Badge';
@@ -33,10 +31,10 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
       <div className="text-center py-12 px-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
         <AlertTriangle className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
         <h4 className="font-semibold text-zinc-800 dark:text-zinc-200">
-          No candidates found
+          Không có thí sinh nào
         </h4>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-          Try adjusting your search query or status filter.
+          Không tìm thấy thí sinh phù hợp bộ lọc
         </p>
       </div>
     );
@@ -48,13 +46,13 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">
-              <th className="py-3.5 px-4">Candidate</th>
-              <th className="py-3.5 px-4">Connection</th>
-              <th className="py-3.5 px-4">Status</th>
-              <th className="py-3.5 px-4">Violations</th>
-              <th className="py-3.5 px-4">Start Time</th>
-              <th className="py-3.5 px-4">Submit Time</th>
-              <th className="py-3.5 px-4 text-right">Actions</th>
+              <th className="py-3.5 px-4">Thí sinh</th>
+              <th className="py-3.5 px-4">Kết nối</th>
+              <th className="py-3.5 px-4">Trạng thái</th>
+              <th className="py-3.5 px-4">Vi phạm</th>
+              <th className="py-3.5 px-4">Thời gian bắt đầu</th>
+              <th className="py-3.5 px-4">Thời gian nộp bài</th>
+              <th className="py-3.5 px-4 text-right">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -66,11 +64,11 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
 
               const initials = candidate.candidateName
                 ? candidate.candidateName
-                    .split(' ')
-                    .map((w) => w[0])
-                    .slice(-2)
-                    .join('')
-                    .toUpperCase()
+                  .split(' ')
+                  .map((w) => w[0])
+                  .slice(-2)
+                  .join('')
+                  .toUpperCase()
                 : 'U';
 
               return (
@@ -137,8 +135,8 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                           hasHighViolations
                             ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
                             : candidate.violationCount > 0
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
-                            : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
+                              : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
                         )}
                       >
                         <AlertTriangle className="w-3 h-3" />
@@ -153,10 +151,10 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                   <td className="py-3 px-4 text-zinc-500 dark:text-zinc-400">
                     {candidate.startTime
                       ? new Date(candidate.startTime).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })
                       : '--:--'}
                   </td>
 
@@ -164,10 +162,10 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                   <td className="py-3 px-4 text-zinc-500 dark:text-zinc-400">
                     {candidate.submitTime
                       ? new Date(candidate.submitTime).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })
                       : '--:--'}
                   </td>
 
@@ -180,7 +178,7 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                         title="Inspect telemetry & violation history"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Inspect</span>
+                        <span>Kiểm tra</span>
                       </button>
 
                       {isInProgress && !isDisqualified && (
@@ -190,7 +188,7 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                           title="Disqualify candidate"
                         >
                           <UserX className="w-3.5 h-3.5" />
-                          <span>Disqualify</span>
+                          <span>Đình chỉ</span>
                         </button>
                       )}
                     </div>

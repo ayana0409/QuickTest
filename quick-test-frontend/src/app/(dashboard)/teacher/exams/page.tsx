@@ -16,11 +16,9 @@ import {
   Globe,
   Lock,
   RefreshCw,
-  SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
-  ExternalLink,
   RotateCcw,
   Calendar,
   X,
@@ -29,7 +27,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
-import { Card, CardContent } from '@/components/common/Card';
 import { Modal } from '@/components/common/Modal';
 import { useAuthStore } from '@/stores/authStore';
 import { examService } from '@/services/exam.service';
@@ -315,10 +312,10 @@ export default function TeacherExamsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Quản trị Đề thi
+            Quản lý đề thi
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Thiết kế, xuất bản và theo dõi các bài thi trắc nghiệm & tự luận
+            Thiết kế, xuất bản và theo dõi các đề thi
           </p>
         </div>
 
@@ -348,7 +345,7 @@ export default function TeacherExamsPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleSearchKeyDown}
-            placeholder="Tìm kiếm theo tiêu đề hoặc mã đề thi..."
+            placeholder="Tìm kiếm..."
             className="w-full pl-10 pr-10 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
           {searchTerm && (
@@ -379,11 +376,10 @@ export default function TeacherExamsPage() {
                 key={status}
                 type="button"
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                  isSelected
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-sm'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${isSelected
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  }`}
               >
                 {labels[status]}
               </button>
@@ -486,8 +482,8 @@ export default function TeacherExamsPage() {
                       {exam.status === 'PUBLISHED'
                         ? 'Đang mở'
                         : exam.status === 'CLOSED'
-                        ? 'Đã đóng'
-                        : 'Bản nháp'}
+                          ? 'Đã đóng'
+                          : 'Bản nháp'}
                     </Badge>
 
                     {/* Access code 1-click copy */}
@@ -543,7 +539,7 @@ export default function TeacherExamsPage() {
                       size="sm"
                       leftIcon={<FileEdit className="w-3.5 h-3.5" />}
                     >
-                      Soạn đề & Cài đặt
+                      Chỉnh sửa
                     </Button>
                   </Link>
 
@@ -555,7 +551,7 @@ export default function TeacherExamsPage() {
                         leftIcon={<ShieldAlert className="w-3.5 h-3.5" />}
                         title="Mở phòng giám sát thí sinh trực tiếp & xem kết quả"
                       >
-                        Phòng thi & Giám sát
+                        Giám sát
                       </Button>
                     </Link>
                   )}
@@ -568,7 +564,7 @@ export default function TeacherExamsPage() {
                         leftIcon={<BarChart3 className="w-3.5 h-3.5" />}
                         title="Xem danh sách bài thi, chấm điểm và xuất Excel kết quả"
                       >
-                        Xem kết quả & Bài nộp
+                        Xem kết quả
                       </Button>
                     </Link>
                   )}
