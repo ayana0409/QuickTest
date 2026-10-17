@@ -1,12 +1,13 @@
-# Tài Liệu Thiết Kế Kỹ Thuật: Hệ Thống Thi Trực Tuyến Quick Test (Phiên Bản Toàn Diện & Chuẩn Hóa)
+# Tài Liệu Thiết Kế Kỹ Thuật: Nền Tảng Thi Trực Tuyến Quick Test (Dự Án Cá Nhân Tinh Gọn & Hiệu Năng Cao)
 
-## 1. Tổng Quan Kiến Trúc & Yêu Cầu Chức Năng
-- **Giáo viên (Teacher):** Đăng ký/đăng nhập để soạn đề, phân loại câu hỏi, duyệt điểm tự luận thủ công, cấu hình giám sát và xem phân tích gian lận.
-- **Học sinh (Student):** Đăng nhập bằng tài khoản nội bộ hoặc tài khoản SSO (QuickBite/ABP Framework) để lưu vết lịch sử thi.
-- **Khách (Guest):** Thí sinh vãng lai không cần tài khoản, vào thi trực tiếp chỉ bằng: Họ tên, Mã định danh cá nhân (MSSV/Email/SĐT) và Mã truy cập phòng thi (`accessCode`).
-- **Sẵn sàng tích hợp Single Sign-On (SSO):**
-  - Đóng vai trò là OAuth2/OIDC Resource Server.
-  - Sẵn sàng đồng bộ danh tính với QuickBite (ABP Framework Identity Server / OpenIddict) qua claim `sub` (ABP User Guid) với cơ chế Just-in-Time (JIT) Provisioning mà không cần sửa đổi mã nguồn QuickBite.
+## 1. Định Vị Dự Án & Tổng Quan Kiến Trúc
+- **Định vị cốt lõi:** **QuickTest** là một **dự án cá nhân** xây dựng **nền tảng thi trực tuyến (Online Exam & Quiz Platform)** hiện đại, tinh gọn và nhanh chóng. Dự án không hướng tới mô hình khảo thí hàn lâm cồng kềnh hay hệ thống quản trị doanh nghiệp (Enterprise ERP/LMS) nặng nề, mà tập trung giải quyết trực diện bài toán thi cử thực tế: tạo đề nhanh, làm bài mượt mà, chống gian lận hiệu quả và chấm điểm tự động bằng AI với chi phí vận hành siêu tiết kiệm.
+- **Giáo viên (Teacher):** Đăng ký/đăng nhập để soạn đề nhanh, quản lý ngân hàng câu hỏi, duyệt điểm tự luận thủ công, bật giám sát phòng thi và xem thống kê kết quả.
+- **Học sinh (Student):** Đăng nhập bằng tài khoản để lưu vết lịch sử làm bài và theo dõi tiến độ học tập.
+- **Khách vãng lai (Guest):** Thí sinh vào thi tức thì mà không cần thủ tục tạo tài khoản rườm rà — chỉ cần Họ tên, Mã định danh (MSSV/Email/SĐT) và Mã truy cập phòng thi (`accessCode`).
+- **Khả năng liên kết Single Sign-On (SSO):**
+  - Đóng vai trò là OAuth2/OIDC Resource Server nhẹ nhàng.
+  - Sẵn sàng đồng bộ danh tính với các ứng dụng khác (ví dụ: ABP Framework Identity Server / OpenIddict) qua claim `sub` (User Guid) với cơ chế Just-in-Time (JIT) Provisioning độc lập.
 - **Đa dạng dạng câu hỏi hỗ trợ:**
   1. `SINGLE_CHOICE`: Trắc nghiệm 1 đáp án đúng (tự động chấm điểm).
   2. `MULTIPLE_CHOICE`: Trắc nghiệm nhiều đáp án đúng (tự động chấm điểm tuyệt đối hoặc từng phần).
@@ -31,7 +32,7 @@
   - **Database:** PostgreSQL (ACID persistence, UUID primary keys, Optimistic Locking, Full-Text Search).
   - **Storage:** Cloudinary (Lưu trữ ảnh câu hỏi và đáp án).
   - **Logging:** Centralized Audit Logging (`system_logs`, ghi nhận IP, User Agent, Execution Time).
-  - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS + Lucide Icons + SWR / Polling.
+  - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + Zustand + Axios + STOMP.js + Lucide Icons.
 
 ---
 
@@ -39,50 +40,52 @@
 
 ```text
 com.quicktest
-├── config/                         # Cấu hình Spring Security, Redis, WebSocket, JPA Auditing, GeminiPoolProperties
+├── config/                         # Cấu hình Spring Security, Redis, WebSocket STOMP, JPA Auditing, RabbitMQ, GeminiPoolProperties
 ├── core/                           # Thành phần hạ tầng dùng chung toàn hệ thống
 │   ├── common/                     # ApiResponse, PageResponse
+│   ├── controller/                 # HealthController (/api/health)
 │   ├── exception/                  # GlobalExceptionHandler, AppException, ResourceNotFoundException
-│   ├── logging/                    # Centralized Audit Logging (@AuditLog, SystemLogService, SystemLogServiceImpl)
+│   ├── logging/                    # Centralized Audit Logging (SystemLog, @AuditLog, SystemLoggingAspect, SystemLogService, SystemLogRepository)
+│   ├── ratelimit/                  # Distributed Rate Limiting Subsystem (@RateLimit, Token Bucket, Sliding Window, RedisRateLimitService)
 │   ├── security/                   # JwtAuthenticationFilter, UserDetailsImpl, CustomAccessDeniedHandler
 │   ├── service/                    # GeminiRotationService, GeminiModelSlot, AiMetricsRedisService
-│   └── utils/                      # Tiện ích mã hóa, chuỗi, thời gian, toán học
+│   └── util/                       # Tiện ích mã hóa, chuỗi, thời gian, toán học
 ├── modules/                        # Phân rã nghiệp vụ theo module độc lập
 │   ├── admin/                      # Quản trị hệ thống, người dùng, kỳ thi, log và AI
 │   │   ├── controller/             # AdminAiController, AdminQuestionModerationController, AdminSystemHealthController, AdminSystemLogController, AdminUserController, AdminExamController, AdminDashboardController
-│   │   ├── dto/                    # Các DTO quản trị AI, kiểm duyệt, logs, user, stats
-│   │   ├── entity/                 # AiKey, AiModel, SystemLog
-│   │   ├── repository/             # AiKeyRepository, AiModelRepository, SystemLogRepository
-│   │   └── service/                # AdminAiService, AdminQuestionModerationService, AdminSystemHealthService, AdminSystemLogService, AdminUserService
+│   │   ├── dto/                    # Các DTO quản trị AI, kiểm duyệt câu hỏi, logs, user, stats
+│   │   ├── entity/                 # AiApiKey, AiModelConfigEntity
+│   │   ├── repository/             # AiApiKeyRepository, AiModelConfigEntityRepository
+│   │   └── service/                # AdminAiService, AdminQuestionModerationService, AdminSystemHealthService, AdminUserService, AdminService
 │   ├── assessment/                 # Ngân hàng đề, câu hỏi và AI Document Generator
 │   │   ├── ai/                     # Phân hệ Soạn đề AI & Giám sát tác vụ ngầm
 │   │   │   ├── controller/         # AiGenerateController, TeacherAiTaskController
 │   │   │   ├── dto/                # AiGenerateQuizRequest, AiGeneratedQuestionDto, TeacherAiTaskDto...
 │   │   │   └── service/            # AiGenerateService, AiQuizGeneratorService, TeacherAiTaskService, DocumentParserService, AiQuizGeneratorAsyncWorker
 │   │   ├── controller/             # ExamController, QuestionController, TeacherMediaController, QuestionGradingController
-│   │   ├── dto/                    # ExamCreateRequest, QuestionRequest, AnswerOptionDto...
+│   │   ├── dto/                    # ExamCreateRequest, QuestionCreateRequest, AnswerOptionDto, ExamDetailResponse...
 │   │   ├── entity/                 # Exam, ExamStatus, Question, QuestionType, AnswerOption
 │   │   ├── repository/             # ExamRepository, QuestionRepository, AnswerOptionRepository
-│   │   └── service/                # ExamService, QuestionService, QuestionGradingService, CloudinaryStorageService
+│   │   └── service/                # ExamService, QuestionService, CloudinaryStorageService
 │   ├── iam/                        # Xác thực & Quản lý danh tính
 │   │   ├── controller/             # AuthController
-│   │   ├── dto/                    # LoginRequest, RegisterRequest, AuthResponse
+│   │   ├── dto/                    # LoginRequest, RegisterRequest, AuthResponse, UserSummaryDto
 │   │   ├── entity/                 # User, Role, AuthProvider
 │   │   ├── repository/             # UserRepository
 │   │   └── service/                # AuthService
 │   ├── proctoring/                 # Viễn trắc giám sát & phát hiện gian lận
-│   │   ├── controller/             # CandidateProctoringController, TeacherProctoringController
-│   │   ├── dto/                    # ViolationTelemetryDto, CandidateHeartbeatDto
+│   │   ├── controller/             # CandidateProctoringController, TeacherProctoringController, ProctoringWebSocketController
+│   │   ├── dto/                    # ViolationReportMessage, HeartbeatMessage, ViolationAlertMessage, AttemptMonitorResponse
 │   │   ├── entity/                 # ViolationLog, ViolationType
 │   │   ├── repository/             # ViolationLogRepository
-│   │   ├── service/                # ProctoringService
-│   │   └── websocket/              # ProctoringWebSocketHandler
-│   └── session/                    # Phiên làm bài thi, nộp bài & chấm thi
+│   │   └── service/                # ProctoringService, ProctoringServiceImpl
+│   └── session/                    # Phiên làm bài thi, nộp bài, chấm thi & báo cáo
 │       ├── controller/             # ExamSessionController, StudentAttemptController, TeacherGradingController
-│       ├── dto/                    # StartSessionRequest, SaveAnswerDto, SubmitGradesRequest
+│       ├── dto/                    # StartExamRequest, SaveAnswerRequest, SubmitExamRequest, GradeEssaySubmissionRequest
 │       ├── entity/                 # ExamAttempt, AttemptStatus, CandidateAnswer, GradingStatus
 │       ├── repository/             # ExamAttemptRepository, CandidateAnswerRepository
-│       └── service/                # ExamSessionService, GradingService, QuestionGradingAsyncWorker, RedisSessionService
+│       ├── scheduler/              # ExamLifecycleScheduler (Tự động rà soát đóng đề thi quá hạn)
+│       └── service/                # ExamSessionService, TeacherGradingService, QuestionGradingService, QuestionGradingAsyncWorker, RedisExamSessionService, ExamSubmissionProducer, ExamSubmissionConsumer, ExamExportService
 └── QuickTestApplication.java
 ```
 
@@ -92,18 +95,17 @@ com.quicktest
 
 | Bảng (Table) | Mô tả | Ràng buộc & Chỉ mục chính |
 | :--- | :--- | :--- |
-| **users** | Tài khoản nội bộ và tài khoản liên kết SSO (QuickBite/ABP). | `sso_subject_id` (Unique, Nullable), `email` (Unique), `username` (Unique, Nullable). |
-| **exams** | Cấu hình kỳ thi, thời lượng, trạng thái phát hành. | `access_code` (Unique), Index `(created_by, created_at)`. Hỗ trợ bật/tắt chống gian lận (`is_proctoring_enabled`) và bảo mật kết quả (`show_results_to_students`). |
-| **questions** | Ngân hàng câu hỏi thuộc đề thi. Hỗ trợ 4 dạng câu hỏi, ảnh Cloudinary, cờ an toàn (`is_safe`, `moderation_status`). | FK `exam_id`, Index `(exam_id, order_index)`. Hỗ trợ `image_url`, `sample_answer`, `grading_rubric`. |
-| **answer_options** | Các đáp án lựa chọn cho câu hỏi trắc nghiệm. Hỗ trợ ảnh đính kèm. | FK `question_id`, Index `(question_id, order_index)`. Hỗ trợ `image_url`. |
-| **exam_attempts** | Phiên làm bài của thí sinh (User hoặc Guest). | Optimistic Lock `@Version`, Check Constraint: `(user_id IS NOT NULL) OR (guest_name IS NOT NULL AND guest_identifier IS NOT NULL)`. |
-| **candidate_answers** | Câu trả lời của thí sinh cho từng câu hỏi, lưu điểm AI, điểm giáo viên và giải thích. | Unique Constraint: `(attempt_id, question_id)`. Các cột: `awarded_score`, `ai_suggested_score`, `ai_similarity_score`, `ai_grading_explanation`. |
+| **users** | Tài khoản nội bộ và tài khoản liên kết SSO (QuickBite/ABP). | `sso_subject_id` (Unique, Nullable), `email` (Unique), `username` (Unique, Nullable). Index: `idx_users_sso_sub`, `idx_users_email`. |
+| **exams** | Cấu hình kỳ thi, thời lượng, trạng thái phát hành, chống gian lận. | `access_code` (Unique), Index `(created_by, created_at)`. Hỗ trợ cờ proctoring (`is_proctoring_enabled`), ngưỡng vi phạm (`max_violations`) và bảo mật kết quả (`show_results_to_students`). |
+| **questions** | Ngân hàng câu hỏi thuộc đề thi. Hỗ trợ 4 dạng câu hỏi, ảnh Cloudinary, kiểm duyệt nội dung của Admin. | FK `exam_id`, Index: `idx_questions_exam_order` `(exam_id, order_index)` và `idx_questions_moderation` `(is_safe, exam_id)`. Các cột: `image_url`, `sample_answer`, `grading_rubric`, `is_safe`, `reviewed_at`, `reviewed_by`. |
+| **answer_options** | Các đáp án lựa chọn cho câu hỏi trắc nghiệm. Hỗ trợ ảnh đính kèm. | FK `question_id`, Index: `idx_options_question_order` `(question_id, order_index)`. Hỗ trợ `image_url`, `image_public_id`, `is_correct`. |
+| **exam_attempts** | Phiên làm bài của thí sinh (User hoặc Guest). | Optimistic Lock `@Version`, Check Constraint: `(user_id IS NOT NULL) OR (guest_name IS NOT NULL AND guest_identifier IS NOT NULL)`. Index: `idx_attempts_user_exam`, `idx_attempts_guest_exam`. |
+| **candidate_answers** | Câu trả lời của thí sinh cho từng câu hỏi, lưu điểm AI, điểm giáo viên và giải thích. | Unique Constraint: `uk_candidate_answers_attempt_question` `(attempt_id, question_id)`. Index: `idx_ca_question_grading_status` `(question_id, grading_status)`. Các cột: `awarded_score`, `ai_suggested_score`, `ai_similarity_score`, `ai_grading_explanation`. |
 | **candidate_selected_options** | Bảng trung gian lưu danh sách đáp án chọn (Multiple Choice). | Composite PK: `(candidate_answer_id, option_id)`. |
-| **violation_logs** | Lịch sử ghi nhận gian lận (chuyển tab, thoát toàn màn hình,...). | FK `attempt_id`, Index `(attempt_id, timestamp)`. |
-| **ai_keys** | Quản lý các khóa API Google Gemini của hệ thống. | `api_key` (Encrypted/Masked), Index `(is_active, order_index)`. |
-| **ai_models** | Cấu hình các model slot thuộc API Key, hạn ngạch RPM và TPM. | FK `ai_key_id`, Index `(is_active, order_index)`. |
-| **system_logs** | Nhật ký kiểm toán tập trung ghi lại hoạt động người dùng và hệ thống. | Index `(timestamp)`, Index `(module, action)`, Index `(user_id)`. Lưu IP, User Agent, Execution Time. |
-| **tags** / **question_tags** | Hệ thống nhãn phân loại câu hỏi phục vụ tìm kiếm nâng cao. | Composite PK: `(question_id, tag_id)`. |
+| **violation_logs** | Lịch sử ghi nhận gian lận (chuyển tab, thoát fullscreen, devtools, đình chỉ...). | FK `attempt_id`, Index: `idx_violations_attempt_time` `(attempt_id, timestamp)`. |
+| **ai_api_keys** | Quản lý các khóa API Google Gemini của hệ thống (tương ứng entity `AiApiKey`). | `api_key` (TEXT), Index: `idx_ai_keys_active` `(is_active, order_index)`. |
+| **ai_models** | Cấu hình các model slot thuộc API Key, hạn ngạch RPM và TPM (tương ứng entity `AiModelConfigEntity`). | FK `ai_key_id`, Index: `idx_ai_models_key_active` `(ai_key_id, is_active, order_index)`. |
+| **system_logs** | Nhật ký kiểm toán tập trung ghi lại hoạt động người dùng và hệ thống. | Index: `created_at DESC`, `(module, action)`, `actor_id`, `level`, `status`. Lưu IP, User Agent, Execution Time. |
 
 ---
 
@@ -324,15 +326,18 @@ package com.quicktest.modules.assessment.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(
     name = "questions",
     indexes = {
-        @Index(name = "idx_questions_exam_order", columnList = "exam_id, orderIndex")
+        @Index(name = "idx_questions_exam_order", columnList = "exam_id, orderIndex"),
+        @Index(name = "idx_questions_moderation", columnList = "is_safe, exam_id")
     }
 )
 @Getter
@@ -374,16 +379,27 @@ public class Question {
     private Double numericTolerance; // Dung sai cho phép đối với dạng NUMERIC (vd: +- 0.05)
 
     @Column(columnDefinition = "TEXT")
-    private String gradingRubric; // Tiêu chí chấm cho Giáo viên (hoặc Context Prompt cho AI sau này)
+    private String gradingRubric; // Tiêu chí chấm cho Giáo viên (hoặc Context Prompt cho AI)
+
+    // --- Quản trị kiểm duyệt nội dung (Content moderation governance) ---
+    @Column(name = "is_safe", nullable = false)
+    @Builder.Default
+    private Boolean isSafe = false;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
+
+    @Column(name = "reviewed_by")
+    private UUID reviewedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_id", nullable = false)
     private Exam exam;
 
-    // Dành cho SINGLE_CHOICE và MULTIPLE_CHOICE
+    // Dành cho SINGLE_CHOICE và MULTIPLE_CHOICE (Batch fetch chống N+1 queries)
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
-    @org.hibernate.annotations.BatchSize(size = 50)
+    @BatchSize(size = 50)
     @Builder.Default
     private List<AnswerOption> options = new ArrayList<>();
 }
@@ -563,6 +579,9 @@ import java.util.UUID;
     name = "candidate_answers",
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_candidate_answers_attempt_question", columnNames = {"attempt_id", "question_id"})
+    },
+    indexes = {
+        @Index(name = "idx_ca_question_grading_status", columnList = "question_id, grading_status")
     }
 )
 @Getter
@@ -607,9 +626,9 @@ public class CandidateAnswer {
     private GradingStatus gradingStatus = GradingStatus.AUTO_GRADED;
 
     @Column(columnDefinition = "TEXT")
-    private String teacherFeedback; // Lời phê / nhận xét của giáo viên (Hiện tại)
+    private String teacherFeedback; // Lời phê / nhận xét của giáo viên
 
-    // --- NOTE: TÍNH NĂNG TÍCH HỢP SAU (FUTURE AI ENHANCEMENT) ---
+    // --- Tích hợp AI Chấm điểm tự luận (Google Gemini) ---
     private Double aiSimilarityScore; // Điểm tương đồng ngữ nghĩa (0.0 -> 1.0)
     @Column(columnDefinition = "TEXT")
     private String aiGradingExplanation; // Lời giải thích gợi ý từ mô hình ngôn ngữ lớn
@@ -625,7 +644,8 @@ public enum ViolationType {
     DEVTOOLS_OPEN,      // Cố tình mở Inspect / F12
     NO_FACE_DETECTED,   // Không tìm thấy khuôn mặt trước webcam
     MULTIPLE_FACES,     // Phát hiện nhiều hơn 1 khuôn mặt trong khung hình
-    COPY_PASTE_ATTEMPT  // Cố tình copy / paste nội dung
+    COPY_PASTE_ATTEMPT, // Cố tình copy / paste nội dung
+    TEACHER_DISQUALIFY  // Giáo viên đình chỉ thủ công qua phòng giám sát
 }
 ```
 
@@ -672,6 +692,225 @@ public class ViolationLog {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime timestamp;
+}
+```
+
+---
+
+### 4.5. Module Admin & AI Pool - `AiApiKey`, `AiModelConfigEntity`
+
+Quản trị cấu hình động các khóa API Google Gemini và các Model Slots trực tiếp từ Database với khả năng tái nạp nóng (`reloadPool`):
+
+```java
+package com.quicktest.modules.admin.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(
+    name = "ai_api_keys",
+    indexes = {
+        @Index(name = "idx_ai_keys_active", columnList = "is_active, order_index")
+    }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AiApiKey {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(name = "api_key", nullable = false, columnDefinition = "TEXT")
+    private String apiKey;
+
+    @Column(nullable = false, length = 50)
+    @Builder.Default
+    private String provider = "GEMINI";
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
+
+    @Column(name = "order_index", nullable = false)
+    @Builder.Default
+    private Integer orderIndex = 0;
+
+    @OneToMany(mappedBy = "aiKey", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("orderIndex ASC")
+    @Builder.Default
+    private List<AiModelConfigEntity> models = new ArrayList<>();
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+}
+```
+
+```java
+package com.quicktest.modules.admin.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(
+    name = "ai_models",
+    indexes = {
+        @Index(name = "idx_ai_models_key_active", columnList = "ai_key_id, is_active, order_index")
+    }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AiModelConfigEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ai_key_id", nullable = false)
+    @JsonIgnore
+    private AiApiKey aiKey;
+
+    @Column(name = "model_name", nullable = false, length = 100)
+    private String modelName;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer rpm = 15;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer tpm = 200000;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
+
+    @Column(name = "order_index", nullable = false)
+    @Builder.Default
+    private Integer orderIndex = 0;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+}
+```
+
+---
+
+### 4.6. Core Infrastructure - `SystemLog` (Centralized Audit Logging)
+
+Ghi nhận toàn bộ nhật ký kiểm toán hệ thống tập trung với thông tin người dùng, IP, thiết bị, thời gian thực thi:
+
+```java
+package com.quicktest.core.logging;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(
+    name = "system_logs",
+    indexes = {
+        @Index(name = "idx_syslog_created_at", columnList = "created_at DESC"),
+        @Index(name = "idx_syslog_module_action", columnList = "module, action"),
+        @Index(name = "idx_syslog_actor", columnList = "actor_id"),
+        @Index(name = "idx_syslog_level", columnList = "level"),
+        @Index(name = "idx_syslog_status", columnList = "status")
+    }
+)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SystemLog {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private LogLevel level;
+
+    @Column(nullable = false, length = 60)
+    private String module;
+
+    @Column(nullable = false, length = 100)
+    private String action;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private LogStatus status;
+
+    @Column(name = "actor_id")
+    private UUID actorId;
+
+    @Column(name = "actor_username", length = 100)
+    private String actorUsername;
+
+    @Column(name = "actor_role", length = 50)
+    private String actorRole;
+
+    @Column(length = 255)
+    private String endpoint;
+
+    @Column(name = "http_method", length = 10)
+    private String httpMethod;
+
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
+    @Column(columnDefinition = "TEXT")
+    private String details;
+
+    @Column(name = "error_message", columnDefinition = "TEXT")
+    private String errorMessage;
+
+    @Column(name = "execution_time_ms")
+    private Long executionTimeMs;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }
 ```
 

@@ -1,6 +1,6 @@
 # QuickTest Backend Engine 🚀
 
-> **Core Enterprise REST API & Background Processing Service for the QuickTest Online Exam Platform**  
+> **Core REST API & Background Processing Service for the QuickTest Online Exam Platform**  
 > Built with **Spring Boot 3.4.3**, **Java 21 LTS**, **PostgreSQL**, **Redis**, **RabbitMQ**, **Google Gemini AI**, and **Cloudinary**.
 
 ---

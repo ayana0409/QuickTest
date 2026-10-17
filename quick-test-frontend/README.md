@@ -1,7 +1,7 @@
 # QuickTest Frontend Client ⚡
 
 > **Modern, High-Performance Online Examination & AI Proctoring Web Application**  
-> Built with **Next.js 16.3.5 (App Router)**, **React 19**, **TypeScript 5**, **Tailwind CSS v4**, **Zustand**, and **STOMP WebSocket**.
+> Built with **Next.js 16 (App Router)**, **TypeScript**, **Tailwind CSS v4**, **Zustand**, **Axios**, and **STOMP WebSocket**.
 
 ---
 
@@ -21,7 +21,7 @@
 
 **QuickTest Frontend Client** là giao diện người dùng chính của nền tảng thi trực tuyến QuickTest, cung cấp trải nghiệm làm bài thi hiện đại, mượt mà và trực quan cho học sinh, đồng thời trang bị đầy đủ công cụ quản trị, soạn đề và chấm thi tự động bằng AI cho giáo viên và quản trị viên.
 
-Ứng dụng được xây dựng trên nền tảng **Next.js 16 (App Router)** kết hợp **React 19** và **Tailwind CSS v4**, hỗ trợ Server Components (RSC) kết hợp Client Components tối ưu tốc độ tải trang, quản lý trạng thái tập trung với **Zustand**, và kết nối viễn trắc thời gian thực qua **WebSocket / STOMP**.
+Ứng dụng được xây dựng trên nền tảng **Next.js 16 (App Router)** kết hợp **Tailwind CSS v4**, hỗ trợ Server Components kết hợp Client Components tối ưu tốc độ tải trang, quản lý trạng thái tập trung với **Zustand**, và kết nối viễn trắc thời gian thực qua **WebSocket / STOMP**.
 
 ---
 
@@ -87,16 +87,15 @@
 
 | Phân loại | Công nghệ / Thư viện | Mục đích sử dụng |
 |:---|:---|:---|
-| **Core Framework** | Next.js 16.3.5 (App Router) | Khung ứng dụng React Server Components & Static Optimization |
-| **UI Library** | React 19.0.0, React DOM 19 | Thư viện xây dựng giao diện người dùng hiện đại |
-| **Language** | TypeScript 5.x | Kiểm soát kiểu tĩnh an toàn, tự động gợi ý code |
+| **Core Framework** | Next.js 16 (App Router) | Khung ứng dụng chính, quản lý routing, render Server & Client Components |
+| **Language** | TypeScript | Kiểm soát kiểu tĩnh an toàn, tự động gợi ý code |
 | **Styling** | Tailwind CSS v4, PostCSS | Thiết kế giao diện hiện đại, tối giản và responsive linh hoạt |
-| **State Management** | Zustand 5.0.15 | Quản lý trạng thái đăng nhập, phiên thi và dữ liệu toàn cục |
-| **Form Handling** | React Hook Form 7.88.0 | Xử lý form biểu mẫu hiệu năng cao, giảm re-render |
-| **Realtime Protocol**| STOMP.js 7.3.0, SockJS 1.6.1 | Kết nối WebSocket nhận viễn trắc phòng thi và giám sát gian lận |
-| **HTTP Client** | Axios 1.20.0 | Giao tiếp REST API backend, đính kèm token và xử lý lỗi tập trung |
-| **Icons & Alerts** | Lucide React 1.45.0, React Hot Toast | Bộ biểu tượng phong phú và thông báo pop-up thông minh |
-| **Cookie Storage** | js-cookie 3.0.8 | Lưu trữ JWT token an toàn trên trình duyệt |
+| **State Management** | Zustand | Quản lý trạng thái đăng nhập, phiên thi và dữ liệu toàn cục |
+| **Form Handling** | React Hook Form | Xử lý form biểu mẫu hiệu năng cao, giảm re-render |
+| **Realtime Protocol**| STOMP.js, SockJS | Kết nối WebSocket nhận viễn trắc phòng thi và giám sát vi phạm |
+| **HTTP Client** | Axios | Giao tiếp REST API backend, đính kèm token và xử lý lỗi tập trung |
+| **Icons & Alerts** | Lucide Icons, React Hot Toast | Bộ biểu tượng phong phú và thông báo pop-up trực quan |
+| **Cookie Storage** | js-cookie | Lưu trữ JWT token an toàn trên trình duyệt |
 
 ---
 
@@ -253,4 +252,4 @@ Toàn bộ mã nguồn và tài sản trí tuệ thuộc quyền sở hữu củ
 
 ---
 
-*QuickTest Client — Built for modern, high-standard assessment.*
+*QuickTest Client — Built for modern, fast & lean online exams.*

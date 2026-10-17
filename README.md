@@ -1,21 +1,21 @@
-# QuickTest ⚡ — Enterprise AI-Powered Online Examination Platform
+# QuickTest ⚡ — AI-Powered Online Exam & Quiz Platform
 
-> **Nền tảng thi trực tuyến, giám sát chống gian lận thời gian thực và chấm thi / tạo đề tự động bằng AI (Google Gemini Rotation Pool).**
+> **Nền tảng thi trực tuyến nhanh gọn, giám sát vi phạm thời gian thực và hỗ trợ tạo đề & chấm bài tự động bằng AI (Google Gemini Rotation Pool).**
 
 ---
 
 ## 📌 Tổng quan dự án
 
-**QuickTest** là giải pháp toàn diện cho tổ chức thi cử và khảo thí trực tuyến theo tiêu chuẩn doanh nghiệp & giáo dục đại học. Hệ thống cung cấp trải nghiệm làm bài mượt mà, đồng bộ thời gian thực, khả năng mở rộng chịu tải cao và tích hợp trí tuệ nhân tạo (Generative AI) để tự động hóa toàn bộ vòng đời đề thi từ tạo câu hỏi đến chấm điểm.
+**QuickTest** là một dự án cá nhân xây dựng **nền tảng thi trực tuyến** hiện đại, tinh gọn và linh hoạt. Hệ thống tập trung tối ưu hóa trải nghiệm cho giáo viên và học sinh: vào thi tức thì qua mã phòng thi (không bắt buộc đăng ký tài khoản), tự động lưu bài theo thời gian thực (auto-save), cảnh báo vi phạm viễn trắc và ứng dụng mô hình ngôn ngữ lớn (Google Gemini) để hỗ trợ tạo đề thi từ tài liệu cũng như chấm điểm tự luận với chi phí vận hành cực kỳ tối ưu.
 
 ```
 QuickTest Workspace
-├── quick-test/                  # Backend Service (Spring Boot 3.4.3, Java 21)
-├── quick-test-frontend/         # Frontend Client (Next.js 16, React 19, Tailwind v4)
-├── bruno/                       # Bruno API Test Suite (14 modules, 78+ requests)
-├── API_ENDPOINTS.md             # Đặc tả chi tiết 78+ RESTful Endpoints
+├── quick-test/                  # Backend Service (Spring Boot, Java)
+├── quick-test-frontend/         # Frontend Client (Next.js 16, Tailwind v4)
+├── bruno/                       # Bruno API Test Suite
+├── API_ENDPOINTS.md             # Đặc tả chi tiết 70+ RESTful Endpoints
 ├── quick-test-architecture.md   # Tài liệu Kiến trúc Hệ thống & AI Rotation Engine
-└── quick-test-system-flows.md   # Biểu đồ Luồng Nghiệp vụ (Mermaid Sequence Diagrams)
+└── quick-test-system-flows.md   # Biểu đồ Luồng Nghiệp vụ
 ```
 
 ---
@@ -46,7 +46,7 @@ QuickTest Workspace
 | Thành phần | Công nghệ chính |
 |:---|:---|
 | **Backend** | Java 21, Spring Boot 3.4.3, Spring Security 6 (Stateless JWT), Spring Data JPA, Hibernate, WebSocket / STOMP |
-| **Frontend** | Next.js 16.3.5 (App Router), React 19, TypeScript 5, Tailwind CSS v4, Zustand 5, Axios, STOMP.js |
+| **Frontend** | Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Zustand, Axios |
 | **Database & Cache**| PostgreSQL 16 (Relational DB, B-Tree / GIN Indexes), Redis 7 (Token Blacklist, Sliding Window Rate Limit, Distributed Lock, Heartbeats) |
 | **AI Integration** | Google Gemini API (1.5 Flash, 2.0 Flash Lite, 1.5 Pro) qua Dynamic Rotation Pool |
 | **Object Storage** | Cloudinary API (Lưu trữ hình ảnh câu hỏi & phương án) |

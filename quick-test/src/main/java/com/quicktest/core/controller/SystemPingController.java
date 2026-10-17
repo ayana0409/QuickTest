@@ -300,7 +300,7 @@ public class SystemPingController {
                         <a href="/api/ping" class="btn btn-accent">⚡ JSON Ping Probe</a>
                     </div>
                     <div class="footer">
-                        QuickTest Enterprise Assessment Platform &bull; All Rights Reserved
+                        QuickTest Online Exam Platform &bull; Built with passion
                     </div>
                 </div>
             </body>

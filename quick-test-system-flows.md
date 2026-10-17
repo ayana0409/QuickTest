@@ -65,13 +65,13 @@ sequenceDiagram
 ---
 
 ## 3. Luồng Làm Bài Thi & Giám Sát (Session & Proctoring Flow)
-Ánh xạ theo `ExamSessionController.java` và `ProctoringTelemetryController.java`.
+Ánh xạ theo `ExamSessionController.java`, `CandidateProctoringController.java` và `ProctoringWebSocketController.java`.
 
 ```mermaid
 sequenceDiagram
     participant S as Student / Guest
     participant C as ExamSessionController
-    participant P as ProctoringTelemetryController
+    participant W as WebSocket / ProctoringController
     participant R as Redis (Session Cache)
     participant DB as PostgreSQL
     
@@ -84,10 +84,15 @@ sequenceDiagram
         C->>R: Lưu nháp vào Redis Hash (Tránh nghẽn DB)
         C-->>S: 200 OK
         
-        alt Bị mất focus / Chuyển Tab (Nếu isProctoringEnabled = true)
-            S->>P: POST /api/proctoring/telemetry (ViolationTelemetryDto)
-            P->>DB: Lưu ViolationLog & Tăng violationCount
-            P-->>S: 200 OK (Kèm cảnh báo)
+        alt Định kỳ giữ phiên (Heartbeat)
+            S->>W: STOMP /app/proctoring/heartbeat (hoặc POST /api/session/proctoring/heartbeat)
+            W->>R: Cập nhật active timestamp của thí sinh
+        else Bị mất focus / Chuyển Tab (Nếu isProctoringEnabled = true)
+            S->>W: STOMP /app/proctoring/violation (hoặc POST /api/session/proctoring/violations)
+            Note right of S: Payload: ViolationReportMessage
+            W->>DB: Lưu ViolationLog & Tăng violationCount
+            W-->>S: Trả về ViolationAlertMessage (Cảnh báo vi phạm)
+            W-)R: Broadcast cảnh báo tới Giám thị qua /topic/exam/{examId}/proctoring
         end
     end
     
