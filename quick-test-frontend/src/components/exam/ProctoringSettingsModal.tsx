@@ -3,12 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Shield,
-  ShieldAlert,
   ShieldOff,
   X,
   Check,
   RotateCcw,
-  Sliders,
   AppWindow,
   Maximize,
   Copy,

@@ -133,7 +133,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
           <CheckSquare className="w-4 h-4 text-purple-400 shrink-0" />
           <span>
-            Thí sinh có thể chọn một hoặc nhiều phương án đúng.
+            Thí sinh được chọn một hoặc nhiều phương án đúng.
           </span>
         </div>
       )}
@@ -141,7 +141,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       {isSingle && (
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-medium mb-3 sm:mb-4 w-fit">
           <CircleDot className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-          <span>Chỉ chọn 1 đáp án duy nhất</span>
+          <span>Chỉ được chọn 1 đáp án</span>
         </div>
       )}
 
@@ -219,7 +219,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       {isNumeric && (
         <div className="max-w-xs">
           <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-            Nhập kết quả số học:
+            Nhập kết quả dạng số:
           </label>
           <input
             type="number"

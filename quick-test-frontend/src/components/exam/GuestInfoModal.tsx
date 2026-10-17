@@ -26,8 +26,8 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
   accessCode,
   onConfirm,
   isLoading = false,
-  title = 'Thông tin thí sinh làm bài',
-  description = 'Bạn đang tham gia kỳ thi mà không cần đăng nhập. Vui lòng cung cấp thông tin để hệ thống ghi nhận kết quả bài làm.',
+  title = 'Thông tin thí sinh',
+  description = 'Bạn đang tham gia kỳ thi với tư cách khách. Vui lòng cung cấp các thông tin dưới đây để hệ thống ghi nhận kết quả làm bài của bạn.',
   onCancel,
 }) => {
   const [guestName, setGuestName] = useState('');
@@ -145,7 +145,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
             />
             <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-zinc-400">
               <HelpCircle className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-              <span>Dùng để xác thực và khôi phục bài thi nếu tải lại trang hoặc mất mạng.</span>
+              <span>Thông tin này được dùng để xác thực và khôi phục bài thi nếu tải lại trang hoặc mất mạng.</span>
             </div>
           </div>
 
@@ -168,7 +168,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
               className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              Vào phòng thi ngay
+              Vào phòng thi
             </Button>
           </div>
         </form>

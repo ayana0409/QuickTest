@@ -70,13 +70,13 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
           id="warning-modal-title"
           className="text-xl sm:text-2xl font-bold text-amber-400 tracking-tight mb-2"
         >
-          Cảnh Báo Vi Phạm Quy Chế
+          Cảnh báo gian lận
         </h2>
 
         {/* Violation Message */}
         <p className="text-sm sm:text-base text-zinc-300 leading-relaxed mb-6 font-normal">
           {message ||
-            'Hệ thống ghi nhận hành vi bất thường trong quá trình làm bài. Toàn bộ nhật ký vi phạm đã được gửi đến giám thị phòng thi.'}
+            'Hệ thống phát hiện gian lận trong quá trình làm bài. Ban giám thị đã ghi nhận hành vi gian lận này.'}
         </p>
 
         {/* Violation Counter Badge */}
@@ -85,10 +85,10 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
               <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">
-                Lượt cảnh báo hiện tại
+                Lần vi phạm:
               </div>
               <div className="text-sm font-bold text-zinc-100">
-                Lần {violationCount} / {maxAllowed}
+                {violationCount} / {maxAllowed}
               </div>
             </div>
           </div>
@@ -106,9 +106,8 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
 
         {/* Strict Caution Note */}
         <div className="text-xs text-zinc-400 bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mb-6 leading-relaxed">
-          <strong className="text-amber-300">Lưu ý quan trọng:</strong> Nếu tiếp tục chuyển tab,
-          thoát toàn màn hình hoặc can thiệp công cụ lập trình, hệ thống sẽ tự động đình chỉ thi và
-          hủy kết quả làm bài.
+          <strong className="text-amber-300">Lưu ý:</strong> Nếu tiếp tục vi phạm, hệ thống sẽ tự
+          động đình chỉ thi và hủy kết quả làm bài.
         </div>
 
         {/* Acknowledge Button */}

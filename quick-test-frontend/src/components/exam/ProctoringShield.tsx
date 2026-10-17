@@ -91,7 +91,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         // Intercept exam closure / auto-submit broadcast
         if (alert.eventType === 'EXAM_CLOSED' || alert.action === 'AUTO_SUBMIT') {
           onExamClosedRef.current?.(
-            alert.message || alert.reason || 'Bài thi đã kết thúc hoặc đã bị đóng bởi giám thị.'
+            alert.message || alert.reason || 'Bài thi của bạn đã bị kết thúc.'
           );
           return;
         }
@@ -235,7 +235,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác nhấp chuột phải (Context menu) bị cấm trong phòng thi.'
+        'Thao tác mở menu chuột phải trong lúc thi.'
       );
     };
 
@@ -247,7 +247,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác sao chép nội dung (Copy) bị cấm trong phòng thi.'
+        'Thao tác sao chép nội dung trong lúc thi.'
       );
     };
 
@@ -255,7 +255,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác cắt nội dung (Cut) bị cấm trong phòng thi.'
+        'Thao tác cắt nội dung trong lúc thi.'
       );
     };
 
@@ -263,7 +263,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác dán nội dung từ bên ngoài (Paste) bị cấm trong phòng thi.'
+        'Thao tác dán nội dung trong lúc thi.'
       );
     };
 
@@ -311,7 +311,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       ) {
         e.preventDefault();
         e.stopPropagation();
-        reportViolation('DEVTOOLS_OPEN', 'Cố gắng mở công cụ kiểm tra phần tử (DevTools).');
+        reportViolation('DEVTOOLS_OPEN', 'Cố gắng mở công cụ kiểm tra phần tử.');
         return;
       }
 
@@ -319,7 +319,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       if (isCtrlOrCmd && (e.key === 'u' || e.key === 'U')) {
         e.preventDefault();
         e.stopPropagation();
-        reportViolation('DEVTOOLS_OPEN', 'Cố gắng xem mã nguồn trang web (Ctrl+U).');
+        reportViolation('DEVTOOLS_OPEN', 'Cố gắng xem mã nguồn trang web.');
         return;
       }
 

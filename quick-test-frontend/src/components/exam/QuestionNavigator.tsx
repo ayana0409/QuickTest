@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, Send, ListChecks, X } from 'lucide-react';
+import { Send, ListChecks, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuestionInPaper } from '@/types/exam';
 import type { CandidateAnswerState } from '@/stores/examStore';
@@ -69,7 +69,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-sm sm:text-base font-bold text-[#E6EDF3]">
             <ListChecks className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span>Mục lục câu hỏi</span>
+            <span>Mục lục</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-medium text-zinc-400">
@@ -113,14 +113,14 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
                 className={cn(
                   'relative h-10 w-full rounded-xl text-xs font-semibold font-mono flex items-center justify-center transition-all duration-150 cursor-pointer focus:outline-none',
                   isCurrent &&
-                    'ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#161B22] font-bold z-10 scale-105',
+                  'ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#161B22] font-bold z-10 scale-105',
                   isAnswered
                     ? isCurrent
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
                       : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
                     : isCurrent
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'bg-[#0D1117] text-zinc-400 border border-[#30363D] hover:bg-[#21262D] hover:text-zinc-200'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'bg-[#0D1117] text-zinc-400 border border-[#30363D] hover:bg-[#21262D] hover:text-zinc-200'
                 )}
                 aria-label={`Đi tới câu ${index + 1}`}
               >

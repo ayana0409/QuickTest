@@ -83,10 +83,10 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
                 id="submit-modal-title"
                 className="text-lg font-bold text-[#E6EDF3] tracking-tight"
               >
-                Xác nhận nộp bài thi
+                Xác nhận nộp bài
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Vui lòng kiểm tra lại số lượng câu hỏi trước khi hoàn tất
+                Vui lòng kiểm tra lại câu trả lời trước khi nộp bài
               </p>
             </div>
           </div>
@@ -150,15 +150,15 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
             </div>
 
             <div className="text-[11px] text-zinc-400 mt-2.5">
-              Bạn có thể bấm vào số câu trên để hoàn thiện trước khi nộp.
+              Bạn có thể bấm vào số câu trên để hoàn thành trước khi nộp bài.
             </div>
           </div>
         )}
 
         {/* Caution text */}
         <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-          Sau khi bấm <strong>&ldquo;Xác nhận nộp bài&rdquo;</strong>, bài thi sẽ được khóa ngay lập tức và
-          bạn sẽ không thể thay đổi bất kỳ đáp án nào nữa.
+          Sau khi bấm <strong>&ldquo;Xác nhận nộp bài&rdquo;</strong>, bài thi sẽ được nộp ngay lập tức và
+          bạn sẽ không thể chỉnh sửa đáp án nữa.
         </p>
 
         {/* Action Buttons */}
