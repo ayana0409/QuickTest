@@ -294,6 +294,7 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                         .examRawStatus(exam.getStatus())
                                         .examTimeStatus(timeStatus)
                                         .isOpen(isOpen)
+                                        .isPrivate(exam.getIsPrivate() != null ? exam.getIsPrivate() : true)
                                         .startTime(exam.getStartTime())
                                         .endTime(exam.getEndTime())
                                         .maxAttempts(maxAttempts)
@@ -314,30 +315,25 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                         .build());
                 }
 
-                // 4. Also fetch other open published exams the candidate has not attempted yet
-                List<Exam> otherPublishedExams = examRepository.findOpenPublishedExams();
-                List<StudentExamCardDto> availableExams = new ArrayList<>();
-                List<UUID> otherExamIds = otherPublishedExams.stream()
+                // 4. Fetch up to 10 random published, non-private exams for candidate exploration
+                List<Exam> randomExploreExams = examRepository.findRandomExploreExams();
+                List<StudentExamCardDto> exploreExams = new ArrayList<>();
+                List<UUID> exploreExamIds = randomExploreExams.stream()
                                 .map(Exam::getId)
-                                .filter(id -> !attemptsByExam.containsKey(id))
                                 .collect(Collectors.toList());
 
-                Map<UUID, Long> otherQuestionCounts = new HashMap<>();
-                if (!otherExamIds.isEmpty()) {
-                        List<Object[]> otherCounts = questionRepository.countQuestionsByExamIds(otherExamIds);
-                        for (Object[] row : otherCounts) {
+                Map<UUID, Long> exploreQuestionCounts = new HashMap<>();
+                if (!exploreExamIds.isEmpty()) {
+                        List<Object[]> exploreCounts = questionRepository.countQuestionsByExamIds(exploreExamIds);
+                        for (Object[] row : exploreCounts) {
                                 if (row != null && row.length >= 2 && row[0] instanceof UUID
                                                 && row[1] instanceof Number) {
-                                        otherQuestionCounts.put((UUID) row[0], ((Number) row[1]).longValue());
+                                        exploreQuestionCounts.put((UUID) row[0], ((Number) row[1]).longValue());
                                 }
                         }
                 }
 
-                for (Exam exam : otherPublishedExams) {
-                        if (attemptsByExam.containsKey(exam.getId())) {
-                                continue; // Already in myExams
-                        }
-
+                for (Exam exam : randomExploreExams) {
                         boolean isEnded = exam.getEndTime() != null && now.isAfter(exam.getEndTime());
                         boolean isStarted = exam.getStartTime() == null || !now.isBefore(exam.getStartTime());
                         String timeStatus = isEnded ? "CLOSED" : (!isStarted ? "UPCOMING" : "OPEN");
@@ -345,9 +341,21 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
 
                         int maxAttempts = exam.getMaxAttempts() != null ? exam.getMaxAttempts() : 1;
                         String teacherName = exam.getCreatedBy() != null ? exam.getCreatedBy().getFullName() : null;
-                        int qCount = otherQuestionCounts.getOrDefault(exam.getId(), 0L).intValue();
+                        int qCount = exploreQuestionCounts.getOrDefault(exam.getId(), 0L).intValue();
 
-                        availableExams.add(StudentExamCardDto.builder()
+                        List<ExamAttempt> existingAttempts = attemptsByExam.getOrDefault(exam.getId(), Collections.emptyList());
+                        int attemptsUsed = existingAttempts.size();
+                        int remainingAttempts = Math.max(0, maxAttempts - attemptsUsed);
+
+                        ExamAttempt activeAttempt = existingAttempts.stream()
+                                        .filter(ea -> ea.getStatus() == AttemptStatus.IN_PROGRESS
+                                                        && (ea.getExpireAt() == null || ea.getExpireAt().isAfter(now)))
+                                        .findFirst()
+                                        .orElse(null);
+
+                        boolean hasActive = activeAttempt != null;
+
+                        exploreExams.add(StudentExamCardDto.builder()
                                         .examId(exam.getId())
                                         .title(exam.getTitle())
                                         .accessCode(exam.getAccessCode())
@@ -358,13 +366,15 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                         .examRawStatus(exam.getStatus())
                                         .examTimeStatus(timeStatus)
                                         .isOpen(isOpen)
+                                        .isPrivate(false)
                                         .startTime(exam.getStartTime())
                                         .endTime(exam.getEndTime())
                                         .maxAttempts(maxAttempts)
-                                        .attemptsUsed(0)
-                                        .remainingAttempts(maxAttempts)
-                                        .canTakeExam(isOpen)
-                                        .hasActiveSession(false)
+                                        .attemptsUsed(attemptsUsed)
+                                        .remainingAttempts(remainingAttempts)
+                                        .canTakeExam((isOpen && remainingAttempts > 0) || hasActive)
+                                        .hasActiveSession(hasActive)
+                                        .activeAttemptId(hasActive ? activeAttempt.getId() : null)
                                         .build());
                 }
 
@@ -381,7 +391,7 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                 .completedAttemptsCount(completedAttemptsCount)
                                 .averageScore(avgScore)
                                 .myExams(myExams)
-                                .availableExams(availableExams)
+                                .exploreExams(exploreExams)
                                 .build();
         }
 }

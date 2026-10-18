@@ -90,6 +90,7 @@ public class ExamServiceImpl implements ExamService {
                 .isProctoringEnabled(Boolean.TRUE.equals(request.getIsProctoringEnabled()))
                 .showResultsToStudents(request.getShowResultsToStudents() != null ? request.getShowResultsToStudents() : true)
                 .maxViolations(request.getMaxViolations() != null ? request.getMaxViolations() : 5)
+                .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : true)
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .createdBy(teacher)
@@ -142,6 +143,9 @@ public class ExamServiceImpl implements ExamService {
         }
         if (request.getMaxViolations() != null) {
             exam.setMaxViolations(request.getMaxViolations());
+        }
+        if (request.getIsPrivate() != null) {
+            exam.setIsPrivate(request.getIsPrivate());
         }
         exam.setStartTime(request.getStartTime());
         exam.setEndTime(request.getEndTime());

@@ -59,9 +59,11 @@ public class DatabaseConstraintFixer implements ApplicationRunner {
         try {
             jdbcTemplate.execute("ALTER TABLE exams ADD COLUMN IF NOT EXISTS is_proctoring_enabled BOOLEAN NOT NULL DEFAULT false;");
             jdbcTemplate.execute("ALTER TABLE exams ADD COLUMN IF NOT EXISTS max_violations INTEGER NOT NULL DEFAULT 5;");
-            log.info("[DB CONSTRAINT] exams is_proctoring_enabled and max_violations columns verified.");
+            jdbcTemplate.execute("ALTER TABLE exams ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT true;");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_exams_explore ON exams (status, is_private, end_time);");
+            log.info("[DB CONSTRAINT] exams is_proctoring_enabled, max_violations, and is_private columns verified.");
         } catch (Exception e) {
-            log.warn("[DB CONSTRAINT] Could not add proctoring columns to exams table: {}", e.getMessage());
+            log.warn("[DB CONSTRAINT] Could not add columns to exams table: {}", e.getMessage());
         }
 
         try {

@@ -36,6 +36,7 @@ public class ExamDetailResponse {
     private Boolean isProctoringEnabled;
     private Boolean showResultsToStudents;
     private Integer maxViolations;
+    private Boolean isPrivate;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
@@ -85,6 +86,7 @@ public class ExamDetailResponse {
                 .isProctoringEnabled(exam.getIsProctoringEnabled())
                 .showResultsToStudents(exam.getShowResultsToStudents())
                 .maxViolations(exam.getMaxViolations())
+                .isPrivate(exam.getIsPrivate() != null ? exam.getIsPrivate() : true)
                 .startTime(exam.getStartTime())
                 .endTime(exam.getEndTime())
                 .createdAt(exam.getCreatedAt())
@@ -122,6 +124,7 @@ public class ExamDetailResponse {
                 .isProctoringEnabled(exam.getIsProctoringEnabled())
                 .showResultsToStudents(exam.getShowResultsToStudents())
                 .maxViolations(exam.getMaxViolations())
+                .isPrivate(exam.getIsPrivate() != null ? exam.getIsPrivate() : true)
                 .startTime(exam.getStartTime())
                 .endTime(exam.getEndTime())
                 .createdAt(exam.getCreatedAt())

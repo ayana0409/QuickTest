@@ -42,6 +42,7 @@ interface SettingsFormData {
   isProctoringEnabled: boolean;
   showResultsToStudents: boolean;
   maxViolations: number;
+  isPrivate: boolean;
   startTime?: string;
   endTime?: string;
 }
@@ -98,6 +99,7 @@ export default function EditExamPage() {
         isProctoringEnabled: data.isProctoringEnabled ?? false,
         showResultsToStudents: data.showResultsToStudents ?? true,
         maxViolations: data.maxViolations ?? 5,
+        isPrivate: data.isPrivate ?? true,
         startTime: data.startTime ? data.startTime.slice(0, 16) : '',
         endTime: data.endTime ? data.endTime.slice(0, 16) : '',
       });
@@ -268,6 +270,7 @@ export default function EditExamPage() {
         isProctoringEnabled: Boolean(data.isProctoringEnabled),
         showResultsToStudents: Boolean(data.showResultsToStudents),
         maxViolations: Number(data.maxViolations) || 5,
+        isPrivate: data.isPrivate !== undefined ? Boolean(data.isPrivate) : true,
         startTime: formatDateTimeForPayload(data.startTime),
         endTime: formatDateTimeForPayload(data.endTime),
       };
@@ -666,6 +669,23 @@ export default function EditExamPage() {
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                         Cho phép thí sinh xem lại điểm từng câu và đáp án đúng sau khi nộp bài. Tắt tùy chọn này nếu muốn bảo mật đề thi và chống lộ đáp án cho người khác.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      {...register('isPrivate')}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 mt-0.5 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <Lock className="w-4 h-4 text-amber-500" />
+                        Đề thi riêng tư
+                      </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Khi bật, chỉ thí sinh có mã phòng mới có thể vào thi. Khi tắt, đề thi sẽ có thể xuất hiện tại mục Khám phá công khai cho tất cả thí sinh luyện tập.
                       </p>
                     </div>
                   </label>

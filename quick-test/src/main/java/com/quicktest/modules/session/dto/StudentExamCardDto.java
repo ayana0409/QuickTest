@@ -32,6 +32,7 @@ public class StudentExamCardDto {
     private ExamStatus examRawStatus; // e.g., PUBLISHED, CLOSED
     private String examTimeStatus;    // "OPEN", "CLOSED", "UPCOMING"
     private Boolean isOpen;           // true if candidate can take test
+    private Boolean isPrivate;        // true if private, false if public explore
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 

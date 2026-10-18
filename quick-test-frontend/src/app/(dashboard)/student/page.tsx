@@ -8,12 +8,10 @@ import {
   KeyRound,
   Clock,
   CheckCircle2,
-  AlertTriangle,
   ArrowRight,
   Sparkles,
   BookOpen,
   Award,
-  Calendar,
   Play,
   RotateCcw,
   Search,
@@ -21,12 +19,9 @@ import {
   Flame,
   ChevronRight,
   User,
-  ShieldAlert,
-  HelpCircle,
-  ExternalLink,
+  Compass,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
-import { Badge } from '@/components/common/Badge';
 import { useAuthStore } from '@/stores/authStore';
 import { studentService } from '@/services/student.service';
 import { candidateSessionService } from '@/services/candidateSession.service';
@@ -75,7 +70,7 @@ export default function StudentDashboardPage() {
   const [isSubmittingCode, setIsSubmittingCode] = useState<boolean>(false);
   const [startingExamCode, setStartingExamCode] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'MY_EXAMS' | 'AVAILABLE'>('MY_EXAMS');
+  const [activeTab, setActiveTab] = useState<'MY_EXAMS' | 'EXPLORE'>('MY_EXAMS');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED' | 'ACTIVE_SESSION'>('ALL');
 
@@ -158,7 +153,7 @@ export default function StudentDashboardPage() {
    */
   const currentList = useMemo(() => {
     if (!dashboardData) return [];
-    const sourceList = activeTab === 'MY_EXAMS' ? dashboardData.myExams : dashboardData.availableExams;
+    const sourceList = activeTab === 'MY_EXAMS' ? (dashboardData.myExams || []) : (dashboardData.exploreExams || []);
 
     return sourceList.filter((card) => {
       // Text search
@@ -389,11 +384,10 @@ export default function StudentDashboardPage() {
           <div className="inline-flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 w-fit">
             <button
               onClick={() => setActiveTab('MY_EXAMS')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-                activeTab === 'MY_EXAMS'
-                  ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-              }`}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'MY_EXAMS'
+                ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
             >
               <span>Bài thi đã tham gia</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-indigo-500/10 font-mono">
@@ -402,16 +396,16 @@ export default function StudentDashboardPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab('AVAILABLE')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-                activeTab === 'AVAILABLE'
-                  ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-              }`}
+              onClick={() => setActiveTab('EXPLORE')}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'EXPLORE'
+                ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
             >
-              <span>Kỳ thi công khai khác</span>
+              <Compass className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Khám phá</span>
               <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-zinc-200 dark:bg-zinc-700 font-mono">
-                {dashboardData?.availableExams?.length ?? 0}
+                {dashboardData?.exploreExams?.length ?? 0}
               </span>
             </button>
           </div>
@@ -442,6 +436,28 @@ export default function StudentDashboardPage() {
           </div>
         </div>
 
+        {/* Discovery Notification Bar */}
+        {activeTab === 'EXPLORE' && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-xs text-indigo-900 dark:text-indigo-200">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>
+                Mục <strong>Khám phá</strong> gợi ý ngẫu nhiên đề thi công khai từ cộng đồng. Nhấn <strong>Đổi đề khác</strong> để làm mới danh sách gợi ý!
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadDashboard(true)}
+              isLoading={refreshing}
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
+              className="font-semibold shrink-0 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100/60 dark:hover:bg-indigo-900/50"
+            >
+              Đổi đề khác
+            </Button>
+          </div>
+        )}
+
         {/* Exam Cards Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-3">
@@ -463,17 +479,17 @@ export default function StudentDashboardPage() {
         ) : currentList.length === 0 ? (
           <div className="text-center py-16 px-4 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 space-y-3">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-              <GraduationCap className="w-6 h-6" />
+              {activeTab === 'MY_EXAMS' ? <GraduationCap className="w-6 h-6" /> : <Compass className="w-6 h-6" />}
             </div>
             <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
               {activeTab === 'MY_EXAMS'
                 ? 'Bạn chưa tham gia bài thi nào'
-                : 'Không tìm thấy kỳ thi công khai phù hợp'}
+                : 'Chưa có đề thi công khai nào trong mục Khám phá'}
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
               {activeTab === 'MY_EXAMS'
                 ? 'Hãy nhập mã phòng thi do giảng viên cung cấp ở ô phía trên để bắt đầu bài kiểm tra đầu tiên của bạn.'
-                : 'Hiện tại chưa có thêm bài thi công khai nào được phát hành trên hệ thống.'}
+                : 'Các giảng viên có thể tắt tùy chọn "Đề thi riêng tư" khi tạo đề để chia sẻ bài thi công khai cho cộng đồng luyện tập tại đây.'}
             </p>
           </div>
         ) : (
@@ -484,11 +500,10 @@ export default function StudentDashboardPage() {
               return (
                 <div
                   key={card.examId}
-                  className={`group relative flex flex-col justify-between rounded-3xl p-1 transition-all duration-300 ${
-                    card.hasActiveSession
-                      ? 'bg-gradient-to-b from-amber-400/40 via-amber-500/10 to-transparent shadow-lg shadow-amber-500/5 ring-1 ring-amber-500/30'
-                      : 'bg-gradient-to-b from-zinc-200/80 via-zinc-100/50 to-transparent dark:from-zinc-800/80 dark:via-zinc-900/50 hover:shadow-lg'
-                  }`}
+                  className={`group relative flex flex-col justify-between rounded-3xl p-1 transition-all duration-300 ${card.hasActiveSession
+                    ? 'bg-gradient-to-b from-amber-400/40 via-amber-500/10 to-transparent shadow-lg shadow-amber-500/5 ring-1 ring-amber-500/30'
+                    : 'bg-gradient-to-b from-zinc-200/80 via-zinc-100/50 to-transparent dark:from-zinc-800/80 dark:via-zinc-900/50 hover:shadow-lg'
+                    }`}
                 >
                   {/* Inner Content Card (Double-Bezel concentric architecture) */}
                   <div className="flex flex-col justify-between h-full bg-white dark:bg-zinc-900 rounded-[calc(1.5rem-4px)] p-5 border border-zinc-200/70 dark:border-zinc-800 shadow-xs space-y-4">
@@ -557,11 +572,10 @@ export default function StudentDashboardPage() {
                         {/* Progress Bar of attempts used */}
                         <div className="w-full bg-zinc-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden">
                           <div
-                            className={`h-full transition-all duration-300 ${
-                              card.remainingAttempts > 0
-                                ? 'bg-indigo-600 dark:bg-indigo-500'
-                                : 'bg-zinc-400 dark:bg-zinc-500'
-                            }`}
+                            className={`h-full transition-all duration-300 ${card.remainingAttempts > 0
+                              ? 'bg-indigo-600 dark:bg-indigo-500'
+                              : 'bg-zinc-400 dark:bg-zinc-500'
+                              }`}
                             style={{
                               width: `${Math.min(100, (card.attemptsUsed / Math.max(1, card.maxAttempts)) * 100)}%`,
                             }}

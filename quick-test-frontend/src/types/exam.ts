@@ -73,6 +73,7 @@ export interface StudentExamCardDto {
   examRawStatus: ExamStatus;
   examTimeStatus: 'OPEN' | 'CLOSED' | 'UPCOMING';
   isOpen: boolean;
+  isPrivate?: boolean;
   startTime?: string | null;
   endTime?: string | null;
 
@@ -108,7 +109,7 @@ export interface StudentDashboardResponse {
   completedAttemptsCount: number;
   averageScore?: number | null;
   myExams: StudentExamCardDto[];
-  availableExams: StudentExamCardDto[];
+  exploreExams: StudentExamCardDto[];
 }
 
 
@@ -177,6 +178,7 @@ export interface Exam {
   isProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
+  isPrivate?: boolean;
   startTime?: string | null;
   endTime?: string | null;
   createdAt: string;
@@ -204,6 +206,7 @@ export interface ExamSummaryResponse {
   isProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
+  isPrivate?: boolean;
   startTime?: string | null;
   endTime?: string | null;
   createdAt: string;
@@ -229,6 +232,7 @@ export interface ExamDetailResponse {
   isProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
+  isPrivate?: boolean;
   startTime?: string | null;
   endTime?: string | null;
   createdAt: string;
@@ -253,6 +257,7 @@ export interface ExamCreateRequest {
   isProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
+  isPrivate?: boolean;
   startTime?: string | null;
   endTime?: string | null;
 }
@@ -270,6 +275,7 @@ export interface ExamUpdateRequest {
   isProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
+  isPrivate?: boolean;
   startTime?: string | null;
   endTime?: string | null;
   status?: ExamStatus;

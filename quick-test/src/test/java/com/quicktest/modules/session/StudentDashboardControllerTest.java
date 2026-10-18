@@ -62,7 +62,7 @@ class StudentDashboardControllerTest {
                 .openExamsCount(1)
                 .activeSessionsCount(0)
                 .myExams(List.of(StudentExamCardDto.builder().examId(UUID.randomUUID()).title("Math 101").build()))
-                .availableExams(Collections.emptyList())
+                .exploreExams(Collections.emptyList())
                 .build();
 
         when(studentAttemptService.getStudentDashboard(studentId)).thenReturn(mockResponse);

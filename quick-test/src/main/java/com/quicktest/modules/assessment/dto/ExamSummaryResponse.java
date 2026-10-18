@@ -31,6 +31,7 @@ public class ExamSummaryResponse {
     private Integer maxViolations;
     private Long totalQuestions;
     private Double totalPoints;
+    private Boolean isPrivate;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
@@ -41,9 +42,29 @@ public class ExamSummaryResponse {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
+    /**
+     * Backward-compatible Constructor expression without isPrivate (defaults isPrivate to true).
+     */
+    public ExamSummaryResponse(
+            UUID id,
+            String title,
+            String accessCode,
+            ExamStatus status,
+            Integer durationMinutes,
+            Integer maxAttempts,
+            Boolean isProctoringEnabled,
+            Boolean showResultsToStudents,
+            Integer maxViolations,
+            Long totalQuestions,
+            Double totalPoints,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            LocalDateTime createdAt) {
+        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, showResultsToStudents, maxViolations, totalQuestions, totalPoints, true, startTime, endTime, createdAt);
+    }
 
     /**
-     * Backward-compatible JPQL Constructor expression without showResultsToStudents.
+     * Backward-compatible JPQL Constructor expression without showResultsToStudents and without isPrivate.
      */
     public ExamSummaryResponse(
             UUID id,
@@ -59,7 +80,7 @@ public class ExamSummaryResponse {
             LocalDateTime startTime,
             LocalDateTime endTime,
             LocalDateTime createdAt) {
-        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, true, maxViolations, totalQuestions, totalPoints, startTime, endTime, createdAt);
+        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, true, maxViolations, totalQuestions, totalPoints, true, startTime, endTime, createdAt);
     }
 
     /**
@@ -78,6 +99,7 @@ public class ExamSummaryResponse {
                 .maxViolations(exam.getMaxViolations())
                 .totalQuestions(totalQuestions)
                 .totalPoints(totalPoints)
+                .isPrivate(exam.getIsPrivate() != null ? exam.getIsPrivate() : true)
                 .startTime(exam.getStartTime())
                 .endTime(exam.getEndTime())
                 .createdAt(exam.getCreatedAt())

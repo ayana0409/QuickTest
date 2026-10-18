@@ -386,7 +386,7 @@ class StudentAttemptServiceTest {
         List<Object[]> countRows = new ArrayList<>();
         countRows.add(new Object[]{exam.getId(), 10L});
         when(questionRepository.countQuestionsByExamIds(any())).thenReturn(countRows);
-        when(examRepository.findOpenPublishedExams()).thenReturn(Collections.emptyList());
+        when(examRepository.findRandomExploreExams()).thenReturn(Collections.emptyList());
 
         StudentDashboardResponse response = studentAttemptService.getStudentDashboard(studentId);
 

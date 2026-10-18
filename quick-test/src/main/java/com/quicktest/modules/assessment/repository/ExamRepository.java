@@ -29,15 +29,18 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     List<Exam> findByStatusAndEndTimeBefore(ExamStatus status, LocalDateTime dateTime);
 
     /**
-     * Retrieve published exams that are currently open or upcoming for candidate
-     * discovery.
+     * Retrieve up to 10 random published, non-private exams for candidate exploration.
+     * Uses native PostgreSQL ORDER BY RANDOM() LIMIT 10 to ensure zero memory overhead.
      */
-    @Query("SELECT e FROM Exam e " +
-            "LEFT JOIN FETCH e.createdBy " +
-            "WHERE e.status = com.quicktest.modules.assessment.entity.ExamStatus.PUBLISHED " +
-            "AND (e.endTime IS NULL OR e.endTime > CURRENT_TIMESTAMP) " +
-            "ORDER BY e.createdAt DESC")
-    List<Exam> findOpenPublishedExams();
+    @Query(value = """
+            SELECT * FROM exams
+            WHERE status = 'PUBLISHED'
+              AND is_private = false
+              AND (end_time IS NULL OR end_time > NOW())
+            ORDER BY RANDOM()
+            LIMIT 10
+            """, nativeQuery = true)
+    List<Exam> findRandomExploreExams();
 
     Page<Exam> findByCreatedById(UUID teacherId, Pageable pageable);
 
@@ -56,14 +59,14 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     @Query(value = "SELECT new com.quicktest.modules.assessment.dto.ExamSummaryResponse(" +
             "e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, " +
             "e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, " +
-            "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.startTime, e.endTime, e.createdAt) " +
+            "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.isPrivate, e.startTime, e.endTime, e.createdAt) " +
             "FROM Exam e LEFT JOIN e.questions q " +
             "WHERE e.createdBy.id = :teacherId " +
             "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
             "AND (:status IS NULL OR e.status = :status) " +
             "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern)) "
             +
-            "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, e.startTime, e.endTime, e.createdAt", countQuery = "SELECT COUNT(e) FROM Exam e "
+            "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, e.isPrivate, e.startTime, e.endTime, e.createdAt", countQuery = "SELECT COUNT(e) FROM Exam e "
                     +
                     "WHERE e.createdBy.id = :teacherId " +
                     "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +

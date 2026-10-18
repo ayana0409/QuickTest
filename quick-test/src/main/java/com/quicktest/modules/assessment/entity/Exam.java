@@ -70,6 +70,10 @@ public class Exam {
     @Column(name = "max_violations", nullable = false, columnDefinition = "integer default 5")
     private Integer maxViolations = 5; // Violation threshold before auto-disqualification
 
+    @Builder.Default
+    @Column(name = "is_private", nullable = false, columnDefinition = "boolean default true")
+    private Boolean isPrivate = true; // Flag indicating if exam is private (hidden from Explore, accessible only via code)
+
     private LocalDateTime startTime; // Exam opening timestamp
     private LocalDateTime endTime;   // Exam closing timestamp
 

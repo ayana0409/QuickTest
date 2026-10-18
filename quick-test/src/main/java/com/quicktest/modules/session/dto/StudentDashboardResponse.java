@@ -25,5 +25,5 @@ public class StudentDashboardResponse {
 
     // Exam collections
     private List<StudentExamCardDto> myExams;         // Exams previously taken by this student
-    private List<StudentExamCardDto> availableExams;  // Other open published exams not yet taken
+    private List<StudentExamCardDto> exploreExams;    // Random 10 non-private published exams for exploration
 }
