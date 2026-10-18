@@ -211,8 +211,8 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
       return;
     }
 
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('Kích thước file vượt quá 20MB. Vui lòng chọn file nhỏ hơn!');
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Dung lượng file vượt quá 5MB. Vui lòng chọn file nhỏ hơn để đảm bảo hiệu năng xử lý!');
       return;
     }
 
@@ -546,7 +546,7 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
                     Kéo thả tài liệu vào đây hoặc <span className="text-indigo-600 dark:text-indigo-400 underline">chọn từ máy tính</span>
                   </p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Hỗ trợ định dạng PDF (.pdf), Microsoft Word (.docx), Plain Text (.txt, .md) • Tối đa 20MB
+                    Hỗ trợ định dạng PDF (.pdf), Microsoft Word (.docx), Plain Text (.txt, .md) • Tối đa 5MB
                   </p>
                 </div>
               )}

@@ -81,11 +81,7 @@ public class DocumentParserService {
      * Extracts text from PDF bytes using Apache PDFBox 3.x.
      */
     public String extractFromPdf(byte[] pdfBytes) {
-        try (PDDocument document = Loader.loadPDF(pdfBytes)) {
-            if (document.isEncrypted()) {
-                throw new AppException("Encrypted or password-protected PDF files are not supported.", HttpStatus.BAD_REQUEST);
-            }
-
+        try (PDDocument document = Loader.loadPDF(pdfBytes, "")) {
             int totalPages = document.getNumberOfPages();
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
@@ -98,9 +94,14 @@ public class DocumentParserService {
                         HttpStatus.BAD_REQUEST);
             }
             return text;
+        } catch (org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException e) {
+            throw new AppException("File PDF này có cài đặt mật khẩu bảo vệ. Vui lòng gỡ mật khẩu trước khi tải lên.", HttpStatus.BAD_REQUEST);
         } catch (AppException ae) {
             throw ae;
         } catch (Exception e) {
+            if (e.getMessage() != null && (e.getMessage().toLowerCase().contains("password") || e.getMessage().toLowerCase().contains("encrypted"))) {
+                throw new AppException("File PDF này có cài đặt mật khẩu bảo vệ. Vui lòng gỡ mật khẩu trước khi tải lên.", HttpStatus.BAD_REQUEST);
+            }
             throw new AppException("PDF parsing error: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }

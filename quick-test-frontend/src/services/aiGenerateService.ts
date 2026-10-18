@@ -55,6 +55,7 @@ export const aiGenerateService = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // 2 minutes timeout for large document uploads
         showSuccessToast: false, // Progress modal will display live status
       }
     );

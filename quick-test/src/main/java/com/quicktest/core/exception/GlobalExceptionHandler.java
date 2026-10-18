@@ -215,8 +215,8 @@ public class GlobalExceptionHandler {
             org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
         log.warn("Max upload size exceeded: {}", ex.getMessage());
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "File size exceeds maximum permitted limit"));
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiResponse.error(HttpStatus.PAYLOAD_TOO_LARGE.value(), "File size exceeds maximum permitted limit (5MB)"));
     }
 
     /**
