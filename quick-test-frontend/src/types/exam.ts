@@ -56,6 +56,62 @@ export interface StudentAttemptSummaryDto {
   violationCount: number;
 }
 
+/**
+ * Summary card for an exam on the student dashboard,
+ * including attempt quota, real-time status, active session, and performance.
+ */
+export interface StudentExamCardDto {
+  examId: string;
+  title: string;
+  accessCode: string;
+  description?: string | null;
+  durationMinutes: number;
+  questionCount: number;
+  teacherName?: string | null;
+
+  // Exam status
+  examRawStatus: ExamStatus;
+  examTimeStatus: 'OPEN' | 'CLOSED' | 'UPCOMING';
+  isOpen: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+
+  // Attempt quotas & progress
+  maxAttempts: number;
+  attemptsUsed: number;
+  remainingAttempts: number;
+  canTakeExam: boolean;
+
+  // Active session of oneself (IN_PROGRESS)
+  hasActiveSession: boolean;
+  activeAttemptId?: string | null;
+  activeAttemptStartTime?: string | null;
+  activeAttemptExpireAt?: string | null;
+  activeAttemptRemainingSeconds?: number | null;
+
+  // Performance history
+  latestAttemptId?: string | null;
+  latestAttemptStatus?: AttemptStatus | null;
+  latestScore?: number | null;
+  highestScore?: number | null;
+  latestSubmittedAt?: string | null;
+  lastAttemptedAt?: string | null;
+}
+
+/**
+ * Aggregated response for the authenticated student dashboard.
+ */
+export interface StudentDashboardResponse {
+  totalExamsAttempted: number;
+  openExamsCount: number;
+  activeSessionsCount: number;
+  completedAttemptsCount: number;
+  averageScore?: number | null;
+  myExams: StudentExamCardDto[];
+  availableExams: StudentExamCardDto[];
+}
+
+
 export interface StudentViolationItemDto {
   id: string;
   violationType: string;

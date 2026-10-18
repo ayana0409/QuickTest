@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,37 +26,49 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
 
     boolean existsByAccessCode(String accessCode);
 
-    java.util.List<Exam> findByStatusAndEndTimeBefore(ExamStatus status, java.time.LocalDateTime dateTime);
+    List<Exam> findByStatusAndEndTimeBefore(ExamStatus status, LocalDateTime dateTime);
+
+    /**
+     * Retrieve published exams that are currently open or upcoming for candidate
+     * discovery.
+     */
+    @Query("SELECT e FROM Exam e " +
+            "LEFT JOIN FETCH e.createdBy " +
+            "WHERE e.status = com.quicktest.modules.assessment.entity.ExamStatus.PUBLISHED " +
+            "AND (e.endTime IS NULL OR e.endTime > CURRENT_TIMESTAMP) " +
+            "ORDER BY e.createdAt DESC")
+    List<Exam> findOpenPublishedExams();
 
     Page<Exam> findByCreatedById(UUID teacherId, Pageable pageable);
 
     /**
-     * Eagerly fetch Exam along with creator teacher details to avoid lazy loading issues.
+     * Eagerly fetch Exam along with creator teacher details to avoid lazy loading
+     * issues.
      */
     @Query("SELECT e FROM Exam e JOIN FETCH e.createdBy WHERE e.id = :id")
     Optional<Exam> findByIdWithCreatedBy(@Param("id") UUID id);
 
     /**
-     * Optimized single-query summary pagination for teacher dashboard with optional status and search filtering,
+     * Optimized single-query summary pagination for teacher dashboard with optional
+     * status and search filtering,
      * calculating question counts and sum of points without N+1 query overhead.
      */
-    @Query(
-        value = "SELECT new com.quicktest.modules.assessment.dto.ExamSummaryResponse(" +
-                "e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, " +
-                "e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, " +
-                "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.startTime, e.endTime, e.createdAt) " +
-                "FROM Exam e LEFT JOIN e.questions q " +
-                "WHERE e.createdBy.id = :teacherId " +
-                "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
-                "AND (:status IS NULL OR e.status = :status) " +
-                "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern)) " +
-                "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, e.startTime, e.endTime, e.createdAt",
-        countQuery = "SELECT COUNT(e) FROM Exam e " +
-                     "WHERE e.createdBy.id = :teacherId " +
-                     "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
-                     "AND (:status IS NULL OR e.status = :status) " +
-                     "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern))"
-    )
+    @Query(value = "SELECT new com.quicktest.modules.assessment.dto.ExamSummaryResponse(" +
+            "e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, " +
+            "e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, " +
+            "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.startTime, e.endTime, e.createdAt) " +
+            "FROM Exam e LEFT JOIN e.questions q " +
+            "WHERE e.createdBy.id = :teacherId " +
+            "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
+            "AND (:status IS NULL OR e.status = :status) " +
+            "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern)) "
+            +
+            "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, e.startTime, e.endTime, e.createdAt", countQuery = "SELECT COUNT(e) FROM Exam e "
+                    +
+                    "WHERE e.createdBy.id = :teacherId " +
+                    "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +
+                    "AND (:status IS NULL OR e.status = :status) " +
+                    "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern))")
     Page<ExamSummaryResponse> findSummariesByTeacherId(
             @Param("teacherId") UUID teacherId,
             @Param("status") ExamStatus status,
@@ -67,30 +81,21 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
 
     long countByStatus(ExamStatus status);
 
-    @Query(
-        value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u WHERE e.status = :status",
-        countQuery = "SELECT COUNT(e) FROM Exam e WHERE e.status = :status"
-    )
+    @Query(value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u WHERE e.status = :status", countQuery = "SELECT COUNT(e) FROM Exam e WHERE e.status = :status")
     Page<Exam> findAllByStatusWithCreatedBy(@Param("status") ExamStatus status, Pageable pageable);
 
-    @Query(
-        value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u",
-        countQuery = "SELECT COUNT(e) FROM Exam e"
-    )
+    @Query(value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u", countQuery = "SELECT COUNT(e) FROM Exam e")
     Page<Exam> findAllWithCreatedBy(Pageable pageable);
 
-    @Query(
-        value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u " +
-                "WHERE (:status IS NULL OR e.status = :status) AND " +
-                "(LOWER(e.title) LIKE :pattern " +
-                " OR LOWER(e.accessCode) LIKE :pattern " +
-                " OR LOWER(u.fullName) LIKE :pattern)",
-        countQuery = "SELECT COUNT(e) FROM Exam e JOIN e.createdBy u " +
-                     "WHERE (:status IS NULL OR e.status = :status) AND " +
-                     "(LOWER(e.title) LIKE :pattern " +
-                     " OR LOWER(e.accessCode) LIKE :pattern " +
-                     " OR LOWER(u.fullName) LIKE :pattern)"
-    )
+    @Query(value = "SELECT e FROM Exam e JOIN FETCH e.createdBy u " +
+            "WHERE (:status IS NULL OR e.status = :status) AND " +
+            "(LOWER(e.title) LIKE :pattern " +
+            " OR LOWER(e.accessCode) LIKE :pattern " +
+            " OR LOWER(u.fullName) LIKE :pattern)", countQuery = "SELECT COUNT(e) FROM Exam e JOIN e.createdBy u " +
+                    "WHERE (:status IS NULL OR e.status = :status) AND " +
+                    "(LOWER(e.title) LIKE :pattern " +
+                    " OR LOWER(e.accessCode) LIKE :pattern " +
+                    " OR LOWER(u.fullName) LIKE :pattern)")
     Page<Exam> searchExams(
             @Param("status") ExamStatus status,
             @Param("pattern") String pattern,

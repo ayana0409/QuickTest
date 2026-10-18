@@ -18,6 +18,11 @@ import com.quicktest.modules.session.entity.ExamAttempt;
 import com.quicktest.modules.session.entity.GradingStatus;
 import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
+import com.quicktest.modules.assessment.entity.ExamStatus;
+import com.quicktest.modules.assessment.repository.ExamRepository;
+import com.quicktest.modules.assessment.repository.QuestionRepository;
+import com.quicktest.modules.session.dto.StudentDashboardResponse;
+import com.quicktest.modules.session.dto.StudentExamCardDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,6 +58,12 @@ class StudentAttemptServiceTest {
 
     @Mock
     private ViolationLogRepository violationLogRepository;
+
+    @Mock
+    private ExamRepository examRepository;
+
+    @Mock
+    private QuestionRepository questionRepository;
 
     @InjectMocks
     private StudentAttemptServiceImpl studentAttemptService;
@@ -362,5 +373,35 @@ class StudentAttemptServiceTest {
         assertEquals("Good explanation, but missing mention of oxygen release.", qDto.getTeacherFeedback());
         assertEquals(4.0, qDto.getAwardedScore());
         assertEquals(5.0, qDto.getPoints());
+    }
+
+    @Test
+    @DisplayName("Should retrieve aggregated student dashboard with active sessions and quotas")
+    void testGetStudentDashboard_Success() {
+        exam.setMaxAttempts(2);
+        attempt.setStatus(AttemptStatus.IN_PROGRESS);
+        attempt.setExpireAt(LocalDateTime.now().plusHours(1));
+
+        when(examAttemptRepository.findByUserIdWithExamAndCreator(studentId)).thenReturn(List.of(attempt));
+        List<Object[]> countRows = new ArrayList<>();
+        countRows.add(new Object[]{exam.getId(), 10L});
+        when(questionRepository.countQuestionsByExamIds(any())).thenReturn(countRows);
+        when(examRepository.findOpenPublishedExams()).thenReturn(Collections.emptyList());
+
+        StudentDashboardResponse response = studentAttemptService.getStudentDashboard(studentId);
+
+        assertNotNull(response);
+        assertEquals(1, response.getTotalExamsAttempted());
+        assertEquals(1, response.getActiveSessionsCount());
+        assertNotNull(response.getMyExams());
+        assertEquals(1, response.getMyExams().size());
+
+        StudentExamCardDto card = response.getMyExams().get(0);
+        assertEquals(exam.getId(), card.getExamId());
+        assertEquals("Midterm Biology Exam", card.getTitle());
+        assertTrue(card.getHasActiveSession());
+        assertEquals(attempt.getId(), card.getActiveAttemptId());
+        assertEquals(1, card.getAttemptsUsed());
+        assertEquals(1, card.getRemainingAttempts());
     }
 }

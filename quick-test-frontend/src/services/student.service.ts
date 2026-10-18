@@ -4,6 +4,7 @@ import type {
   PageResponse,
   StudentAttemptSummaryDto,
   StudentAttemptDetailResponse,
+  StudentDashboardResponse,
 } from '@/types/exam';
 
 export interface GetStudentAttemptsParams {
@@ -15,6 +16,18 @@ export interface GetStudentAttemptsParams {
  * Service for student specific dashboard queries and performance telemetry.
  */
 export const studentService = {
+  /**
+   * Retrieve aggregated dashboard information for authenticated student.
+   * Calls GET /api/student/dashboard
+   */
+  async getStudentDashboard(): Promise<StudentDashboardResponse> {
+    const response = await apiClient.get<ApiResponse<StudentDashboardResponse>>(
+      '/student/dashboard',
+      { silent: true }
+    );
+    return response.data.data;
+  },
+
   /**
    * Retrieve paginated exam attempt history for the authenticated student.
    * Calls GET /api/student/attempts

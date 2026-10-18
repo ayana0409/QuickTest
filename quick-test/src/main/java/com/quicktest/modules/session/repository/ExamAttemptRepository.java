@@ -24,6 +24,17 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
 
     List<ExamAttempt> findByUserId(UUID userId);
 
+    /**
+     * Eagerly fetch all attempts for a student with their parent Exam and Creator,
+     * sorted by startTime DESC to evaluate recent attempt history and active sessions.
+     */
+    @Query("SELECT ea FROM ExamAttempt ea " +
+           "JOIN FETCH ea.exam e " +
+           "LEFT JOIN FETCH e.createdBy " +
+           "WHERE ea.user.id = :userId " +
+           "ORDER BY ea.startTime DESC")
+    List<ExamAttempt> findByUserIdWithExamAndCreator(@Param("userId") UUID userId);
+
     List<ExamAttempt> findByExamId(UUID examId);
 
     List<ExamAttempt> findByExamIdAndStatus(UUID examId, AttemptStatus status);
