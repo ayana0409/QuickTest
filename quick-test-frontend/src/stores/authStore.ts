@@ -112,7 +112,12 @@ export const useAuthStore = create<AuthState>()(
           ? [currentUser.role]
           : [];
 
-        return rawRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+        const roles = rawRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+        // Teachers and Admins are always allowed to access Student features as well
+        if ((roles.includes('TEACHER') || roles.includes('ADMIN')) && !roles.includes('STUDENT')) {
+          roles.push('STUDENT');
+        }
+        return roles;
       },
 
       setToken: (token: string) => {
@@ -194,6 +199,11 @@ export const useAuthStore = create<AuthState>()(
 
         // ADMIN has super-user access to all views
         if (normalizedRoles.includes('ADMIN')) {
+          return true;
+        }
+
+        // Teachers also have student permissions to participate in exams
+        if (normalizedTarget === 'STUDENT' && normalizedRoles.includes('TEACHER')) {
           return true;
         }
 
