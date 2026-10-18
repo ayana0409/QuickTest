@@ -1,14 +1,28 @@
+# Compiled build artifacts
 target/
+build/
+*.jar
+*.war
+
+# Sensitive files & properties (NEVER leak into Docker image)
+src/main/resources/application.properties
+application.properties
+.env
+.env.*
+render.yaml
+
+# Version control & IDE
 .git/
 .gitignore
 .gitattributes
-.mvn/wrapper/maven-wrapper.jar
-*.log
-*.tmp
 .idea/
 .vscode/
 .settings/
 .classpath
 .project
 scratch/
-application.properties
+
+# Logs & temp files
+*.log
+*.tmp
+.mvn/wrapper/maven-wrapper.jar

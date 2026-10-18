@@ -1,0 +1,21 @@
+# Dependencies & build outputs
+node_modules
+.next
+out
+build
+
+# Sensitive Environment files (NEVER leak into Docker image)
+.env
+.env.*
+!.env.example
+
+# Git & Editor metadata
+.git
+.gitignore
+.vscode
+.idea
+*.log
+*.tsbuildinfo
+
+# Documentation
+*.md
