@@ -11,8 +11,9 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# Copy package files (wildcard ensures build does not fail if lockfile is missing)
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # -----------------------------------------------------------------------------
 # Stage 2: Build Next.js application

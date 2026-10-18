@@ -64,6 +64,12 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Ensure Frontend Lockfile
+        run: |
+          if [ ! -f ./quick-test-frontend/package-lock.json ] && [ -f ./package-lock.json ]; then
+            cp ./package-lock.json ./quick-test-frontend/package-lock.json
+          fi
+
       - name: Set up QEMU (Multi-platform support)
         uses: docker/setup-qemu-action@v3
 
