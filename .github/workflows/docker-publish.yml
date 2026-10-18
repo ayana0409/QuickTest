@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Build and Push Docker Images to GHCR
 
 on:
   push:
@@ -8,7 +8,15 @@ on:
       - 'quick-test/**'
       - 'quick-test-frontend/**'
       - '.github/workflows/docker-publish.yml'
-  workflow_dispatch: # Cho phép nhấn nút "Run workflow" thủ công trên giao diện GitHub
+  workflow_dispatch: # Cho phép bấm "Run workflow" thủ công trên giao diện GitHub Actions
+
+# Cấp quyền đọc mã nguồn và đẩy package lên GitHub Container Registry (GHCR)
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
   # =========================================================================
@@ -27,17 +35,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Docker Metadata for Backend
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/quick-test-backend
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/quick-test-backend
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
@@ -76,17 +85,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Docker Metadata for Frontend
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/quick-test-frontend
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/quick-test-frontend
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
