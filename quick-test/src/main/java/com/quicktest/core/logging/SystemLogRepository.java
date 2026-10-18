@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -109,7 +110,29 @@ public interface SystemLogRepository extends JpaRepository<SystemLog, UUID>, Jpa
     Page<SystemLog> findByLevelOrderByCreatedAtDesc(LogLevel level, Pageable pageable);
 
     /**
-     * Delete log records older than a specific date for retention housekeeping.
+     * Delete a single batch of log records directly in PostgreSQL engine.
+     * Uses subquery with LIMIT to isolate deletion chunks without loading entities into JVM heap memory.
+     */
+    @Modifying
+    @Query(value = """
+            DELETE FROM system_logs
+            WHERE id IN (
+                SELECT id FROM system_logs
+                WHERE created_at < :cutoff
+                ORDER BY created_at ASC
+                LIMIT :batchSize
+            )
+            """, nativeQuery = true)
+    int deleteBatchBeforeCutoff(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
+
+    /**
+     * Count remaining log records older than a specific date for retention housekeeping.
+     */
+    @Query("SELECT COUNT(l) FROM SystemLog l WHERE l.createdAt < :cutoff")
+    long countByCreatedAtBefore(@Param("cutoff") LocalDateTime cutoff);
+
+    /**
+     * Delete log records older than a specific date for retention housekeeping (fallback direct delete).
      */
     long deleteByCreatedAtBefore(LocalDateTime cutoff);
 

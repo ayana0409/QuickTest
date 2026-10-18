@@ -35,6 +35,7 @@ import type {
   AdminSystemLogDetail,
   AdminSystemLogStats,
   AdminSystemLogMetadata,
+  SystemLogCleanupStatus,
   LogLevel,
   LogStatus,
 } from '@/types/systemLog';
@@ -72,6 +73,7 @@ export default function AdminSystemLogsPage() {
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState<boolean>(false);
   const [cleanupDays, setCleanupDays] = useState<number>(30);
   const [isCleaningUp, setIsCleaningUp] = useState<boolean>(false);
+  const [cleanupStatus, setCleanupStatus] = useState<SystemLogCleanupStatus | null>(null);
 
   // Search Debouncer
   useEffect(() => {
@@ -125,7 +127,6 @@ export default function AdminSystemLogsPage() {
       setTotalElements(data.totalElements || 0);
     } catch (err) {
       console.error('Failed to fetch system logs:', err);
-      toast.error('Không thể tải danh sách nhật ký hệ thống');
     } finally {
       setIsLoading(false);
     }
@@ -141,10 +142,41 @@ export default function AdminSystemLogsPage() {
     endDate,
   ]);
 
+  const pollCleanupStatus = useCallback(() => {
+    const interval = setInterval(async () => {
+      try {
+        const status = await adminLogService.getCleanupStatus();
+        setCleanupStatus(status);
+        if (!status.running) {
+          clearInterval(interval);
+          if (status.status === 'COMPLETED') {
+            fetchLogs();
+            loadStats();
+          }
+        }
+      } catch {
+        clearInterval(interval);
+      }
+    }, 1500);
+  }, [fetchLogs, loadStats]);
+
+  const checkInitialCleanupStatus = useCallback(async () => {
+    try {
+      const status = await adminLogService.getCleanupStatus();
+      setCleanupStatus(status);
+      if (status.running) {
+        pollCleanupStatus();
+      }
+    } catch {
+      // Ignore background check failure
+    }
+  }, [pollCleanupStatus]);
+
   useEffect(() => {
     loadMetadata();
     loadStats();
-  }, [loadMetadata, loadStats]);
+    checkInitialCleanupStatus();
+  }, [loadMetadata, loadStats, checkInitialCleanupStatus]);
 
   useEffect(() => {
     fetchLogs();
@@ -161,7 +193,7 @@ export default function AdminSystemLogsPage() {
         setActiveDetailTab('OVERVIEW');
       }
     } catch (err) {
-      toast.error('Không thể tải chi tiết nhật ký');
+      console.error('Failed to load log detail:', err);
     } finally {
       setIsDetailLoading(false);
     }
@@ -178,18 +210,17 @@ export default function AdminSystemLogsPage() {
   // Trigger Cleanup Action
   const handleExecuteCleanup = async () => {
     if (cleanupDays < 1) {
-      toast.error('Số ngày lưu trữ phải lớn hơn 0');
       return;
     }
 
     setIsCleaningUp(true);
     try {
-      await adminLogService.cleanupOldLogs(cleanupDays);
+      const status = await adminLogService.cleanupOldLogs(cleanupDays);
+      setCleanupStatus(status);
       setIsCleanupModalOpen(false);
-      fetchLogs();
-      loadStats();
+      pollCleanupStatus();
     } catch {
-      // Error is handled automatically by common axios interceptor
+      // Handled automatically by apiClient interceptor
     } finally {
       setIsCleaningUp(false);
     }
@@ -288,7 +319,6 @@ export default function AdminSystemLogsPage() {
             onClick={() => {
               fetchLogs();
               loadStats();
-              toast.success('Đã làm mới dữ liệu');
             }}
             disabled={isLoading}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50"
@@ -306,6 +336,28 @@ export default function AdminSystemLogsPage() {
           </button>
         </div>
       </div>
+
+      {/* Thông báo tiến trình dọn dẹp */}
+      {cleanupStatus?.running && (
+        <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400">
+              <RefreshCw className="w-5 h-5 animate-spin" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <span>Hệ thống đang dọn dẹp nhật ký cũ</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 font-medium">
+                  Đã dọn: {cleanupStatus.totalDeleted.toLocaleString()} bản ghi
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Quá trình xử lý tự động trong nền, các hoạt động thi cử vẫn diễn ra bình thường.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Analytical KPI Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -957,23 +1009,23 @@ export default function AdminSystemLogsPage() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                  Dọn dẹp Nhật ký Cũ
+                  Dọn dẹp nhật ký cũ
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Xóa bỏ các bản ghi kiểm toán hết hạn lưu trữ
+                  Giải phóng dung lượng cho các bản ghi đã quá thời hạn lưu trữ
                 </p>
               </div>
             </div>
 
             <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-              Bạn có chắc chắn muốn xóa tất cả các bản ghi nhật ký hệ thống cũ hơn số ngày chỉ định không?
-              Hành động này sẽ giải phóng dung lượng cơ sở dữ liệu và{' '}
-              <strong className="text-rose-600 dark:text-rose-400 font-semibold">không thể hoàn tác</strong>.
+              Bạn có chắc chắn muốn dọn dẹp các bản ghi nhật ký không?
+              Hành động này <strong className="text-rose-600 dark:text-rose-400 font-semibold">không thể hoàn tác</strong>.
             </p>
 
+            {/* Retention Days Selector */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                Giữ lại nhật ký trong vòng (ngày):
+                Giữ lại nhật ký trong vòng:
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -984,8 +1036,9 @@ export default function AdminSystemLogsPage() {
                   onChange={(e) => setCleanupDays(Math.max(1, Number(e.target.value)))}
                   className="w-24 px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
                 />
-                <div className="flex gap-1.5">
-                  {[7, 14, 30, 90].map((d) => (
+                <span className="text-xs text-zinc-500">ngày</span>
+                <div className="flex flex-wrap gap-1.5 ml-auto">
+                  {[7, 30, 90].map((d) => (
                     <button
                       key={d}
                       type="button"
@@ -1009,7 +1062,7 @@ export default function AdminSystemLogsPage() {
                 disabled={isCleaningUp}
                 className="px-4 py-2 text-sm font-medium rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
-                Hủy bỏ
+                Hủy
               </button>
               <button
                 type="button"

@@ -9,10 +9,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -24,11 +27,21 @@ class SystemLogServiceImplTest {
     @Mock
     private SystemLogRepository systemLogRepository;
 
+    @Mock
+    private PlatformTransactionManager transactionManager;
+
+    @Mock
+    private Executor loggingExecutor;
+
     private SystemLogServiceImpl systemLogService;
 
     @BeforeEach
     void setUp() {
-        systemLogService = new SystemLogServiceImpl(systemLogRepository, new ObjectMapper());
+        systemLogService = new SystemLogServiceImpl(
+                systemLogRepository,
+                new ObjectMapper(),
+                transactionManager,
+                loggingExecutor);
     }
 
     @Test
@@ -76,8 +89,7 @@ class SystemLogServiceImplTest {
         Map<String, Object> payload = Map.of(
                 "username", "testuser",
                 "password", "secretPassword123",
-                "accessToken", "jwt.token.here"
-        );
+                "accessToken", "jwt.token.here");
 
         String serialized = systemLogService.safeSerialize(payload);
 
@@ -92,8 +104,7 @@ class SystemLogServiceImplTest {
     @DisplayName("safeSerialize: safely formats MultipartFile without dumping binary stream")
     void safeSerialize_MultipartFile() {
         MockMultipartFile file = new MockMultipartFile(
-                "file", "test-image.png", "image/png", new byte[]{1, 2, 3, 4}
-        );
+                "file", "test-image.png", "image/png", new byte[] { 1, 2, 3, 4 });
 
         String serialized = systemLogService.safeSerialize(file);
 
@@ -164,8 +175,8 @@ class SystemLogServiceImplTest {
 
         UUID missingId = UUID.randomUUID();
         when(systemLogRepository.findById(missingId)).thenReturn(java.util.Optional.empty());
-        assertThrows(com.quicktest.core.exception.ResourceNotFoundException.class, () ->
-                systemLogService.getLogDetail(missingId));
+        assertThrows(com.quicktest.core.exception.ResourceNotFoundException.class,
+                () -> systemLogService.getLogDetail(missingId));
     }
 
     @Test
@@ -179,9 +190,8 @@ class SystemLogServiceImplTest {
         when(systemLogRepository.countByLevel(LogLevel.ERROR)).thenReturn(20L);
         when(systemLogRepository.getAverageExecutionTime()).thenReturn(85.5);
         when(systemLogRepository.countLogsByModule()).thenReturn(List.<Object[]>of(
-                new Object[]{"ASSESSMENT", 60L},
-                new Object[]{"IAM", 40L}
-        ));
+                new Object[] { "ASSESSMENT", 60L },
+                new Object[] { "IAM", 40L }));
 
         var stats = systemLogService.getLogStats();
         assertNotNull(stats);
@@ -206,13 +216,45 @@ class SystemLogServiceImplTest {
     }
 
     @Test
-    @DisplayName("cleanupOldLogs: deletes logs before cutoff date")
+    @DisplayName("cleanupOldLogs: deletes logs before cutoff date using chunked batch deletion")
     void cleanupOldLogs_Success() {
-        when(systemLogRepository.deleteByCreatedAtBefore(any())).thenReturn(25L);
+        TransactionStatus txStatus = mock(TransactionStatus.class);
+        when(transactionManager.getTransaction(any())).thenReturn(txStatus);
+        when(systemLogRepository.deleteBatchBeforeCutoff(any(), eq(500))).thenReturn(25);
 
         long deleted = systemLogService.cleanupOldLogs(30);
         assertEquals(25L, deleted);
-        verify(systemLogRepository).deleteByCreatedAtBefore(any());
+        verify(systemLogRepository).deleteBatchBeforeCutoff(any(), eq(500));
+    }
+
+    @Test
+    @DisplayName("triggerBatchCleanup: initiates background batch deletion and updates status")
+    void triggerBatchCleanup_Success() {
+        TransactionStatus txStatus = mock(TransactionStatus.class);
+        when(transactionManager.getTransaction(any())).thenReturn(txStatus);
+        when(systemLogRepository.countByCreatedAtBefore(any())).thenReturn(40L);
+        when(systemLogRepository.deleteBatchBeforeCutoff(any(), eq(500))).thenReturn(40);
+
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(loggingExecutor).execute(any(Runnable.class));
+
+        var status = systemLogService.triggerBatchCleanup(30, 500);
+
+        assertNotNull(status);
+        assertEquals("COMPLETED", status.getStatus());
+        assertEquals(40L, status.getTotalDeleted());
+        assertEquals(30, status.getRetentionDaysKept());
+    }
+
+    @Test
+    @DisplayName("getCleanupStatus: returns default IDLE state when no task has run")
+    void getCleanupStatus_Idle() {
+        var status = systemLogService.getCleanupStatus();
+        assertNotNull(status);
+        assertEquals("IDLE", status.getStatus());
+        assertFalse(status.isRunning());
     }
 }
-

@@ -7,6 +7,8 @@ import com.quicktest.modules.admin.dto.AdminSystemLogDetailResponse;
 import com.quicktest.modules.admin.dto.AdminSystemLogMetadataResponse;
 import com.quicktest.modules.admin.dto.AdminSystemLogResponse;
 import com.quicktest.modules.admin.dto.AdminSystemLogStatsResponse;
+import com.quicktest.modules.admin.dto.SystemLogCleanupStatusResponse;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -107,17 +109,25 @@ public class AdminSystemLogController {
     }
 
     /**
-     * Housekeeping endpoint to delete logs older than the specified retention
-     * window in days.
+     * Trigger background batch deletion of logs older than specified retention
+     * window (default 30 days, batch 500).
+     * Runs asynchronously on loggingExecutor with zero JVM heap memory bloat and no
+     * request timeouts.
      */
     @DeleteMapping("/cleanup")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> cleanupOldLogs(
-            @RequestParam(defaultValue = "30") int days) {
-        long deletedCount = systemLogService.cleanupOldLogs(days);
-        return ResponseEntity.ok(ApiResponse.success(
-                Map.of(
-                        "deletedCount", deletedCount,
-                        "retentionDaysKept", Math.max(days, 1)),
-                "Log cleanup executed successfully"));
+    public ResponseEntity<ApiResponse<SystemLogCleanupStatusResponse>> cleanupOldLogs(
+            @RequestParam(defaultValue = "30") int days,
+            @RequestParam(defaultValue = "500") int batchSize) {
+        SystemLogCleanupStatusResponse response = systemLogService.triggerBatchCleanup(days, batchSize);
+        return ResponseEntity.ok(ApiResponse.success(response, "Log cleanup task initiated in background"));
+    }
+
+    /**
+     * Retrieve current background batch cleanup progress and metrics.
+     */
+    @GetMapping("/cleanup/status")
+    public ResponseEntity<ApiResponse<SystemLogCleanupStatusResponse>> getCleanupStatus() {
+        SystemLogCleanupStatusResponse status = systemLogService.getCleanupStatus();
+        return ResponseEntity.ok(ApiResponse.success(status, "Log cleanup status retrieved successfully"));
     }
 }

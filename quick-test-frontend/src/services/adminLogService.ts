@@ -7,6 +7,7 @@ import type {
   AdminSystemLogStats,
   AdminSystemLogMetadata,
   SystemLogFilterParams,
+  SystemLogCleanupStatus,
 } from '@/types/systemLog';
 
 /**
@@ -64,15 +65,27 @@ export const adminLogService = {
   },
 
   /**
-   * Trigger retention cleanup to delete logs older than specified days.
+   * Trigger asynchronous background batch deletion to delete logs older than specified days.
+   * Runs in background in batches to save memory and avoid table locks.
    */
-  async cleanupOldLogs(days: number): Promise<{ deletedCount: number; retentionDaysKept: number }> {
-    const res = await apiClient.delete<ApiResponse<{ deletedCount: number; retentionDaysKept: number }>>(
+  async cleanupOldLogs(days: number = 30, batchSize: number = 500): Promise<SystemLogCleanupStatus> {
+    const res = await apiClient.delete<ApiResponse<SystemLogCleanupStatus>>(
       '/admin/logs/cleanup',
       {
-        params: { days },
+        params: { days, batchSize },
+        successMessage: 'Đã bắt đầu dọn dẹp nhật ký hệ thống trong nền',
       }
     );
+    return res.data.data;
+  },
+
+  /**
+   * Retrieve current progress of background batch log cleanup task.
+   */
+  async getCleanupStatus(): Promise<SystemLogCleanupStatus> {
+    const res = await apiClient.get<ApiResponse<SystemLogCleanupStatus>>('/admin/logs/cleanup/status', {
+      silent: true,
+    });
     return res.data.data;
   },
 };

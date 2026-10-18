@@ -21,11 +21,20 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.quicktest.modules.admin.dto.SystemLogCleanupStatusResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,6 +55,21 @@ public class SystemLogServiceImpl implements SystemLogService {
 
     private final SystemLogRepository systemLogRepository;
     private final ObjectMapper objectMapper;
+    private final PlatformTransactionManager transactionManager;
+    @Qualifier("loggingExecutor")
+    private final Executor loggingExecutor;
+
+    private final AtomicBoolean isCleaningUp = new AtomicBoolean(false);
+    private volatile SystemLogCleanupStatusResponse currentCleanupStatus;
+    private TransactionTemplate transactionTemplate;
+
+    private synchronized TransactionTemplate getTransactionTemplate() {
+        if (transactionTemplate == null) {
+            transactionTemplate = new TransactionTemplate(transactionManager);
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        }
+        return transactionTemplate;
+    }
 
     @Async("loggingExecutor")
     @Override
@@ -254,14 +278,164 @@ public class SystemLogServiceImpl implements SystemLogService {
                 .build();
     }
 
-    @Transactional
     @Override
     public long cleanupOldLogs(int daysToKeep) {
         int safeDays = Math.max(daysToKeep, 1);
+        int defaultBatchSize = 500;
         LocalDateTime cutoff = LocalDateTime.now().minusDays(safeDays);
-        long deleted = systemLogRepository.deleteByCreatedAtBefore(cutoff);
-        log.info("[AuditLog] Cleaned up {} system logs older than {} days (cutoff: {})", deleted, safeDays, cutoff);
-        return deleted;
+        log.info("[AuditLog] Starting synchronous batch cleanup for logs older than {} days (cutoff: {}, batchSize: {})",
+                safeDays, cutoff, defaultBatchSize);
+
+        TransactionTemplate txTemplate = getTransactionTemplate();
+        long totalDeleted = 0;
+
+        while (!Thread.currentThread().isInterrupted()) {
+            Integer deleted = txTemplate.execute(status ->
+                    systemLogRepository.deleteBatchBeforeCutoff(cutoff, defaultBatchSize));
+
+            if (deleted == null || deleted <= 0) {
+                break;
+            }
+            totalDeleted += deleted;
+            if (deleted < defaultBatchSize) {
+                break;
+            }
+        }
+
+        log.info("[AuditLog] Cleaned up {} system logs older than {} days (cutoff: {}) in memory-efficient batches",
+                totalDeleted, safeDays, cutoff);
+        return totalDeleted;
+    }
+
+    @Override
+    public SystemLogCleanupStatusResponse triggerBatchCleanup(int daysToKeep, int batchSize) {
+        int safeDays = Math.max(daysToKeep, 1);
+        int safeBatchSize = Math.max(50, Math.min(batchSize > 0 ? batchSize : 500, 2000));
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(safeDays);
+
+        if (!isCleaningUp.compareAndSet(false, true)) {
+            SystemLogCleanupStatusResponse status = getCleanupStatus();
+            log.warn("[AuditLog] Cleanup job already running since {}. Refusing concurrent trigger.", status.getStartedAt());
+            return status;
+        }
+
+        long estimatedRemaining = 0;
+        try {
+            estimatedRemaining = systemLogRepository.countByCreatedAtBefore(cutoff);
+        } catch (Exception e) {
+            log.warn("[AuditLog] Failed to count old logs before cleanup: {}", e.getMessage());
+        }
+
+        currentCleanupStatus = SystemLogCleanupStatusResponse.builder()
+                .isRunning(true)
+                .totalDeleted(0)
+                .estimatedRemaining(estimatedRemaining)
+                .retentionDaysKept(safeDays)
+                .batchSize(safeBatchSize)
+                .cutoff(cutoff)
+                .startedAt(LocalDateTime.now())
+                .status("RUNNING")
+                .message("Background batch log cleanup triggered to optimize RAM.")
+                .build();
+
+        final long finalEstimated = estimatedRemaining;
+        CompletableFuture.runAsync(
+                () -> executeBatchCleanupLoop(cutoff, safeDays, safeBatchSize, finalEstimated),
+                loggingExecutor
+        );
+
+        return currentCleanupStatus;
+    }
+
+    private void executeBatchCleanupLoop(LocalDateTime cutoff, int safeDays, int batchSize, long estimated) {
+        long totalDeleted = 0;
+        try {
+            log.info("[AuditLog] Background batch log cleanup started: cutoff={}, safeDays={}, batchSize={}, estimated={}",
+                    cutoff, safeDays, batchSize, estimated);
+
+            TransactionTemplate txTemplate = getTransactionTemplate();
+
+            while (!Thread.currentThread().isInterrupted()) {
+                final int currentBatch = batchSize;
+                Integer deletedInBatch = txTemplate.execute(status ->
+                        systemLogRepository.deleteBatchBeforeCutoff(cutoff, currentBatch));
+
+                if (deletedInBatch == null || deletedInBatch <= 0) {
+                    break;
+                }
+
+                totalDeleted += deletedInBatch;
+
+                currentCleanupStatus = SystemLogCleanupStatusResponse.builder()
+                        .isRunning(true)
+                        .totalDeleted(totalDeleted)
+                        .estimatedRemaining(Math.max(0, estimated - totalDeleted))
+                        .retentionDaysKept(safeDays)
+                        .batchSize(batchSize)
+                        .cutoff(cutoff)
+                        .startedAt(currentCleanupStatus.getStartedAt())
+                        .status("RUNNING")
+                        .message(String.format("Cleaning up old logs in batches: deleted %d records...", totalDeleted))
+                        .build();
+
+                if (deletedInBatch < batchSize) {
+                    break; // Reached last chunk
+                }
+
+                // Yield CPU and disk I/O to avoid starvation on low-spec hardware (e.g., Core i3 / 512MB RAM)
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.warn("[AuditLog] Background batch log cleanup was interrupted");
+                    break;
+                }
+            }
+
+            log.info("[AuditLog] Background batch cleanup finished successfully. Total deleted: {}", totalDeleted);
+            currentCleanupStatus = SystemLogCleanupStatusResponse.builder()
+                    .isRunning(false)
+                    .totalDeleted(totalDeleted)
+                    .estimatedRemaining(0)
+                    .retentionDaysKept(safeDays)
+                    .batchSize(batchSize)
+                    .cutoff(cutoff)
+                    .startedAt(currentCleanupStatus.getStartedAt())
+                    .finishedAt(LocalDateTime.now())
+                    .status("COMPLETED")
+                    .message(String.format("Successfully cleaned up %d log records older than %d days.", totalDeleted, safeDays))
+                    .build();
+
+        } catch (Exception e) {
+            log.error("[AuditLog] Error occurred during background batch log cleanup: {}", e.getMessage(), e);
+            currentCleanupStatus = SystemLogCleanupStatusResponse.builder()
+                    .isRunning(false)
+                    .totalDeleted(totalDeleted)
+                    .retentionDaysKept(safeDays)
+                    .batchSize(batchSize)
+                    .cutoff(cutoff)
+                    .startedAt(currentCleanupStatus != null ? currentCleanupStatus.getStartedAt() : LocalDateTime.now())
+                    .finishedAt(LocalDateTime.now())
+                    .status("FAILED")
+                    .message("Error during batch log cleanup: " + e.getMessage())
+                    .build();
+        } finally {
+            isCleaningUp.set(false);
+        }
+    }
+
+    @Override
+    public SystemLogCleanupStatusResponse getCleanupStatus() {
+        if (currentCleanupStatus == null) {
+            return SystemLogCleanupStatusResponse.builder()
+                    .isRunning(false)
+                    .totalDeleted(0)
+                    .estimatedRemaining(0)
+                    .status("IDLE")
+                    .message("No active log cleanup task running.")
+                    .build();
+        }
+        return currentCleanupStatus;
     }
 }
 

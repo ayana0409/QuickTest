@@ -75,3 +75,19 @@ export interface SystemLogFilterParams {
   size?: number;
   sort?: string;
 }
+
+/**
+ * Background batch deletion status and progress tracking.
+ */
+export interface SystemLogCleanupStatus {
+  running: boolean;
+  totalDeleted: number;
+  estimatedRemaining: number;
+  retentionDaysKept: number;
+  batchSize: number;
+  cutoff?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  status: 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  message?: string | null;
+}
