@@ -291,10 +291,9 @@ export default function AdminAiDashboardPage() {
     setIsCancellingJob(jobId);
     try {
       await aiManagementService.cancelJob(jobId);
-      toast.success('Đã hủy tiến trình và giải phóng khóa đề thi thành công!');
       await fetchStatus(true);
-    } catch (err: any) {
-      toast.error('Lỗi khi hủy tiến trình: ' + (err?.response?.data?.message || err.message));
+    } catch {
+      // Error handled by global axios interceptor
     } finally {
       setIsCancellingJob(null);
     }
@@ -305,10 +304,9 @@ export default function AdminAiDashboardPage() {
     if (!confirm('Bạn có chắc muốn dọn sạch tất cả các tiến trình chấm AI và giải phóng toàn bộ khóa đề thi không?')) return;
     try {
       await aiManagementService.clearAllJobs();
-      toast.success('Đã dọn dẹp sạch tất cả các tiến trình nền!');
       await fetchStatus(true);
-    } catch (err: any) {
-      toast.error('Lỗi khi dọn dẹp tiến trình: ' + (err?.response?.data?.message || err.message));
+    } catch {
+      // Error handled by global axios interceptor
     }
   };
 

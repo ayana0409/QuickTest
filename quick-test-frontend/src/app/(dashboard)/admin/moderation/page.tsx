@@ -213,7 +213,6 @@ export default function AdminContentModerationPage() {
       setIsTriggeringAi(true);
       const res = await adminService.triggerAiModeration();
       setAiJobStatus(res);
-      toast.success('Đã kích hoạt tác vụ kiểm duyệt AI trong nền');
     } catch {
       // Error handled by global axios interceptor
     } finally {
@@ -229,7 +228,6 @@ export default function AdminContentModerationPage() {
       setShowResetCursorModal(false);
       const updatedStatus = await adminService.getAiModerationStatus();
       setAiJobStatus(updatedStatus);
-      toast.success('Đã đặt lại con trỏ AI về đầu danh sách');
     } catch {
       // Error handled by global axios interceptor
     } finally {
@@ -264,7 +262,6 @@ export default function AdminContentModerationPage() {
         prev.map((q) => (q.id === question.id ? updated : q))
       );
       loadStats();
-      toast.success(nextSafeStatus ? 'Đã xác minh câu hỏi an toàn' : 'Đã gắn cờ câu hỏi cần xem xét');
     } catch {
       // Error toast is automatically handled by apiClient interceptor
     } finally {
@@ -288,7 +285,6 @@ export default function AdminContentModerationPage() {
       setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
       await adminService.deleteModerationQuestion(deleteModal.question.id);
       setDeleteModal({ isOpen: false, question: null, isDeleting: false });
-      toast.success('Đã xóa vĩnh viễn câu hỏi thành công');
 
       if (questions.length <= 1 && currentPage > 0) {
         setCurrentPage((prev) => Math.max(0, prev - 1));

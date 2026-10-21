@@ -79,8 +79,8 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
           });
           setEssayGrades(initialForms);
         }
-      } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Không thể tải chi tiết bài làm của thí sinh.');
+      } catch {
+        // Error toast is handled automatically by axios interceptor
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -139,8 +139,8 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
       // Refresh detail
       const updated = await gradingService.getAttemptDetailForGrading(attemptId);
       setDetail(updated);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Lỗi khi lưu điểm bài thi.');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
     } finally {
       setIsSaving(false);
     }
@@ -162,8 +162,8 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
       document.body.removeChild(link);
 
       toast.success('Xuất file Excel bài làm thành công!');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Không thể xuất file Excel bài làm.');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
     } finally {
       setIsExporting(false);
     }

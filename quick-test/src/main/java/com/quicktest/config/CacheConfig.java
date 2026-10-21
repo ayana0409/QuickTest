@@ -82,6 +82,9 @@ public class CacheConfig implements CachingConfigurer {
     /** Per-teacher exam list. TTL: 1 min. */
     public static final String CACHE_TEACHER_EXAMS = "teacher-exams";
 
+    /** Public random exams on landing page. TTL: 1 min. */
+    public static final String CACHE_PUBLIC_RANDOM_EXAMS = "public-random-exams";
+
     // =========================================================================
     // Dependencies injected by Spring
     // =========================================================================
@@ -129,6 +132,7 @@ public class CacheConfig implements CachingConfigurer {
         regionConfigs.put(CACHE_GRADING_STATS,              base.entryTtl(Duration.ofMinutes(5)));
         regionConfigs.put(CACHE_ADMIN_EXAMS,                base.entryTtl(Duration.ofMinutes(1)));
         regionConfigs.put(CACHE_TEACHER_EXAMS,              base.entryTtl(Duration.ofMinutes(1)));
+        regionConfigs.put(CACHE_PUBLIC_RANDOM_EXAMS,        base.entryTtl(Duration.ofMinutes(1)));
 
         log.info("Initializing RedisCacheManager with {} cache regions", regionConfigs.size());
 

@@ -2,13 +2,17 @@ package com.quicktest.modules.assessment.service;
 
 import com.quicktest.modules.assessment.dto.ExamCreateRequest;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
+import com.quicktest.modules.assessment.dto.ExamDuplicateRequest;
+import com.quicktest.modules.assessment.dto.ExamRepublishRequest;
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.dto.ExamUpdateRequest;
+import com.quicktest.modules.assessment.dto.PublicExamCardResponse;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.iam.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -17,7 +21,8 @@ import java.util.UUID;
 public interface ExamService {
 
     /**
-     * Create a new exam in DRAFT status. Automatically generates a unique access code if omitted.
+     * Create a new exam in DRAFT status. Automatically generates a unique access
+     * code if omitted.
      */
     ExamDetailResponse createExam(ExamCreateRequest request, User teacher);
 
@@ -33,7 +38,8 @@ public interface ExamService {
 
     /**
      * Retrieve paginated summary list of exams created by the teacher,
-     * with optional keyword search (matching title or accessCode) and status filtering.
+     * with optional keyword search (matching title or accessCode) and status
+     * filtering.
      */
     Page<ExamSummaryResponse> getTeacherExams(User teacher, String search, ExamStatus status, Pageable pageable);
 
@@ -64,13 +70,21 @@ public interface ExamService {
      * Republish an exam (transitions status from CLOSED to PUBLISHED),
      * optionally updating the time window and attempt limits.
      */
-    ExamDetailResponse republishExam(UUID examId, com.quicktest.modules.assessment.dto.ExamRepublishRequest request, User teacher);
+    ExamDetailResponse republishExam(UUID examId, ExamRepublishRequest request, User teacher);
 
     /**
      * Duplicate an existing exam with all questions and options.
      * Starts in DRAFT status with a newly generated access code.
-     * If the exam contains images, image cloning is offloaded to RabbitMQ in the background
-     * and the exam is temporarily in CLONING status until all images are duplicated.
+     * If the exam contains images, image cloning is offloaded to RabbitMQ in the
+     * background
+     * and the exam is temporarily in CLONING status until all images are
+     * duplicated.
      */
-    ExamDetailResponse duplicateExam(UUID examId, com.quicktest.modules.assessment.dto.ExamDuplicateRequest request, User teacher);
+    ExamDetailResponse duplicateExam(UUID examId, ExamDuplicateRequest request, User teacher);
+
+    /**
+     * Retrieve up to 10 random published, non-private exams for the public landing
+     * page.
+     */
+    List<PublicExamCardResponse> getRandomPublicExams();
 }

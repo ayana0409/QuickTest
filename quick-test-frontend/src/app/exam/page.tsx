@@ -16,7 +16,6 @@ import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { candidateSessionService } from '@/services/candidateSession.service';
-import toast from 'react-hot-toast';
 
 /**
  * Exam Entry Lobby Page (/exam):

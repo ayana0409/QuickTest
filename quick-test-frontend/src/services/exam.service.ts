@@ -9,6 +9,7 @@ import type {
   ExamDuplicateRequest,
   PageResponse,
   ExamStatus,
+  PublicExamCardResponse,
 } from '@/types/exam';
 import type {
   QuestionResponse,
@@ -263,5 +264,16 @@ export const examService = {
       }
     );
     return response.data.data;
+  },
+
+  /**
+   * Fetch up to 10 random public exams for landing page without requiring authentication.
+   */
+  async getPublicRandomExams(): Promise<PublicExamCardResponse[]> {
+    const response = await apiClient.get<ApiResponse<PublicExamCardResponse[]>>(
+      '/public/exams',
+      { silent: true }
+    );
+    return response.data.data || [];
   },
 };

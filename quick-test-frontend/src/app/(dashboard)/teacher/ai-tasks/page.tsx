@@ -160,8 +160,8 @@ export default function TeacherAiTasksPage() {
     try {
       await teacherAiTaskService.cancelTask(taskId);
       await fetchTasks(true);
-    } catch (err: any) {
-      toast.error(err?.message || 'Không thể hủy tác vụ');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
     } finally {
       setCancellingTaskId(null);
     }
@@ -177,8 +177,8 @@ export default function TeacherAiTasksPage() {
     try {
       await teacherAiTaskService.deleteTask(taskId);
       setTasks((prev) => prev.filter((t) => t.taskId !== taskId));
-    } catch (err: any) {
-      toast.error(err?.message || 'Không thể xóa tác vụ');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
     } finally {
       setDeletingTaskId(null);
     }
@@ -204,8 +204,8 @@ export default function TeacherAiTasksPage() {
       setSelectedQuestionIndices(new Set(questions.map((_, i) => i)));
       // Expand all by default
       setExpandedIndices(new Set(questions.map((_, i) => i)));
-    } catch (err: any) {
-      toast.error(err?.message || 'Không thể tải chi tiết câu hỏi');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
       setReviewTask(null);
     } finally {
       setIsLoadingDetail(false);

@@ -103,8 +103,8 @@ export default function EditExamPage() {
         startTime: data.startTime ? data.startTime.slice(0, 16) : '',
         endTime: data.endTime ? data.endTime.slice(0, 16) : '',
       });
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Không thể tải thông tin đề thi.');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
     } finally {
       setIsLoading(false);
     }

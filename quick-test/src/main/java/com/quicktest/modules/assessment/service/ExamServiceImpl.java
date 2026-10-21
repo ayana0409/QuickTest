@@ -42,9 +42,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.quicktest.modules.assessment.dto.PublicExamCardResponse;
 
 /**
  * Service implementation managing exam authoring, access codes, lifecycle
@@ -590,5 +594,75 @@ public class ExamServiceImpl implements ExamService {
         return questions.stream()
                 .map(QuestionResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = CacheConfig.CACHE_PUBLIC_RANDOM_EXAMS, key = "'landing-10'")
+    public List<PublicExamCardResponse> getRandomPublicExams() {
+        log.debug("Fetching random public exams for landing page");
+        List<Exam> rawExams = examRepository.findRandomExploreExams();
+        if (rawExams == null || rawExams.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<UUID> examIds = rawExams.stream()
+                .map(Exam::getId)
+                .collect(Collectors.toList());
+
+        // Eagerly fetch exams with teacher details to eliminate lazy loading N+1 queries
+        List<Exam> examsWithTeacher = examRepository.findByIdInWithCreatedBy(examIds);
+        Map<UUID, Exam> examMap = examsWithTeacher.stream()
+                .collect(Collectors.toMap(Exam::getId, e -> e, (existing, replacement) -> existing));
+
+        // Batch count questions and total points
+        List<Object[]> statsList = questionRepository.countQuestionsAndPointsByExamIds(examIds);
+        Map<UUID, Long> questionCounts = new HashMap<>();
+        Map<UUID, Double> totalPointsMap = new HashMap<>();
+        for (Object[] row : statsList) {
+            if (row != null && row.length >= 3 && row[0] instanceof UUID id) {
+                if (row[1] instanceof Number qCount) {
+                    questionCounts.put(id, qCount.longValue());
+                }
+                if (row[2] instanceof Number points) {
+                    totalPointsMap.put(id, points.doubleValue());
+                }
+            }
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        List<PublicExamCardResponse> result = new ArrayList<>();
+
+        for (Exam raw : rawExams) {
+            Exam exam = examMap.getOrDefault(raw.getId(), raw);
+            boolean isEnded = exam.getEndTime() != null && now.isAfter(exam.getEndTime());
+            boolean isStarted = exam.getStartTime() == null || !now.isBefore(exam.getStartTime());
+            String timeStatus = isEnded ? "CLOSED" : (!isStarted ? "UPCOMING" : "OPEN");
+            boolean isOpen = "OPEN".equals(timeStatus);
+
+            String teacherName = exam.getCreatedBy() != null ? exam.getCreatedBy().getFullName() : null;
+            long qCount = questionCounts.getOrDefault(exam.getId(), 0L);
+            double points = totalPointsMap.getOrDefault(exam.getId(), 0.0);
+
+            result.add(PublicExamCardResponse.builder()
+                    .id(exam.getId())
+                    .title(exam.getTitle())
+                    .accessCode(exam.getAccessCode())
+                    .description(exam.getDescription())
+                    .status(exam.getStatus())
+                    .durationMinutes(exam.getDurationMinutes())
+                    .maxAttempts(exam.getMaxAttempts() != null ? exam.getMaxAttempts() : 1)
+                    .questionCount(qCount)
+                    .totalPoints(points)
+                    .teacherName(teacherName)
+                    .startTime(exam.getStartTime())
+                    .endTime(exam.getEndTime())
+                    .examTimeStatus(timeStatus)
+                    .isOpen(isOpen)
+                    .createdAt(exam.getCreatedAt())
+                    .build());
+        }
+
+        return result;
     }
 }

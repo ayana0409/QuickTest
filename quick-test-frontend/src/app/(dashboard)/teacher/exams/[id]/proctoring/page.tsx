@@ -147,7 +147,6 @@ export default function TeacherLiveProctoringPage() {
       setExam(data);
     } catch (err) {
       console.error('Failed to load exam details:', err);
-      toast.error('Unable to retrieve exam information.');
     } finally {
       setLoadingExam(false);
     }
@@ -173,7 +172,6 @@ export default function TeacherLiveProctoringPage() {
       setCandidates(response.content || []);
     } catch (err) {
       console.error('Failed to fetch exam monitoring data:', err);
-      toast.error('Failed to load candidate monitoring data.');
     } finally {
       setLoadingCandidates(false);
     }

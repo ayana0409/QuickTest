@@ -97,8 +97,8 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
           sort: sortOption,
         });
         setAttemptsData(response);
-      } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Không thể tải danh sách phiên thi.');
+      } catch {
+        // Error toast is handled automatically by axios interceptor
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
@@ -163,8 +163,8 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
       document.body.removeChild(link);
 
       toast.success('Xuất file Excel danh sách phiên thi thành công!');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Không thể xuất file Excel danh sách phiên thi.');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
     } finally {
       setIsExporting(false);
     }
@@ -186,8 +186,8 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
       document.body.removeChild(link);
 
       toast.success(`Xuất file Excel bài làm của ${candidateName || 'thí sinh'} thành công!`);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Không thể xuất file Excel bài làm của thí sinh.');
+    } catch {
+      // Error toast is handled automatically by axios interceptor
     } finally {
       setExportingAttemptId(null);
     }

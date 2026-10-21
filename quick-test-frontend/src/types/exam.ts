@@ -411,3 +411,25 @@ export interface ExamDuplicateRequest {
   title?: string;
 }
 
+/**
+ * Public summary card for random explore exams on the home landing page.
+ */
+export interface PublicExamCardResponse {
+  id: string;
+  title: string;
+  accessCode: string;
+  description?: string | null;
+  status: ExamStatus;
+  durationMinutes: number;
+  maxAttempts?: number | null;
+  questionCount: number;
+  totalPoints: number;
+  teacherName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  examTimeStatus: 'OPEN' | 'UPCOMING' | 'CLOSED';
+  isOpen: boolean;
+  createdAt: string;
+}
+
+

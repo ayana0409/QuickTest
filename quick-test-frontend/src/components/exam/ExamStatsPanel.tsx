@@ -16,7 +16,6 @@ import {
   Clock,
 } from 'lucide-react';
 import { gradingService, type ExamAttemptStatsDto } from '@/services/grading.service';
-import toast from 'react-hot-toast';
 
 interface ExamStatsPanelProps {
   examId: string;
@@ -174,9 +173,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
         setStats(data);
         setLastUpdated(new Date());
       } catch {
-        if (!silent) {
-          toast.error('Không thể tải thống kê đề thi.');
-        }
+        // Error toast is handled automatically by axios interceptor
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);

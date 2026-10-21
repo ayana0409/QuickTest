@@ -3,6 +3,7 @@ import { ShieldCheck, BookOpen, UserCheck, ArrowRight, Zap, CheckCircle2 } from 
 import { Button } from '@/components/common/Button';
 
 import { AuthNav } from '@/components/common/AuthNav';
+import { PublicExamsSection } from '@/components/home/PublicExamsSection';
 
 export default function HomePage() {
   return (
@@ -59,6 +60,9 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* 10 Random Public / Explore Exams Section */}
+        <PublicExamsSection />
 
         {/* Feature Highlights */}
         <section className="py-16 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/30">

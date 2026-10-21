@@ -52,6 +52,12 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     Optional<Exam> findByIdWithCreatedBy(@Param("id") UUID id);
 
     /**
+     * Eagerly fetch Exams along with creator teacher details by a list of IDs.
+     */
+    @Query("SELECT e FROM Exam e JOIN FETCH e.createdBy WHERE e.id IN :ids")
+    List<Exam> findByIdInWithCreatedBy(@Param("ids") List<UUID> ids);
+
+    /**
      * Optimized single-query summary pagination for teacher dashboard with optional
      * status and search filtering,
      * calculating question counts and sum of points without N+1 query overhead.

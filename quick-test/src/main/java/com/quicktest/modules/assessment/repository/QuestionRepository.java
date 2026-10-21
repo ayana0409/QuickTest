@@ -59,6 +59,12 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
         List<Object[]> countQuestionsByExamIds(@Param("examIds") List<UUID> examIds);
 
         /**
+         * Batch count questions and sum points grouped by exam ID to prevent N+1 queries.
+         */
+        @Query("SELECT q.exam.id, COUNT(q.id), COALESCE(SUM(q.points), 0.0) FROM Question q WHERE q.exam.id IN :examIds GROUP BY q.exam.id")
+        List<Object[]> countQuestionsAndPointsByExamIds(@Param("examIds") List<UUID> examIds);
+
+        /**
          * Retrieve all non-null media identifiers (publicId or imageUrl) for questions
          * in an exam.
          */

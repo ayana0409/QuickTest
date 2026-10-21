@@ -170,6 +170,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/ping", "/api/ping").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/session/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/ws-exam/**").permitAll()
                         // Public Swagger / OpenAPI documentation
                         .requestMatchers(
