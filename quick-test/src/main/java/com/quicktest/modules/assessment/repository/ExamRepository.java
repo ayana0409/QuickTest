@@ -29,8 +29,8 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     List<Exam> findByStatusAndEndTimeBefore(ExamStatus status, LocalDateTime dateTime);
 
     /**
-     * Retrieve up to 10 random published, non-private exams for candidate exploration.
-     * Uses native PostgreSQL ORDER BY RANDOM() LIMIT 10 to ensure zero memory overhead.
+     * Retrieve up to 9 random published, non-private exams for candidate exploration.
+     * Uses native PostgreSQL ORDER BY RANDOM() LIMIT 9 to ensure zero memory overhead.
      */
     @Query(value = """
             SELECT * FROM exams
@@ -38,7 +38,7 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
               AND is_private = false
               AND (end_time IS NULL OR end_time > NOW())
             ORDER BY RANDOM()
-            LIMIT 10
+            LIMIT 9
             """, nativeQuery = true)
     List<Exam> findRandomExploreExams();
 

@@ -598,7 +598,7 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = CacheConfig.CACHE_PUBLIC_RANDOM_EXAMS, key = "'landing-10'")
+    @Cacheable(value = CacheConfig.CACHE_PUBLIC_RANDOM_EXAMS, key = "'landing-9'")
     public List<PublicExamCardResponse> getRandomPublicExams() {
         log.debug("Fetching random public exams for landing page");
         List<Exam> rawExams = examRepository.findRandomExploreExams();

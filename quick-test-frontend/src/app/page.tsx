@@ -61,7 +61,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 10 Random Public / Explore Exams Section */}
+        {/* Random Public Explore Exams Section (9 items 3x3) */}
         <PublicExamsSection />
 
         {/* Feature Highlights */}
