@@ -1,6 +1,7 @@
 package com.quicktest.config;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -19,7 +20,9 @@ import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -201,12 +204,14 @@ public class CacheConfig implements CachingConfigurer {
 
         // Enable PageImpl deserialization via the 3-arg constructor
         mapper.addMixIn(PageImpl.class, PageImplMixin.class);
+        // Enable PageRequest deserialization via static factory method PageRequest.of(pageNumber, pageSize)
+        mapper.addMixIn(PageRequest.class, PageRequestMixin.class);
 
         return mapper;
     }
 
     // =========================================================================
-    // Jackson Mix-in for PageImpl
+    // Jackson Mix-ins for Spring Data Page support
     // =========================================================================
 
     /**
@@ -214,10 +219,6 @@ public class CacheConfig implements CachingConfigurer {
      * {@code PageImpl<T>} from its JSON representation by mapping to the
      * {@code PageImpl(List<T> content, Pageable pageable, long totalElements)}
      * constructor.
-     *
-     * <p>With NON_FINAL default-typing the {@code pageable} field is stored as
-     * a {@code PageRequest} (with full type info), so it deserialises correctly
-     * back to the interface type.</p>
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     abstract static class PageImplMixin {
@@ -227,5 +228,26 @@ public class CacheConfig implements CachingConfigurer {
                 @JsonProperty("pageable") Pageable pageable,
                 @JsonProperty("totalElements") long totalElements) {
         }
+    }
+
+    /**
+     * Jackson mixin that teaches the ObjectMapper to construct a
+     * {@code PageRequest} from its JSON representation via the static factory
+     * method {@link PageRequest#of(int, int)}.
+     *
+     * <p>{@code sort} is ignored during deserialization because Spring Data's
+     * {@code Sort} lacks a default constructor and cached data is already sorted.</p>
+     */
+    @JsonIgnoreProperties(value = {"sort"}, ignoreUnknown = true)
+    abstract static class PageRequestMixin {
+        @JsonCreator
+        static PageRequest of(
+                @JsonProperty("pageNumber") int pageNumber,
+                @JsonProperty("pageSize") int pageSize) {
+            return null;
+        }
+
+        @JsonIgnore
+        abstract Sort getSort();
     }
 }
