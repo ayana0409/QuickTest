@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { ServerWakeupProvider } from '@/components/providers/ServerWakeupProvider';
+import { AppGuard } from '@/components/providers/AppGuard';
 import { Toaster } from 'react-hot-toast';
 
 export default function RootLayout({
@@ -42,9 +43,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-        <ServerWakeupProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </ServerWakeupProvider>
+        <AppGuard>
+          <ServerWakeupProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ServerWakeupProvider>
+        </AppGuard>
         <Toaster
           position="top-right"
           reverseOrder={false}
