@@ -24,10 +24,10 @@ const RETRY_INTERVAL_MS = RETRY_INTERVAL_SECONDS * 1000;
 const OVERLOAD_TIMEOUT_SECONDS = 180; // 180s overload threshold
 
 export function ServerWakeupProvider({ children }: { children: React.ReactNode }) {
-  const [isServerAwake, setIsServerAwake] = useState<boolean>(true);
+  const [isServerAwake, setIsServerAwake] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [isWakingUp, setIsWakingUp] = useState<boolean>(false);
-  const [isPinging, setIsPinging] = useState<boolean>(false);
+  const [isPinging, setIsPinging] = useState<boolean>(true);
   const [attemptCount, setAttemptCount] = useState<number>(0);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [countdownSeconds, setCountdownSeconds] = useState<number>(RETRY_INTERVAL_SECONDS);
@@ -198,19 +198,16 @@ export function ServerWakeupProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  // Initial probe on mount
+  // Initial probe on mount: strictly ping before allowing any children to render
   useEffect(() => {
     let isMounted = true;
 
-    // Check if session already verified server is warm
-    const hasAwokenInSession = typeof window !== 'undefined' && sessionStorage.getItem(SESSION_STORAGE_KEY) === 'true';
-
-    // Grace period check: if server responds quickly (< 800ms), don't show any modal
+    // Grace period timer: if ping takes > 400ms or fails, show wakeup modal
     const graceTimer = setTimeout(() => {
-      if (isMounted && !hasAwokenInSession) {
+      if (isMounted) {
         startWakingUpSequence();
       }
-    }, 800);
+    }, 400);
 
     pingServer().then((isWarm) => {
       if (!isMounted) return;
@@ -218,11 +215,10 @@ export function ServerWakeupProvider({ children }: { children: React.ReactNode }
 
       if (isWarm) {
         setIsServerAwake(true);
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
-        }
+        setShowModal(false);
+        setIsWakingUp(false);
       } else {
-        // Cold start detected!
+        // Server down or cold starting!
         startWakingUpSequence();
       }
     });
@@ -246,7 +242,18 @@ export function ServerWakeupProvider({ children }: { children: React.ReactNode }
           checkServerHealth: pingServer,
         }}
       >
-        {children}
+        {/* Strictly ping first: only mount and render children when server is awake */}
+        {isServerAwake ? children : null}
+
+        {/* Initial lightweight screen while waiting for the first ping */}
+        {!isServerAwake && !showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950 text-zinc-400 text-sm select-none">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
+              <span>Đang kiểm tra kết nối hệ thống...</span>
+            </div>
+          </div>
+        )}
 
         {/* Modern Enforced Server Wake-up Modal Overlay */}
         {showModal && (
