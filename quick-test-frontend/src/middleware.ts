@@ -30,8 +30,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Auth routes (/login, /register): Allow access so users can switch accounts
-  // or re-authenticate even if a stale token exists in cookies.
+  // 2. Auth routes (/login, /register):
+  // If user already has a valid token and there is a callbackUrl, send them straight to callbackUrl
+  if (AUTH_ROUTES.includes(pathname) && isAuthenticated) {
+    const rawCallback =
+      request.nextUrl.searchParams.get('callbackUrl') ||
+      request.nextUrl.searchParams.get('redirect');
+
+    if (
+      rawCallback &&
+      rawCallback.startsWith('/') &&
+      !rawCallback.startsWith('/login') &&
+      !rawCallback.startsWith('/register')
+    ) {
+      return NextResponse.redirect(new URL(rawCallback, request.url));
+    }
+  }
 
   return NextResponse.next();
 }

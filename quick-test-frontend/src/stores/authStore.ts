@@ -9,6 +9,7 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
   activeRole: string | null;
 
   // Actions
@@ -18,6 +19,7 @@ interface AuthState {
   setToken: (token: string) => void;
   setRefreshToken: (refreshToken: string) => void;
   initializeAuth: () => void;
+  isLoggedIn: () => boolean;
   hasRole: (role: Role | string) => boolean;
   setActiveRole: (role: string) => void;
   getUserRoles: () => string[];
@@ -45,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
+      isInitialized: false,
       activeRole: null,
 
       login: (token: string, refreshToken: string, user: User) => {
@@ -67,6 +70,7 @@ export const useAuthStore = create<AuthState>()(
           activeRole,
           isAuthenticated: true,
           isLoading: false,
+          isInitialized: true,
         });
       },
 
@@ -89,6 +93,7 @@ export const useAuthStore = create<AuthState>()(
           activeRole: null,
           isAuthenticated: false,
           isLoading: false,
+          isInitialized: true,
         });
       },
 
@@ -171,14 +176,26 @@ export const useAuthStore = create<AuthState>()(
           const currentActiveRole = get().activeRole || resolveDefaultRole(currentUser);
 
           if (!currentToken) {
-            set({ token, refreshToken, activeRole: currentActiveRole, isAuthenticated: true });
+            set({ token, refreshToken, activeRole: currentActiveRole, isAuthenticated: true, isInitialized: true });
           } else if (!get().activeRole && currentUser) {
-            set({ activeRole: currentActiveRole });
+            set({ activeRole: currentActiveRole, isInitialized: true });
+          } else {
+            set({ isInitialized: true });
           }
         } else if (get().isAuthenticated) {
           // Token vanished from both storages
-          set({ user: null, token: null, refreshToken: null, activeRole: null, isAuthenticated: false });
+          set({ user: null, token: null, refreshToken: null, activeRole: null, isAuthenticated: false, isInitialized: true });
+        } else {
+          set({ isInitialized: true });
         }
+      },
+
+      isLoggedIn: () => {
+        if (get().isAuthenticated && get().token) return true;
+        if (typeof window === 'undefined') return false;
+        const cookieToken = getAuthCookie();
+        const localToken = localStorage.getItem('token') || localStorage.getItem('accessToken');
+        return Boolean((cookieToken && cookieToken.trim().length > 0) || (localToken && localToken.trim().length > 0));
       },
 
       hasRole: (expectedRole: Role | string) => {

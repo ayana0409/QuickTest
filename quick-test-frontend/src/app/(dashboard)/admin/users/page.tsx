@@ -36,7 +36,7 @@ import type { AdminUser, UserRole } from '@/types/admin';
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const { user: currentAdmin, isAuthenticated } = useAuthStore();
+  const { user: currentAdmin, isAuthenticated, isInitialized, isLoggedIn } = useAuthStore();
 
   // State: User List & Pagination
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -106,12 +106,10 @@ export default function AdminUsersPage() {
   }, [currentPage, pageSize, searchKeyword, selectedRole, selectedStatus]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
+    if (isAuthenticated || isLoggedIn()) {
+      fetchUsers();
     }
-    fetchUsers();
-  }, [isAuthenticated, router, fetchUsers]);
+  }, [isAuthenticated, isLoggedIn, fetchUsers]);
 
   // Handle Search submit
   const handleSearchSubmit = (e: React.FormEvent) => {

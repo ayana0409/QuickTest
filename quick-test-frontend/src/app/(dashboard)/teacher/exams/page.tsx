@@ -37,7 +37,7 @@ import toast from 'react-hot-toast';
 
 export default function TeacherExamsPage() {
   const router = useRouter();
-  const { isAuthenticated, user, token } = useAuthStore();
+  const { isAuthenticated, user, token, isInitialized, isLoggedIn } = useAuthStore();
 
   const [exams, setExams] = useState<ExamSummaryResponse[]>([]);
   const [pageMeta, setPageMeta] = useState<PageResponse<ExamSummaryResponse> | null>(null);
@@ -110,12 +110,10 @@ export default function TeacherExamsPage() {
 
   // Fetch when debouncedSearch or statusFilter changes
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
+    if (isAuthenticated || isLoggedIn()) {
+      fetchExams(0, debouncedSearch, statusFilter);
     }
-    fetchExams(0, debouncedSearch, statusFilter);
-  }, [isAuthenticated, router, debouncedSearch, statusFilter]);
+  }, [isAuthenticated, isLoggedIn, debouncedSearch, statusFilter, fetchExams]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {

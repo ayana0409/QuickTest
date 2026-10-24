@@ -16,10 +16,10 @@ export function AuthNav() {
   if (!hasMounted) {
     return (
       <div className="flex items-center gap-3">
-        <Button href="/login" variant="ghost" size="sm">
+        <Button href="/login" prefetch={false} variant="ghost" size="sm">
           Đăng nhập
         </Button>
-        <Button href="/register" variant="primary" size="sm">
+        <Button href="/register" prefetch={false} variant="primary" size="sm">
           Đăng ký ngay
         </Button>
       </div>
@@ -42,7 +42,7 @@ export function AuthNav() {
             {user.fullName || user.username}
           </span>
         </div>
-        <Button href={getWorkspaceHref()} variant="outline" size="sm">
+        <Button href={getWorkspaceHref()} prefetch={false} variant="outline" size="sm">
           Vào Workspace
         </Button>
         <Button
@@ -60,10 +60,10 @@ export function AuthNav() {
 
   return (
     <div className="flex items-center gap-3">
-      <Button href="/login" variant="ghost" size="sm">
+      <Button href="/login" prefetch={false} variant="ghost" size="sm">
         Đăng nhập
       </Button>
-      <Button href="/register" variant="primary" size="sm">
+      <Button href="/register" prefetch={false} variant="primary" size="sm">
         Đăng ký ngay
       </Button>
     </div>

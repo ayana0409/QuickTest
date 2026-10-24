@@ -10,6 +10,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   href?: string;
+  prefetch?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -25,6 +26,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       type = 'button',
       href,
+      prefetch,
       ...props
     },
     ref
@@ -74,7 +76,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     if (href) {
       return (
-        <Link href={href} className={mergedClassName}>
+        <Link href={href} prefetch={prefetch} className={mergedClassName}>
           {content}
         </Link>
       );

@@ -16,16 +16,52 @@ interface FormErrors {
   password?: string;
 }
 
+function getDestination(user: any, rawCallbackUrl: string | null): string {
+  if (
+    rawCallbackUrl &&
+    rawCallbackUrl.startsWith('/') &&
+    !rawCallbackUrl.startsWith('/login') &&
+    !rawCallbackUrl.startsWith('/register')
+  ) {
+    return rawCallbackUrl;
+  }
+
+  const userRoles: string[] =
+    Array.isArray(user?.roles) && user.roles.length > 0
+      ? user.roles
+      : user?.role
+        ? [user.role]
+        : [];
+
+  const normalizedRoles = userRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+
+  if (normalizedRoles.includes('ADMIN')) {
+    return '/admin';
+  } else if (normalizedRoles.includes('TEACHER')) {
+    return '/teacher/exams';
+  } else {
+    return '/student';
+  }
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect');
 
-  const { login } = useAuthStore();
+  const { login, isAuthenticated, user } = useAuthStore();
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Auto-redirect if already authenticated (prevents staying stuck on /login?callbackUrl=...)
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      const destination = getDestination(user, callbackUrl);
+      window.location.replace(destination);
+    }
+  }, [isAuthenticated, user, callbackUrl]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -84,33 +120,16 @@ function LoginForm() {
         // Check if account is deactivated or locked
         if (userInfo.isActive === false) {
           toast.error('Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt. Vui lòng liên hệ quản trị viên.');
+          setIsLoading(false);
           return;
         }
 
         login(accessToken, refreshToken, userInfo);
 
-        if (callbackUrl) {
-          router.push(callbackUrl);
-          return;
-        }
-
-        // Determine destination by assigned roles
-        const userRoles: string[] =
-          Array.isArray(userInfo.roles) && userInfo.roles.length > 0
-            ? userInfo.roles
-            : userInfo.role
-              ? [userInfo.role]
-              : [];
-
-        const normalizedRoles = userRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
-
-        if (normalizedRoles.includes('ADMIN')) {
-          router.push('/admin');
-        } else if (normalizedRoles.includes('TEACHER')) {
-          router.push('/teacher/exams');
-        } else {
-          router.push('/student');
-        }
+        const destination = getDestination(userInfo, callbackUrl);
+        // Hard navigation ensures cookies are sent in HTTP headers and clears stale Next.js RSC router cache
+        window.location.replace(destination);
+        return;
       }
     } catch {
       // Error notifications are handled automatically by the Axios interceptor

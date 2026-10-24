@@ -14,7 +14,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, user, initializeAuth } = useAuthStore();
+  const { isAuthenticated, user, initializeAuth, isInitialized, isLoggedIn } = useAuthStore();
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -30,14 +30,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     setIsMobileOpen(false);
   }, [pathname]);
 
-  // Prevent flash of unauthenticated content
+  // Prevent flash of unauthenticated content only after auth initialization
   useEffect(() => {
-    if (hasMounted && !isAuthenticated) {
-      router.push('/login');
+    if (hasMounted && isInitialized) {
+      if (!isAuthenticated && !isLoggedIn()) {
+        const currentPath = window.location.pathname + window.location.search;
+        if (!currentPath.startsWith('/login')) {
+          window.location.replace(`/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+        }
+      }
     }
-  }, [hasMounted, isAuthenticated, router]);
+  }, [hasMounted, isInitialized, isAuthenticated, isLoggedIn]);
 
-  if (!hasMounted) {
+  if (!hasMounted || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
         <div className="flex flex-col items-center gap-3">

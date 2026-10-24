@@ -17,7 +17,7 @@ interface SystemStats {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, isInitialized, isLoggedIn, logout } = useAuthStore();
   const [stats, setStats] = useState<SystemStats>({
     totalUsers: 0,
     totalExams: 0,
@@ -27,10 +27,7 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
+    if (!isAuthenticated && !isLoggedIn()) return;
 
     const fetchDashboardStats = async () => {
       setIsLoading(true);
@@ -54,7 +51,7 @@ export default function AdminDashboardPage() {
     };
 
     fetchDashboardStats();
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoggedIn]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">

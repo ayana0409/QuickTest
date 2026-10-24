@@ -37,7 +37,7 @@ interface PageProps {
 export default function AdminUserDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id: userId } = use(params);
-  const { user: currentAdmin, isAuthenticated } = useAuthStore();
+  const { user: currentAdmin, isAuthenticated, isInitialized, isLoggedIn } = useAuthStore();
 
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,12 +84,10 @@ export default function AdminUserDetailPage({ params }: PageProps) {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
+    if (isAuthenticated || isLoggedIn()) {
+      fetchUser();
     }
-    fetchUser();
-  }, [userId, isAuthenticated]);
+  }, [userId, isAuthenticated, isLoggedIn]);
 
   const handleCopyId = () => {
     if (!user) return;
