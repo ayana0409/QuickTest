@@ -1,5 +1,6 @@
 package com.quicktest.core.logging;
 
+import com.quicktest.modules.iam.dto.LoginRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -41,6 +43,9 @@ class SystemLoggingAspectTest {
     }
 
     public void sampleMethod(String examTitle, int duration) {
+    }
+
+    public void sampleLoginMethod(LoginRequest request) {
     }
 
     @Test
@@ -106,5 +111,45 @@ class SystemLoggingAspectTest {
         assertEquals("EXAM", captured.getModule());
         assertEquals("CREATE_EXAM", captured.getAction());
         assertEquals("Invalid duration", captured.getErrorMessage());
+    }
+
+    @Test
+    @DisplayName("logAnnotatedMethod: BadCredentialsException logs WARN level and resolves username from LoginRequest")
+    void logAnnotatedMethod_BadCredentialsException_LogsWarnLevel() throws Throwable {
+        Method method = getClass().getMethod("sampleLoginMethod", LoginRequest.class);
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getTarget()).thenReturn(this);
+
+        LoginRequest loginRequest = LoginRequest.builder()
+                .usernameOrEmail("teststudent")
+                .password("wrongpassword")
+                .build();
+        when(joinPoint.getArgs()).thenReturn(new Object[]{loginRequest});
+        when(joinPoint.proceed()).thenThrow(new BadCredentialsException("Bad credentials"));
+        when(systemLogService.safeSerialize(any())).thenReturn("{\"parameters\":{\"request\":{\"usernameOrEmail\":\"teststudent\",\"password\":\"***MASKED***\"}}}");
+
+        AuditLog auditLog = mock(AuditLog.class);
+        when(auditLog.module()).thenReturn("AUTH");
+        when(auditLog.action()).thenReturn("LOGIN");
+        when(auditLog.logParams()).thenReturn(true);
+
+        BadCredentialsException thrown = assertThrows(BadCredentialsException.class, () -> {
+            aspect.logAnnotatedMethod(joinPoint, auditLog);
+        });
+
+        assertEquals("Bad credentials", thrown.getMessage());
+
+        ArgumentCaptor<SystemLog> captor = ArgumentCaptor.forClass(SystemLog.class);
+        verify(systemLogService, atLeastOnce()).logAsync(captor.capture());
+
+        SystemLog captured = captor.getValue();
+        // Crucial requirement: Must be WARN level instead of ERROR
+        assertEquals(LogLevel.WARN, captured.getLevel());
+        assertEquals(LogStatus.FAILURE, captured.getStatus());
+        assertEquals("AUTH", captured.getModule());
+        assertEquals("LOGIN", captured.getAction());
+        assertEquals("teststudent", captured.getActorUsername());
+        assertEquals("Authentication failed: Invalid username or password", captured.getErrorMessage());
     }
 }

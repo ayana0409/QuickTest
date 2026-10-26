@@ -1,6 +1,9 @@
 package com.quicktest.core.logging;
 
+import com.quicktest.core.exception.AppException;
 import com.quicktest.core.security.UserDetailsImpl;
+import com.quicktest.modules.iam.dto.LoginRequest;
+import com.quicktest.modules.iam.dto.RegisterRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +11,9 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -115,18 +120,22 @@ public class SystemLoggingAspect {
             detailsMap.put("exceptionClass", throwable.getClass().getName());
             detailsMap.put("stackTraceSnippet", extractStackTraceSnippet(throwable));
 
+            LogLevel logLevel = resolveLogLevel(throwable);
+            String actorUsername = resolveActorUsername(actorInfo, joinPoint.getArgs());
+            String errorMessage = resolveErrorMessage(throwable);
+
             SystemLog errorEntry = SystemLog.builder()
-                    .level(LogLevel.ERROR)
+                    .level(logLevel)
                     .status(LogStatus.FAILURE)
                     .module(module)
                     .action(action)
                     .actorId(actorInfo.id)
-                    .actorUsername(actorInfo.username)
+                    .actorUsername(actorUsername)
                     .actorRole(actorInfo.role)
                     .endpoint(httpInfo.endpoint)
                     .httpMethod(httpInfo.httpMethod)
                     .ipAddress(httpInfo.ipAddress)
-                    .errorMessage(throwable.getMessage() != null ? throwable.getMessage() : throwable.toString())
+                    .errorMessage(errorMessage)
                     .details(systemLogService.safeSerialize(detailsMap))
                     .executionTimeMs(executionTimeMs)
                     .build();
@@ -134,6 +143,49 @@ public class SystemLoggingAspect {
             systemLogService.logAsync(errorEntry);
             throw throwable;
         }
+    }
+
+    /**
+     * Resolves the appropriate log level based on the thrown exception.
+     * Authentication failures (e.g. incorrect password, bad credentials) and access denied
+     * exceptions are categorized as WARN (warning) rather than system ERROR.
+     */
+    private LogLevel resolveLogLevel(Throwable throwable) {
+        if (throwable instanceof AuthenticationException || throwable instanceof AccessDeniedException) {
+            return LogLevel.WARN;
+        }
+        if (throwable instanceof AppException appException && appException.getStatus() != null && appException.getStatus().is4xxClientError()) {
+            return LogLevel.WARN;
+        }
+        return LogLevel.ERROR;
+    }
+
+    /**
+     * Resolves a meaningful actor username. If the principal is ANONYMOUS (e.g. during login),
+     * attempts to extract the requested username/email from the method arguments.
+     */
+    private String resolveActorUsername(ActorInfo actorInfo, Object[] args) {
+        if (actorInfo != null && actorInfo.username() != null && !"ANONYMOUS".equalsIgnoreCase(actorInfo.username())) {
+            return actorInfo.username();
+        }
+        if (args != null) {
+            for (Object arg : args) {
+                if (arg instanceof LoginRequest loginRequest && loginRequest.getUsernameOrEmail() != null && !loginRequest.getUsernameOrEmail().isBlank()) {
+                    return loginRequest.getUsernameOrEmail().trim();
+                }
+            }
+        }
+        return actorInfo != null && actorInfo.username() != null ? actorInfo.username() : "ANONYMOUS";
+    }
+
+    /**
+     * Formats user-friendly error messages for common authentication failures.
+     */
+    private String resolveErrorMessage(Throwable throwable) {
+        if (throwable instanceof org.springframework.security.authentication.BadCredentialsException) {
+            return "Authentication failed: Invalid username or password";
+        }
+        return throwable.getMessage() != null ? throwable.getMessage() : throwable.toString();
     }
 
     private String resolveModuleName(ProceedingJoinPoint joinPoint, AuditLog auditLog, String fallbackModule) {
@@ -167,7 +219,25 @@ public class SystemLoggingAspect {
 
         for (int i = 0; i < args.length; i++) {
             String paramName = (i < methodParams.length) ? methodParams[i].getName() : "arg" + i;
-            params.put(paramName, args[i]);
+            Object arg = args[i];
+            if (arg instanceof LoginRequest loginRequest) {
+                // Mask raw password field in memory and serialized logs
+                Map<String, Object> sanitizedLogin = new LinkedHashMap<>();
+                sanitizedLogin.put("usernameOrEmail", loginRequest.getUsernameOrEmail());
+                sanitizedLogin.put("password", "***MASKED***");
+                params.put(paramName, sanitizedLogin);
+            } else if (arg instanceof RegisterRequest registerRequest) {
+                // Mask raw password field for registration requests
+                Map<String, Object> sanitizedRegister = new LinkedHashMap<>();
+                sanitizedRegister.put("username", registerRequest.getUsername());
+                sanitizedRegister.put("email", registerRequest.getEmail());
+                sanitizedRegister.put("role", registerRequest.getRole());
+                sanitizedRegister.put("fullName", registerRequest.getFullName());
+                sanitizedRegister.put("password", "***MASKED***");
+                params.put(paramName, sanitizedRegister);
+            } else {
+                params.put(paramName, arg);
+            }
         }
         return params;
     }
