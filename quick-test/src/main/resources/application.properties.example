@@ -111,8 +111,9 @@ cloudinary.upload.max-file-size-bytes=3145728
 cloudinary.upload.allowed-formats=jpg,jpeg,png,webp,gif
 
 # Multipart File Upload Configuration
-spring.servlet.multipart.max-file-size=5MB
-spring.servlet.multipart.max-request-size=100MB
+spring.servlet.multipart.max-file-size=${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:10MB}
+spring.servlet.multipart.max-request-size=${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:25MB}
+server.tomcat.max-swallow-size=${SERVER_TOMCAT_MAX_SWALLOW_SIZE:25MB}
 
 # Google Gemini AI Configuration (Fallback when Database has no active keys)
 # Multi-key & multi-model rotation pool is dynamically managed via Database & Admin Portal (/admin/ai)

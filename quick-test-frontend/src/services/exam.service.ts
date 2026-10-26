@@ -193,6 +193,7 @@ export const examService = {
       `/teacher/exams/${examId}/questions/with-media`,
       formData,
       {
+        timeout: 90000,
         successMessage: 'Thêm câu hỏi thành công! Ảnh đang được xử lý trong nền.',
       }
     );
@@ -245,6 +246,7 @@ export const examService = {
       `/teacher/questions/${questionId}/with-media`,
       formData,
       {
+        timeout: 90000,
         successMessage: 'Cập nhật câu hỏi thành công! Ảnh đang được xử lý trong nền.',
       }
     );

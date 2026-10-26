@@ -24,6 +24,7 @@ import { Modal } from '@/components/common/Modal';
 import { QuestionBankModal } from '@/components/exam/QuestionBankModal';
 import { AiQuizGeneratorModal } from '@/components/exam/AiQuizGeneratorModal';
 import { examService } from '@/services/exam.service';
+import { compressImage } from '@/lib/imageCompression';
 import type {
   QuestionResponse,
   QuestionType,
@@ -288,12 +289,12 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
   };
 
   // Select image file locally for Question WITHOUT uploading to backend yet
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Kích thước ảnh câu hỏi vượt quá giới hạn cho phép (tối đa 10MB).');
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Kích thước ảnh câu hỏi vượt quá giới hạn cho phép (tối đa 15MB).');
       return;
     }
 
@@ -301,8 +302,10 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       URL.revokeObjectURL(imagePreviewUrl);
     }
 
-    const localBlobUrl = URL.createObjectURL(file);
-    setPendingImageFile(file);
+    // Compress client-side (<200KB) to ensure lightning-fast upload even on slow networks
+    const compressed = await compressImage(file);
+    const localBlobUrl = URL.createObjectURL(compressed);
+    setPendingImageFile(compressed);
     setImagePreviewUrl(localBlobUrl);
     setIsImageRemoved(false);
     setValue('imageUrl', localBlobUrl);
@@ -324,12 +327,12 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
   };
 
   // Select image file locally for a specific Option
-  const handleOptionImageChange = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOptionImageChange = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Kích thước ảnh đáp án vượt quá giới hạn cho phép (tối đa 10MB).');
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Kích thước ảnh đáp án vượt quá giới hạn cho phép (tối đa 15MB).');
       return;
     }
 
@@ -338,8 +341,10 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       URL.revokeObjectURL(oldUrl);
     }
 
-    const blobUrl = URL.createObjectURL(file);
-    setOptionPendingFiles((prev) => ({ ...prev, [idx]: file }));
+    // Compress client-side (<200KB)
+    const compressed = await compressImage(file);
+    const blobUrl = URL.createObjectURL(compressed);
+    setOptionPendingFiles((prev) => ({ ...prev, [idx]: compressed }));
     setOptionPreviewUrls((prev) => ({ ...prev, [idx]: blobUrl }));
     setOptionImagesRemoved((prev) => ({ ...prev, [idx]: false }));
     setValue(`options.${idx}.imageUrl`, blobUrl, { shouldDirty: true });
@@ -488,11 +493,17 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         };
 
         if (hasPendingFiles) {
+          const finalQuestionImage = pendingImageFile ? await compressImage(pendingImageFile) : null;
+          const finalOptionImages: Record<number, File | null> = {};
+          for (const [k, f] of Object.entries(optionPendingFiles)) {
+            finalOptionImages[Number(k)] = f ? await compressImage(f) : null;
+          }
+
           await examService.updateQuestionWithMedia(
             editingQuestion.id,
             payload,
-            pendingImageFile,
-            optionPendingFiles
+            finalQuestionImage,
+            finalOptionImages
           );
         } else {
           await examService.updateQuestion(editingQuestion.id, payload);
@@ -512,11 +523,17 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         };
 
         if (hasPendingFiles) {
+          const finalQuestionImage = pendingImageFile ? await compressImage(pendingImageFile) : null;
+          const finalOptionImages: Record<number, File | null> = {};
+          for (const [k, f] of Object.entries(optionPendingFiles)) {
+            finalOptionImages[Number(k)] = f ? await compressImage(f) : null;
+          }
+
           await examService.addQuestionWithMedia(
             examId,
             payload,
-            pendingImageFile,
-            optionPendingFiles
+            finalQuestionImage,
+            finalOptionImages
           );
         } else {
           await examService.addQuestion(examId, payload);
