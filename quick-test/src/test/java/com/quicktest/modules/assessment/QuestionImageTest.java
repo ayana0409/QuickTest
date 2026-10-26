@@ -297,7 +297,7 @@ class QuestionImageTest {
         assertNotNull(response.getId());
         assertEquals("pending:upload", response.getImageUrl());
         verify(questionRepository, times(1)).save(any(Question.class));
-        verify(rabbitTemplate, times(1)).convertAndSend(
+        verify(rabbitTemplate, timeout(2000).times(1)).convertAndSend(
                 eq(com.quicktest.config.RabbitMQConfig.MEDIA_UPLOAD_EXCHANGE),
                 eq(com.quicktest.config.RabbitMQConfig.MEDIA_UPLOAD_ROUTING_KEY),
                 any(com.quicktest.modules.assessment.dto.MediaUploadTaskMessage.class)

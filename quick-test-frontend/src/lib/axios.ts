@@ -162,6 +162,16 @@ apiClient.interceptors.request.use(
       if (guestIdentifier && config.headers) {
         config.headers['X-Guest-Identifier'] = guestIdentifier;
       }
+
+      // For FormData (multipart uploads), delete default application/json Content-Type
+      // so browser and Axios can automatically attach multipart/form-data with the correct boundary
+      if (typeof FormData !== 'undefined' && config.data instanceof FormData && config.headers) {
+        if (typeof config.headers.delete === 'function') {
+          config.headers.delete('Content-Type');
+        } else {
+          delete config.headers['Content-Type'];
+        }
+      }
     }
     return config;
   },

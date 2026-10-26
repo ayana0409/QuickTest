@@ -531,31 +531,28 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     private void dispatchMediaUploadAfterCommit(MediaUploadTaskMessage task) {
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    try {
-                        rabbitTemplate.convertAndSend(
-                                RabbitMQConfig.MEDIA_UPLOAD_EXCHANGE,
-                                RabbitMQConfig.MEDIA_UPLOAD_ROUTING_KEY,
-                                task);
-                        log.info("Dispatched async media upload task after commit: questionId={}, optionId={}",
-                                task.getQuestionId(), task.getOptionId());
-                    } catch (Exception ex) {
-                        log.error("Failed to publish media upload task to RabbitMQ: {}", ex.getMessage(), ex);
-                    }
-                }
-            });
-        } else {
+        Runnable publishAction = () -> {
             try {
                 rabbitTemplate.convertAndSend(
                         RabbitMQConfig.MEDIA_UPLOAD_EXCHANGE,
                         RabbitMQConfig.MEDIA_UPLOAD_ROUTING_KEY,
                         task);
+                log.info("Dispatched async media upload task to RabbitMQ: questionId={}, optionId={}",
+                        task.getQuestionId(), task.getOptionId());
             } catch (Exception ex) {
                 log.error("Failed to publish media upload task to RabbitMQ: {}", ex.getMessage(), ex);
             }
+        };
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    java.util.concurrent.CompletableFuture.runAsync(publishAction);
+                }
+            });
+        } else {
+            java.util.concurrent.CompletableFuture.runAsync(publishAction);
         }
     }
 

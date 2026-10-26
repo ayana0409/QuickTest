@@ -190,10 +190,9 @@ export const examService = {
     }
 
     const response = await apiClient.post<ApiResponse<QuestionResponse>>(
-      `/teacher/exams/${examId}/questions`,
+      `/teacher/exams/${examId}/questions/with-media`,
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' },
         successMessage: 'Thêm câu hỏi thành công! Ảnh đang được xử lý trong nền.',
       }
     );
@@ -243,10 +242,9 @@ export const examService = {
     }
 
     const response = await apiClient.put<ApiResponse<QuestionResponse>>(
-      `/teacher/questions/${questionId}`,
+      `/teacher/questions/${questionId}/with-media`,
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' },
         successMessage: 'Cập nhật câu hỏi thành công! Ảnh đang được xử lý trong nền.',
       }
     );
@@ -272,7 +270,6 @@ export const examService = {
       `/teacher/questions/${questionId}/image`,
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' },
         successMessage: 'Cập nhật hình ảnh câu hỏi thành công!',
       }
     );
@@ -290,7 +287,6 @@ export const examService = {
       '/teacher/media/upload',
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' },
         successMessage: 'Tải ảnh minh họa lên thành công!',
       }
     );
