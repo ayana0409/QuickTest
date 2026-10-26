@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  hasError?: boolean;
   leftIcon?: React.ReactNode;
   rightElement?: React.ReactNode;
   helperText?: string;
@@ -20,6 +21,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       type = 'text',
       label,
       error,
+      hasError = false,
       leftIcon,
       rightElement,
       helperText,
@@ -65,7 +67,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               'focus:outline-none focus:ring-2 focus:ring-offset-1',
               leftIcon ? 'pl-10' : 'pl-3.5',
               isPassword || rightElement ? 'pr-10' : 'pr-3.5',
-              error
+              (error || hasError)
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30 bg-red-50/20 dark:bg-red-950/10'
                 : 'border-zinc-300 dark:border-zinc-700 focus:border-indigo-500 focus:ring-indigo-500/20',
               disabled && 'opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-zinc-900',

@@ -125,6 +125,7 @@ export default function RegisterPage() {
         '/auth/register',
         payload,
         {
+          showErrorToast: false, // Suppress global error toast; errors are mapped to form fields
           successMessage: 'Đăng ký tài khoản thành công! Đang chuyển hướng...',
         }
       );

@@ -2,21 +2,22 @@
 
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { LogIn, Lock, User as UserIcon, Loader2, KeyRound } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { LogIn, Lock, User as UserIcon, Loader2, KeyRound, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { useAuthStore } from '@/stores/authStore';
-import { apiClient } from '@/lib/axios';
-import toast from 'react-hot-toast';
-import type { ApiResponse, LoginResponse } from '@/types/auth';
+import { apiClient, extractErrorMessage } from '@/lib/axios';
+import type { AxiosError } from 'axios';
+import type { ApiResponse, LoginResponse, User } from '@/types/auth';
 
 interface FormErrors {
   usernameOrEmail?: string;
   password?: string;
+  general?: string;
 }
 
-function getDestination(user: any, rawCallbackUrl: string | null): string {
+function getDestination(user: User | null | undefined, rawCallbackUrl: string | null): string {
   if (
     rawCallbackUrl &&
     rawCallbackUrl.startsWith('/') &&
@@ -45,7 +46,6 @@ function getDestination(user: any, rawCallbackUrl: string | null): string {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect');
 
@@ -80,15 +80,25 @@ function LoginForm() {
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUsernameOrEmail(e.target.value);
-    if (errors.usernameOrEmail) {
-      setErrors((prev) => ({ ...prev, usernameOrEmail: undefined }));
+    if (errors.usernameOrEmail || errors.password || errors.general) {
+      setErrors((prev) => ({
+        ...prev,
+        usernameOrEmail: undefined,
+        general: undefined,
+        // Clear combined credential error on password field when user modifies username
+        ...(prev.password === 'Tên đăng nhập hoặc mật khẩu không chính xác' ? { password: undefined } : {}),
+      }));
     }
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
-    if (errors.password) {
-      setErrors((prev) => ({ ...prev, password: undefined }));
+    if (errors.password || errors.general) {
+      setErrors((prev) => ({
+        ...prev,
+        password: undefined,
+        general: undefined,
+      }));
     }
   };
 
@@ -101,6 +111,7 @@ function LoginForm() {
     }
 
     setIsLoading(true);
+    setErrors({});
 
     try {
       const response = await apiClient.post<ApiResponse<LoginResponse>>(
@@ -110,6 +121,7 @@ function LoginForm() {
           password,
         },
         {
+          showErrorToast: false, // Suppress toast popups on failure; errors display below inputs
           successMessage: 'Đăng nhập thành công!',
         }
       );
@@ -119,7 +131,9 @@ function LoginForm() {
 
         // Check if account is deactivated or locked
         if (userInfo.isActive === false) {
-          toast.error('Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt. Vui lòng liên hệ quản trị viên.');
+          setErrors({
+            usernameOrEmail: 'Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt. Vui lòng liên hệ quản trị viên.',
+          });
           setIsLoading(false);
           return;
         }
@@ -131,8 +145,48 @@ function LoginForm() {
         window.location.replace(destination);
         return;
       }
-    } catch {
-      // Error notifications are handled automatically by the Axios interceptor
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ message?: string; errors?: Record<string, string>; data?: Record<string, string> }>;
+      const status = axiosError.response?.status;
+      const rawMessage =
+        axiosError.response?.data?.message ||
+        (typeof axiosError.response?.data === 'string' ? axiosError.response?.data : '');
+      const lowerRawMsg = rawMessage.toLowerCase();
+
+      // Display specific field or inline error similar to registration page
+      if (
+        status === 401 ||
+        lowerRawMsg.includes('invalid username') ||
+        lowerRawMsg.includes('bad credentials') ||
+        lowerRawMsg.includes('không chính xác')
+      ) {
+        setErrors({
+          password: 'Tên đăng nhập hoặc mật khẩu không chính xác',
+        });
+      } else if (
+        status === 403 ||
+        lowerRawMsg.includes('deactivated') ||
+        lowerRawMsg.includes('disabled') ||
+        lowerRawMsg.includes('khóa') ||
+        lowerRawMsg.includes('kích hoạt')
+      ) {
+        setErrors({
+          usernameOrEmail: 'Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt. Vui lòng liên hệ quản trị viên.',
+        });
+      } else if (lowerRawMsg.includes('username') || lowerRawMsg.includes('tên đăng nhập')) {
+        setErrors({
+          usernameOrEmail: rawMessage,
+        });
+      } else if (lowerRawMsg.includes('password') || lowerRawMsg.includes('mật khẩu')) {
+        setErrors({
+          password: rawMessage,
+        });
+      } else {
+        const fallbackMsg = extractErrorMessage(axiosError as AxiosError);
+        setErrors({
+          general: fallbackMsg || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -147,6 +201,7 @@ function LoginForm() {
           value={usernameOrEmail}
           onChange={handleUsernameChange}
           error={errors.usernameOrEmail}
+          hasError={Boolean(errors.password === 'Tên đăng nhập hoặc mật khẩu không chính xác')}
           placeholder="quicktest"
           leftIcon={<UserIcon className="w-4 h-4" />}
           autoComplete="username"
@@ -163,6 +218,13 @@ function LoginForm() {
           leftIcon={<Lock className="w-4 h-4" />}
           autoComplete="current-password"
         />
+
+        {errors.general && (
+          <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>{errors.general}</span>
+          </p>
+        )}
 
         <Button
           type="submit"
