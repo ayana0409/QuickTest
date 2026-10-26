@@ -8,6 +8,19 @@ let stompClient: Client | null = null;
 const connectCallbacks = new Set<(client: Client) => void>();
 
 /**
+ * Helper to convert HTTP/HTTPS endpoint to WS/WSS URL for Native WebSocket transport.
+ */
+function getWebSocketUrl(rawUrl: string): string {
+  if (rawUrl.startsWith('https://')) {
+    return rawUrl.replace(/^https:\/\//, 'wss://');
+  }
+  if (rawUrl.startsWith('http://')) {
+    return rawUrl.replace(/^http:\/\//, 'ws://');
+  }
+  return rawUrl;
+}
+
+/**
  * Get current STOMP client instance.
  */
 export function getStompClient(): Client | null {
@@ -60,8 +73,14 @@ export function connectWebSocket(
     headers['Authorization'] = `Bearer ${effectiveToken}`;
   }
 
+  const isBrowser = typeof window !== 'undefined';
+  const hasNativeWebSocket = isBrowser && typeof window.WebSocket !== 'undefined';
+  const wsEndpoint = getWebSocketUrl(WS_URL);
+
   stompClient = new Client({
-    webSocketFactory: () => new SockJS(WS_URL),
+    // Prefer Native WebSocket over SockJS to eliminate XHR CORS issues, polling overhead, and unload violations
+    brokerURL: hasNativeWebSocket ? wsEndpoint : undefined,
+    webSocketFactory: hasNativeWebSocket ? undefined : () => new SockJS(WS_URL),
     connectHeaders: headers,
     debug: (str: string) => {
       if (process.env.NODE_ENV === 'development') {
