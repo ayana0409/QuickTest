@@ -10,6 +10,7 @@
 # -------------------------------------------------------------------
 server.port=${PORT:${SERVER_PORT:8080}}
 # server.servlet.context-path=/api
+server.max-http-request-header-size=64KB
 
 # Embedded Tomcat Minimal Resource Footprint (Optimized for 512MB RAM & 0.1 vCPU)
 server.tomcat.threads.max=25

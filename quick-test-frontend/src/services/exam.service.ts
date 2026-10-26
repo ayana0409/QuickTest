@@ -162,6 +162,45 @@ export const examService = {
   },
 
   /**
+   * Add a new question to an exam with asynchronous media upload queue.
+   */
+  async addQuestionWithMedia(
+    examId: string,
+    payload: QuestionCreateRequest,
+    questionImage?: File | null,
+    optionImages?: Record<number, File | null>
+  ): Promise<QuestionResponse> {
+    const formData = new FormData();
+    formData.append(
+      'question',
+      new Blob([JSON.stringify(payload)], { type: 'application/json' })
+    );
+
+    if (questionImage) {
+      formData.append('questionImage', questionImage);
+    }
+
+    if (optionImages) {
+      Object.entries(optionImages).forEach(([idxStr, file]) => {
+        if (file) {
+          formData.append('optionImages', file);
+          formData.append('optionIndices', idxStr);
+        }
+      });
+    }
+
+    const response = await apiClient.post<ApiResponse<QuestionResponse>>(
+      `/teacher/exams/${examId}/questions`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        successMessage: 'Thêm câu hỏi thành công! Ảnh đang được xử lý trong nền.',
+      }
+    );
+    return response.data.data;
+  },
+
+  /**
    * Update an existing question.
    */
   async updateQuestion(questionId: string, payload: QuestionUpdateRequest): Promise<QuestionResponse> {
@@ -170,6 +209,45 @@ export const examService = {
       payload,
       {
         successMessage: 'Cập nhật câu hỏi thành công!',
+      }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update an existing question with asynchronous media upload queue.
+   */
+  async updateQuestionWithMedia(
+    questionId: string,
+    payload: QuestionUpdateRequest,
+    questionImage?: File | null,
+    optionImages?: Record<number, File | null>
+  ): Promise<QuestionResponse> {
+    const formData = new FormData();
+    formData.append(
+      'question',
+      new Blob([JSON.stringify(payload)], { type: 'application/json' })
+    );
+
+    if (questionImage) {
+      formData.append('questionImage', questionImage);
+    }
+
+    if (optionImages) {
+      Object.entries(optionImages).forEach(([idxStr, file]) => {
+        if (file) {
+          formData.append('optionImages', file);
+          formData.append('optionIndices', idxStr);
+        }
+      });
+    }
+
+    const response = await apiClient.put<ApiResponse<QuestionResponse>>(
+      `/teacher/questions/${questionId}`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        successMessage: 'Cập nhật câu hỏi thành công! Ảnh đang được xử lý trong nền.',
       }
     );
     return response.data.data;

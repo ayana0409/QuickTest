@@ -171,7 +171,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/session/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/ws-exam/**").permitAll()
+                        .requestMatchers("/ws-exam", "/ws-exam/**").permitAll()
                         // Public Swagger / OpenAPI documentation
                         .requestMatchers(
                                 "/v3/api-docs/**",

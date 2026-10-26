@@ -1,5 +1,4 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws-exam';
 
@@ -9,6 +8,7 @@ const connectCallbacks = new Set<(client: Client) => void>();
 
 /**
  * Helper to convert HTTP/HTTPS endpoint to WS/WSS URL for Native WebSocket transport.
+ * Keeps URL clean to avoid exceeding HTTP header size limits or leaking tokens in access logs.
  */
 function getWebSocketUrl(rawUrl: string): string {
   if (rawUrl.startsWith('https://')) {
@@ -73,25 +73,27 @@ export function connectWebSocket(
     headers['Authorization'] = `Bearer ${effectiveToken}`;
   }
 
-  const isBrowser = typeof window !== 'undefined';
-  const hasNativeWebSocket = isBrowser && typeof window.WebSocket !== 'undefined';
   const wsEndpoint = getWebSocketUrl(WS_URL);
 
   stompClient = new Client({
-    // Prefer Native WebSocket over SockJS to eliminate XHR CORS issues, polling overhead, and unload violations
-    brokerURL: hasNativeWebSocket ? wsEndpoint : undefined,
-    webSocketFactory: hasNativeWebSocket ? undefined : () => new SockJS(WS_URL),
+    // Standard Native WebSocket transport (supported by all modern browsers)
+    // Avoids legacy SockJS unload violations and XHR polling overhead
+    brokerURL: wsEndpoint,
     connectHeaders: headers,
     debug: (str: string) => {
       if (process.env.NODE_ENV === 'development') {
-        console.debug('[STOMP]', str);
+        // Redact JWT tokens and authorization headers from developer console logs
+        const sanitized = str
+          .replace(/Bearer\s+[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*/gi, 'Bearer [REDACTED]')
+          .replace(/(Authorization|token):\s*[^\r\n]+/gi, '$1: [REDACTED]');
+        console.debug('[STOMP]', sanitized);
       }
     },
     reconnectDelay: 5000,
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,
-    onConnect: (frame) => {
-      console.log('[STOMP] Connected successfully:', frame);
+    onConnect: () => {
+      console.log('[STOMP] Connected successfully');
       const callbacks = Array.from(connectCallbacks);
       connectCallbacks.clear();
       callbacks.forEach((cb) => {
@@ -111,7 +113,7 @@ export function connectWebSocket(
       }
     },
     onWebSocketError: (event) => {
-      console.error('[STOMP] WebSocket transport error:', event);
+      console.warn('[STOMP] WebSocket transport error (server may be starting or offline):', event);
       if (onErrorCallback) {
         onErrorCallback(event);
       }

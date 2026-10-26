@@ -428,49 +428,12 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
       let finalImageUrl: string | null = null;
       let finalImagePublicId: string | null = null;
 
-      // STEP 1: Execute media uploads in parallel (Promise.all) to prevent sequential waiting
-      type UploadTask = {
-        type: 'question' | 'option';
-        idx?: number;
-        file: File;
-        folder: string;
-      };
+      const hasPendingFiles = Boolean(pendingImageFile) || Object.values(optionPendingFiles).some((f) => Boolean(f));
 
-      const tasks: UploadTask[] = [];
+      // Resolve Question Image URL & Public ID
       if (pendingImageFile) {
-        tasks.push({ type: 'question', file: pendingImageFile, folder: 'questions' });
-      }
-
-      Object.entries(optionPendingFiles).forEach(([idxStr, file]) => {
-        if (file) {
-          tasks.push({ type: 'option', idx: Number(idxStr), file, folder: 'options' });
-        }
-      });
-
-      let uploadedResults: { type: 'question' | 'option'; idx?: number; url: string; publicId: string }[] = [];
-      if (tasks.length > 0) {
-        try {
-          uploadedResults = await Promise.all(
-            tasks.map((task) =>
-              examService.uploadMedia(task.file, task.folder).then((res) => ({
-                type: task.type,
-                idx: task.idx,
-                url: res.url,
-                publicId: res.publicId,
-              }))
-            )
-          );
-        } catch {
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      // STEP 2: Resolve Question Image
-      const qUpload = uploadedResults.find((r) => r.type === 'question');
-      if (qUpload) {
-        finalImageUrl = qUpload.url;
-        finalImagePublicId = qUpload.publicId;
+        finalImageUrl = 'pending:upload';
+        finalImagePublicId = null;
       } else if (!isImageRemoved) {
         finalImageUrl =
           editingQuestion?.imageUrl ||
@@ -481,38 +444,37 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         finalImagePublicId = null;
       }
 
-      // STEP 3: Prepare Options DTO with Images
+      // Prepare Options DTO with Images
       const optionsDto: AnswerOptionDto[] | undefined =
         data.questionType === 'SINGLE_CHOICE' || data.questionType === 'MULTIPLE_CHOICE'
           ? data.options.map((opt, idx) => {
-            const optUpload = uploadedResults.find((r) => r.type === 'option' && r.idx === idx);
-            let optImageUrl: string | null = null;
-            let optImagePublicId: string | null = null;
+              const hasOptFile = Boolean(optionPendingFiles[idx]);
+              let optImageUrl: string | null = null;
+              let optImagePublicId: string | null = null;
 
-            if (optUpload) {
-              optImageUrl = optUpload.url;
-              optImagePublicId = optUpload.publicId;
-            } else if (!optionImagesRemoved[idx]) {
-              const existingOpt = editingQuestion?.options?.[idx];
-              optImageUrl =
-                existingOpt?.imageUrl ||
-                (opt.imageUrl && !opt.imageUrl.startsWith('blob:') ? opt.imageUrl : null);
-              optImagePublicId = optionPublicIds[idx] || existingOpt?.imagePublicId || null;
-            }
+              if (hasOptFile) {
+                optImageUrl = 'pending:upload';
+                optImagePublicId = null;
+              } else if (!optionImagesRemoved[idx]) {
+                const existingOpt = editingQuestion?.options?.[idx];
+                optImageUrl =
+                  existingOpt?.imageUrl ||
+                  (opt.imageUrl && !opt.imageUrl.startsWith('blob:') ? opt.imageUrl : null);
+                optImagePublicId = optionPublicIds[idx] || existingOpt?.imagePublicId || null;
+              }
 
-            return {
-              orderIndex: idx + 1,
-              content: opt.content || '',
-              isCorrect: Boolean(opt.isCorrect),
-              imageUrl: optImageUrl,
-              imagePublicId: optImagePublicId,
-            };
-          })
+              return {
+                orderIndex: idx + 1,
+                content: opt.content || '',
+                isCorrect: Boolean(opt.isCorrect),
+                imageUrl: optImageUrl,
+                imagePublicId: optImagePublicId,
+              };
+            })
           : undefined;
 
-      // STEP 4: Save to backend
+      // Save to backend immediately (Media files queued asynchronously into RabbitMQ worker)
       if (editingQuestion) {
-        // Update existing question
         const payload: QuestionUpdateRequest = {
           content: data.content,
           questionType: data.questionType,
@@ -524,9 +486,18 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
           gradingRubric: data.gradingRubric || null,
           options: optionsDto,
         };
-        await examService.updateQuestion(editingQuestion.id, payload);
+
+        if (hasPendingFiles) {
+          await examService.updateQuestionWithMedia(
+            editingQuestion.id,
+            payload,
+            pendingImageFile,
+            optionPendingFiles
+          );
+        } else {
+          await examService.updateQuestion(editingQuestion.id, payload);
+        }
       } else {
-        // Create new question
         const payload: QuestionCreateRequest = {
           orderIndex: questions.length + 1,
           content: data.content,
@@ -539,7 +510,17 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
           gradingRubric: data.gradingRubric || null,
           options: optionsDto,
         };
-        await examService.addQuestion(examId, payload);
+
+        if (hasPendingFiles) {
+          await examService.addQuestionWithMedia(
+            examId,
+            payload,
+            pendingImageFile,
+            optionPendingFiles
+          );
+        } else {
+          await examService.addQuestion(examId, payload);
+        }
       }
 
       handleCloseModal();
@@ -748,12 +729,19 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                   {/* Question Image View */}
                   {question.imageUrl && (
                     <div className="mb-4">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={question.imageUrl}
-                        alt="Minh họa câu hỏi"
-                        className="max-h-64 rounded-xl border border-zinc-200 dark:border-zinc-800 object-contain bg-zinc-50 dark:bg-zinc-950"
-                      />
+                      {question.imageUrl.startsWith('pending:') ? (
+                        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 text-xs">
+                          <span className="w-3.5 h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                          <span>Ảnh minh họa đang được hệ thống xử lý và tải lên trong nền...</span>
+                        </div>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={question.imageUrl}
+                          alt="Minh họa câu hỏi"
+                          className="max-h-64 rounded-xl border border-zinc-200 dark:border-zinc-800 object-contain bg-zinc-50 dark:bg-zinc-950"
+                        />
+                      )}
                     </div>
                   )}
 
@@ -782,12 +770,19 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                             <div className="flex-1">
                               <p className="font-medium">{opt.content}</p>
                               {opt.imageUrl && (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={opt.imageUrl}
-                                  alt="Hình đáp án"
-                                  className="mt-2 max-h-24 rounded border object-contain"
-                                />
+                                opt.imageUrl.startsWith('pending:') ? (
+                                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                                    <span className="w-2.5 h-2.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                                    <span>Đang tải ảnh đáp án...</span>
+                                  </div>
+                                ) : (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={opt.imageUrl}
+                                    alt="Hình đáp án"
+                                    className="mt-2 max-h-24 rounded border object-contain"
+                                  />
+                                )
                               )}
                             </div>
                             {opt.isCorrect && (

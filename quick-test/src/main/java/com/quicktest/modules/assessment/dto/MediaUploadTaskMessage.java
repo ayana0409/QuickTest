@@ -24,4 +24,8 @@ public class MediaUploadTaskMessage implements Serializable {
     private byte[] fileData;
     private String contentType;
     private Integer fileIndex;
+
+    private java.util.UUID questionId;
+    private java.util.UUID optionId;
+    private java.util.UUID examId;
 }

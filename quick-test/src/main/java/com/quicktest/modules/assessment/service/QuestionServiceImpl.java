@@ -9,10 +9,12 @@ import com.quicktest.modules.assessment.dto.AnswerOptionDto;
 import com.quicktest.config.RabbitMQConfig;
 import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage;
 import com.quicktest.modules.assessment.dto.ExamCloneTaskMessage.ImageCloneItem;
+import com.quicktest.modules.assessment.dto.MediaUploadTaskMessage;
 import com.quicktest.modules.assessment.dto.QuestionBankItemResponse;
 import com.quicktest.modules.assessment.dto.QuestionCreateRequest;
 import com.quicktest.modules.assessment.dto.QuestionResponse;
 import com.quicktest.modules.assessment.dto.QuestionUpdateRequest;
+import org.springframework.web.multipart.MultipartFile;
 import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
@@ -297,6 +299,264 @@ public class QuestionServiceImpl implements QuestionService {
         }
 
         return QuestionResponse.fromEntity(updatedQuestion);
+    }
+
+    @Override
+    @Transactional
+    @AuditLog(module = "QUESTION", action = "ADD_QUESTION_WITH_MEDIA")
+    public QuestionResponse addQuestionWithMedia(
+            UUID examId,
+            QuestionCreateRequest request,
+            MultipartFile questionImage,
+            List<MultipartFile> optionImages,
+            List<Integer> optionIndices,
+            User teacher) {
+
+        Exam exam = examRepository.findByIdWithCreatedBy(examId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
+
+        verifyOwnership(exam, teacher);
+        verifyExamIsDraft(exam);
+
+        boolean hasUploadedQuestionImage = questionImage != null && !questionImage.isEmpty();
+        if (hasUploadedQuestionImage && (request.getImageUrl() == null || request.getImageUrl().trim().isEmpty())) {
+            request.setImageUrl("pending:upload");
+        }
+
+        if (optionImages != null && optionIndices != null && request.getOptions() != null) {
+            for (int i = 0; i < optionImages.size(); i++) {
+                if (i < optionIndices.size()) {
+                    int optIdx = optionIndices.get(i);
+                    MultipartFile optFile = optionImages.get(i);
+                    if (optFile != null && !optFile.isEmpty() && optIdx >= 0 && optIdx < request.getOptions().size()) {
+                        AnswerOptionDto optDto = request.getOptions().get(optIdx);
+                        if (optDto.getImageUrl() == null || optDto.getImageUrl().trim().isEmpty()) {
+                            optDto.setImageUrl("pending:upload");
+                        }
+                    }
+                }
+            }
+        }
+
+        validateQuestionBusinessRules(
+                request.getQuestionType(),
+                request.getSampleAnswer(),
+                request.getNumericTolerance(),
+                request.getGradingRubric(),
+                request.getOptions());
+
+        boolean hasContent = request.getContent() != null && !request.getContent().trim().isEmpty();
+        boolean hasImage = request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty();
+        if (!hasContent && !hasImage) {
+            throw new AppException("Question must have either text content or an image");
+        }
+
+        int nextOrderIndex = request.getOrderIndex() != null
+                ? request.getOrderIndex()
+                : (int) questionRepository.countByExamId(examId) + 1;
+
+        Double numericTolerance = null;
+        if (request.getQuestionType() == QuestionType.NUMERIC) {
+            numericTolerance = request.getNumericTolerance() != null ? request.getNumericTolerance() : 0.0;
+        }
+
+        String sampleAnswer = request.getSampleAnswer() != null ? request.getSampleAnswer().trim() : null;
+        if (request.getQuestionType() == QuestionType.NUMERIC && sampleAnswer != null) {
+            sampleAnswer = sampleAnswer.replace(" ", "").replace(',', '.');
+        }
+
+        Question question = Question.builder()
+                .exam(exam)
+                .content(hasContent ? request.getContent().trim() : null)
+                .imageUrl(hasImage ? request.getImageUrl().trim() : null)
+                .imagePublicId(request.getImagePublicId() != null ? request.getImagePublicId().trim() : null)
+                .questionType(request.getQuestionType())
+                .points(request.getPoints())
+                .orderIndex(nextOrderIndex)
+                .sampleAnswer(sampleAnswer)
+                .numericTolerance(numericTolerance)
+                .gradingRubric(request.getGradingRubric() != null ? request.getGradingRubric().trim() : null)
+                .options(new ArrayList<>())
+                .build();
+
+        if (isChoiceQuestion(request.getQuestionType()) && request.getOptions() != null) {
+            int optionIndex = 1;
+            for (AnswerOptionDto optionDto : request.getOptions()) {
+                boolean hasOptContent = optionDto.getContent() != null && !optionDto.getContent().trim().isEmpty();
+                boolean hasOptImage = optionDto.getImageUrl() != null && !optionDto.getImageUrl().trim().isEmpty();
+                if (!hasOptContent && !hasOptImage) {
+                    throw new AppException("Answer option must have either text content or an image");
+                }
+                AnswerOption option = AnswerOption.builder()
+                        .question(question)
+                        .content(hasOptContent ? optionDto.getContent().trim() : null)
+                        .imageUrl(hasOptImage ? optionDto.getImageUrl().trim() : null)
+                        .imagePublicId(optionDto.getImagePublicId() != null ? optionDto.getImagePublicId().trim() : null)
+                        .isCorrect(Boolean.TRUE.equals(optionDto.getIsCorrect()))
+                        .orderIndex(optionDto.getOrderIndex() != null ? optionDto.getOrderIndex() : optionIndex++)
+                        .build();
+                question.getOptions().add(option);
+            }
+        }
+
+        Question savedQuestion = questionRepository.save(question);
+
+        if (hasUploadedQuestionImage) {
+            try {
+                MediaUploadTaskMessage task = MediaUploadTaskMessage.builder()
+                        .questionId(savedQuestion.getId())
+                        .optionId(null)
+                        .examId(examId)
+                        .originalFilename(questionImage.getOriginalFilename())
+                        .fileData(questionImage.getBytes())
+                        .contentType(questionImage.getContentType())
+                        .targetFolder("questions")
+                        .build();
+                dispatchMediaUploadAfterCommit(task);
+            } catch (Exception ex) {
+                log.error("Failed to enqueue question image task to RabbitMQ: {}", ex.getMessage(), ex);
+            }
+        }
+
+        if (optionImages != null && optionIndices != null && !optionImages.isEmpty()) {
+            for (int i = 0; i < optionImages.size(); i++) {
+                if (i < optionIndices.size()) {
+                    int optIdx = optionIndices.get(i);
+                    MultipartFile optFile = optionImages.get(i);
+                    if (optFile != null && !optFile.isEmpty() && optIdx >= 0 && optIdx < savedQuestion.getOptions().size()) {
+                        AnswerOption savedOpt = savedQuestion.getOptions().get(optIdx);
+                        try {
+                            MediaUploadTaskMessage task = MediaUploadTaskMessage.builder()
+                                    .questionId(savedQuestion.getId())
+                                    .optionId(savedOpt.getId())
+                                    .examId(examId)
+                                    .originalFilename(optFile.getOriginalFilename())
+                                    .fileData(optFile.getBytes())
+                                    .contentType(optFile.getContentType())
+                                    .targetFolder("options")
+                                    .build();
+                            dispatchMediaUploadAfterCommit(task);
+                        } catch (Exception ex) {
+                            log.error("Failed to enqueue option image task to RabbitMQ: {}", ex.getMessage(), ex);
+                        }
+                    }
+                }
+            }
+        }
+
+        return QuestionResponse.fromEntity(savedQuestion);
+    }
+
+    @Override
+    @Transactional
+    @AuditLog(module = "QUESTION", action = "UPDATE_QUESTION_WITH_MEDIA")
+    public QuestionResponse updateQuestionWithMedia(
+            UUID questionId,
+            QuestionUpdateRequest request,
+            MultipartFile questionImage,
+            List<MultipartFile> optionImages,
+            List<Integer> optionIndices,
+            User teacher) {
+
+        Question existing = questionRepository.findByIdWithOptionsAndExam(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Question", "id", questionId));
+        UUID examId = existing.getExam().getId();
+
+        boolean hasUploadedQuestionImage = questionImage != null && !questionImage.isEmpty();
+        if (hasUploadedQuestionImage) {
+            request.setImageUrl("pending:upload");
+            request.setImagePublicId(null);
+        }
+
+        if (optionImages != null && optionIndices != null && request.getOptions() != null) {
+            for (int i = 0; i < optionImages.size(); i++) {
+                if (i < optionIndices.size()) {
+                    int optIdx = optionIndices.get(i);
+                    MultipartFile optFile = optionImages.get(i);
+                    if (optFile != null && !optFile.isEmpty() && optIdx >= 0 && optIdx < request.getOptions().size()) {
+                        AnswerOptionDto optDto = request.getOptions().get(optIdx);
+                        optDto.setImageUrl("pending:upload");
+                        optDto.setImagePublicId(null);
+                    }
+                }
+            }
+        }
+
+        QuestionResponse response = updateQuestion(questionId, request, teacher);
+
+        if (hasUploadedQuestionImage) {
+            try {
+                MediaUploadTaskMessage task = MediaUploadTaskMessage.builder()
+                        .questionId(questionId)
+                        .optionId(null)
+                        .examId(examId)
+                        .originalFilename(questionImage.getOriginalFilename())
+                        .fileData(questionImage.getBytes())
+                        .contentType(questionImage.getContentType())
+                        .targetFolder("questions")
+                        .build();
+                dispatchMediaUploadAfterCommit(task);
+            } catch (Exception ex) {
+                log.error("Failed to enqueue question image update to RabbitMQ: {}", ex.getMessage(), ex);
+            }
+        }
+
+        if (optionImages != null && optionIndices != null && response.getOptions() != null) {
+            for (int i = 0; i < optionImages.size(); i++) {
+                if (i < optionIndices.size()) {
+                    int optIdx = optionIndices.get(i);
+                    MultipartFile optFile = optionImages.get(i);
+                    if (optFile != null && !optFile.isEmpty() && optIdx >= 0 && optIdx < response.getOptions().size()) {
+                        var optResponse = response.getOptions().get(optIdx);
+                        try {
+                            MediaUploadTaskMessage task = MediaUploadTaskMessage.builder()
+                                    .questionId(questionId)
+                                    .optionId(optResponse.getId())
+                                    .examId(examId)
+                                    .originalFilename(optFile.getOriginalFilename())
+                                    .fileData(optFile.getBytes())
+                                    .contentType(optFile.getContentType())
+                                    .targetFolder("options")
+                                    .build();
+                            dispatchMediaUploadAfterCommit(task);
+                        } catch (Exception ex) {
+                            log.error("Failed to enqueue option image update to RabbitMQ: {}", ex.getMessage(), ex);
+                        }
+                    }
+                }
+            }
+        }
+
+        return response;
+    }
+
+    private void dispatchMediaUploadAfterCommit(MediaUploadTaskMessage task) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        rabbitTemplate.convertAndSend(
+                                RabbitMQConfig.MEDIA_UPLOAD_EXCHANGE,
+                                RabbitMQConfig.MEDIA_UPLOAD_ROUTING_KEY,
+                                task);
+                        log.info("Dispatched async media upload task after commit: questionId={}, optionId={}",
+                                task.getQuestionId(), task.getOptionId());
+                    } catch (Exception ex) {
+                        log.error("Failed to publish media upload task to RabbitMQ: {}", ex.getMessage(), ex);
+                    }
+                }
+            });
+        } else {
+            try {
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.MEDIA_UPLOAD_EXCHANGE,
+                        RabbitMQConfig.MEDIA_UPLOAD_ROUTING_KEY,
+                        task);
+            } catch (Exception ex) {
+                log.error("Failed to publish media upload task to RabbitMQ: {}", ex.getMessage(), ex);
+            }
+        }
     }
 
     @Override

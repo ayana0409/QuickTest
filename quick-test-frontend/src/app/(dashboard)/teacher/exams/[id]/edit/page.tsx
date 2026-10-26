@@ -29,6 +29,8 @@ import { Modal } from '@/components/common/Modal';
 import { QuestionBuilder } from '@/components/exam/QuestionBuilder';
 import { examService } from '@/services/exam.service';
 import { formatDateTimeForPayload } from '@/lib/utils';
+import { getAuthCookie } from '@/lib/cookie';
+import { connectWebSocket, subscribeTopic } from '@/lib/socket';
 import type { ExamDetailResponse, ExamUpdateRequest } from '@/types/exam';
 import toast from 'react-hot-toast';
 
@@ -113,6 +115,52 @@ export default function EditExamPage() {
   useEffect(() => {
     fetchExamDetail();
   }, [fetchExamDetail]);
+
+  // Real-time synchronization for background media uploads
+  useEffect(() => {
+    if (!examId) return;
+
+    const token = getAuthCookie();
+    let sub: { unsubscribe: () => void } | null = null;
+
+    if (token) {
+      connectWebSocket(token, () => {
+        sub = subscribeTopic(`/topic/exams/${examId}/questions`, (message: any) => {
+          try {
+            const payload = typeof message?.body === 'string' ? JSON.parse(message.body) : message;
+            if (payload?.type === 'QUESTION_MEDIA_UPLOADED') {
+              fetchExamDetail();
+            }
+          } catch (err) {
+            console.error('Error handling live question update:', err);
+          }
+        });
+      });
+    }
+
+    return () => {
+      if (sub && typeof sub.unsubscribe === 'function') {
+        sub.unsubscribe();
+      }
+    };
+  }, [examId, fetchExamDetail]);
+
+  // Fallback poller when questions have pending background uploads
+  useEffect(() => {
+    const hasPendingMedia = exam?.questions?.some(
+      (q) =>
+        q.imageUrl?.startsWith('pending:') ||
+        q.options?.some((opt) => opt.imageUrl?.startsWith('pending:'))
+    );
+
+    if (!hasPendingMedia) return;
+
+    const interval = setInterval(() => {
+      fetchExamDetail();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [exam?.questions, fetchExamDetail]);
 
   // Copy access code to clipboard
   const handleCopyAccessCode = () => {

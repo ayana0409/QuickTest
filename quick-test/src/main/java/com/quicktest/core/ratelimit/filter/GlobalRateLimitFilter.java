@@ -54,6 +54,7 @@ public class GlobalRateLimitFilter extends OncePerRequestFilter {
             "/swagger-ui.html",
             "/v3/api-docs/**",
             "/actuator/**",
+            "/ws-exam",
             "/ws-exam/**",
             "/favicon.ico",
             "/error"

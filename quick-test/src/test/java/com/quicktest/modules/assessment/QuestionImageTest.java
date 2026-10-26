@@ -50,6 +50,9 @@ class QuestionImageTest {
     @Mock
     private com.quicktest.core.service.MediaDeleteProducer mediaDeleteProducer;
 
+    @Mock
+    private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
+
     @InjectMocks
     private QuestionServiceImpl questionService;
 
@@ -260,6 +263,44 @@ class QuestionImageTest {
                 eq(draftExam.getId()),
                 argThat(list -> list.containsAll(List.of("quick-test/questions/q_public_id", "quick-test/options/opt_public_id"))),
                 eq("QUESTION_DELETION")
+        );
+    }
+
+    @Test
+    @DisplayName("addQuestionWithMedia: Saves question instantly and enqueues image tasks to RabbitMQ")
+    void addQuestionWithMedia_SavesInstantlyAndDispatchesToRabbitMQ() {
+        when(examRepository.findByIdWithCreatedBy(draftExam.getId())).thenReturn(Optional.of(draftExam));
+        when(questionRepository.countByExamId(draftExam.getId())).thenReturn(0L);
+        when(questionRepository.save(any(Question.class))).thenAnswer(invocation -> {
+            Question q = invocation.getArgument(0);
+            q.setId(UUID.randomUUID());
+            return q;
+        });
+
+        QuestionCreateRequest request = QuestionCreateRequest.builder()
+                .content("What is the capital of Vietnam?")
+                .questionType(QuestionType.SINGLE_CHOICE)
+                .points(2.0)
+                .options(List.of(
+                        AnswerOptionDto.builder().content("Hanoi").isCorrect(true).build(),
+                        AnswerOptionDto.builder().content("HCMC").isCorrect(false).build()
+                ))
+                .build();
+
+        org.springframework.mock.web.MockMultipartFile qImage = new org.springframework.mock.web.MockMultipartFile(
+                "questionImage", "vietnam.jpg", "image/jpeg", "dummy image data".getBytes());
+
+        QuestionResponse response = questionService.addQuestionWithMedia(
+                draftExam.getId(), request, qImage, null, null, teacher);
+
+        assertNotNull(response);
+        assertNotNull(response.getId());
+        assertEquals("pending:upload", response.getImageUrl());
+        verify(questionRepository, times(1)).save(any(Question.class));
+        verify(rabbitTemplate, times(1)).convertAndSend(
+                eq(com.quicktest.config.RabbitMQConfig.MEDIA_UPLOAD_EXCHANGE),
+                eq(com.quicktest.config.RabbitMQConfig.MEDIA_UPLOAD_ROUTING_KEY),
+                any(com.quicktest.modules.assessment.dto.MediaUploadTaskMessage.class)
         );
     }
 }
