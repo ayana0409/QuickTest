@@ -259,7 +259,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
               {/* Navigation Options */}
               <div className="p-1.5 space-y-0.5">
                 <Link
-                  href="/teacher/profile"
+                  href="/profile"
                   onClick={() => setIsUserDropdownOpen(false)}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 >

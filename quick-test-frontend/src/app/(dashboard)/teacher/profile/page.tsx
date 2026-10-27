@@ -23,6 +23,8 @@ import {
   KeyRound,
   AlertCircle,
   ShieldAlert,
+  Users,
+  History,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
@@ -204,17 +206,93 @@ export default function TeacherProfilePage() {
     }
   };
 
-  const displayName = profile?.fullName || user?.fullName || 'Giáo viên';
+  const displayName = profile?.fullName || user?.fullName || 'Người dùng';
   const displayEmail = profile?.email || user?.email || 'Chưa cập nhật';
-  const displayUsername = profile?.username || user?.username || 'teacher';
-  const roleName = activeRole || 'TEACHER';
+  const displayUsername = profile?.username || user?.username || 'user';
+  const rawRole = activeRole || (user?.role ? user.role.replace(/^ROLE_/, '') : 'STUDENT');
+  const roleName = rawRole.toUpperCase();
   const isLocalAuth = !profile?.authProvider || profile.authProvider === 'LOCAL';
+
+  const roleMeta: Record<
+    string,
+    {
+      label: string;
+      code: string;
+      badgeClass: string;
+      homeUrl: string;
+      actionLabel: string;
+      actionUrl: string;
+      permissions: string[];
+      quickLinksTitle: string;
+      quickLinks: Array<{ title: string; desc: string; url: string; isExam?: boolean; isGrading?: boolean; isHistory?: boolean; isUsers?: boolean; isAi?: boolean }>;
+    }
+  > = {
+    ADMIN: {
+      label: 'Quản trị viên (Admin)',
+      code: 'ROLE_ADMIN',
+      badgeClass: 'bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 border-purple-200/80 dark:border-purple-800/80',
+      homeUrl: '/admin',
+      actionLabel: 'Bảng quản trị',
+      actionUrl: '/admin',
+      permissions: [
+        'Quản trị toàn bộ người dùng, cấp quyền và quản lý trạng thái tài khoản',
+        'Cấu hình mô hình AI chấm điểm và kiểm duyệt nội dung câu hỏi toàn hệ thống',
+        'Quản lý toàn bộ đề thi, ngân hàng câu hỏi và kết quả thi',
+        'Giám sát nhật ký bảo mật, phân quyền và thiết lập giới hạn tần suất (Rate limit)',
+      ],
+      quickLinksTitle: 'Các phân hệ dành cho quản trị viên',
+      quickLinks: [
+        { title: 'Quản lý người dùng', desc: 'Danh sách tài khoản, phân quyền và khóa', url: '/admin/users', isUsers: true },
+        { title: 'Cấu hình AI & Hệ thống', desc: 'Quản lý API Key Gemini, rate limit và kiểm duyệt', url: '/admin/ai', isAi: true },
+      ],
+    },
+    TEACHER: {
+      label: 'Giáo viên (Teacher)',
+      code: 'ROLE_TEACHER',
+      badgeClass: 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border-indigo-200/80 dark:border-indigo-800/80',
+      homeUrl: '/teacher/exams',
+      actionLabel: 'Đề thi của tôi',
+      actionUrl: '/teacher/exams',
+      permissions: [
+        'Khởi tạo và quản lý toàn diện đề thi (Soạn thảo, Xuất bản, Đóng, Nhân bản)',
+        'Tái sử dụng câu hỏi từ Ngân hàng đề thi cá nhân (Deep-copy hình ảnh qua Queue)',
+        'Chấm điểm câu hỏi tự luận theo barem hoặc kích hoạt AI chấm tự động',
+        'Giám sát phòng thi thời gian thực và xuất báo cáo kết quả ra Excel (.xlsx)',
+      ],
+      quickLinksTitle: 'Các phân hệ chính dành cho giáo viên',
+      quickLinks: [
+        { title: 'Quản lý đề thi (Exam Management)', desc: 'Tạo đề, cấu trúc câu hỏi, giám sát và xuất bản', url: '/teacher/exams', isExam: true },
+        { title: 'Chấm bài tự luận (Essay Grading)', desc: 'Chấm bài thủ công theo barem hoặc AI tự động', url: '/teacher/grading', isGrading: true },
+      ],
+    },
+    STUDENT: {
+      label: 'Thí sinh / Học viên (Student)',
+      code: 'ROLE_STUDENT',
+      badgeClass: 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800/80',
+      homeUrl: '/student',
+      actionLabel: 'Kỳ thi của tôi',
+      actionUrl: '/student',
+      permissions: [
+        'Tham gia làm bài thi trực tuyến theo mã phòng thi được cung cấp',
+        'Tự động lưu tiến trình làm bài, đếm ngược thời gian và nộp bài an toàn',
+        'Xem lại lịch sử làm bài và tra cứu điểm số chi tiết các lần thi',
+        'Nhận kết quả chấm điểm tự luận và nhận xét chi tiết từ giảng viên / AI',
+      ],
+      quickLinksTitle: 'Các phân hệ dành cho thí sinh',
+      quickLinks: [
+        { title: 'Cổng thông tin thí sinh (Portal)', desc: 'Xem danh sách kỳ thi và thông báo mới', url: '/student', isExam: true },
+        { title: 'Lịch sử bài thi (History)', desc: 'Tra cứu bài làm, điểm số và chi tiết nhận xét', url: '/student/history', isHistory: true },
+      ],
+    },
+  };
+
+  const currentRoleConfig = roleMeta[roleName] || roleMeta.STUDENT;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Breadcrumb Strip */}
       <div className="flex items-center gap-2 text-xs text-zinc-500">
-        <Link href="/teacher/exams" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
+        <Link href={currentRoleConfig.homeUrl} className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
           Trang chủ
         </Link>
         <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
@@ -244,8 +322,8 @@ export default function TeacherProfilePage() {
                   <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
                     {displayName}
                   </h1>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80">
-                    Giáo viên (Teacher)
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${currentRoleConfig.badgeClass}`}>
+                    {currentRoleConfig.label}
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80">
                     Đang hoạt động
@@ -301,10 +379,10 @@ export default function TeacherProfilePage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push('/teacher/exams')}
+                onClick={() => router.push(currentRoleConfig.actionUrl)}
                 leftIcon={<BookOpen className="w-4 h-4 text-zinc-500" />}
               >
-                Đề thi của tôi
+                {currentRoleConfig.actionLabel}
               </Button>
 
               <Button
@@ -430,35 +508,25 @@ export default function TeacherProfilePage() {
           </div>
 
           <div className="space-y-2.5 text-xs">
-            <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-900/40 flex items-center justify-between">
+            <div className={`p-3 rounded-xl border flex items-center justify-between ${currentRoleConfig.badgeClass}`}>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span className="font-semibold text-indigo-900 dark:text-indigo-200">
-                  Vai trò chính: {roleName}
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span className="font-semibold">
+                  Vai trò chính: {currentRoleConfig.label}
                 </span>
               </div>
-              <span className="text-[11px] font-mono text-indigo-500 font-bold">
-                ROLE_TEACHER
+              <span className="text-[11px] font-mono font-bold">
+                {currentRoleConfig.code}
               </span>
             </div>
 
             <div className="space-y-2 pt-1">
-              <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Khởi tạo và quản lý toàn diện đề thi (Soạn thảo, Xuất bản, Đóng, Nhân bản)</span>
-              </div>
-              <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Tái sử dụng câu hỏi từ Ngân hàng đề thi cá nhân (Deep-copy hình ảnh qua Queue)</span>
-              </div>
-              <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Chấm điểm câu hỏi tự luận theo barem hoặc kích hoạt AI chấm tự động</span>
-              </div>
-              <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Giám sát phòng thi thời gian thực và xuất báo cáo kết quả ra Excel (.xlsx)</span>
-              </div>
+              {currentRoleConfig.permissions.map((perm, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>{perm}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -523,47 +591,42 @@ export default function TeacherProfilePage() {
                 Truy cập nhanh
               </h3>
               <p className="text-[11px] text-zinc-400">
-                Các phân hệ chính dành cho giáo viên
+                {currentRoleConfig.quickLinksTitle}
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Link
-              href="/teacher/exams"
-              className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition-all text-xs group"
-            >
-              <div className="flex items-center gap-2.5">
-                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <div>
-                  <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    Quản lý đề thi (Exam Management)
-                  </p>
-                  <p className="text-[11px] text-zinc-400">
-                    Tạo đề, cấu trúc câu hỏi, giám sát và xuất bản
-                  </p>
+            {currentRoleConfig.quickLinks.map((item, idx) => (
+              <Link
+                key={idx}
+                href={item.url}
+                className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition-all text-xs group"
+              >
+                <div className="flex items-center gap-2.5">
+                  {item.isUsers ? (
+                    <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  ) : item.isAi ? (
+                    <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  ) : item.isGrading ? (
+                    <FileCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  ) : item.isHistory ? (
+                    <History className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  )}
+                  <div>
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {item.title}
+                    </p>
+                    <p className="text-[11px] text-zinc-400">
+                      {item.desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-indigo-600 transition-colors" />
-            </Link>
-
-            <Link
-              href="/teacher/grading"
-              className="flex items-center justify-between p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-purple-500/50 hover:bg-purple-50/20 dark:hover:bg-purple-950/20 transition-all text-xs group"
-            >
-              <div className="flex items-center gap-2.5">
-                <FileCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <div>
-                  <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    Chấm bài tự luận (Essay Grading)
-                  </p>
-                  <p className="text-[11px] text-zinc-400">
-                    Chấm bài thủ công theo barem hoặc AI tự động
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-purple-600 transition-colors" />
-            </Link>
+                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-indigo-600 transition-colors" />
+              </Link>
+            ))}
           </div>
         </div>
       </div>

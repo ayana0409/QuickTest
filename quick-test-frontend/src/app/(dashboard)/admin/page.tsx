@@ -29,6 +29,21 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (!isAuthenticated && !isLoggedIn()) return;
 
+    if (user) {
+      const rawRoles =
+        Array.isArray(user.roles) && user.roles.length > 0
+          ? user.roles
+          : user.role
+            ? [user.role]
+            : [];
+      const normalizedRoles = rawRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+      if (!normalizedRoles.includes('ADMIN')) {
+        const isTeacher = normalizedRoles.includes('TEACHER');
+        window.location.replace(isTeacher ? '/teacher/exams' : '/student');
+        return;
+      }
+    }
+
     const fetchDashboardStats = async () => {
       setIsLoading(true);
       try {

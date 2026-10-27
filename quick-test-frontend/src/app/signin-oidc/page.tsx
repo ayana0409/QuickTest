@@ -10,16 +10,6 @@ import { authenticateQuickBiteCode } from '@/services/quickBiteAuth.service';
 import type { User } from '@/types/auth';
 
 function getDestination(user: User | null | undefined, rawCallbackUrl?: string | null): string {
-  if (
-    rawCallbackUrl &&
-    rawCallbackUrl.startsWith('/') &&
-    !rawCallbackUrl.startsWith('/login') &&
-    !rawCallbackUrl.startsWith('/register') &&
-    !rawCallbackUrl.startsWith('/signin-oidc')
-  ) {
-    return rawCallbackUrl;
-  }
-
   const userRoles: string[] =
     Array.isArray(user?.roles) && user.roles.length > 0
       ? user.roles
@@ -28,14 +18,27 @@ function getDestination(user: User | null | undefined, rawCallbackUrl?: string |
         : [];
 
   const normalizedRoles = userRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+  const isAdmin = normalizedRoles.includes('ADMIN');
+  const isTeacher = normalizedRoles.includes('TEACHER');
+  const defaultHome = isAdmin ? '/admin' : isTeacher ? '/teacher/exams' : '/student';
 
-  if (normalizedRoles.includes('ADMIN')) {
-    return '/admin';
-  } else if (normalizedRoles.includes('TEACHER')) {
-    return '/teacher/exams';
-  } else {
-    return '/student';
+  if (
+    rawCallbackUrl &&
+    rawCallbackUrl.startsWith('/') &&
+    !rawCallbackUrl.startsWith('/login') &&
+    !rawCallbackUrl.startsWith('/register') &&
+    !rawCallbackUrl.startsWith('/signin-oidc')
+  ) {
+    if (rawCallbackUrl.startsWith('/admin')) {
+      return isAdmin ? rawCallbackUrl : defaultHome;
+    }
+    if (rawCallbackUrl.startsWith('/teacher')) {
+      return (isAdmin || isTeacher) ? rawCallbackUrl : defaultHome;
+    }
+    return rawCallbackUrl;
   }
+
+  return defaultHome;
 }
 
 function SigninOidcContent() {

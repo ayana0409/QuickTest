@@ -42,6 +42,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [hasMounted, isInitialized, isAuthenticated, isLoggedIn]);
 
+  // Enforce role-based route boundaries
+  useEffect(() => {
+    if (hasMounted && isInitialized && (isAuthenticated || isLoggedIn()) && user) {
+      const rawRoles =
+        Array.isArray(user.roles) && user.roles.length > 0
+          ? user.roles
+          : user.role
+            ? [user.role]
+            : [];
+      const normalizedRoles = rawRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
+      const isAdmin = normalizedRoles.includes('ADMIN');
+      const isTeacher = normalizedRoles.includes('TEACHER');
+
+      // Restrict /admin strictly to ADMIN
+      if (pathname.startsWith('/admin') && !isAdmin) {
+        const target = isTeacher ? '/teacher/exams' : '/student';
+        window.location.replace(target);
+        return;
+      }
+
+      // Restrict /teacher (except shared profile) to TEACHER and ADMIN
+      if (pathname.startsWith('/teacher') && !pathname.startsWith('/teacher/profile') && !isAdmin && !isTeacher) {
+        window.location.replace('/student');
+        return;
+      }
+    }
+  }, [hasMounted, isInitialized, isAuthenticated, isLoggedIn, user, pathname]);
+
   if (!hasMounted || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">

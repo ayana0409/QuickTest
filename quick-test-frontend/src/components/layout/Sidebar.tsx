@@ -348,7 +348,7 @@ export function Sidebar({
         {!isCollapsed ? (
           <div className="space-y-2">
             <Link
-              href="/teacher/profile"
+              href="/profile"
               onClick={onMobileClose}
               className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer group"
               title="Xem thông tin cá nhân"
@@ -378,7 +378,7 @@ export function Sidebar({
         ) : (
           <div className="flex flex-col items-center gap-2 py-1">
             <Link
-              href="/teacher/profile"
+              href="/profile"
               className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs hover:scale-105 transition-transform shadow-xs"
               title={user?.fullName || 'Xem thông tin cá nhân'}
             >
