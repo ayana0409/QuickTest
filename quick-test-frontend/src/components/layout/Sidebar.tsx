@@ -48,7 +48,6 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Exam Management', href: '/teacher/exams', icon: BookOpen },
     { label: 'Essay Grading', href: '/teacher/grading', icon: FileCheck },
     { label: 'Tác vụ AI', href: '/teacher/ai-tasks', icon: Sparkles },
-    { label: 'Thông tin cá nhân', href: '/teacher/profile', icon: UserIcon },
   ],
   STUDENT: [
     { label: 'My Exams', href: '/student', icon: GraduationCap },
@@ -100,6 +99,7 @@ export function Sidebar({
 
   const currentRole = (activeRole || 'STUDENT').toUpperCase();
   const navItems = roleNavItems[currentRole] || roleNavItems.STUDENT;
+  const isProfileActive = pathname === '/profile' || pathname.startsWith('/teacher/profile');
 
   const handleLogout = () => {
     logout();
@@ -386,8 +386,29 @@ export function Sidebar({
 
       {/* User Info & Actions at Bottom */}
       <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        {/* Profile Navigation Link - Shared for all 3 roles */}
+        <div className="mb-2">
+          <Link
+            href="/profile"
+            onClick={onMobileClose}
+            title={isCollapsed ? 'Thông tin cá nhân' : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+              isProfileActive
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 font-semibold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+            } ${isCollapsed ? 'justify-center px-2' : ''}`}
+          >
+            <UserIcon
+              className={`w-5 h-5 shrink-0 ${
+                isProfileActive ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'
+              }`}
+            />
+            {!isCollapsed && <span className="truncate">Thông tin cá nhân</span>}
+          </Link>
+        </div>
+
         {!isCollapsed ? (
-          <div className="space-y-2">
+          <div className="space-y-1.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
             <Link
               href="/profile"
               onClick={onMobileClose}
@@ -410,14 +431,14 @@ export function Sidebar({
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4 shrink-0" />
               <span>Log out</span>
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-1">
+          <div className="flex flex-col items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
             <Link
               href="/profile"
               className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs hover:scale-105 transition-transform shadow-xs"
@@ -428,7 +449,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={handleLogout}
-              className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
               title="Log out"
             >
               <LogOut className="w-4 h-4" />
