@@ -73,6 +73,12 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
+    // Evict teacher-exams, admin-exams and admin-dashboard: totalExams count and exam list change
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    })
     @AuditLog(module = "EXAM", action = "CREATE_EXAM")
     public ExamDetailResponse createExam(ExamCreateRequest request, User teacher) {
         // 1. Validate start and end time constraints

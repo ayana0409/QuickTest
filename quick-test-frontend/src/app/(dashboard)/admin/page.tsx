@@ -167,9 +167,11 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
               Xem danh sách tất cả kỳ thi trên hệ thống, cưỡng chế đóng kỳ thi (Force Close), hoặc dọn dẹp dữ liệu bài thi.
             </p>
-            <Button variant="outline" size="sm">
-              Mở danh sách kỳ thi
-            </Button>
+            <Link href="/teacher/exams">
+              <Button variant="outline" size="sm">
+                Mở danh sách kỳ thi
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
