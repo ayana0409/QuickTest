@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
-  Shield,
   BookOpen,
   FileCheck,
   BarChart3,
@@ -21,6 +20,7 @@ import {
   X,
   User as UserIcon,
   ShieldAlert,
+  Shield,
   Activity,
   Cpu,
   Sparkles,
@@ -57,26 +57,6 @@ const roleNavItems: Record<string, NavItem[]> = {
   ],
 };
 
-const roleMetadata: Record<
-  string,
-  { label: string; badgeClass: string; icon: React.ElementType }
-> = {
-  ADMIN: {
-    label: 'Admin Portal',
-    badgeClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50',
-    icon: Shield,
-  },
-  TEACHER: {
-    label: 'Teacher Hub',
-    badgeClass: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50',
-    icon: BookOpen,
-  },
-  STUDENT: {
-    label: 'Student Portal',
-    badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50',
-    icon: GraduationCap,
-  },
-};
 
 interface SidebarProps {
   isMobileOpen: boolean;
@@ -102,16 +82,24 @@ export function Sidebar({
     return false;
   });
 
+  const [isTeacherMenuOpen, setIsTeacherMenuOpen] = React.useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname.startsWith('/teacher');
+    }
+    return false;
+  });
+
   React.useEffect(() => {
     if (pathname.startsWith('/student')) {
       setIsStudentMenuOpen(true);
+    }
+    if (pathname.startsWith('/teacher')) {
+      setIsTeacherMenuOpen(true);
     }
   }, [pathname]);
 
   const currentRole = (activeRole || 'STUDENT').toUpperCase();
   const navItems = roleNavItems[currentRole] || roleNavItems.STUDENT;
-  const currentRoleMeta = roleMetadata[currentRole] || roleMetadata.STUDENT;
-  const RoleIcon = currentRoleMeta.icon;
 
   const handleLogout = () => {
     logout();
@@ -152,33 +140,6 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Role Badge Indicator & Quick Student Entry */}
-      {!isCollapsed && (
-        <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center justify-between gap-2">
-          <div
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${currentRoleMeta.badgeClass}`}
-          >
-            <RoleIcon className="w-3.5 h-3.5" />
-            <span>{currentRoleMeta.label}</span>
-          </div>
-
-          {(currentRole === 'TEACHER' || currentRole === 'ADMIN') && (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveRole('STUDENT');
-                onMobileClose();
-                router.push('/student');
-              }}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800 cursor-pointer"
-              title="Vào giao diện Thí sinh để tham gia thi"
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>Vào thi</span>
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -215,7 +176,85 @@ export function Sidebar({
           })}
         </div>
 
-        {/* Student Menu Section for Teacher and Admin */}
+        {/* Teacher Zone Section — visible only when active role is ADMIN */}
+        {currentRole === 'ADMIN' && (
+          <div className="pt-3 mt-3 border-t border-zinc-200 dark:border-zinc-800">
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={() => setIsTeacherMenuOpen((prev) => !prev)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-150 cursor-pointer ${
+                  isTeacherMenuOpen || pathname.startsWith('/teacher')
+                    ? 'text-indigo-700 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/40'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span>Khu vực Giáo viên</span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    isTeacherMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+            ) : (
+              <div className="flex justify-center py-1">
+                <button
+                  type="button"
+                  onClick={() => setIsTeacherMenuOpen((prev) => !prev)}
+                  className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                    isTeacherMenuOpen || pathname.startsWith('/teacher')
+                      ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400'
+                      : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  }`}
+                  title="Khu vực Giáo viên"
+                >
+                  <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </button>
+              </div>
+            )}
+
+            {/* Collapsible Teacher Menu Items */}
+            {(isTeacherMenuOpen || isCollapsed) && (
+              <div className="mt-1.5 space-y-1">
+                {roleNavItems.TEACHER.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href !== '/teacher' && pathname.startsWith(item.href));
+
+                  const ItemIcon = item.icon;
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onMobileClose}
+                      title={isCollapsed ? item.label : undefined}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
+                        isActive
+                          ? 'bg-indigo-600 text-white shadow-xs font-semibold'
+                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+                      } ${isCollapsed ? 'justify-center px-2' : ''}`}
+                    >
+                      <ItemIcon
+                        className={`w-4 h-4 shrink-0 ${
+                          isActive ? 'text-white' : 'text-indigo-500'
+                        }`}
+                      />
+                      {!isCollapsed && (
+                        <span className="truncate">{item.label}</span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Student Zone Section — visible for TEACHER and ADMIN */}
         {(currentRole === 'TEACHER' || currentRole === 'ADMIN') && (
           <div className="pt-3 mt-3 border-t border-zinc-200 dark:border-zinc-800">
             {!isCollapsed ? (
@@ -293,8 +332,8 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Back to Management Workspace when Teacher/Admin is in Student Role */}
-        {currentRole === 'STUDENT' && (hasRole('TEACHER') || hasRole('ADMIN')) && (
+        {/* Back to Management Workspace when viewing as Student or Teacher */}
+        {(currentRole === 'STUDENT' || currentRole === 'TEACHER') && (hasRole('TEACHER') || hasRole('ADMIN')) && (
           <div className="pt-3 mt-3 border-t border-zinc-200 dark:border-zinc-800">
             {!isCollapsed && (
               <div className="px-3 mb-2">
@@ -304,7 +343,8 @@ export function Sidebar({
               </div>
             )}
             <div className="space-y-1">
-              {hasRole('TEACHER') && (
+              {/* Show Teacher button only when in STUDENT view and user has TEACHER role (but not ADMIN, since ADMIN already switches via activeRole) */}
+              {currentRole === 'STUDENT' && hasRole('TEACHER') && !hasRole('ADMIN') && (
                 <button
                   type="button"
                   onClick={() => {
@@ -321,6 +361,7 @@ export function Sidebar({
                   {!isCollapsed && <span>Giao diện Giáo viên</span>}
                 </button>
               )}
+              {/* Show Admin button when in STUDENT or TEACHER view and user has ADMIN role */}
               {hasRole('ADMIN') && (
                 <button
                   type="button"

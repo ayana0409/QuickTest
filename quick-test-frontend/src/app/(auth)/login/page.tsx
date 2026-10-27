@@ -8,7 +8,7 @@ import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { authenticateQuickBiteToken, redirectToQuickBiteLogin } from '@/services/quickBiteAuth.service';
 import { useAuthStore } from '@/stores/authStore';
-import { apiClient, extractErrorMessage } from '@/lib/axios';
+import { apiClient } from '@/lib/axios';
 import type { AxiosError } from 'axios';
 import type { ApiResponse, LoginResponse, User } from '@/types/auth';
 
@@ -214,10 +214,18 @@ function LoginForm() {
         setErrors({
           password: rawMessage,
         });
-      } else {
-        const fallbackMsg = extractErrorMessage(axiosError as AxiosError);
+      } else if (status === 429 || lowerRawMsg.includes('too many') || lowerRawMsg.includes('quota exceeded') || lowerRawMsg.includes('rate limit')) {
+        // Rate limit — extract retry seconds from message if available
+        const secondsMatch = rawMessage.match(/(\d+)\s*second/i);
+        const seconds = secondsMatch ? secondsMatch[1] : null;
         setErrors({
-          general: fallbackMsg || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!',
+          general: seconds
+            ? `Bạn đã thử quá nhiều lần. Vui lòng đợi ${seconds} giây rồi thử lại.`
+            : 'Bạn đã thử quá nhiều lần. Vui lòng đợi một lúc rồi thử lại.',
+        });
+      } else {
+        setErrors({
+          general: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!',
         });
       }
     } finally {
