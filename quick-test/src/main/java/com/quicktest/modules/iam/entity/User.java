@@ -84,6 +84,29 @@ public class User {
     }
 
     /**
+     * Domain factory method: Create a new user authenticated via QuickBite SSO.
+     */
+    public static User createSsoUser(String ssoSubjectId, String username, String email, String fullName, Role role) {
+        return User.builder()
+                .ssoSubjectId(ssoSubjectId)
+                .username(username)
+                .email(email)
+                .fullName(fullName)
+                .role(role)
+                .authProvider(AuthProvider.QUICK_BITE_SSO)
+                .isActive(true)
+                .build();
+    }
+
+    /**
+     * Domain method: Link existing user account with QuickBite SSO subject ID.
+     */
+    public void linkSso(String ssoSubjectId) {
+        this.ssoSubjectId = ssoSubjectId;
+        this.authProvider = AuthProvider.QUICK_BITE_SSO;
+    }
+
+    /**
      * Domain method: Record a successful login timestamp.
      */
     public void recordLogin() {

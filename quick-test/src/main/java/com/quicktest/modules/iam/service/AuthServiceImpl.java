@@ -16,6 +16,8 @@ import com.quicktest.modules.iam.entity.AuthProvider;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
+import com.quicktest.core.security.sso.QuickBiteTokenValidator;
+import com.quicktest.core.security.sso.QuickBiteUserClaims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Implementation of AuthService applying Domain-Driven Design principles.
@@ -41,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final QuickBiteTokenValidator quickBiteTokenValidator;
 
     @Override
     @Transactional
@@ -253,5 +259,126 @@ public class AuthServiceImpl implements AuthService {
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         log.info("User {} successfully updated their password", user.getUsername());
+    }
+
+    @Override
+    @Transactional
+    @AuditLog(module = "AUTH", action = "SSO_LOGIN")
+    public AuthResponse authenticateWithQuickBiteToken(String accessToken) {
+        QuickBiteUserClaims claims = quickBiteTokenValidator.validateAndExtractClaims(accessToken);
+
+        // 1. Look up user by ssoSubjectId (OpenIddict sub claim)
+        Optional<User> userOpt = userRepository.findBySsoSubjectId(claims.getSub());
+        User user;
+
+        if (userOpt.isPresent()) {
+            user = userOpt.get();
+            // Sync user profile updates from QuickBite
+            if (claims.getFullName() != null && !claims.getFullName().isBlank()) {
+                user.setFullName(claims.getFullName());
+            }
+            if (claims.getEmail() != null && !claims.getEmail().isBlank() && !claims.getEmail().equals(user.getEmail())) {
+                if (!userRepository.existsByEmailAndIdNot(claims.getEmail(), user.getId())) {
+                    user.setEmail(claims.getEmail());
+                }
+            }
+            // Update role if changed on QuickBite
+            if (claims.getMappedRole() != null) {
+                user.setRole(claims.getMappedRole());
+            }
+        } else {
+            // 2. Check if a local user exists with the same email to link accounts
+            Optional<User> localUserOpt = userRepository.findByEmail(claims.getEmail());
+            if (localUserOpt.isPresent()) {
+                user = localUserOpt.get();
+                user.linkSso(claims.getSub());
+                if (claims.getFullName() != null && !claims.getFullName().isBlank()) {
+                    user.setFullName(claims.getFullName());
+                }
+                if (claims.getMappedRole() != null) {
+                    user.setRole(claims.getMappedRole());
+                }
+                log.info("Linked existing local user {} (email: {}) with QuickBite SSO subjectId: {}",
+                        user.getUsername(), user.getEmail(), claims.getSub());
+            } else {
+                // 3. Auto-provision a new user account for QuickBite user
+                String baseUsername = claims.getUsername();
+                if (baseUsername == null || baseUsername.isBlank()) {
+                    baseUsername = "qb_" + (claims.getSub().length() > 8 ? claims.getSub().substring(0, 8) : claims.getSub());
+                }
+                String candidateUsername = baseUsername;
+                int suffix = 1;
+                while (userRepository.existsByUsername(candidateUsername)) {
+                    candidateUsername = baseUsername + "_" + suffix++;
+                }
+
+                user = User.createSsoUser(
+                        claims.getSub(),
+                        candidateUsername,
+                        claims.getEmail(),
+                        claims.getFullName(),
+                        claims.getMappedRole() != null ? claims.getMappedRole() : Role.STUDENT
+                );
+                log.info("Auto-provisioned new QuickTest user {} from QuickBite SSO (role: {})",
+                        user.getUsername(), user.getRole());
+            }
+        }
+
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new AppException("Your account has been deactivated. Please contact an administrator.", HttpStatus.FORBIDDEN);
+        }
+
+        user.recordLogin();
+        User savedUser = userRepository.save(user);
+
+        // 4. Issue standard QuickTest tokens for internal operations
+        String token = jwtTokenProvider.generateToken(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail(),
+                savedUser.getRole().name()
+        );
+        String refreshToken = jwtTokenProvider.generateRefreshToken(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail()
+        );
+
+        return AuthResponse.builder()
+                .accessToken(token)
+                .tokenType("Bearer")
+                .expiresIn(jwtTokenProvider.getExpirationMs())
+                .refreshToken(refreshToken)
+                .refreshExpiresIn(jwtTokenProvider.getRefreshExpirationMs())
+                .userInfo(UserSummaryDto.fromEntity(savedUser))
+                .build();
+    }
+
+    @Override
+    @Transactional
+    @AuditLog(module = "AUTH", action = "SSO_CREDENTIAL_LOGIN")
+    public AuthResponse loginWithQuickBiteCredentials(String username, String password) {
+        Map<String, Object> tokenResponse = quickBiteTokenValidator.requestTokenByCredentials(username, password);
+        String accessToken = (String) tokenResponse.get("access_token");
+
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new AppException("Failed to obtain access token from QuickBite Identity Service", HttpStatus.UNAUTHORIZED);
+        }
+
+        return authenticateWithQuickBiteToken(accessToken);
+    }
+
+    @Override
+    @Transactional
+    @AuditLog(module = "AUTH", action = "SSO_CODE_LOGIN")
+    public AuthResponse authenticateWithQuickBiteCode(String code, String redirectUri) {
+        Map<String, Object> tokenResponse = quickBiteTokenValidator.requestTokenByAuthorizationCode(code, redirectUri);
+        String accessToken = (String) tokenResponse.get("access_token");
+
+        if (accessToken == null || accessToken.isBlank()) {
+            throw new AppException("Failed to obtain access token from QuickBite Authorization Code", HttpStatus.UNAUTHORIZED);
+        }
+
+        return authenticateWithQuickBiteToken(accessToken);
     }
 }

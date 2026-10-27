@@ -88,9 +88,14 @@ app.cors.allowed-origin-patterns=${APP_CORS_ALLOWED_ORIGIN_PATTERNS:}
 # -------------------------------------------------------------------
 # OAuth2 Resource Server / SSO (QuickBite / ABP Framework Identity Server)
 # -------------------------------------------------------------------
-# Uncomment when connecting to QuickBite OpenIddict / Identity Server
-# spring.security.oauth2.resourceserver.jwt.issuer-uri=https://quickbite-auth.example.com
-# spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://quickbite-auth.example.com/.well-known/openid-configuration/jwks
+# Strictly externalized: no hardcoded URLs or credentials.
+app.sso.quickbite.enabled=${SSO_QUICKBITE_ENABLED:false}
+app.sso.quickbite.issuer-uri=${SSO_QUICKBITE_ISSUER_URI:}
+app.sso.quickbite.jwk-set-uri=${SSO_QUICKBITE_JWKS_URI:}
+app.sso.quickbite.userinfo-uri=${SSO_QUICKBITE_USERINFO_URI:}
+app.sso.quickbite.token-uri=${SSO_QUICKBITE_TOKEN_URI:}
+app.sso.quickbite.client-id=${SSO_QUICKBITE_CLIENT_ID:}
+app.sso.quickbite.scope=${SSO_QUICKBITE_SCOPE:}
 
 # -------------------------------------------------------------------
 # Logging Configuration

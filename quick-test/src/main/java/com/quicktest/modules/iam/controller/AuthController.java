@@ -4,8 +4,10 @@ import com.quicktest.core.common.ApiResponse;
 import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.iam.dto.AuthResponse;
 import com.quicktest.modules.iam.dto.LoginRequest;
-import com.quicktest.modules.iam.dto.RegisterRequest;
+import com.quicktest.modules.iam.dto.QuickBiteSsoLoginRequest;
+import com.quicktest.modules.iam.dto.QuickBiteSsoTokenRequest;
 import com.quicktest.modules.iam.dto.RefreshTokenRequest;
+import com.quicktest.modules.iam.dto.RegisterRequest;
 import com.quicktest.modules.iam.dto.UpdatePasswordRequest;
 import com.quicktest.modules.iam.dto.UpdateProfileRequest;
 import com.quicktest.modules.iam.dto.UserSummaryDto;
@@ -46,6 +48,36 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Login successful"));
+    }
+
+    /**
+     * Authenticate or register an account via an existing QuickBite SSO Access Token.
+     */
+    @PostMapping("/sso/quickbite")
+    public ResponseEntity<ApiResponse<AuthResponse>> authenticateQuickBiteToken(
+            @Valid @RequestBody QuickBiteSsoTokenRequest request) {
+        AuthResponse response = authService.authenticateWithQuickBiteToken(request.getAccessToken());
+        return ResponseEntity.ok(ApiResponse.success(response, "QuickBite SSO authentication successful"));
+    }
+
+    /**
+     * Authenticate using QuickBite credentials directly (OAuth2 Password Grant flow).
+     */
+    @PostMapping("/sso/quickbite/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> loginWithQuickBite(
+            @Valid @RequestBody QuickBiteSsoLoginRequest request) {
+        AuthResponse response = authService.loginWithQuickBiteCredentials(request.getUsername(), request.getPassword());
+        return ResponseEntity.ok(ApiResponse.success(response, "QuickBite SSO login successful"));
+    }
+
+    /**
+     * Authenticate using QuickBite OAuth2 Authorization Code flow (Redirect callback).
+     */
+    @PostMapping("/sso/quickbite/code")
+    public ResponseEntity<ApiResponse<AuthResponse>> authenticateWithQuickBiteCode(
+            @Valid @RequestBody com.quicktest.modules.iam.dto.QuickBiteSsoCodeRequest request) {
+        AuthResponse response = authService.authenticateWithQuickBiteCode(request.getCode(), request.getRedirectUri());
+        return ResponseEntity.ok(ApiResponse.success(response, "QuickBite SSO code exchange successful"));
     }
 
     /**

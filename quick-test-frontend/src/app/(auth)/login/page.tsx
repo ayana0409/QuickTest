@@ -3,9 +3,10 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { LogIn, Lock, User as UserIcon, Loader2, KeyRound, AlertCircle } from 'lucide-react';
+import { LogIn, Lock, User as UserIcon, Loader2, KeyRound, AlertCircle, ShieldCheck } from 'lucide-react';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
+import { authenticateQuickBiteToken, redirectToQuickBiteLogin } from '@/services/quickBiteAuth.service';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient, extractErrorMessage } from '@/lib/axios';
 import type { AxiosError } from 'axios';
@@ -54,6 +55,7 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const ssoProcessedRef = React.useRef(false);
 
   // Auto-redirect if already authenticated (prevents staying stuck on /login?callbackUrl=...)
   React.useEffect(() => {
@@ -62,6 +64,32 @@ function LoginForm() {
       window.location.replace(destination);
     }
   }, [isAuthenticated, user, callbackUrl]);
+
+  // Auto-login if SSO token is passed in query parameters (e.g., redirect from QuickBite)
+  React.useEffect(() => {
+    const ssoTokenParam = searchParams.get('sso_token') || searchParams.get('quickbite_token');
+    if (!ssoTokenParam || isAuthenticated || ssoProcessedRef.current) {
+      return;
+    }
+    ssoProcessedRef.current = true;
+
+    setIsLoading(true);
+    authenticateQuickBiteToken(ssoTokenParam)
+      .then((data) => {
+        login(data.accessToken, data.refreshToken, data.userInfo);
+        const destination = getDestination(data.userInfo, callbackUrl);
+        window.location.replace(destination);
+      })
+      .catch((err) => {
+        console.error('Auto SSO login failed', err);
+        setErrors({
+          general: 'Đăng nhập tự động bằng tài khoản QuickBite SSO không thành công. Vui lòng thử lại!',
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [searchParams, isAuthenticated, callbackUrl, login]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -236,6 +264,41 @@ function LoginForm() {
           Đăng nhập
         </Button>
       </form>
+
+      {/* Linked Account Button */}
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-white dark:bg-zinc-900 px-3 text-zinc-400 font-medium">
+            Hoặc
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          try {
+            redirectToQuickBiteLogin(callbackUrl);
+          } catch {
+            setErrors({ general: 'Không thể kết nối đến hệ thống đăng nhập. Vui lòng thử lại sau!' });
+          }
+        }}
+        disabled={isLoading}
+        className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 hover:bg-zinc-100/90 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 font-medium text-xs sm:text-sm transition-all shadow-sm hover:shadow active:scale-[0.99] disabled:opacity-50 group"
+      >
+        <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 group-hover:scale-105 transition-transform" />
+        <span>Đăng nhập bằng tài khoản liên kết</span>
+      </button>
+
+      {errors.general && (
+        <p className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center justify-center gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>{errors.general}</span>
+        </p>
+      )}
 
       <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
         <Link

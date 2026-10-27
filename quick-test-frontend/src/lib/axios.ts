@@ -251,9 +251,11 @@ apiClient.interceptors.response.use(
 
     // 1. Handle 401 Unauthorized token refresh
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-      // Exclude authentication endpoints (/auth/login, /auth/refresh)
+      // Exclude authentication endpoints (/auth/login, /auth/register, /auth/sso, /auth/refresh)
       const isAuthEndpoint =
         originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/register') ||
+        originalRequest.url?.includes('/auth/sso') ||
         originalRequest.url?.includes('/auth/refresh');
 
       if (!isAuthEndpoint) {
@@ -353,6 +355,7 @@ function handleLogout() {
     if (
       !currentPath.startsWith('/login') &&
       !currentPath.startsWith('/register') &&
+      !currentPath.startsWith('/signin-oidc') &&
       !currentPath.startsWith('/exam')
     ) {
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination

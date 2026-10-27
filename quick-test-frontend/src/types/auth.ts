@@ -6,7 +6,7 @@ export type Role = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'ROLE_ADMIN' | 'ROLE_TEACHE
 /**
  * Supported authentication identity providers.
  */
-export type AuthProvider = 'LOCAL' | 'GOOGLE' | 'GITHUB';
+export type AuthProvider = 'LOCAL' | 'GOOGLE' | 'GITHUB' | 'QUICK_BITE_SSO';
 
 /**
  * User representation matching backend UserSummaryDto.

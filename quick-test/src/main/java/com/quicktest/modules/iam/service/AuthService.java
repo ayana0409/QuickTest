@@ -40,4 +40,19 @@ public interface AuthService {
      * Update password for the currently authenticated user.
      */
     void updatePassword(UserDetailsImpl currentUser, com.quicktest.modules.iam.dto.UpdatePasswordRequest request);
+
+    /**
+     * Authenticate or register an account via an existing QuickBite SSO Access Token.
+     */
+    AuthResponse authenticateWithQuickBiteToken(String accessToken);
+
+    /**
+     * Authenticate using QuickBite credentials directly (Password Grant flow).
+     */
+    AuthResponse loginWithQuickBiteCredentials(String username, String password);
+
+    /**
+     * Authenticate using QuickBite OAuth2 Authorization Code flow.
+     */
+    AuthResponse authenticateWithQuickBiteCode(String code, String redirectUri);
 }
