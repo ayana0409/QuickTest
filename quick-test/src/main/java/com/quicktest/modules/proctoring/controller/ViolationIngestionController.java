@@ -78,6 +78,24 @@ public class ViolationIngestionController {
             throw new AccessDeniedException("You are not authorized to submit telemetry for this attempt");
         }
 
+        // If attempt is already DISQUALIFIED, return disqualified alert so client immediately locks screen
+        if (attempt.getStatus() == AttemptStatus.DISQUALIFIED) {
+            int maxAllowed = (attempt.getExam().getMaxViolations() != null && attempt.getExam().getMaxViolations() > 0)
+                    ? attempt.getExam().getMaxViolations()
+                    : 5;
+            ViolationAlertMessage disqualifiedAlert = ViolationAlertMessage.builder()
+                    .attemptId(attemptId)
+                    .violationType(report.getViolationType())
+                    .violationCount(attempt.getViolationCount() != null ? attempt.getViolationCount() : maxAllowed)
+                    .maxAllowed(maxAllowed)
+                    .remainingAllowed(0)
+                    .disqualified(true)
+                    .message("Bài thi đã bị đình chỉ do vi phạm quy chế thi.")
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success(disqualifiedAlert, disqualifiedAlert.getMessage()));
+        }
+
         // Verify attempt is actively in progress
         if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
             log.warn("Attempt {} is not IN_PROGRESS (status: {}). Ingestion rejected.",

@@ -8,6 +8,7 @@ import type {
   SubmitResultResponse,
 } from '@/types/exam';
 import type { SaveAnswerRequest } from '@/types/candidateAnswer';
+import type { ViolationAlertResponse } from '@/types/proctoring';
 
 /**
  * Service handling Candidate Exam Session operations matching Spring Boot ExamSessionController:
@@ -119,7 +120,7 @@ export const candidateSessionService = {
       clientTimestamp?: string;
       timestamp?: string;
     }
-  ): Promise<void> {
+  ): Promise<ViolationAlertResponse | undefined> {
     const body = {
       attemptId,
       violationType: payload.violationType,
@@ -127,7 +128,7 @@ export const candidateSessionService = {
       clientTimestamp: payload.clientTimestamp || payload.timestamp || new Date().toISOString(),
     };
 
-    await apiClient.post(
+    const response = await apiClient.post<ApiResponse<ViolationAlertResponse>>(
       `/session/${attemptId}/proctoring/violation`,
       body,
       {
@@ -136,6 +137,7 @@ export const candidateSessionService = {
         showErrorToast: false,
       }
     );
+    return response.data?.data;
   },
 
   /**

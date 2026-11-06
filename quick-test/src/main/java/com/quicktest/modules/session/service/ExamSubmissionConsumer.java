@@ -190,14 +190,27 @@ public class ExamSubmissionConsumer {
             }
 
             if (violationData != null && (!violationData.entities().isEmpty() || violationData.totalViolations() > 0)) {
-                examPersistenceService.persistGradedAnswersAndStatusWithViolations(
-                        attemptId,
-                        candidateAnswers,
-                        finalStatus,
-                        finalScore,
-                        submitTime,
-                        violationData.totalViolations(),
-                        violationData.entities());
+                try {
+                    examPersistenceService.persistGradedAnswersAndStatusWithViolations(
+                            attemptId,
+                            candidateAnswers,
+                            finalStatus,
+                            finalScore,
+                            submitTime,
+                            violationData.totalViolations(),
+                            violationData.entities());
+                } catch (org.springframework.dao.DataIntegrityViolationException dbEx) {
+                    log.warn("Violation logs batch insert hit constraint issue for attemptId: {}. Falling back to persisting answers and status without raw logs: {}",
+                            attemptId, dbEx.getMessage());
+                    examPersistenceService.persistGradedAnswersAndStatusWithViolations(
+                            attemptId,
+                            candidateAnswers,
+                            finalStatus,
+                            finalScore,
+                            submitTime,
+                            violationData.totalViolations(),
+                            Collections.emptyList());
+                }
             } else {
                 examPersistenceService.persistGradedAnswersAndStatus(
                         attemptId, candidateAnswers, finalStatus, finalScore, submitTime);
@@ -210,17 +223,23 @@ public class ExamSubmissionConsumer {
                     .status(finalStatus)
                     .totalScore(finalScore)
                     .submitTime(submitTime)
+                    .isGuest(message.getUserId() == null)
+                    .candidateName(message.getCandidateName())
                     .message(finalStatus == AttemptStatus.DISQUALIFIED
                             ? "Bài thi đã bị đình chỉ do vi phạm quy chế thi."
                             : (hasPendingManualGrading
-                                    ? "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher."
-                                    : "Exam submitted and graded successfully."))
+                                    ? "Bài thi đã nộp thành công và đang chờ giáo viên chấm phần tự luận."
+                                    : "Bài thi đã được nộp và hoàn tất chấm điểm tự động."))
                     .build();
 
             redisExamSessionService.cacheSubmissionResult(attemptId, resultResponse, 60L);
 
             // 6. Cleanup Redis draft answers, locks, and violation keys
             redisExamSessionService.clearDraftAnswers(attemptId);
+            cleanupViolationKeys(attemptId);
+            redisExamSessionService.releaseSubmissionLock(attemptId);
+        } catch (org.springframework.dao.DataIntegrityViolationException nonRecoverableEx) {
+            log.error("Non-recoverable data integrity error processing submission for attemptId: {}. Acknowledging message to prevent infinite retry loop.", attemptId, nonRecoverableEx);
             cleanupViolationKeys(attemptId);
             redisExamSessionService.releaseSubmissionLock(attemptId);
         } catch (Exception ex) {

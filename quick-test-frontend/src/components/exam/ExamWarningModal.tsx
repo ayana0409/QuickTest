@@ -70,13 +70,13 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
           id="warning-modal-title"
           className="text-xl sm:text-2xl font-bold text-amber-400 tracking-tight mb-2"
         >
-          Cảnh báo gian lận
+          Cảnh báo vi phạm quy chế
         </h2>
 
         {/* Violation Message */}
         <p className="text-sm sm:text-base text-zinc-300 leading-relaxed mb-6 font-normal">
           {message ||
-            'Hệ thống phát hiện gian lận trong quá trình làm bài. Ban giám thị đã ghi nhận hành vi gian lận này.'}
+            'Hệ thống ghi nhận bạn vừa có thao tác vi phạm nội quy phòng thi. Dữ liệu vi phạm đã được chuyển tới giám thị theo dõi.'}
         </p>
 
         {/* Violation Counter Badge */}
@@ -85,7 +85,7 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
               <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">
-                Lần vi phạm:
+                Số lần vi phạm:
               </div>
               <div className="text-sm font-bold text-zinc-100">
                 {violationCount} / {maxAllowed}
@@ -100,14 +100,13 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
                 : 'bg-red-500/15 text-red-400 border-red-500/40 animate-pulse'
             )}
           >
-            {remaining > 0 ? `Còn ${remaining} lần vi phạm` : 'Nguy cơ đình chỉ ngay lập tức'}
+            {remaining > 0 ? `Còn lại ${remaining} lần nhắc nhở` : 'Sẽ bị đình chỉ nếu tái phạm'}
           </div>
         </div>
 
         {/* Strict Caution Note */}
         <div className="text-xs text-zinc-400 bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mb-6 leading-relaxed">
-          <strong className="text-amber-300">Lưu ý:</strong> Nếu tiếp tục vi phạm, hệ thống sẽ tự
-          động đình chỉ thi và hủy kết quả làm bài.
+          <strong className="text-amber-300">Lưu ý:</strong> Nếu tiếp tục vi phạm quá số lần cho phép, bài thi của bạn sẽ bị hệ thống tự động đình chỉ.
         </div>
 
         {/* Acknowledge Button */}
@@ -117,7 +116,7 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
           className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold text-sm sm:text-base shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#161B22]"
         >
           <CheckCircle2 className="w-5 h-5" />
-          Tôi hiểu và cam kết tuân thủ
+          Tôi đã hiểu và tiếp tục làm bài
         </button>
       </div>
     </div>

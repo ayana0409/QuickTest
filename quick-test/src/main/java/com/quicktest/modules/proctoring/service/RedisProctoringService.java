@@ -30,6 +30,7 @@ public class RedisProctoringService {
     public static final String KEY_VIOLATION_LOGS = "quicktest:attempt:%s:violation_logs";
     public static final String KEY_ATTEMPT_STATUS = "quicktest:attempt:%s:status";
     public static final String KEY_SESSION_LOCK = "quicktest:attempt:%s:session_lock";
+    public static final String KEY_VIOLATION_DEDUP = "quicktest:attempt:%s:violation_dedup";
 
     private final StringRedisTemplate redisTemplate;
     private final QuickNotifyDispatcherService quickNotifyDispatcher;
@@ -61,6 +62,7 @@ public class RedisProctoringService {
         String countKey = String.format(KEY_VIOLATION_COUNT, attemptId);
         String logsKey = String.format(KEY_VIOLATION_LOGS, attemptId);
         String statusKey = String.format(KEY_ATTEMPT_STATUS, attemptId);
+        String dedupKey = String.format(KEY_VIOLATION_DEDUP, attemptId);
 
         // 1. Short-circuit if candidate has already been disqualified
         String currentStatus = redisTemplate.opsForValue().get(statusKey);
@@ -78,6 +80,32 @@ public class RedisProctoringService {
                     .build();
         }
 
+        // 1b. 2-second deduplication window to prevent a single Alt+Tab / Fullscreen exit from counting multiple times
+        String recentViolation = redisTemplate.opsForValue().get(dedupKey);
+        if (recentViolation != null) {
+            String existingCountStr = redisTemplate.opsForValue().get(countKey);
+            int existingCount = 1;
+            if (existingCountStr != null) {
+                try {
+                    existingCount = Integer.parseInt(existingCountStr);
+                } catch (NumberFormatException ignored) {}
+            }
+            int remaining = Math.max(0, maxAllowedViolations - existingCount);
+            log.debug("Deduplicated burst violation for attempt {} (type={})", attemptId, report.getViolationType());
+            return ViolationAlertMessage.builder()
+                    .attemptId(attemptId)
+                    .violationType(report.getViolationType())
+                    .violationCount(existingCount)
+                    .maxAllowed(maxAllowedViolations)
+                    .remainingAllowed(remaining)
+                    .disqualified(existingCount >= maxAllowedViolations)
+                    .message(String.format("Cảnh báo vi phạm quy chế: Lần %d/%d.",
+                            existingCount, maxAllowedViolations, remaining))
+                    .timestamp(LocalDateTime.now())
+                    .build();
+        }
+        redisTemplate.opsForValue().set(dedupKey, report.getViolationType().name(), Duration.ofSeconds(2));
+
         // 2. Atomically increment violation counter in Redis
         Long countLong = redisTemplate.opsForValue().increment(countKey);
         redisTemplate.expire(countKey, keyTtl);
@@ -86,7 +114,7 @@ public class RedisProctoringService {
         // 3. Serialize and push violation record to Redis List
         String description = (report.getDescription() != null && !report.getDescription().isBlank())
                 ? report.getDescription().trim()
-                : "Vi phạm phát hiện: " + report.getViolationType().name();
+                : "Vi phạm quy chế phòng thi: " + report.getViolationType().name();
 
         ViolationItemRedisDto logItem = ViolationItemRedisDto.builder()
                 .violationType(report.getViolationType())
@@ -112,9 +140,9 @@ public class RedisProctoringService {
 
         int remaining = Math.max(0, maxAllowedViolations - currentCount);
         String alertText = isDisqualified
-                ? String.format("Đình chỉ thi! Đã vượt quá giới hạn vi phạm (%d/%d).", currentCount, maxAllowedViolations)
-                : String.format("Cảnh báo vi phạm [%s]: Số lần %d/%d. Còn lại: %d.",
-                        report.getViolationType().name(), currentCount, maxAllowedViolations, remaining);
+                ? String.format("Bài thi đã bị đình chỉ do vượt quá số lần vi phạm cho phép (%d/%d).", currentCount, maxAllowedViolations)
+                : String.format("Cảnh báo vi phạm quy chế: Lần %d/%d (Còn lại: %d lần nhắc nhở).",
+                        currentCount, maxAllowedViolations, remaining);
 
         ViolationAlertMessage alert = ViolationAlertMessage.builder()
                 .attemptId(attemptId)

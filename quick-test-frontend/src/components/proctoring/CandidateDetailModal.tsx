@@ -197,6 +197,8 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               {(
                 [
                   'TAB_SWITCH',
+                  'WINDOW_BLUR',
+                  'MULTI_SCREEN_DETECTED',
                   'EXIT_FULLSCREEN',
                   'DEVTOOLS_OPEN',
                   'COPY_PASTE_ATTEMPT',

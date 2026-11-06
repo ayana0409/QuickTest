@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { WifiOff, MonitorX, RefreshCw, LogOut } from 'lucide-react';
+import {
+  WifiOff,
+  MonitorX,
+  RefreshCw,
+  LogOut,
+  EyeOff,
+  MousePointerClick,
+  AlertTriangle,
+  Monitor,
+} from 'lucide-react';
 import { sendWebSocketMessage } from '@/lib/socket';
 import { ProctoringRealtimeManager } from '@/lib/realtime/ProctoringRealtimeManager';
 import { candidateSessionService } from '@/services/candidateSession.service';
@@ -72,6 +81,26 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   const [isCheckingNetwork, setIsCheckingNetwork] = useState(false);
   const consecutiveHeartbeatFailuresRef = useRef(0);
 
+  // Dual-monitor & Focus Guard states
+  const [isFocusLostShieldOpen, setIsFocusLostShieldOpen] = useState(false);
+  const [focusLossCount, setFocusLossCount] = useState<number>(() => {
+    if (typeof window !== 'undefined' && attemptId) {
+      const saved = sessionStorage.getItem(`quicktest_focus_loss_${attemptId}`);
+      return saved ? parseInt(saved, 10) || 0 : 0;
+    }
+    return 0;
+  });
+  const focusLossCountRef = useRef<number>(focusLossCount);
+  const [isMultiScreenDetected, setIsMultiScreenDetected] = useState(false);
+  const isInBlurEpisodeRef = useRef(false);
+  const hasReportedTabSwitchInEpisodeRef = useRef(false);
+  const hasReportedMultiScreenRef = useRef(false);
+  const blurCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    focusLossCountRef.current = focusLossCount;
+  }, [focusLossCount]);
+
   const isMasterEnabled = isExamActive && settings.enabled && !isSessionEvicted;
 
   // Keep latest callback references
@@ -87,7 +116,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       if (prev) return prev;
       const resolvedMsg =
         msg ||
-        'Phiên thi của bạn đã được mở trên một thiết bị hoặc trình duyệt khác. Phiên hiện tại đã bị khóa để đảm bảo tính độc quyền của bài thi.';
+        'Bài thi của bạn vừa được mở trên một trình duyệt hoặc thiết bị khác. Để đảm bảo tính bảo mật và công bằng, phiên làm bài tại cửa sổ này đã dừng lại.';
       setEvictionMessage(resolvedMsg);
       onSessionEvictedRef.current?.(resolvedMsg);
       return true;
@@ -114,11 +143,21 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
           description,
           clientTimestamp: payload.clientTimestamp,
         })
+        .then((alert) => {
+          if (alert) {
+            onServerAlertRef.current(alert);
+          }
+        })
         .catch((err: any) => {
           const status = err?.response?.status;
           const errMsg = String(err?.response?.data?.message || err?.message || '');
           if (status === 409 || errMsg.includes('SESSION_EVICTED')) {
             triggerSessionEviction(errMsg.replace('SESSION_EVICTED:', '').trim());
+            return;
+          }
+
+          // If attempt is already finalized/disqualified (400 Bad Request), do not spam STOMP fallback
+          if (status === 400) {
             return;
           }
 
@@ -289,33 +328,178 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     }
   };
 
-  // 3. Tab Visibility & Window Focus Listener (Toggleable)
+  // 3. Tab Visibility, Window Focus, 1-Second hasFocus() Polling & Multi-Screen Detection
+  const registerWindowBlurStrike = useCallback(() => {
+    if (!isMasterEnabled || isSessionEvicted || isNetworkOffline) return;
+
+    const nextCount = focusLossCountRef.current + 1;
+    focusLossCountRef.current = nextCount;
+    setFocusLossCount(nextCount);
+
+    try {
+      if (typeof window !== 'undefined' && attemptId) {
+        sessionStorage.setItem(`quicktest_focus_loss_${attemptId}`, String(nextCount));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+
+    // Every 3 focus losses counts as 1 official WINDOW_BLUR violation
+    if (nextCount % 3 === 0) {
+      reportViolation(
+        'WINDOW_BLUR',
+        `Rời khỏi cửa sổ bài thi ${nextCount} lần.`
+      );
+    }
+  }, [attemptId, isMasterEnabled, isNetworkOffline, isSessionEvicted, reportViolation]);
+
+  const triggerFocusLossEpisode = useCallback(
+    (reason: 'TAB_HIDDEN' | 'WINDOW_BLUR' | 'POLL_HAS_FOCUS') => {
+      if (!isMasterEnabled || isSessionEvicted || isNetworkOffline) return;
+
+      // Immediately activate the anti-cheat shield to cover the exam paper
+      setIsFocusLostShieldOpen(true);
+
+      if (reason === 'TAB_HIDDEN') {
+        if (!hasReportedTabSwitchInEpisodeRef.current) {
+          hasReportedTabSwitchInEpisodeRef.current = true;
+          isInBlurEpisodeRef.current = true;
+          if (blurCheckTimerRef.current) {
+            clearTimeout(blurCheckTimerRef.current);
+            blurCheckTimerRef.current = null;
+          }
+          reportViolation(
+            'TAB_SWITCH',
+            'Chuyển sang tab khác hoặc thu nhỏ cửa sổ trình duyệt.'
+          );
+        }
+        return;
+      }
+
+      // If already in a blur episode, ignore duplicate blur/poll events until user clicks Resume
+      if (isInBlurEpisodeRef.current) {
+        return;
+      }
+
+      isInBlurEpisodeRef.current = true;
+
+      // Wait 150ms to distinguish between a pure window blur (e.g. clicking on 2nd monitor)
+      // and a tab switch where document.hidden becomes true right after blur
+      if (blurCheckTimerRef.current) {
+        clearTimeout(blurCheckTimerRef.current);
+      }
+      blurCheckTimerRef.current = setTimeout(() => {
+        if (typeof document !== 'undefined' && document.hidden) {
+          if (!hasReportedTabSwitchInEpisodeRef.current) {
+            hasReportedTabSwitchInEpisodeRef.current = true;
+            reportViolation(
+              'TAB_SWITCH',
+              'Chuyển sang tab khác hoặc thu nhỏ cửa sổ trình duyệt.'
+            );
+          }
+        } else {
+          registerWindowBlurStrike();
+        }
+      }, 150);
+    },
+    [isMasterEnabled, isNetworkOffline, isSessionEvicted, registerWindowBlurStrike, reportViolation]
+  );
+
+  // Resume handler when candidate explicitly clicks back into the exam shield
+  const handleResumeFromFocusShield = useCallback(async () => {
+    isInBlurEpisodeRef.current = false;
+    hasReportedTabSwitchInEpisodeRef.current = false;
+    if (blurCheckTimerRef.current) {
+      clearTimeout(blurCheckTimerRef.current);
+      blurCheckTimerRef.current = null;
+    }
+    setIsFocusLostShieldOpen(false);
+    if (typeof window !== 'undefined') {
+      window.focus();
+    }
+    // Re-enter fullscreen automatically on resume click if fullscreen enforcement is enabled
+    if (
+      settings.detectFullscreenExit &&
+      typeof document !== 'undefined' &&
+      !document.fullscreenElement &&
+      typeof document.documentElement?.requestFullscreen === 'function'
+    ) {
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Ignored if browser denies fullscreen
+      }
+    }
+  }, [settings.detectFullscreenExit]);
+
   useEffect(() => {
     if (!isMasterEnabled || !settings.detectTabSwitch) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        reportViolation(
-          'TAB_SWITCH',
-          'Thí sinh đã chuyển tab hoặc thu nhỏ cửa sổ làm bài thi.'
-        );
+        triggerFocusLossEpisode('TAB_HIDDEN');
       }
     };
 
     const handleWindowBlur = () => {
       if (document.hidden) {
-        return;
+        triggerFocusLossEpisode('TAB_HIDDEN');
+      } else {
+        triggerFocusLossEpisode('WINDOW_BLUR');
       }
     };
 
+    // Multi-screen check via Screen Enumeration API (window.screen.isExtended)
+    // Displays warning banner & warning modal without deducting candidate's violation quota
+    const checkMultiScreen = () => {
+      if (typeof window === 'undefined' || !window.screen) return;
+      const isExtended = Boolean((window.screen as any).isExtended);
+      setIsMultiScreenDetected(isExtended);
+
+      if (isExtended && !hasReportedMultiScreenRef.current) {
+        hasReportedMultiScreenRef.current = true;
+        onViolationRef.current(
+          'MULTI_SCREEN_DETECTED',
+          'Lưu ý: Thiết bị của bạn đang kết nối từ 2 màn hình trở lên. Vui lòng chỉ làm bài trên một màn hình duy nhất trong suốt thời gian thi.'
+        );
+      } else if (!isExtended && hasReportedMultiScreenRef.current) {
+        hasReportedMultiScreenRef.current = false;
+      }
+    };
+
+    checkMultiScreen();
+
+    // 1-second periodic polling of document.hasFocus() and multi-screen state
+    const focusPollInterval = setInterval(() => {
+      if (typeof document !== 'undefined') {
+        if (document.hidden) {
+          triggerFocusLossEpisode('TAB_HIDDEN');
+        } else if (!document.hasFocus()) {
+          triggerFocusLossEpisode('POLL_HAS_FOCUS');
+        }
+      }
+      checkMultiScreen();
+    }, 1000);
+
+    const screenObj = typeof window !== 'undefined' ? (window.screen as any) : null;
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleWindowBlur);
+    if (screenObj && typeof screenObj.addEventListener === 'function') {
+      screenObj.addEventListener('change', checkMultiScreen);
+    }
 
     return () => {
+      clearInterval(focusPollInterval);
+      if (blurCheckTimerRef.current) {
+        clearTimeout(blurCheckTimerRef.current);
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
+      if (screenObj && typeof screenObj.removeEventListener === 'function') {
+        screenObj.removeEventListener('change', checkMultiScreen);
+      }
     };
-  }, [isMasterEnabled, settings.detectTabSwitch, reportViolation]);
+  }, [isMasterEnabled, settings.detectTabSwitch, triggerFocusLossEpisode, reportViolation]);
 
   // 4. Fullscreen Change Listener (Toggleable)
   useEffect(() => {
@@ -329,7 +513,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       } else if (hasBeenFullscreen) {
         reportViolation(
           'EXIT_FULLSCREEN',
-          'Thí sinh đã thoát chế độ toàn màn hình trong khi làm bài thi.'
+          'Thoát khỏi chế độ toàn màn hình.'
         );
       }
     };
@@ -348,7 +532,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác mở menu chuột phải trong lúc thi.'
+        'Mở menu chuột phải trong bài thi.'
       );
     };
 
@@ -360,7 +544,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác sao chép nội dung trong lúc thi.'
+        'Sao chép nội dung bài thi.'
       );
     };
 
@@ -368,7 +552,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác cắt nội dung trong lúc thi.'
+        'Cắt nội dung câu hỏi bài thi.'
       );
     };
 
@@ -376,7 +560,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Thao tác dán nội dung trong lúc thi.'
+        'Dán nội dung vào bài làm.'
       );
     };
 
@@ -412,7 +596,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       if (e.key === 'F12') {
         e.preventDefault();
         e.stopPropagation();
-        reportViolation('DEVTOOLS_OPEN', 'Cố gắng mở công cụ nhà phát triển (F12).');
+        reportViolation('DEVTOOLS_OPEN', 'Mở công cụ phát triển / kiểm tra mã (F12).');
         return;
       }
 
@@ -424,7 +608,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       ) {
         e.preventDefault();
         e.stopPropagation();
-        reportViolation('DEVTOOLS_OPEN', 'Cố gắng mở công cụ kiểm tra phần tử.');
+        reportViolation('DEVTOOLS_OPEN', 'Mở bảng điều khiển kiểm tra phần tử.');
         return;
       }
 
@@ -432,7 +616,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       if (isCtrlOrCmd && (e.key === 'u' || e.key === 'U')) {
         e.preventDefault();
         e.stopPropagation();
-        reportViolation('DEVTOOLS_OPEN', 'Cố gắng xem mã nguồn trang web.');
+        reportViolation('DEVTOOLS_OPEN', 'Xem mã nguồn trang thi.');
         return;
       }
 
@@ -470,6 +654,8 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   }, [triggerSessionEviction]);
 
   const blockSelection = isMasterEnabled && settings.blockCopyPaste;
+  const currentBlurStrikeInCycle =
+    focusLossCount === 0 ? 0 : focusLossCount % 3 === 0 ? 3 : focusLossCount % 3;
 
   return (
     <div
@@ -479,15 +665,83 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         userSelect: blockSelection ? 'none' : 'auto',
       }}
     >
-      {/* Blur exam content when offline or evicted to prevent offline reading/solving */}
+      {/* Persistent Multi-Monitor Warning Banner */}
+      {isMultiScreenDetected && isMasterEnabled && !isSessionEvicted && (
+        <div className="sticky top-0 z-[9990] w-full bg-amber-500/95 text-zinc-950 px-4 py-2 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-lg">
+          <Monitor className="w-4 h-4 shrink-0" />
+          <span>
+            Lưu ý: Thiết bị của bạn đang kết nối từ 2 màn hình trở lên. Vui lòng chỉ thao tác trong cửa sổ bài thi để tránh bị tính vi phạm quy chế.
+          </span>
+        </div>
+      )}
+
+      {/* Blur exam content when offline, evicted, or window lost focus to prevent reading/solving on 2nd monitor */}
       <div
         className={cn(
-          'w-full h-full transition-all duration-200',
-          (isNetworkOffline || isSessionEvicted) && 'blur-xl pointer-events-none select-none'
+          'w-full h-full transition-all duration-150',
+          (isNetworkOffline || isSessionEvicted || (isFocusLostShieldOpen && isMasterEnabled)) &&
+          'blur-xl pointer-events-none select-none'
         )}
       >
         {children}
       </div>
+
+      {/* 0. Focus Lost Anti-Cheat Shield (Blocks dual-monitor looking & typing) */}
+      {isFocusLostShieldOpen && isMasterEnabled && !isSessionEvicted && !isNetworkOffline && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[9995] flex items-center justify-center bg-black/90 backdrop-blur-2xl p-4 select-none animate-in fade-in duration-150"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-[#161B22] border border-amber-500/50 shadow-2xl p-6 sm:p-8 text-center text-zinc-100">
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <EyeOff className="w-8 h-8 animate-pulse" />
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-3">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Rời khỏi cửa sổ bài thi
+            </span>
+
+            <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
+              Nội dung bài thi đang tạm ẩn
+            </h2>
+
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-5">
+              Bạn vừa thao tác ra ngoài cửa sổ làm bài.
+            </p>
+
+            {/* 3-Strike Focus Loss Counter */}
+            <div className="rounded-xl bg-[#0D1117] border border-[#30363D] p-3.5 text-left text-xs text-zinc-300 mb-6 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 font-medium">Số lần rời màn hình thi:</span>
+                <span
+                  className={cn(
+                    'px-2.5 py-0.5 rounded-full font-bold',
+                    currentBlurStrikeInCycle === 3
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                      : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  )}
+                >
+                  {currentBlurStrikeInCycle} / 3 lần
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                • Quy định: Mỗi <strong className="text-amber-300">3 lần rời khỏi cửa sổ làm bài</strong> = <strong className="text-rose-400">1 lần vi phạm</strong>.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleResumeFromFocusShield}
+              className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <MousePointerClick className="w-4 h-4" />
+              Quay lại làm bài thi
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 1. Single Active Session Eviction Lockout Overlay */}
       {isSessionEvicted && (
@@ -502,11 +756,11 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             </div>
 
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-3">
-              Độc quyền Phiên Thi (Single Active Session)
+              Phát hiện phiên đăng nhập mới
             </span>
 
             <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
-              Phiên làm bài đã chuyển sang thiết bị khác
+              Bài thi đang được mở ở một nơi khác
             </h2>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
@@ -514,9 +768,9 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             </p>
 
             <div className="rounded-xl bg-[#0D1117] border border-[#30363D] p-3.5 text-left text-xs text-zinc-400 mb-6 space-y-1">
-              <p className="font-semibold text-zinc-200">Lưu ý bảo mật:</p>
-              <p>• Các câu trả lời bạn đã chọn trước đó vẫn được bảo toàn trên hệ thống.</p>
-              <p>• Vui lòng tiếp tục làm bài trên trình duyệt hoặc thiết bị mới vừa đăng nhập.</p>
+              <p className="font-semibold text-zinc-200">Lưu ý:</p>
+              <p>• Các câu trả lời trước đó của bạn đã được lưu an toàn trên hệ thống.</p>
+              <p>• Bạn vui lòng tiếp tục làm bài trên thiết bị hoặc trình duyệt mới.</p>
             </div>
 
             <button
@@ -527,7 +781,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
               className="w-full py-3 px-5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm shadow-lg shadow-amber-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
-              Thoát trang này
+              Về trang chủ
             </button>
           </div>
         </div>
@@ -546,21 +800,21 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             </div>
 
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold mb-3">
-              Cảnh báo Mất kết nối Mạng
+              Mất kết nối Internet
             </span>
 
             <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
-              Tạm khóa màn hình thi do mất kết nối
+              Đang gián đoạn kết nối mạng
             </h2>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
-              Hệ thống phát hiện thiết bị của bạn bị ngắt kết nối mạng. Để đảm bảo công bằng và ngăn chặn làm bài ngoại tuyến (Offline), nội dung câu hỏi sẽ tạm ẩn cho đến khi kết nối mạng được khôi phục.
+              Hệ thống nhận thấy thiết bị của bạn vừa bị ngắt kết nối Internet. Đề thi tạm thời được che lại để đảm bảo dữ liệu làm bài không bị gián đoạn cho đến khi có mạng trở lại.
             </p>
 
             <div className="rounded-xl bg-[#0D1117] border border-[#30363D] p-3.5 text-left text-xs text-zinc-400 mb-6 space-y-1">
-              <p className="font-semibold text-zinc-200">Hướng dẫn xử lý:</p>
-              <p>• Kiểm tra lại kết nối Wi-Fi hoặc dây mạng LAN của bạn.</p>
-              <p>• Màn hình làm bài sẽ tự động mở khóa ngay khi có mạng trở lại.</p>
+              <p className="font-semibold text-zinc-200">Hướng dẫn:</p>
+              <p>• Vui lòng kiểm tra lại đường truyền Wi-Fi hoặc dây mạng trên thiết bị.</p>
+              <p>• Bài thi sẽ tự động mở lại ngay khi kết nối Internet được khôi phục.</p>
             </div>
 
             <button

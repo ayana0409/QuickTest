@@ -381,6 +381,8 @@ export interface SubmitResultResponse {
   message: string;
   showResultsToStudents?: boolean;
   gradingStatus?: GradingStatus;
+  isGuest?: boolean;
+  candidateName?: string;
 }
 
 /**

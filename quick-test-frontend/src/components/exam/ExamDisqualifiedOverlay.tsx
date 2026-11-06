@@ -66,15 +66,14 @@ export const ExamDisqualifiedOverlay: React.FC<ExamDisqualifiedOverlayProps> = (
         {/* Reason */}
         <p className="text-sm sm:text-base text-zinc-300 leading-relaxed mb-6 font-normal">
           {reason ||
-            'Bài làm của bạn đã bị đình chỉ do vi phạm quy chế phòng thi vượt quá giới hạn cho phép hoặc bị giám thị khóa phiên thi.'}
+            'Bài thi đã bị đình chỉ do vi phạm quy chế phòng thi.'}
         </p>
 
         {/* Details card */}
         <div className="p-4 rounded-xl bg-[#0D1117] border border-[#30363D] mb-6 text-left flex items-start gap-3">
           <AlertOctagon className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
           <div className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-            Phiên làm bài đã kết thúc. Toàn bộ đáp án đến thời điểm đình chỉ đã được niêm phong và gửi
-            báo cáo vi phạm đến ban giám hiệu / giảng viên phụ trách.
+            Phiên làm bài của bạn đã kết thúc. Toàn bộ câu trả lời đã được ghi nhận.
           </div>
         </div>
 

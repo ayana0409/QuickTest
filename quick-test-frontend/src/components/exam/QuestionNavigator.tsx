@@ -69,18 +69,20 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-sm sm:text-base font-bold text-[#E6EDF3]">
             <ListChecks className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span>Mục lục</span>
+            <span>Danh sách câu hỏi</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-medium text-zinc-400">
-              {answeredCount}/{totalCount} ({progressPercent}%)
+              <span className="hidden sm:inline text-zinc-400">Đã làm: </span>
+              <strong className="text-emerald-400">{answeredCount}</strong>/{totalCount}{' '}
+              <span className="text-zinc-400">({progressPercent}%)</span>
             </span>
             {onClose && (
               <button
                 type="button"
                 onClick={onClose}
                 className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#21262D] transition-colors cursor-pointer"
-                aria-label="Đóng mục lục"
+                aria-label="Đóng danh sách câu hỏi"
                 title="Đóng"
               >
                 <X className="w-4 h-4" />
@@ -100,7 +102,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
 
       {/* 5-Column Question Grid */}
       <div className="flex-1 overflow-y-auto pr-1 max-h-[360px] custom-scrollbar">
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-5 gap-2.5 p-1">
           {questions.map((q, index) => {
             const isCurrent = index === currentIndex;
             const isAnswered = isQuestionAnswered(q);
@@ -111,16 +113,14 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
                 type="button"
                 onClick={() => onSelectQuestion(index)}
                 className={cn(
-                  'relative h-10 w-full rounded-xl text-xs font-semibold font-mono flex items-center justify-center transition-all duration-150 cursor-pointer focus:outline-none',
-                  isCurrent &&
-                  'ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#161B22] font-bold z-10 scale-105',
+                  'relative h-10 w-full rounded-xl text-xs font-semibold font-mono flex items-center justify-center transition-all duration-150 cursor-pointer focus:outline-none select-none',
                   isAnswered
                     ? isCurrent
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
+                      ? 'bg-emerald-600 text-white font-bold ring-2 ring-emerald-300 border border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-500/50'
                     : isCurrent
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'bg-[#0D1117] text-zinc-400 border border-[#30363D] hover:bg-[#21262D] hover:text-zinc-200'
+                      ? 'bg-indigo-600 text-white font-bold ring-2 ring-indigo-300 border border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.45)]'
+                      : 'bg-[#0D1117] text-zinc-400 border border-[#30363D] hover:bg-[#21262D] hover:text-zinc-200 hover:border-zinc-500/50'
                 )}
                 aria-label={`Đi tới câu ${index + 1}`}
               >
@@ -136,17 +136,17 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
 
       {/* Status Legend */}
       <div className="pt-3.5 mt-3.5 border-t border-[#30363D] flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-400">
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-md bg-emerald-500/30 border border-emerald-500/50 inline-block shrink-0" />
-          <span>Đã làm</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)] inline-block shrink-0" />
+          <span>Đã làm ({answeredCount})</span>
         </div>
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-md bg-indigo-600 border border-indigo-400 inline-block shrink-0" />
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.5)] inline-block shrink-0" />
           <span>Đang xem</span>
         </div>
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-md bg-[#0D1117] border border-[#30363D] inline-block shrink-0" />
-          <span>Chưa làm</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30363D] border border-zinc-500/40 inline-block shrink-0" />
+          <span>Chưa làm ({totalCount - answeredCount})</span>
         </div>
       </div>
 
@@ -163,7 +163,10 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
           ) : (
             <Send className="w-4 h-4" />
           )}
-          <span>Nộp bài thi ({answeredCount}/{totalCount})</span>
+          <span>Nộp bài thi</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-black/20 text-emerald-100 font-mono font-bold">
+            ({answeredCount}/{totalCount})
+          </span>
         </button>
       </div>
     </aside>

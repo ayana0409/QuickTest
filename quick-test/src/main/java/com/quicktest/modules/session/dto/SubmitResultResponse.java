@@ -32,4 +32,8 @@ public class SubmitResultResponse {
     private LocalDateTime submitTime;
 
     private String message;
+
+    private Boolean isGuest;
+
+    private String candidateName;
 }

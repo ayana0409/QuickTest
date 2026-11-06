@@ -103,7 +103,7 @@ public class QuickNotifyDispatcherService {
             String activeSessionToken,
             String newIpAddress) {
 
-        String evictionMessage = "Phiên thi của bạn đã được mở trên một thiết bị hoặc trình duyệt khác. Phiên hiện tại đã bị ngắt kết nối để đảm bảo độc quyền phiên thi.";
+        String evictionMessage = "Bài thi của bạn vừa được mở trên một thiết bị hoặc trình duyệt khác. Để bảo đảm tính bảo mật và công bằng, phiên làm bài tại đây đã dừng lại.";
 
         Map<String, Object> candidateData = new HashMap<>();
         candidateData.put("eventType", "SESSION_EVICTED");
@@ -122,7 +122,7 @@ public class QuickNotifyDispatcherService {
             teacherData.put("attemptId", attemptId.toString());
             teacherData.put("examId", examId.toString());
             teacherData.put("newIpAddress", newIpAddress);
-            teacherData.put("message", String.format("Thí sinh bài thi %s vừa chuyển phiên làm bài sang thiết bị/trình duyệt mới (IP: %s)", attemptId, newIpAddress));
+            teacherData.put("message", String.format("Thí sinh bài thi %s vừa chuyển sang làm bài trên thiết bị hoặc trình duyệt khác (IP: %s)", attemptId, newIpAddress));
 
             sendNotifyEnvelope("exam_monitor_" + examId, "normal", teacherData);
         }

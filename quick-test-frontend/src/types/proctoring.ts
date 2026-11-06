@@ -5,6 +5,8 @@ import type { AttemptStatus } from './exam';
  */
 export type ViolationType =
   | 'TAB_SWITCH'
+  | 'WINDOW_BLUR'
+  | 'MULTI_SCREEN_DETECTED'
   | 'EXIT_FULLSCREEN'
   | 'DEVTOOLS_OPEN'
   | 'NO_FACE_DETECTED'

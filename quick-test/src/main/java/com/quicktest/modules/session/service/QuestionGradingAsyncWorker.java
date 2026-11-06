@@ -314,8 +314,8 @@ public class QuestionGradingAsyncWorker {
                         .totalScore(attempt.getTotalScore())
                         .submitTime(attempt.getSubmitTime())
                         .message(remainingPending == 0
-                                ? "Exam submitted and graded successfully."
-                                : "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher.")
+                                ? "Bài thi đã được nộp và hoàn tất chấm điểm tự động."
+                                : "Bài thi đã nộp thành công và đang chờ giáo viên chấm phần tự luận.")
                         .build();
                 redisExamSessionService.cacheSubmissionResult(attempt.getId(), cachedResult, 86400L);
             } catch (Exception e) {

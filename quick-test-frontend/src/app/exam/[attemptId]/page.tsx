@@ -377,21 +377,34 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     };
   }, [attemptId, initExam, loadSavedAnswers]);
 
-  // 2. Fullscreen Change Tracker
+  // 2. Fullscreen Change Tracker & Mandatory Enforcement
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
+      const activeFs = Boolean(document.fullscreenElement);
+      setIsFullscreen(activeFs);
+      if (
+        !activeFs &&
+        proctoringSettings.enabled &&
+        proctoringSettings.detectFullscreenExit &&
+        !isDisqualified
+      ) {
+        setShowFullscreenPrompt(true);
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, []);
+  }, [proctoringSettings.enabled, proctoringSettings.detectFullscreenExit, isDisqualified]);
 
   const handleEnterFullscreen = async () => {
     try {
-      if (!document.fullscreenElement) {
+      if (
+        typeof document !== 'undefined' &&
+        !document.fullscreenElement &&
+        typeof document.documentElement?.requestFullscreen === 'function'
+      ) {
         await document.documentElement.requestFullscreen();
       }
     } catch (err) {
@@ -615,7 +628,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     if (alert.disqualified) {
       setWarningModalOpen(false);
     } else {
-      setWarningMessage(alert.message || `Cảnh báo vi phạm nội quy phòng thi: ${alert.violationType}`);
+      setWarningMessage(alert.message || 'Cảnh báo vi phạm quy chế phòng thi.');
       setWarningModalOpen(true);
     }
   };
@@ -666,10 +679,10 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           </div>
           <div>
             <h2 className="text-lg font-bold text-[#E6EDF3] tracking-tight">
-              Đang chuẩn bị đề thi và khởi tạo giám sát
+              Đang chuẩn bị đề thi
             </h2>
             <p className="text-xs text-zinc-400 mt-1 max-w-sm">
-              Hệ thống đang kết nối phòng thi bảo mật và khôi phục các câu trả lời đã lưu...
+              Hệ thống đang kết nối phòng thi và tải lại các câu trả lời đã lưu của bạn...
             </p>
           </div>
         </div>
@@ -852,12 +865,12 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           </div>
         )}
 
-        {/* Initial Fullscreen Prompt Modal */}
-        {showFullscreenPrompt && (
+        {/* Mandatory / Initial Fullscreen Prompt Modal */}
+        {showFullscreenPrompt && !isDisqualified && (
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 select-none animate-in fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-2xl p-4 select-none animate-in fade-in"
           >
             <div className="relative w-full max-w-md rounded-2xl bg-[#161B22] border border-[#30363D] shadow-2xl p-6 sm:p-8 text-center text-zinc-100">
               <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
@@ -865,11 +878,15 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
               </div>
 
               <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
-                Chế độ Toàn màn hình
+                {proctoringSettings.enabled
+                  ? 'Yêu cầu chế độ Toàn màn hình'
+                  : 'Chế độ Toàn màn hình'}
               </h2>
 
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6 font-normal">
-                Để đảm bảo tính bảo mật và sự tập trung cao nhất cho phòng thi, vui lòng bật chế độ toàn màn hình trước khi bắt đầu làm bài.
+                {proctoringSettings.enabled
+                  ? 'Bài thi này yêu cầu làm ở chế độ Toàn màn hình để bảo đảm sự tập trung và tuân thủ quy chế phòng thi.'
+                  : 'Để tập trung làm bài thi tốt nhất, bạn nên bật chế độ toàn màn hình.'}
               </p>
 
               <button
@@ -878,16 +895,18 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
                 className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Maximize2 className="w-4 h-4" />
-                Vào toàn màn hình & Bắt đầu
+                Bật toàn màn hình để làm bài
               </button>
 
-              <button
-                type="button"
-                onClick={() => setShowFullscreenPrompt(false)}
-                className="mt-3 text-xs text-zinc-400 hover:text-zinc-200 transition-colors py-1 cursor-pointer"
-              >
-                Bỏ qua (tiếp tục ở chế độ cửa sổ)
-              </button>
+              {!proctoringSettings.enabled && (
+                <button
+                  type="button"
+                  onClick={() => setShowFullscreenPrompt(false)}
+                  className="mt-3 text-xs text-zinc-400 hover:text-zinc-200 transition-colors py-1 cursor-pointer"
+                >
+                  Bỏ qua (tiếp tục ở chế độ cửa sổ)
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -904,7 +923,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         {/* Disqualified Overlay (Total Blockade) */}
         <ExamDisqualifiedOverlay
           isOpen={isDisqualified}
-          reason="Bạn đã vi phạm quy chế thi vượt mức giới hạn cho phép hoặc bị giám thị đình chỉ trực tiếp từ bảng điều khiển."
+          reason="Bạn đã vi phạm quy chế thi quá số lần quy định hoặc giám thị đã yêu cầu dừng bài thi."
           onExit={() => router.push('/')}
         />
 

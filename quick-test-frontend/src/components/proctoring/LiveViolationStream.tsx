@@ -27,31 +27,43 @@ export function getViolationMeta(type: ViolationType) {
   switch (type) {
     case 'TAB_SWITCH':
       return {
-        label: 'Tab Switch',
+        label: 'Chuyển tab trình duyệt',
         icon: MonitorX,
         color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
       };
+    case 'WINDOW_BLUR':
+      return {
+        label: 'Rời cửa sổ bài thi (3 lần)',
+        icon: MonitorX,
+        color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
+      };
+    case 'MULTI_SCREEN_DETECTED':
+      return {
+        label: 'Dùng nhiều màn hình',
+        icon: AlertTriangle,
+        color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
+      };
     case 'EXIT_FULLSCREEN':
       return {
-        label: 'Exit Fullscreen',
+        label: 'Thoát toàn màn hình',
         icon: Maximize2,
         color: 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/20',
       };
     case 'DEVTOOLS_OPEN':
       return {
-        label: 'DevTools Opened',
+        label: 'Mở DevTools kiểm tra',
         icon: Terminal,
         color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
       };
     case 'COPY_PASTE_ATTEMPT':
       return {
-        label: 'Copy / Paste Blocked',
+        label: 'Sao chép / Dán nội dung',
         icon: Copy,
         color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20',
       };
     case 'TEACHER_DISQUALIFY':
       return {
-        label: 'Disqualified by Proctor',
+        label: 'Giám thị đình chỉ',
         icon: UserX,
         color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
       };
