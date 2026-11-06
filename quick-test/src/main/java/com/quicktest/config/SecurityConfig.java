@@ -129,10 +129,22 @@ public class SecurityConfig {
         }
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin", "X-Guest-Identifier"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "*",
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "X-Requested-With",
+                "Origin",
+                "X-Guest-Identifier",
+                "X-Exam-Session-Token",
+                "X-Device-Fingerprint"
+        ));
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "X-Guest-Identifier",
+                "X-Exam-Session-Token",
+                "X-Device-Fingerprint",
                 "X-RateLimit-Limit",
                 "X-RateLimit-Remaining",
                 "X-RateLimit-Reset",

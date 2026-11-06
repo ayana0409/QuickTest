@@ -13,6 +13,7 @@ import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.User;
+import com.quicktest.modules.proctoring.service.RedisProctoringService;
 import com.quicktest.modules.session.dto.*;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.entity.ExamAttempt;
@@ -46,6 +47,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
     private final QuestionRepository questionRepository;
     private final ExamAttemptRepository examAttemptRepository;
     private final RedisExamSessionService redisExamSessionService;
+    private final RedisProctoringService redisProctoringService;
     private final ExamSubmissionProducer examSubmissionProducer;
     private final QuickNotifyTokenService quickNotifyTokenService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -85,6 +87,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
 
             if (activeAttempt.isPresent() && !isExpired(activeAttempt.get()) && !redisExamSessionService.isSubmissionLocked(activeAttempt.get().getId())) {
                 log.info("Candidate has an active attempt in progress. Resuming attemptId: {}", activeAttempt.get().getId());
+                bindSessionLockIfPresent(activeAttempt.get(), servletRequest);
                 return buildMaskedPaper(activeAttempt.get(), exam);
             }
 
@@ -110,6 +113,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
 
             if (activeAttempt.isPresent() && !isExpired(activeAttempt.get()) && !redisExamSessionService.isSubmissionLocked(activeAttempt.get().getId())) {
                 log.info("Guest has an active attempt in progress. Resuming attemptId: {}", activeAttempt.get().getId());
+                bindSessionLockIfPresent(activeAttempt.get(), servletRequest);
                 return buildMaskedPaper(activeAttempt.get(), exam);
             }
 
@@ -124,13 +128,26 @@ public class ExamSessionServiceImpl implements ExamSessionService {
 
         ExamAttempt savedAttempt = examAttemptRepository.save(attempt);
         log.info("Successfully started exam attempt ID: {} for exam ID: {}", savedAttempt.getId(), exam.getId());
+        bindSessionLockIfPresent(savedAttempt, servletRequest);
 
         return buildMaskedPaper(savedAttempt, exam);
     }
 
     @Override
     public void saveDraft(UUID attemptId, SaveAnswerRequest request, User currentUser, String guestIdentifier) {
+        saveDraft(attemptId, request, currentUser, guestIdentifier, null);
+    }
+
+    @Override
+    public void saveDraft(UUID attemptId, SaveAnswerRequest request, User currentUser, String guestIdentifier, String sessionToken) {
         log.debug("Auto-saving draft answer for attemptId: {}, questionId: {}", attemptId, request.getQuestionId());
+
+        if (redisProctoringService != null
+                && sessionToken != null
+                && !sessionToken.isBlank()
+                && !redisProctoringService.validateActiveSessionToken(attemptId, sessionToken)) {
+            throw new AppException("SESSION_EVICTED: Phiên làm bài đã được chuyển sang thiết bị hoặc trình duyệt khác.", HttpStatus.CONFLICT);
+        }
 
         ExamAttempt attempt = examAttemptRepository.findByIdWithExam(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("ExamAttempt", "id", attemptId));
@@ -156,6 +173,12 @@ public class ExamSessionServiceImpl implements ExamSessionService {
     @Override
     @Transactional(readOnly = true)
     public ResumeExamResponse resumeExam(UUID attemptId, User currentUser, String guestIdentifier) {
+        return resumeExam(attemptId, currentUser, guestIdentifier, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResumeExamResponse resumeExam(UUID attemptId, User currentUser, String guestIdentifier, HttpServletRequest servletRequest) {
         log.info("Resuming exam attempt ID: {}", attemptId);
 
         ExamAttempt attempt = examAttemptRepository.findByIdWithExam(attemptId)
@@ -170,6 +193,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         if (isExpiredWithGrace(attempt)) {
             throw new SessionExpiredException("Exam duration has expired. Cannot resume.");
         }
+
+        bindSessionLockIfPresent(attempt, servletRequest);
 
         ExamPaperResponse paper = buildMaskedPaper(attempt, attempt.getExam());
         Map<UUID, SaveAnswerRequest> draftAnswers = redisExamSessionService.getDraftAnswers(attemptId);
@@ -529,6 +554,33 @@ public class ExamSessionServiceImpl implements ExamSessionService {
 
     private boolean isExpiredWithGrace(ExamAttempt attempt) {
         return LocalDateTime.now().isAfter(attempt.getExpireAt().plusSeconds(GRACE_PERIOD_SECONDS));
+    }
+
+    private void bindSessionLockIfPresent(ExamAttempt attempt, HttpServletRequest request) {
+        if (redisProctoringService == null || request == null || attempt == null || attempt.getId() == null) {
+            return;
+        }
+        String sessionToken = request.getHeader("X-Exam-Session-Token");
+        if (sessionToken == null || sessionToken.isBlank()) {
+            return;
+        }
+        String deviceFingerprint = request.getHeader("X-Device-Fingerprint");
+        String ipAddress = extractIp(request);
+        String userAgent = request.getHeader("User-Agent");
+        Duration remainingDuration = attempt.getExpireAt() != null
+                ? Duration.between(LocalDateTime.now(), attempt.getExpireAt())
+                : Duration.ofMinutes(attempt.getExam() != null ? attempt.getExam().getDurationMinutes() : 60);
+
+        UUID examId = attempt.getExam() != null ? attempt.getExam().getId() : null;
+        redisProctoringService.acquireOrReplaceSessionLock(
+                attempt.getId(),
+                examId,
+                sessionToken,
+                deviceFingerprint,
+                ipAddress,
+                userAgent,
+                remainingDuration
+        );
     }
 
     private String extractIp(HttpServletRequest request) {

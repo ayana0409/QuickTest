@@ -55,10 +55,18 @@ public class ViolationIngestionController {
     public ResponseEntity<ApiResponse<ViolationAlertMessage>> recordViolation(
             @PathVariable("attemptId") UUID attemptId,
             @Valid @RequestBody ViolationReportMessage report,
-            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+            @AuthenticationPrincipal UserDetailsImpl currentUser,
+            @RequestHeader(value = "X-Exam-Session-Token", required = false) String sessionToken) {
 
         log.debug("Received HTTP violation telemetry for attemptId: {}, type: {}",
                 attemptId, report.getViolationType());
+
+        if (sessionToken != null
+                && !sessionToken.isBlank()
+                && !redisProctoringService.validateActiveSessionToken(attemptId, sessionToken)) {
+            return ResponseEntity.status(409)
+                    .body(ApiResponse.error(409, "SESSION_EVICTED: Phiên làm bài đã được chuyển sang thiết bị hoặc trình duyệt khác."));
+        }
 
         // Fast metadata check: fetch attempt with exam and user
         ExamAttempt attempt = examAttemptRepository.findByIdWithExamAndUser(attemptId)

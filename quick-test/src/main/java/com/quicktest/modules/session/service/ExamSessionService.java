@@ -22,9 +22,23 @@ public interface ExamSessionService {
     void saveDraft(UUID attemptId, SaveAnswerRequest request, User currentUser, String guestIdentifier);
 
     /**
+     * Auto-save a candidate's answer with active session lock token validation.
+     */
+    default void saveDraft(UUID attemptId, SaveAnswerRequest request, User currentUser, String guestIdentifier, String sessionToken) {
+        saveDraft(attemptId, request, currentUser, guestIdentifier);
+    }
+
+    /**
      * Resume an active exam session after page refresh or network interruption.
      */
     ResumeExamResponse resumeExam(UUID attemptId, User currentUser, String guestIdentifier);
+
+    /**
+     * Resume an active exam session and acquire/replace the exclusive Redis session lock.
+     */
+    default ResumeExamResponse resumeExam(UUID attemptId, User currentUser, String guestIdentifier, HttpServletRequest servletRequest) {
+        return resumeExam(attemptId, currentUser, guestIdentifier);
+    }
 
     /**
      * Conclude and submit exam attempt asynchronously via RabbitMQ without blocking DB transactions.

@@ -6,6 +6,7 @@ import {
   getRefreshTokenCookie,
   removeRefreshTokenCookie,
 } from './cookie';
+import { getOrCreateExamSessionToken, getDeviceFingerprint } from './sessionFingerprint';
 import { useAuthStore } from '@/stores/authStore';
 import type { ApiResponse, LoginResponse } from '@/types/auth';
 
@@ -161,6 +162,19 @@ apiClient.interceptors.request.use(
       const guestIdentifier = localStorage.getItem('quicktest_guest_id');
       if (guestIdentifier && config.headers) {
         config.headers['X-Guest-Identifier'] = guestIdentifier;
+      }
+
+      // Attach per-tab Single Session token and Device Fingerprint headers for exam session endpoints
+      const isSessionEndpoint = config.url && (config.url.includes('/session') || config.url.includes('/proctoring'));
+      if (isSessionEndpoint) {
+        const sessionToken = getOrCreateExamSessionToken();
+        if (sessionToken && config.headers) {
+          config.headers['X-Exam-Session-Token'] = sessionToken;
+        }
+        const fingerprint = getDeviceFingerprint();
+        if (fingerprint && config.headers) {
+          config.headers['X-Device-Fingerprint'] = fingerprint;
+        }
       }
 
       // For FormData (multipart uploads), delete default application/json Content-Type

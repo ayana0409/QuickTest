@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { WifiOff, MonitorX, RefreshCw, LogOut } from 'lucide-react';
 import { sendWebSocketMessage } from '@/lib/socket';
 import { ProctoringRealtimeManager } from '@/lib/realtime/ProctoringRealtimeManager';
 import { candidateSessionService } from '@/services/candidateSession.service';
+import { getOrCreateExamSessionToken } from '@/lib/sessionFingerprint';
 import type {
   ViolationType,
   ViolationTelemetryMessage,
@@ -14,6 +16,9 @@ import type {
 } from '@/types/proctoring';
 import { DEFAULT_PROCTORING_SETTINGS } from '@/types/proctoring';
 import { cn } from '@/lib/utils';
+
+const isUUID = (str: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
 interface ProctoringShieldProps {
   attemptId: string;
@@ -26,6 +31,7 @@ interface ProctoringShieldProps {
   onViolation: (type: ViolationType, description: string) => void;
   onServerAlert: (alert: ViolationAlertResponse) => void;
   onExamClosed?: (message?: string) => void;
+  onSessionEvicted?: (message?: string) => void;
   isExamActive?: boolean;
   settings?: ProctoringSettings;
 }
@@ -49,26 +55,49 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   onViolation,
   onServerAlert,
   onExamClosed,
+  onSessionEvicted,
   isExamActive = true,
   settings = DEFAULT_PROCTORING_SETTINGS,
 }) => {
   const onViolationRef = useRef(onViolation);
   const onServerAlertRef = useRef(onServerAlert);
   const onExamClosedRef = useRef(onExamClosed);
+  const onSessionEvictedRef = useRef(onSessionEvicted);
 
-  const isMasterEnabled = isExamActive && settings.enabled;
+  const [isSessionEvicted, setIsSessionEvicted] = useState(false);
+  const [evictionMessage, setEvictionMessage] = useState<string>(
+    'Phiên thi của bạn đã được mở trên một thiết bị hoặc trình duyệt khác. Phiên hiện tại đã bị khóa để đảm bảo tính độc quyền của bài thi.'
+  );
+  const [isNetworkOffline, setIsNetworkOffline] = useState(false);
+  const [isCheckingNetwork, setIsCheckingNetwork] = useState(false);
+  const consecutiveHeartbeatFailuresRef = useRef(0);
+
+  const isMasterEnabled = isExamActive && settings.enabled && !isSessionEvicted;
 
   // Keep latest callback references
   useEffect(() => {
     onViolationRef.current = onViolation;
     onServerAlertRef.current = onServerAlert;
     onExamClosedRef.current = onExamClosed;
-  }, [onViolation, onServerAlert, onExamClosed]);
+    onSessionEvictedRef.current = onSessionEvicted;
+  }, [onViolation, onServerAlert, onExamClosed, onSessionEvicted]);
+
+  const triggerSessionEviction = useCallback((msg?: string) => {
+    setIsSessionEvicted((prev) => {
+      if (prev) return prev;
+      const resolvedMsg =
+        msg ||
+        'Phiên thi của bạn đã được mở trên một thiết bị hoặc trình duyệt khác. Phiên hiện tại đã bị khóa để đảm bảo tính độc quyền của bài thi.';
+      setEvictionMessage(resolvedMsg);
+      onSessionEvictedRef.current?.(resolvedMsg);
+      return true;
+    });
+  }, []);
 
   // Dispatch violation telemetry to REST API (Redis in-RAM buffer) with STOMP fallback
   const reportViolation = useCallback(
     (type: ViolationType, description: string) => {
-      if (!isMasterEnabled) return;
+      if (!isMasterEnabled || isSessionEvicted || isNetworkOffline) return;
 
       const payload: ViolationTelemetryMessage = {
         attemptId,
@@ -85,7 +114,14 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
           description,
           clientTimestamp: payload.clientTimestamp,
         })
-        .catch((err) => {
+        .catch((err: any) => {
+          const status = err?.response?.status;
+          const errMsg = String(err?.response?.data?.message || err?.message || '');
+          if (status === 409 || errMsg.includes('SESSION_EVICTED')) {
+            triggerSessionEviction(errMsg.replace('SESSION_EVICTED:', '').trim());
+            return;
+          }
+
           console.warn(
             '[ProctoringShield] HTTP violation ingestion failed, sending fallback STOMP message:',
             err
@@ -96,12 +132,12 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
 
       onViolationRef.current(type, description);
     },
-    [attemptId, isMasterEnabled]
+    [attemptId, isMasterEnabled, isSessionEvicted, isNetworkOffline, triggerSessionEviction]
   );
 
   // 1. Dual-layer Realtime Connection (QuickNotify Primary + STOMP Fallback)
   useEffect(() => {
-    if (!attemptId || !isExamActive) return;
+    if (!attemptId || !isExamActive || isSessionEvicted) return;
 
     const manager = new ProctoringRealtimeManager({
       quickNotifyWsUrl:
@@ -115,6 +151,21 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     });
 
     const unsubscribe = manager.subscribe((event: ProctoringEvent) => {
+      // Intercept Single Active Session eviction signal
+      if (event.eventType === 'SESSION_EVICTED') {
+        const myToken = getOrCreateExamSessionToken();
+        const activeToken = event.data?.activeSessionToken;
+        const evictedToken = event.data?.evictedSessionToken;
+
+        if (
+          (evictedToken && myToken === evictedToken) ||
+          (activeToken && myToken && myToken !== activeToken)
+        ) {
+          triggerSessionEviction(event.data?.message);
+        }
+        return;
+      }
+
       // Intercept exam closure / auto-submit broadcast
       if (event.eventType === 'EXAM_CLOSED' || event.data.action === 'AUTO_SUBMIT') {
         onExamClosedRef.current?.(
@@ -140,32 +191,103 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       unsubscribe();
       manager.disconnect();
     };
-  }, [attemptId, examId, isExamActive, isMasterEnabled, realtimeToken, realtimeWsUrl]);
+  }, [
+    attemptId,
+    examId,
+    isExamActive,
+    isMasterEnabled,
+    isSessionEvicted,
+    realtimeToken,
+    realtimeWsUrl,
+    triggerSessionEviction,
+  ]);
 
-  // 2. Periodic Heartbeat (every 30 seconds)
-  useEffect(() => {
-    if (!attemptId || !isExamActive) return;
+  // 2. Periodic Heartbeat (every 15 seconds, 60s Redis TTL) + Network Connectivity Monitor
+  const sendHeartbeatPulse = useCallback(async () => {
+    if (!attemptId || !isUUID(attemptId) || !isExamActive || isSessionEvicted) {
+      return;
+    }
 
-    const intervalId = setInterval(() => {
-      const isTabActive = !document.hidden;
-      const isFullscreenActive = Boolean(document.fullscreenElement);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setIsNetworkOffline(true);
+      return;
+    }
+
+    try {
+      await candidateSessionService.sendHeartbeat(attemptId);
+      consecutiveHeartbeatFailuresRef.current = 0;
+      setIsNetworkOffline(false);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const errMsg = String(err?.response?.data?.message || err?.message || '');
+
+      // Check if session was evicted by another browser/device
+      if (status === 409 || errMsg.includes('SESSION_EVICTED')) {
+        triggerSessionEviction(errMsg.replace('SESSION_EVICTED:', '').trim());
+        return;
+      }
+
+      // Network unreachable (no HTTP response received)
+      if (!err?.response) {
+        consecutiveHeartbeatFailuresRef.current += 1;
+        if (
+          consecutiveHeartbeatFailuresRef.current >= 2 ||
+          (typeof navigator !== 'undefined' && !navigator.onLine)
+        ) {
+          setIsNetworkOffline(true);
+        }
+      }
+
+      // Fallback STOMP heartbeat if available
       const isoNow = new Date().toISOString();
-
       const heartbeatPayload: HeartbeatMessage = {
         attemptId,
         clientTimestamp: isoNow,
         timestamp: isoNow,
-        tabActive: isTabActive,
-        fullscreenActive: isFullscreenActive,
+        tabActive: typeof document !== 'undefined' ? !document.hidden : true,
+        fullscreenActive: typeof document !== 'undefined' ? Boolean(document.fullscreenElement) : false,
       };
-
       sendWebSocketMessage('/app/proctoring/heartbeat', heartbeatPayload);
-    }, 30000);
+    }
+  }, [attemptId, isExamActive, isSessionEvicted, triggerSessionEviction]);
+
+  useEffect(() => {
+    if (!attemptId || !isUUID(attemptId) || !isExamActive || isSessionEvicted) return;
+
+    // Send initial heartbeat immediately on mount so candidate appears Online right away
+    sendHeartbeatPulse();
+
+    // Send heartbeat every 15 seconds (Redis TTL = 60s)
+    const intervalId = setInterval(() => {
+      sendHeartbeatPulse();
+    }, 15000);
+
+    const handleOffline = () => {
+      setIsNetworkOffline(true);
+    };
+
+    const handleOnline = () => {
+      sendHeartbeatPulse();
+    };
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
 
     return () => {
       clearInterval(intervalId);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
     };
-  }, [attemptId, isExamActive]);
+  }, [attemptId, isExamActive, isSessionEvicted, sendHeartbeatPulse]);
+
+  const handleManualReconnectCheck = async () => {
+    setIsCheckingNetwork(true);
+    try {
+      await sendHeartbeatPulse();
+    } finally {
+      setIsCheckingNetwork(false);
+    }
+  };
 
   // 3. Tab Visibility & Window Focus Listener (Toggleable)
   useEffect(() => {
@@ -335,6 +457,18 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     };
   }, [isMasterEnabled, settings.blockDevTools, reportViolation]);
 
+  // Listen to custom session-evicted event dispatched from autoSaveAnswer 409 responses
+  useEffect(() => {
+    const handleCustomEvicted = (e: Event) => {
+      const customEvent = e as CustomEvent<{ message?: string }>;
+      triggerSessionEviction(customEvent.detail?.message);
+    };
+    window.addEventListener('quicktest:session-evicted', handleCustomEvicted);
+    return () => {
+      window.removeEventListener('quicktest:session-evicted', handleCustomEvicted);
+    };
+  }, [triggerSessionEviction]);
+
   const blockSelection = isMasterEnabled && settings.blockCopyPaste;
 
   return (
@@ -345,7 +479,102 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         userSelect: blockSelection ? 'none' : 'auto',
       }}
     >
-      {children}
+      {/* Blur exam content when offline or evicted to prevent offline reading/solving */}
+      <div
+        className={cn(
+          'w-full h-full transition-all duration-200',
+          (isNetworkOffline || isSessionEvicted) && 'blur-xl pointer-events-none select-none'
+        )}
+      >
+        {children}
+      </div>
+
+      {/* 1. Single Active Session Eviction Lockout Overlay */}
+      {isSessionEvicted && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 select-none animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-[#161B22] border border-amber-500/40 shadow-2xl p-6 sm:p-8 text-center text-zinc-100">
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <MonitorX className="w-8 h-8" />
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-3">
+              Độc quyền Phiên Thi (Single Active Session)
+            </span>
+
+            <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
+              Phiên làm bài đã chuyển sang thiết bị khác
+            </h2>
+
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
+              {evictionMessage}
+            </p>
+
+            <div className="rounded-xl bg-[#0D1117] border border-[#30363D] p-3.5 text-left text-xs text-zinc-400 mb-6 space-y-1">
+              <p className="font-semibold text-zinc-200">Lưu ý bảo mật:</p>
+              <p>• Các câu trả lời bạn đã chọn trước đó vẫn được bảo toàn trên hệ thống.</p>
+              <p>• Vui lòng tiếp tục làm bài trên trình duyệt hoặc thiết bị mới vừa đăng nhập.</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/';
+              }}
+              className="w-full py-3 px-5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm shadow-lg shadow-amber-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              Thoát trang này
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Offline Anti-Cheat Lockout Shield (Prevents unplugging WiFi/LAN to solve offline) */}
+      {isNetworkOffline && !isSessionEvicted && isExamActive && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/85 backdrop-blur-xl p-4 select-none animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-[#161B22] border border-rose-500/40 shadow-2xl p-6 sm:p-8 text-center text-zinc-100">
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <WifiOff className="w-8 h-8 animate-pulse" />
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold mb-3">
+              Cảnh báo Mất kết nối Mạng
+            </span>
+
+            <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
+              Tạm khóa màn hình thi do mất kết nối
+            </h2>
+
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
+              Hệ thống phát hiện thiết bị của bạn bị ngắt kết nối mạng. Để đảm bảo công bằng và ngăn chặn làm bài ngoại tuyến (Offline), nội dung câu hỏi sẽ tạm ẩn cho đến khi kết nối mạng được khôi phục.
+            </p>
+
+            <div className="rounded-xl bg-[#0D1117] border border-[#30363D] p-3.5 text-left text-xs text-zinc-400 mb-6 space-y-1">
+              <p className="font-semibold text-zinc-200">Hướng dẫn xử lý:</p>
+              <p>• Kiểm tra lại kết nối Wi-Fi hoặc dây mạng LAN của bạn.</p>
+              <p>• Màn hình làm bài sẽ tự động mở khóa ngay khi có mạng trở lại.</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleManualReconnectCheck}
+              disabled={isCheckingNetwork}
+              className="w-full py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-sm shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <RefreshCw className={cn('w-4 h-4', isCheckingNetwork && 'animate-spin')} />
+              {isCheckingNetwork ? 'Đang kiểm tra kết nối...' : 'Thử kết nối lại ngay'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

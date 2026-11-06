@@ -124,4 +124,46 @@ class RedisProctoringServiceTest {
         verify(valueOperations, never()).increment(anyString());
         verifyNoInteractions(quickNotifyDispatcher);
     }
+
+    @Test
+    @DisplayName("Should acquire session lock and evict previous session when a different token takes over")
+    void acquireOrReplaceSessionLock_EvictsOldSession_WhenTokenDiffers() throws Exception {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        String existingJson = "{\"sessionToken\":\"sess_old_111\",\"deviceFingerprint\":\"fp_old\",\"ipAddress\":\"10.0.0.1\",\"userAgent\":\"Chrome\",\"lockedAt\":1000}";
+        when(valueOperations.get("quicktest:attempt:" + attemptId + ":session_lock")).thenReturn(existingJson);
+
+        var evicted = service.acquireOrReplaceSessionLock(
+                attemptId,
+                examId,
+                "sess_new_222",
+                "fp_new",
+                "10.0.0.2",
+                "Firefox",
+                Duration.ofMinutes(30)
+        );
+
+        assertThat(evicted).isNotNull();
+        assertThat(evicted.getSessionToken()).isEqualTo("sess_old_111");
+        verify(valueOperations).set(eq("quicktest:attempt:" + attemptId + ":session_lock"), contains("sess_new_222"), any(Duration.class));
+        verify(quickNotifyDispatcher).dispatchSessionEvicted(
+                eq(attemptId),
+                eq(examId),
+                eq("sess_old_111"),
+                eq("sess_new_222"),
+                eq("10.0.0.2")
+        );
+    }
+
+    @Test
+    @DisplayName("Should validate active session token against Redis session lock")
+    void validateActiveSessionToken_MatchesOrRejects() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        String existingJson = "{\"sessionToken\":\"sess_active_999\",\"deviceFingerprint\":\"fp_1\",\"ipAddress\":\"127.0.0.1\",\"userAgent\":\"Chrome\",\"lockedAt\":1000}";
+        when(valueOperations.get("quicktest:attempt:" + attemptId + ":session_lock")).thenReturn(existingJson);
+
+        assertThat(service.validateActiveSessionToken(attemptId, "sess_active_999")).isTrue();
+        assertThat(service.validateActiveSessionToken(attemptId, "sess_stale_000")).isFalse();
+    }
 }

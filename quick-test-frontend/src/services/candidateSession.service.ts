@@ -139,6 +139,25 @@ export const candidateSessionService = {
   },
 
   /**
+   * Send periodic 15-second heartbeat signal to Redis RAM (60s TTL)
+   * and verify active session lock ownership.
+   */
+  async sendHeartbeat(attemptId: string): Promise<void> {
+    await apiClient.post(
+      '/session/proctoring/heartbeat',
+      {
+        attemptId,
+        clientTimestamp: new Date().toISOString(),
+      },
+      {
+        silent: true,
+        showSuccessToast: false,
+        showErrorToast: false,
+      }
+    );
+  },
+
+  /**
    * Retrieve submission result and score for candidate review.
    */
   async getResult(attemptId: string): Promise<SubmitResultResponse> {

@@ -92,6 +92,43 @@ public class QuickNotifyDispatcherService {
     }
 
     /**
+     * Asynchronously dispatches a session eviction signal when a candidate opens the exam
+     * on another device, browser, or tab, kicking out the previous session immediately.
+     */
+    @Async("quickNotifyExecutor")
+    public void dispatchSessionEvicted(
+            UUID attemptId,
+            UUID examId,
+            String evictedSessionToken,
+            String activeSessionToken,
+            String newIpAddress) {
+
+        String evictionMessage = "Phiên thi của bạn đã được mở trên một thiết bị hoặc trình duyệt khác. Phiên hiện tại đã bị ngắt kết nối để đảm bảo độc quyền phiên thi.";
+
+        Map<String, Object> candidateData = new HashMap<>();
+        candidateData.put("eventType", "SESSION_EVICTED");
+        candidateData.put("attemptId", attemptId.toString());
+        candidateData.put("examId", examId != null ? examId.toString() : null);
+        candidateData.put("evictedSessionToken", evictedSessionToken);
+        candidateData.put("activeSessionToken", activeSessionToken);
+        candidateData.put("newIpAddress", newIpAddress);
+        candidateData.put("message", evictionMessage);
+
+        sendNotifyEnvelope("att_" + attemptId, "high", candidateData);
+
+        if (examId != null) {
+            Map<String, Object> teacherData = new HashMap<>();
+            teacherData.put("eventType", "SESSION_EVICTED");
+            teacherData.put("attemptId", attemptId.toString());
+            teacherData.put("examId", examId.toString());
+            teacherData.put("newIpAddress", newIpAddress);
+            teacherData.put("message", String.format("Thí sinh bài thi %s vừa chuyển phiên làm bài sang thiết bị/trình duyệt mới (IP: %s)", attemptId, newIpAddress));
+
+            sendNotifyEnvelope("exam_monitor_" + examId, "normal", teacherData);
+        }
+    }
+
+    /**
      * Constructs and posts a standard QuickNotify JSON Envelope to /api/v1/notify.
      */
     private void sendNotifyEnvelope(String targetUserId, String priority, Map<String, Object> contentData) {

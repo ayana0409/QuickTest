@@ -489,8 +489,25 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         } catch (err: any) {
           console.warn('[AutoSave] Failed to save answer payload silently:', err);
           setSaving(false);
+          const status = err?.response?.status;
           const errorMsg = err?.response?.data?.message || err?.message || '';
           if (
+            status === 409 ||
+            (typeof errorMsg === 'string' && errorMsg.includes('SESSION_EVICTED'))
+          ) {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('quicktest:session-evicted', {
+                  detail: {
+                    message:
+                      typeof errorMsg === 'string'
+                        ? errorMsg.replace('SESSION_EVICTED:', '').trim()
+                        : undefined,
+                  },
+                })
+              );
+            }
+          } else if (
             typeof errorMsg === 'string' &&
             (errorMsg.toLowerCase().includes('closed') ||
               errorMsg.toLowerCase().includes('đã đóng') ||
@@ -692,7 +709,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
 
   return (
     <ProctoringShield
-      attemptId={attemptId}
+      attemptId={examPaper?.attemptId || attemptId}
       examId={examPaper?.examId}
       realtimeToken={examPaper?.realtimeToken}
       realtimeWsUrl={examPaper?.realtimeWsUrl}

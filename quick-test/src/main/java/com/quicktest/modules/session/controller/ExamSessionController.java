@@ -55,12 +55,13 @@ public class ExamSessionController {
             @Valid @RequestBody SaveAnswerRequest request,
             @AuthenticationPrincipal UserDetailsImpl currentUser,
             @RequestParam(value = "guestIdentifier", required = false) String guestIdentifier,
-            @RequestHeader(value = "X-Guest-Identifier", required = false) String guestHeader) {
+            @RequestHeader(value = "X-Guest-Identifier", required = false) String guestHeader,
+            @RequestHeader(value = "X-Exam-Session-Token", required = false) String sessionToken) {
 
         User userEntity = resolveUser(currentUser);
         String resolvedGuestId = resolveGuestIdentifier(guestIdentifier, guestHeader);
 
-        examSessionService.saveDraft(attemptId, request, userEntity, resolvedGuestId);
+        examSessionService.saveDraft(attemptId, request, userEntity, resolvedGuestId, sessionToken);
 
         return ResponseEntity.ok(ApiResponse.success(null, "Answer draft saved successfully"));
     }
@@ -74,12 +75,13 @@ public class ExamSessionController {
             @PathVariable("attemptId") UUID attemptId,
             @AuthenticationPrincipal UserDetailsImpl currentUser,
             @RequestParam(value = "guestIdentifier", required = false) String guestIdentifier,
-            @RequestHeader(value = "X-Guest-Identifier", required = false) String guestHeader) {
+            @RequestHeader(value = "X-Guest-Identifier", required = false) String guestHeader,
+            HttpServletRequest servletRequest) {
 
         User userEntity = resolveUser(currentUser);
         String resolvedGuestId = resolveGuestIdentifier(guestIdentifier, guestHeader);
 
-        ResumeExamResponse response = examSessionService.resumeExam(attemptId, userEntity, resolvedGuestId);
+        ResumeExamResponse response = examSessionService.resumeExam(attemptId, userEntity, resolvedGuestId, servletRequest);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Exam session resumed successfully"));
     }

@@ -57,6 +57,9 @@ class ExamSessionServiceTest {
         private RedisExamSessionService redisExamSessionService;
 
         @Mock
+        private com.quicktest.modules.proctoring.service.RedisProctoringService redisProctoringService;
+
+        @Mock
         private ExamSubmissionProducer examSubmissionProducer;
 
         @Mock
@@ -660,5 +663,25 @@ class ExamSessionServiceTest {
                                 any(Object.class));
                 verify(messagingTemplate, never()).convertAndSend(eq("/topic/attempts/" + attemptId + "/proctoring"),
                                 any(Object.class));
+        }
+
+        @Test
+        @DisplayName("saveDraft should throw 409 Conflict when session token is evicted by another browser")
+        void saveDraft_ThrowsConflict_WhenSessionEvicted() {
+                UUID attemptId = UUID.randomUUID();
+                SaveAnswerRequest request = SaveAnswerRequest.builder()
+                                .questionId(singleChoiceQ.getId())
+                                .selectedOptionIds(Set.of(optionB.getId()))
+                                .build();
+
+                when(redisProctoringService.validateActiveSessionToken(attemptId, "stale_token"))
+                                .thenReturn(false);
+
+                AppException ex = assertThrows(AppException.class,
+                                () -> examSessionService.saveDraft(attemptId, request, studentUser, null, "stale_token"));
+
+                assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+                assertTrue(ex.getMessage().contains("SESSION_EVICTED"));
+                verify(redisExamSessionService, never()).saveDraftAnswer(any(), any(), any(), anyLong());
         }
 }

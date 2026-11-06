@@ -253,6 +253,16 @@ export class ProctoringRealtimeManager {
         message: payload.message || content.data.message || 'Bài thi đã kết thúc.',
         action: 'AUTO_SUBMIT',
       };
+    } else if (eventType === 'SESSION_EVICTED') {
+      eventData = {
+        evictedSessionToken: payload.evictedSessionToken || content.data.evictedSessionToken,
+        activeSessionToken: payload.activeSessionToken || content.data.activeSessionToken,
+        newIpAddress: payload.newIpAddress || content.data.newIpAddress,
+        message:
+          payload.message ||
+          content.data.message ||
+          'Phiên thi đã được mở trên một thiết bị hoặc trình duyệt khác.',
+      };
     }
 
     const unifiedEvent: ProctoringEvent = {

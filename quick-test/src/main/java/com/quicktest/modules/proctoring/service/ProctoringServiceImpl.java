@@ -51,12 +51,12 @@ public class ProctoringServiceImpl implements ProctoringService {
 
     private static final int DEFAULT_MAX_VIOLATIONS = 5;
     private static final Duration REDIS_KEY_TTL = Duration.ofHours(24);
-    private static final Duration HEARTBEAT_TTL = Duration.ofSeconds(120);
+    private static final Duration HEARTBEAT_TTL = Duration.ofSeconds(60);
 
     private static final String KEY_VIOLATIONS_COUNT = "quicktest:attempt:%s:violation_count";
     private static final String KEY_ATTEMPT_STATUS = "quicktest:attempt:%s:status";
     private static final String KEY_VIOLATIONS_TYPE = "proctoring:attempt:%s:type:%s";
-    private static final String KEY_HEARTBEAT = "proctoring:attempt:%s:heartbeat";
+    private static final String KEY_HEARTBEAT = "quicktest:attempt:%s:heartbeat";
 
     private final ExamRepository examRepository;
     private final ExamAttemptRepository examAttemptRepository;

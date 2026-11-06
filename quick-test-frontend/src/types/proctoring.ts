@@ -187,6 +187,7 @@ export type ProctoringEventType =
   | 'EXAM_CLOSED'
   | 'CANDIDATE_VIOLATION'
   | 'CANDIDATE_DISQUALIFIED'
+  | 'SESSION_EVICTED'
   | 'HEARTBEAT_ACK';
 
 export interface ProctoringEvent {
