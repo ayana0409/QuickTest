@@ -181,3 +181,9 @@ app.rate-limit.endpoints.moderation-ai.path=/api/admin/moderation/ai-run
 app.rate-limit.endpoints.moderation-ai.method=POST
 app.rate-limit.endpoints.moderation-ai.limit=${RATE_LIMIT_MODERATION_AI_LIMIT:2}
 app.rate-limit.endpoints.moderation-ai.key-type=USER_OR_IP
+
+# QuickNotify Configuration (Go WebSocket Hub Integration)
+quicknotify.base-url=${QUICKNOTIFY_BASE_URL:http://localhost:8080}
+quicknotify.ws-url=${QUICKNOTIFY_WS_URL:ws://localhost:8080/ws}
+quicknotify.api-key=${QUICKNOTIFY_API_KEY:qn_sec_quicktest_live_2026_key}
+quicknotify.jwt-secret=${QUICKNOTIFY_JWT_SECRET:quicknotify_quicktest_secret_key_2026}

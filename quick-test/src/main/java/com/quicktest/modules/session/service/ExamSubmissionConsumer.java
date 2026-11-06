@@ -1,10 +1,14 @@
 package com.quicktest.modules.session.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quicktest.config.RabbitMQConfig;
 import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
+import com.quicktest.modules.proctoring.dto.ViolationItemRedisDto;
+import com.quicktest.modules.proctoring.entity.ViolationLog;
+import com.quicktest.modules.proctoring.service.RedisProctoringService;
 import com.quicktest.modules.session.dto.QuestionGradingDto;
 import com.quicktest.modules.session.dto.SaveAnswerRequest;
 import com.quicktest.modules.session.dto.SubmissionMessage;
@@ -16,6 +20,7 @@ import com.quicktest.modules.session.entity.GradingStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -37,6 +42,8 @@ public class ExamSubmissionConsumer {
     private final RedisExamSessionService redisExamSessionService;
     private final ExamPersistenceService examPersistenceService;
     private final QuestionRepository questionRepository;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     /**
      * Consume exam submission message from RabbitMQ.
@@ -159,33 +166,62 @@ public class ExamSubmissionConsumer {
                 candidateAnswers.add(candidateAnswer);
             }
 
-            // 3. Delegate to short-lived DB transaction
-            AttemptStatus finalStatus = hasPendingManualGrading
-                    ? AttemptStatus.AWAITING_MANUAL_GRADING
-                    : AttemptStatus.SUBMITTED;
+            // 3. Collect violation history buffered in Redis
+            ViolationPersistenceData violationData = collectViolationsFromRedis(attemptId);
+
+            // 4. Delegate to short-lived DB transaction (DISQUALIFIED overrides SUBMITTED)
+            AttemptStatus finalStatus;
+            if (violationData.wasDisqualified()) {
+                finalStatus = AttemptStatus.DISQUALIFIED;
+            } else if (hasPendingManualGrading) {
+                finalStatus = AttemptStatus.AWAITING_MANUAL_GRADING;
+            } else {
+                finalStatus = AttemptStatus.SUBMITTED;
+            }
 
             LocalDateTime submitTime = message.getSubmitTime() != null ? message.getSubmitTime() : LocalDateTime.now();
-            Double finalScore = hasPendingManualGrading ? null : totalScore;
+            Double finalScore;
+            if (finalStatus == AttemptStatus.DISQUALIFIED) {
+                finalScore = 0.0;
+            } else if (hasPendingManualGrading) {
+                finalScore = null;
+            } else {
+                finalScore = totalScore;
+            }
 
-            examPersistenceService.persistGradedAnswersAndStatus(
-                    attemptId, candidateAnswers, finalStatus, finalScore, submitTime);
+            if (violationData != null && (!violationData.entities().isEmpty() || violationData.totalViolations() > 0)) {
+                examPersistenceService.persistGradedAnswersAndStatusWithViolations(
+                        attemptId,
+                        candidateAnswers,
+                        finalStatus,
+                        finalScore,
+                        submitTime,
+                        violationData.totalViolations(),
+                        violationData.entities());
+            } else {
+                examPersistenceService.persistGradedAnswersAndStatus(
+                        attemptId, candidateAnswers, finalStatus, finalScore, submitTime);
+            }
 
-            // 4. Cache final result in Redis for instant client polling
+            // 5. Cache final result in Redis for instant client polling
             SubmitResultResponse resultResponse = SubmitResultResponse.builder()
                     .attemptId(attemptId)
                     .examTitle(message.getExamTitle())
                     .status(finalStatus)
                     .totalScore(finalScore)
                     .submitTime(submitTime)
-                    .message(hasPendingManualGrading
-                            ? "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher."
-                            : "Exam submitted and graded successfully.")
+                    .message(finalStatus == AttemptStatus.DISQUALIFIED
+                            ? "Bài thi đã bị đình chỉ do vi phạm quy chế thi."
+                            : (hasPendingManualGrading
+                                    ? "Exam submitted successfully. Essay questions are awaiting manual grading by the teacher."
+                                    : "Exam submitted and graded successfully."))
                     .build();
 
             redisExamSessionService.cacheSubmissionResult(attemptId, resultResponse, 60L);
 
-            // 5. Cleanup Redis draft answers and lock
+            // 6. Cleanup Redis draft answers, locks, and violation keys
             redisExamSessionService.clearDraftAnswers(attemptId);
+            cleanupViolationKeys(attemptId);
             redisExamSessionService.releaseSubmissionLock(attemptId);
         } catch (Exception ex) {
             log.error("Fatal error processing submission for attemptId: {}", attemptId, ex);
@@ -232,4 +268,69 @@ public class ExamSubmissionConsumer {
         redisExamSessionService.cacheExamGradingKey(examId, dtos, 120L);
         return dtos;
     }
+
+    /**
+     * Collects all accumulated violation telemetry from Redis and converts to entities for batch persistence.
+     */
+    private ViolationPersistenceData collectViolationsFromRedis(UUID attemptId) {
+        if (redisTemplate == null) {
+            return new ViolationPersistenceData(0, false, Collections.emptyList());
+        }
+
+        String countKey = String.format(RedisProctoringService.KEY_VIOLATION_COUNT, attemptId);
+        String logsKey = String.format(RedisProctoringService.KEY_VIOLATION_LOGS, attemptId);
+        String statusKey = String.format(RedisProctoringService.KEY_ATTEMPT_STATUS, attemptId);
+
+        String countStr = redisTemplate.opsForValue().get(countKey);
+        String redisStatus = redisTemplate.opsForValue().get(statusKey);
+        List<String> rawLogs = redisTemplate.opsForList().range(logsKey, 0, -1);
+
+        int totalViolations = countStr != null ? Integer.parseInt(countStr) : 0;
+        boolean wasDisqualified = "DISQUALIFIED".equalsIgnoreCase(redisStatus);
+
+        List<ViolationLog> entities = new ArrayList<>();
+        if (rawLogs != null) {
+            for (String raw : rawLogs) {
+                try {
+                    ViolationItemRedisDto dto = objectMapper.readValue(raw, ViolationItemRedisDto.class);
+                    entities.add(ViolationLog.builder()
+                            .examAttempt(ExamAttempt.builder().id(attemptId).build())
+                            .violationType(dto.getViolationType())
+                            .description(dto.getDescription())
+                            .timestamp(dto.getTimestamp() != null ? dto.getTimestamp() : LocalDateTime.now())
+                            .build());
+                } catch (Exception ex) {
+                    log.warn("[SubmissionConsumer] Failed to parse Redis violation entry for attemptId: {}", attemptId, ex);
+                }
+            }
+        }
+
+        return new ViolationPersistenceData(totalViolations, wasDisqualified, entities);
+    }
+
+    /**
+     * Cleans up transient violation keys from Redis after database persistence.
+     */
+    private void cleanupViolationKeys(UUID attemptId) {
+        if (redisTemplate == null) {
+            return;
+        }
+
+        try {
+            redisTemplate.delete(List.of(
+                    String.format(RedisProctoringService.KEY_VIOLATION_COUNT, attemptId),
+                    String.format(RedisProctoringService.KEY_VIOLATION_LOGS, attemptId),
+                    String.format(RedisProctoringService.KEY_ATTEMPT_STATUS, attemptId)
+            ));
+            log.debug("[SubmissionConsumer] Cleaned up Redis violation keys for attemptId: {}", attemptId);
+        } catch (Exception ex) {
+            log.warn("[SubmissionConsumer] Failed to cleanup Redis violation keys for attemptId: {}", attemptId, ex);
+        }
+    }
+
+    public record ViolationPersistenceData(
+            int totalViolations,
+            boolean wasDisqualified,
+            List<ViolationLog> entities
+    ) {}
 }

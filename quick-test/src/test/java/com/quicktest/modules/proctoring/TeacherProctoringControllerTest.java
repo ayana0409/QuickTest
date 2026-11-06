@@ -1,6 +1,7 @@
 package com.quicktest.modules.proctoring;
 
 import com.quicktest.core.common.PageResponse;
+import com.quicktest.core.notify.QuickNotifyTokenService;
 import com.quicktest.core.security.UserDetailsImpl;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
@@ -8,6 +9,7 @@ import com.quicktest.modules.iam.repository.UserRepository;
 import com.quicktest.modules.proctoring.controller.TeacherProctoringController;
 import com.quicktest.modules.proctoring.dto.*;
 import com.quicktest.modules.proctoring.entity.ViolationType;
+import com.quicktest.modules.proctoring.service.ProctoringQueryService;
 import com.quicktest.modules.proctoring.service.ProctoringService;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +41,12 @@ class TeacherProctoringControllerTest {
 
         @Mock
         private ProctoringService proctoringService;
+
+        @Mock
+        private ProctoringQueryService proctoringQueryService;
+
+        @Mock
+        private QuickNotifyTokenService quickNotifyTokenService;
 
         @Mock
         private UserRepository userRepository;
@@ -106,7 +114,7 @@ class TeacherProctoringControllerTest {
                                 .timestamp(LocalDateTime.now())
                                 .build();
 
-                when(proctoringService.getAttemptViolations(attemptId, teacher))
+                when(proctoringQueryService.getAttemptViolationLogs(attemptId, teacher))
                                 .thenReturn(List.of(logItem));
 
                 var response = teacherProctoringController.getAttemptViolations(attemptId, currentUser);

@@ -497,6 +497,12 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
               errorMsg.toLowerCase().includes('kết thúc'))
           ) {
             handleExamClosed('Đề thi đã đóng! Hệ thống đang tự động thu bài...');
+          } else if (
+            typeof errorMsg === 'string' &&
+            (errorMsg.toLowerCase().includes('disqualified') ||
+              errorMsg.toLowerCase().includes('đình chỉ'))
+          ) {
+            recordViolation(999, true);
           }
         }
       }, 800);
@@ -688,6 +694,8 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     <ProctoringShield
       attemptId={attemptId}
       examId={examPaper?.examId}
+      realtimeToken={examPaper?.realtimeToken}
+      realtimeWsUrl={examPaper?.realtimeWsUrl}
       isExamActive={!isDisqualified}
       settings={proctoringSettings}
       onViolation={handleClientViolation}

@@ -4,6 +4,7 @@ import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.logging.AuditLog;
+import com.quicktest.core.notify.QuickNotifyDispatcherService;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.iam.entity.User;
@@ -11,9 +12,13 @@ import com.quicktest.modules.proctoring.dto.*;
 import com.quicktest.modules.proctoring.entity.ViolationLog;
 import com.quicktest.modules.proctoring.entity.ViolationType;
 import com.quicktest.modules.proctoring.repository.ViolationLogRepository;
+import com.quicktest.modules.session.dto.SaveAnswerRequest;
+import com.quicktest.modules.session.dto.SubmissionMessage;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.entity.ExamAttempt;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
+import com.quicktest.modules.session.service.ExamSubmissionProducer;
+import com.quicktest.modules.session.service.RedisExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -48,7 +53,8 @@ public class ProctoringServiceImpl implements ProctoringService {
     private static final Duration REDIS_KEY_TTL = Duration.ofHours(24);
     private static final Duration HEARTBEAT_TTL = Duration.ofSeconds(120);
 
-    private static final String KEY_VIOLATIONS_COUNT = "proctoring:attempt:%s:count";
+    private static final String KEY_VIOLATIONS_COUNT = "quicktest:attempt:%s:violation_count";
+    private static final String KEY_ATTEMPT_STATUS = "quicktest:attempt:%s:status";
     private static final String KEY_VIOLATIONS_TYPE = "proctoring:attempt:%s:type:%s";
     private static final String KEY_HEARTBEAT = "proctoring:attempt:%s:heartbeat";
 
@@ -57,6 +63,9 @@ public class ProctoringServiceImpl implements ProctoringService {
     private final ViolationLogRepository violationLogRepository;
     private final StringRedisTemplate stringRedisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
+    private final QuickNotifyDispatcherService quickNotifyDispatcher;
+    private final RedisExamSessionService redisExamSessionService;
+    private final ExamSubmissionProducer examSubmissionProducer;
 
     @Override
     @Transactional
@@ -224,7 +233,11 @@ public class ProctoringServiceImpl implements ProctoringService {
                     for (ExamAttempt ea : attempts) {
                         ops.opsForValue().get(String.format(KEY_VIOLATIONS_COUNT, ea.getId()));
                     }
-                    // 2. Queue all heartbeat HASKEYs [indices n .. 2n-1]
+                    // 2. Queue all attempt status GETs from Redis RAM buffer [indices n .. 2n-1]
+                    for (ExamAttempt ea : attempts) {
+                        ops.opsForValue().get(String.format(KEY_ATTEMPT_STATUS, ea.getId()));
+                    }
+                    // 3. Queue all heartbeat HASKEYs [indices 2n .. 3n-1]
                     for (ExamAttempt ea : attempts) {
                         ops.hasKey(String.format(KEY_HEARTBEAT, ea.getId()));
                     }
@@ -251,9 +264,19 @@ public class ProctoringServiceImpl implements ProctoringService {
                 }
             }
 
+            // Extract real-time attempt status from Redis in RAM (overrides DB if disqualified in RAM)
+            AttemptStatus effectiveStatus = ea.getStatus();
+            int statusIdx = n + i;
+            if (pipelinedResults != null && statusIdx < pipelinedResults.size()) {
+                Object statusObj = pipelinedResults.get(statusIdx);
+                if (statusObj != null && "DISQUALIFIED".equalsIgnoreCase(statusObj.toString())) {
+                    effectiveStatus = AttemptStatus.DISQUALIFIED;
+                }
+            }
+
             // Extract online status from pipelined batch
             boolean isOnline = false;
-            int heartbeatIdx = n + i;
+            int heartbeatIdx = 2 * n + i;
             if (pipelinedResults != null && heartbeatIdx < pipelinedResults.size()) {
                 Object onlineObj = pipelinedResults.get(heartbeatIdx);
                 if (onlineObj instanceof Boolean b) {
@@ -269,9 +292,9 @@ public class ProctoringServiceImpl implements ProctoringService {
                     .userId(ea.getUser() != null ? ea.getUser().getId() : null)
                     .candidateName(resolveCandidateName(ea))
                     .candidateIdentifier(resolveCandidateIdentifier(ea))
-                    .status(ea.getStatus())
+                    .status(effectiveStatus)
                     .violationCount(effectiveViolationCount)
-                    .isDisqualified(ea.getStatus() == AttemptStatus.DISQUALIFIED)
+                    .isDisqualified(effectiveStatus == AttemptStatus.DISQUALIFIED)
                     .startTime(ea.getStartTime())
                     .expireAt(ea.getExpireAt())
                     .submitTime(ea.getSubmitTime())
@@ -384,6 +407,10 @@ public class ProctoringServiceImpl implements ProctoringService {
 
         examAttemptRepository.save(attempt);
 
+        // Synchronize disqualification flag to Redis in RAM
+        String statusKey = String.format(KEY_ATTEMPT_STATUS, attemptId);
+        stringRedisTemplate.opsForValue().set(statusKey, "DISQUALIFIED", REDIS_KEY_TTL);
+
         int maxAllowed = (attempt.getExam().getMaxViolations() != null && attempt.getExam().getMaxViolations() > 0)
                 ? attempt.getExam().getMaxViolations()
                 : DEFAULT_MAX_VIOLATIONS;
@@ -415,6 +442,24 @@ public class ProctoringServiceImpl implements ProctoringService {
                 .build();
 
         broadcastToTeacher(attempt.getExam().getId(), teacherEvent);
+
+        // Package and dispatch submission message to RabbitMQ to finalize candidate's answers and violation logs
+        try {
+            Map<UUID, SaveAnswerRequest> draftAnswers = redisExamSessionService.getDraftAnswers(attemptId);
+            SubmissionMessage message = SubmissionMessage.builder()
+                    .attemptId(attemptId)
+                    .examId(attempt.getExam().getId())
+                    .examTitle(attempt.getExam().getTitle())
+                    .userId(attempt.getUser() != null ? attempt.getUser().getId() : null)
+                    .guestIdentifier(attempt.getGuestIdentifier())
+                    .submitTime(LocalDateTime.now())
+                    .answers(draftAnswers)
+                    .build();
+
+            examSubmissionProducer.sendSubmissionMessage(message);
+        } catch (Exception ex) {
+            log.error("Failed to enqueue submission message on teacher disqualification for attemptId: {}", attemptId, ex);
+        }
     }
 
     @Override
@@ -456,6 +501,20 @@ public class ProctoringServiceImpl implements ProctoringService {
     }
 
     private void broadcastToCandidate(ExamAttempt attempt, ViolationAlertMessage alertMessage) {
+        // 1. Dispatch to QuickNotify Hub (Primary)
+        if (quickNotifyDispatcher != null) {
+            try {
+                quickNotifyDispatcher.dispatchViolationAlert(
+                        attempt.getId(),
+                        attempt.getExam().getId(),
+                        alertMessage
+                );
+            } catch (Exception ex) {
+                log.warn("Failed to dispatch alert to QuickNotify for attempt: {}", attempt.getId(), ex);
+            }
+        }
+
+        // 2. Dispatch to STOMP (Standby / Fallback)
         try {
             messagingTemplate.convertAndSend("/topic/attempts/" + attempt.getId() + "/proctoring", alertMessage);
             if (attempt.getUser() != null) {

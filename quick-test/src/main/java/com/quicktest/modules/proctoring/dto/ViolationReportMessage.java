@@ -18,7 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ViolationReportMessage {
 
-    @NotNull(message = "Attempt ID is required")
+    // Optional in JSON payload; automatically resolved from path variable /session/{attemptId}/proctoring/violation
     private UUID attemptId;
 
     @NotNull(message = "Violation type is required")

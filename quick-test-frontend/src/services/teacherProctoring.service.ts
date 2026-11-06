@@ -7,6 +7,7 @@ import type {
   ViolationLogEntry,
   DisqualifyAttemptRequest,
   ExamMonitoringParams,
+  RealtimeTokenResponse,
 } from '@/types/proctoring';
 
 /**
@@ -95,6 +96,17 @@ export const teacherProctoringService = {
       }
     );
 
+    return response.data.data;
+  },
+
+  /**
+   * Retrieve signed JWT token and WebSocket parameters for teacher real-time monitoring room.
+   */
+  async getRealtimeToken(examId: string): Promise<RealtimeTokenResponse> {
+    const response = await apiClient.get<ApiResponse<RealtimeTokenResponse>>(
+      `/teacher/proctoring/exams/${examId}/realtime-token`,
+      { silent: true }
+    );
     return response.data.data;
   },
 };

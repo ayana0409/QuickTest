@@ -299,6 +299,10 @@ export interface ExamPaper {
   remainingSeconds: number;
   candidateName?: string | null;
   candidateIdentifier?: string | null;
+  /** JWT token for QuickNotify WebSocket authentication */
+  realtimeToken?: string;
+  /** WebSocket endpoint for QuickNotify Hub */
+  realtimeWsUrl?: string;
   questions: QuestionInPaper[];
 }
 

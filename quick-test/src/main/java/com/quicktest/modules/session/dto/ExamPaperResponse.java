@@ -42,5 +42,11 @@ public class ExamPaperResponse {
     private String candidateName;
     private String candidateIdentifier;
 
+    /**
+     * Real-time WebSocket connection ticket (JWT) and Gateway URL for QuickNotify integration.
+     */
+    private String realtimeToken;
+    private String realtimeWsUrl;
+
     private List<QuestionInPaperDto> questions;
 }

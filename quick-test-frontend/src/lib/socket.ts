@@ -1,6 +1,6 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws-exam';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8081/ws-exam';
 
 let stompClient: Client | null = null;
 
@@ -160,7 +160,7 @@ export function subscribeTopic(
  */
 export function sendWebSocketMessage(destination: string, body: unknown): void {
   if (!stompClient || !stompClient.connected) {
-    console.warn('[STOMP] Cannot send message, client is not connected:', destination);
+    // STOMP is in standby/fallback mode; no-op silently when not connected
     return;
   }
 

@@ -107,6 +107,38 @@ export const candidateSessionService = {
   },
 
   /**
+   * Report proctoring violation telemetry directly to Redis buffer.
+   * High performance (1-3ms in-RAM), zero database queries during the active exam.
+   */
+  async reportViolation(
+    attemptId: string,
+    payload: {
+      attemptId?: string;
+      violationType: string;
+      description?: string;
+      clientTimestamp?: string;
+      timestamp?: string;
+    }
+  ): Promise<void> {
+    const body = {
+      attemptId,
+      violationType: payload.violationType,
+      description: payload.description,
+      clientTimestamp: payload.clientTimestamp || payload.timestamp || new Date().toISOString(),
+    };
+
+    await apiClient.post(
+      `/session/${attemptId}/proctoring/violation`,
+      body,
+      {
+        silent: true,
+        showSuccessToast: false,
+        showErrorToast: false,
+      }
+    );
+  },
+
+  /**
    * Retrieve submission result and score for candidate review.
    */
   async getResult(attemptId: string): Promise<SubmitResultResponse> {

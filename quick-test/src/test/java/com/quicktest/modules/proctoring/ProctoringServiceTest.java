@@ -62,6 +62,15 @@ class ProctoringServiceTest {
         @Mock
         private SimpMessagingTemplate messagingTemplate;
 
+        @Mock
+        private com.quicktest.core.notify.QuickNotifyDispatcherService quickNotifyDispatcher;
+
+        @Mock
+        private com.quicktest.modules.session.service.RedisExamSessionService redisExamSessionService;
+
+        @Mock
+        private com.quicktest.modules.session.service.ExamSubmissionProducer examSubmissionProducer;
+
         @InjectMocks
         private ProctoringServiceImpl proctoringService;
 

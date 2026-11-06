@@ -37,13 +37,14 @@ import {
 import { ExamAttemptsTab } from '@/components/exam/ExamAttemptsTab';
 import { teacherProctoringService } from '@/services/teacherProctoring.service';
 import { examService } from '@/services/exam.service';
-import { connectWebSocket, subscribeTopic } from '@/lib/socket';
+import { ProctoringRealtimeManager } from '@/lib/realtime/ProctoringRealtimeManager';
 import type {
   AttemptMonitorItem,
   CandidateViolationEvent,
+  ProctoringEvent,
+  RealtimeConnectionStatus,
 } from '@/types/proctoring';
 import type { ExamDetailResponse, AttemptStatus } from '@/types/exam';
-import type { StompSubscription } from '@stomp/stompjs';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 
@@ -127,10 +128,10 @@ export default function TeacherLiveProctoringPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   // WebSocket & Live Feed state
-  const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
+  const [connectionStatus, setConnectionStatus] =
+    useState<RealtimeConnectionStatus>('CONNECTING');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [violationEvents, setViolationEvents] = useState<CandidateViolationEvent[]>([]);
-  const subscriptionRef = useRef<StompSubscription | null>(null);
 
   // Inspector & Disqualify Modals
   const [inspectAttemptId, setInspectAttemptId] = useState<string | null>(null);
@@ -230,48 +231,95 @@ export default function TeacherLiveProctoringPage() {
     [soundEnabled, activeSubTab]
   );
 
-  // Set up WebSocket connection
+  // Set up Dual-layer Realtime Connection (QuickNotify Primary + STOMP Fallback)
   useEffect(() => {
     if (!examId) return;
 
     let mounted = true;
+    let manager: ProctoringRealtimeManager | null = null;
 
-    connectWebSocket(
-      null,
-      () => {
+    const setupConnection = async () => {
+      try {
+        const tokenRes = await teacherProctoringService.getRealtimeToken(examId);
         if (!mounted) return;
-        setIsWsConnected(true);
 
-        // Subscribe to teacher monitoring room
-        const destination = `/topic/exams/${examId}/proctoring`;
-        const sub = subscribeTopic(destination, (message) => {
-          try {
-            const eventPayload: CandidateViolationEvent = JSON.parse(message.body);
-            handleLiveViolationEvent(eventPayload);
-          } catch (err) {
-            console.error('Error parsing live proctoring event:', err);
+        manager = new ProctoringRealtimeManager({
+          quickNotifyWsUrl:
+            tokenRes.realtimeWsUrl ||
+            tokenRes.wsUrl ||
+            process.env.NEXT_PUBLIC_QUICKNOTIFY_WS_URL ||
+            'ws://localhost:8080/ws',
+          quickNotifyToken: tokenRes.realtimeToken || tokenRes.token || '',
+          role: 'teacher',
+          examId,
+          onStatusChange: (status) => {
+            if (mounted) setConnectionStatus(status);
+          },
+        });
+
+        manager.subscribe((event: ProctoringEvent) => {
+          if (event.eventType === 'CANDIDATE_VIOLATION') {
+            const raw = event.data;
+            const violationEvent: CandidateViolationEvent = {
+              attemptId: raw.attemptId || event.attemptId || '',
+              examId: raw.examId || examId,
+              candidateName: raw.candidateName || 'Thí sinh',
+              candidateIdentifier: raw.candidateIdentifier,
+              violationType: raw.violationType || 'TAB_SWITCH',
+              violationCount: raw.violationCount || 1,
+              description: raw.description || raw.message || '',
+              disqualified: Boolean(raw.disqualified),
+              timestamp: raw.timestamp || event.timestamp || new Date().toISOString(),
+            };
+            handleLiveViolationEvent(violationEvent);
           }
         });
 
-        subscriptionRef.current = sub;
-      },
-      (err) => {
+        manager.connect();
+      } catch (err) {
+        console.warn(
+          '[TeacherLiveProctoring] Failed to fetch realtime token, launching STOMP fallback directly:',
+          err
+        );
         if (!mounted) return;
-        console.warn('STOMP connection error:', err);
-        setIsWsConnected(false);
+
+        manager = new ProctoringRealtimeManager({
+          quickNotifyWsUrl: '',
+          quickNotifyToken: '',
+          role: 'teacher',
+          examId,
+          onStatusChange: (status) => {
+            if (mounted) setConnectionStatus(status);
+          },
+        });
+
+        manager.subscribe((event: ProctoringEvent) => {
+          if (event.eventType === 'CANDIDATE_VIOLATION') {
+            const raw = event.data;
+            const violationEvent: CandidateViolationEvent = {
+              attemptId: raw.attemptId || event.attemptId || '',
+              examId: raw.examId || examId,
+              candidateName: raw.candidateName || 'Thí sinh',
+              candidateIdentifier: raw.candidateIdentifier,
+              violationType: raw.violationType || 'TAB_SWITCH',
+              violationCount: raw.violationCount || 1,
+              description: raw.description || '',
+              disqualified: Boolean(raw.disqualified),
+              timestamp: raw.timestamp || event.timestamp || new Date().toISOString(),
+            };
+            handleLiveViolationEvent(violationEvent);
+          }
+        });
+
+        manager.connect();
       }
-    );
+    };
+
+    setupConnection();
 
     return () => {
       mounted = false;
-      if (subscriptionRef.current) {
-        try {
-          subscriptionRef.current.unsubscribe();
-        } catch {
-          // ignore
-        }
-        subscriptionRef.current = null;
-      }
+      manager?.disconnect();
     };
   }, [examId, handleLiveViolationEvent]);
 
@@ -440,34 +488,53 @@ export default function TeacherLiveProctoringPage() {
 
           {/* Right Live Controls */}
           <div className="flex items-center gap-2.5">
-            {/* WebSocket connection badge */}
+            {/* Minimal Live Status Signal */}
             <div
               className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all',
-                isWsConnected
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50'
-                  : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50'
+                'relative flex items-center justify-center w-8 h-8 rounded-xl border transition-all duration-300',
+                connectionStatus === 'CONNECTED_PRIMARY'
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                  : connectionStatus === 'CONNECTED_FALLBACK'
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                  : connectionStatus === 'CONNECTING'
+                  ? 'bg-sky-500/10 border-sky-500/20 text-sky-400'
+                  : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
               )}
+              title={
+                connectionStatus === 'CONNECTED_PRIMARY'
+                  ? 'Trực tuyến (QuickNotify Hub)'
+                  : connectionStatus === 'CONNECTED_FALLBACK'
+                  ? 'Dự phòng (STOMP Fallback)'
+                  : connectionStatus === 'CONNECTING'
+                  ? 'Đang kết nối...'
+                  : 'Mất tín hiệu mạng'
+              }
             >
+              {/* Outer pulsing ring for active states */}
+              {(connectionStatus === 'CONNECTED_PRIMARY' ||
+                connectionStatus === 'CONNECTING') && (
+                <span
+                  className={cn(
+                    'absolute w-3.5 h-3.5 rounded-full opacity-60 animate-ping',
+                    connectionStatus === 'CONNECTED_PRIMARY'
+                      ? 'bg-emerald-400'
+                      : 'bg-sky-400'
+                  )}
+                />
+              )}
+              {/* Center status dot */}
               <span
                 className={cn(
-                  'w-2 h-2 rounded-full',
-                  isWsConnected
-                    ? 'bg-emerald-500 animate-pulse'
+                  'w-2 h-2 rounded-full transition-colors',
+                  connectionStatus === 'CONNECTED_PRIMARY'
+                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                    : connectionStatus === 'CONNECTED_FALLBACK'
+                    ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
+                    : connectionStatus === 'CONNECTING'
+                    ? 'bg-sky-400'
                     : 'bg-rose-500'
                 )}
               />
-              {isWsConnected ? (
-                <>
-                  <Wifi className="w-3.5 h-3.5" />
-                  <span>Đã kết nối</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-3.5 h-3.5" />
-                  <span>Đang kết nối...</span>
-                </>
-              )}
             </div>
 
             {/* Sound alert toggle */}

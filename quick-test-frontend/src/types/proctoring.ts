@@ -145,3 +145,65 @@ export const DEFAULT_PROCTORING_SETTINGS: ProctoringSettings = {
   blockDevTools: true,
 };
 
+/**
+ * Response payload when teacher requests real-time QuickNotify token.
+ */
+export interface RealtimeTokenResponse {
+  realtimeToken?: string;
+  realtimeWsUrl?: string;
+  token?: string;
+  wsUrl?: string;
+  topic?: string;
+}
+
+/**
+ * Normalized QuickNotify envelope emitted over Native WebSocket.
+ */
+export interface QuickNotifyEnvelope {
+  event_id?: string;
+  project_id?: string;
+  scope?: string;
+  priority?: string;
+  channels?: string[];
+  target?: {
+    user_id?: string;
+  };
+  content?: {
+    type?: string;
+    data?: {
+      eventType?: string;
+      payload?: Record<string, any>;
+      message?: string;
+      [key: string]: any;
+    };
+  };
+}
+
+/**
+ * Unified real-time proctoring event consumed across Candidate and Teacher views.
+ */
+export type ProctoringEventType =
+  | 'VIOLATION_ALERT'
+  | 'EXAM_CLOSED'
+  | 'CANDIDATE_VIOLATION'
+  | 'CANDIDATE_DISQUALIFIED'
+  | 'HEARTBEAT_ACK';
+
+export interface ProctoringEvent {
+  eventType: ProctoringEventType;
+  attemptId?: string;
+  examId?: string;
+  data: Record<string, any>;
+  timestamp?: string;
+}
+
+/**
+ * State representing dual-layer connection health.
+ */
+export type RealtimeConnectionStatus =
+  | 'CONNECTING'
+  | 'CONNECTED_PRIMARY'
+  | 'CONNECTED_FALLBACK'
+  | 'DISCONNECTED';
+
+

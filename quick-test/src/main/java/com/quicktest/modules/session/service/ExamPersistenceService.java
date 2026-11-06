@@ -1,6 +1,8 @@
 package com.quicktest.modules.session.service;
 
 import com.quicktest.core.exception.ResourceNotFoundException;
+import com.quicktest.modules.proctoring.entity.ViolationLog;
+import com.quicktest.modules.proctoring.repository.ViolationLogRepository;
 import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.entity.CandidateAnswer;
 import com.quicktest.modules.session.entity.ExamAttempt;
@@ -27,9 +29,10 @@ public class ExamPersistenceService {
 
     private final CandidateAnswerRepository candidateAnswerRepository;
     private final ExamAttemptRepository examAttemptRepository;
+    private final ViolationLogRepository violationLogRepository;
 
     /**
-     * Persist candidate answers in batch and update attempt status within a concise database transaction.
+     * Backward-compatible overload persisting candidate answers and updating attempt status.
      */
     @Transactional
     public void persistGradedAnswersAndStatus(
@@ -39,8 +42,34 @@ public class ExamPersistenceService {
             Double totalScore,
             LocalDateTime submitTime) {
 
-        log.debug("Opening short DB transaction to persist {} answers for attemptId: {}",
-                answers != null ? answers.size() : 0, attemptId);
+        persistGradedAnswersAndStatusWithViolations(
+                attemptId, answers, finalStatus, totalScore, submitTime, null, null);
+    }
+
+    /**
+     * Persists candidate answers and batches all buffered violation logs from Redis into PostgreSQL
+     * in a single, short-lived database transaction.
+     *
+     * @param attemptId      The target exam attempt identifier
+     * @param answers        List of evaluated candidate answers
+     * @param finalStatus    Final calculated attempt status
+     * @param totalScore     Total awarded score (null if awaiting manual grading)
+     * @param submitTime     Candidate submission timestamp
+     * @param violationCount Total violations aggregated in Redis
+     * @param violationLogs  List of violation logs buffered in Redis
+     */
+    @Transactional
+    public void persistGradedAnswersAndStatusWithViolations(
+            UUID attemptId,
+            List<CandidateAnswer> answers,
+            AttemptStatus finalStatus,
+            Double totalScore,
+            LocalDateTime submitTime,
+            Integer violationCount,
+            List<ViolationLog> violationLogs) {
+
+        log.debug("Opening short DB transaction to persist attemptId: {}, answers: {}, violations: {}",
+                attemptId, answers != null ? answers.size() : 0, violationLogs != null ? violationLogs.size() : 0);
 
         // 1. Load managed ExamAttempt from DB within this short transaction (ensures version field is initialized)
         ExamAttempt attempt = examAttemptRepository.findById(attemptId)
@@ -49,17 +78,18 @@ public class ExamPersistenceService {
         attempt.setStatus(finalStatus);
         attempt.setSubmitTime(submitTime != null ? submitTime : LocalDateTime.now());
         attempt.setTotalScore(totalScore);
+        if (violationCount != null) {
+            attempt.setViolationCount(violationCount);
+        }
 
         // 2. Associate candidate answers with the managed ExamAttempt and batch insert
         if (answers != null && !answers.isEmpty()) {
-            // Delete any existing answers for this attempt (ensures idempotency on retries/stale submissions)
             List<CandidateAnswer> existingAnswers = candidateAnswerRepository.findByExamAttemptId(attemptId);
             if (!existingAnswers.isEmpty()) {
                 candidateAnswerRepository.deleteAll(existingAnswers);
                 candidateAnswerRepository.flush();
             }
 
-            // Deduplicate incoming answers by questionId in memory to prevent duplicate key constraint violations
             java.util.Map<UUID, CandidateAnswer> uniqueAnswers = new java.util.LinkedHashMap<>();
             for (CandidateAnswer ans : answers) {
                 if (ans.getQuestion() != null && ans.getQuestion().getId() != null) {
@@ -70,6 +100,19 @@ public class ExamPersistenceService {
             candidateAnswerRepository.saveAll(uniqueAnswers.values());
         }
 
-        log.info("Successfully persisted attempt ID: {} with status: {}, score: {}", attemptId, finalStatus, totalScore);
+        // 3. Batch insert buffered violation logs if present
+        if (violationLogs != null && !violationLogs.isEmpty()) {
+            for (ViolationLog vLog : violationLogs) {
+                vLog.setExamAttempt(attempt);
+            }
+            violationLogRepository.saveAll(violationLogs);
+            log.info("Batch persisted {} violation logs to PostgreSQL for attemptId: {}",
+                    violationLogs.size(), attemptId);
+        }
+
+        examAttemptRepository.save(attempt);
+
+        log.info("Successfully persisted attempt ID: {} with status: {}, score: {}, violations: {}",
+                attemptId, finalStatus, totalScore, attempt.getViolationCount());
     }
 }

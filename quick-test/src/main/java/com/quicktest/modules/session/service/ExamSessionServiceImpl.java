@@ -5,6 +5,7 @@ import com.quicktest.core.exception.AttemptLimitExceededException;
 import com.quicktest.core.exception.ExamClosedException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.exception.SessionExpiredException;
+import com.quicktest.core.notify.QuickNotifyTokenService;
 import com.quicktest.modules.assessment.entity.AnswerOption;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
@@ -46,6 +47,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
     private final ExamAttemptRepository examAttemptRepository;
     private final RedisExamSessionService redisExamSessionService;
     private final ExamSubmissionProducer examSubmissionProducer;
+    private final QuickNotifyTokenService quickNotifyTokenService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
@@ -479,6 +481,12 @@ public class ExamSessionServiceImpl implements ExamSessionService {
         LocalDateTime now = LocalDateTime.now();
         long remainingSeconds = Math.max(0, Duration.between(now, attempt.getExpireAt()).getSeconds());
 
+        Duration remainingDuration = (attempt.getExpireAt() != null)
+                ? Duration.between(now, attempt.getExpireAt())
+                : Duration.ofMinutes(exam.getDurationMinutes());
+        String realtimeToken = quickNotifyTokenService.generateCandidateToken(attempt.getId(), remainingDuration);
+        String realtimeWsUrl = quickNotifyTokenService.getQuickNotifyWsUrl();
+
         String candidateName = attempt.getUser() != null ? attempt.getUser().getFullName() : attempt.getGuestName();
         String candidateIdentifier = attempt.getUser() != null ? attempt.getUser().getEmail() : attempt.getGuestIdentifier();
 
@@ -497,6 +505,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                 .remainingSeconds(remainingSeconds)
                 .candidateName(candidateName)
                 .candidateIdentifier(candidateIdentifier)
+                .realtimeToken(realtimeToken)
+                .realtimeWsUrl(realtimeWsUrl)
                 .questions(maskedQuestions)
                 .build();
     }

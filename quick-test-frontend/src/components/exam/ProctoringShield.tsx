@@ -1,17 +1,16 @@
 'use client';
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import {
-  connectWebSocket,
-  sendWebSocketMessage,
-  subscribeTopic,
-} from '@/lib/socket';
+import { sendWebSocketMessage } from '@/lib/socket';
+import { ProctoringRealtimeManager } from '@/lib/realtime/ProctoringRealtimeManager';
+import { candidateSessionService } from '@/services/candidateSession.service';
 import type {
   ViolationType,
   ViolationTelemetryMessage,
   ViolationAlertResponse,
   HeartbeatMessage,
   ProctoringSettings,
+  ProctoringEvent,
 } from '@/types/proctoring';
 import { DEFAULT_PROCTORING_SETTINGS } from '@/types/proctoring';
 import { cn } from '@/lib/utils';
@@ -19,6 +18,10 @@ import { cn } from '@/lib/utils';
 interface ProctoringShieldProps {
   attemptId: string;
   examId?: string;
+  /** JWT token for QuickNotify WebSocket connection */
+  realtimeToken?: string;
+  /** WebSocket URL for QuickNotify Hub */
+  realtimeWsUrl?: string;
   children: React.ReactNode;
   onViolation: (type: ViolationType, description: string) => void;
   onServerAlert: (alert: ViolationAlertResponse) => void;
@@ -40,6 +43,8 @@ interface ProctoringShieldProps {
 export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   attemptId,
   examId,
+  realtimeToken,
+  realtimeWsUrl,
   children,
   onViolation,
   onServerAlert,
@@ -60,7 +65,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     onExamClosedRef.current = onExamClosed;
   }, [onViolation, onServerAlert, onExamClosed]);
 
-  // Dispatch violation telemetry to WebSocket and parent handler
+  // Dispatch violation telemetry to REST API (Redis in-RAM buffer) with STOMP fallback
   const reportViolation = useCallback(
     (type: ViolationType, description: string) => {
       if (!isMasterEnabled) return;
@@ -72,84 +77,70 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         clientTimestamp: new Date().toISOString(),
       };
 
-      sendWebSocketMessage('/app/proctoring/violation', payload);
+      // 1. Primary ingestion: Zero-DB HTTP POST to Redis RAM buffer
+      candidateSessionService
+        .reportViolation(attemptId, {
+          attemptId,
+          violationType: type,
+          description,
+          clientTimestamp: payload.clientTimestamp,
+        })
+        .catch((err) => {
+          console.warn(
+            '[ProctoringShield] HTTP violation ingestion failed, sending fallback STOMP message:',
+            err
+          );
+          // 2. Secondary fallback via STOMP
+          sendWebSocketMessage('/app/proctoring/violation', payload);
+        });
+
       onViolationRef.current(type, description);
     },
     [attemptId, isMasterEnabled]
   );
 
-  // 1. Setup STOMP WebSocket connection and alert subscription
+  // 1. Dual-layer Realtime Connection (QuickNotify Primary + STOMP Fallback)
   useEffect(() => {
     if (!attemptId || !isExamActive) return;
 
-    const subscriptions: Array<{ unsubscribe: () => void }> = [];
+    const manager = new ProctoringRealtimeManager({
+      quickNotifyWsUrl:
+        realtimeWsUrl ||
+        process.env.NEXT_PUBLIC_QUICKNOTIFY_WS_URL ||
+        'ws://localhost:8080/ws',
+      quickNotifyToken: realtimeToken || '',
+      role: 'candidate',
+      attemptId,
+      examId,
+    });
 
-    const handleIncomingAlert = (messageBody: string) => {
-      try {
-        const alert = JSON.parse(messageBody);
-
-        // Intercept exam closure / auto-submit broadcast
-        if (alert.eventType === 'EXAM_CLOSED' || alert.action === 'AUTO_SUBMIT') {
-          onExamClosedRef.current?.(
-            alert.message || alert.reason || 'Bài thi của bạn đã bị kết thúc.'
-          );
-          return;
-        }
-
-        if (alert.attemptId === attemptId) {
-          if (isMasterEnabled) {
-            onServerAlertRef.current(alert as ViolationAlertResponse);
-          }
-        }
-      } catch (err) {
-        console.error('[ProctoringShield] Failed to parse alert message:', err);
+    const unsubscribe = manager.subscribe((event: ProctoringEvent) => {
+      // Intercept exam closure / auto-submit broadcast
+      if (event.eventType === 'EXAM_CLOSED' || event.data.action === 'AUTO_SUBMIT') {
+        onExamClosedRef.current?.(
+          event.data.message || event.data.reason || 'Bài thi của bạn đã bị kết thúc.'
+        );
+        return;
       }
-    };
 
-    connectWebSocket(
-      null,
-      () => {
-        // 0. Single exam broadcast channel for all candidates in this exam room
-        if (examId) {
-          const examSub = subscribeTopic(`/topic/exams/${examId}/proctoring`, (message) => {
-            handleIncomingAlert(message.body);
-          });
-          if (examSub) subscriptions.push(examSub);
+      // Handle candidate violation alert
+      if (
+        event.eventType === 'VIOLATION_ALERT' ||
+        event.eventType === 'CANDIDATE_DISQUALIFIED'
+      ) {
+        if (isMasterEnabled) {
+          onServerAlertRef.current(event.data as ViolationAlertResponse);
         }
-
-        // 1. Attempt broadcast channel: /topic/attempts/{attemptId}/proctoring
-        const attemptSub = subscribeTopic(`/topic/attempts/${attemptId}/proctoring`, (message) => {
-          handleIncomingAlert(message.body);
-        });
-        if (attemptSub) subscriptions.push(attemptSub);
-
-        // 2. User specific point-to-point queue: /user/queue/proctoring/alert
-        const userSub = subscribeTopic('/user/queue/proctoring/alert', (message) => {
-          handleIncomingAlert(message.body);
-        });
-        if (userSub) subscriptions.push(userSub);
-
-        // 3. Fallback queue: /user/queue/alerts
-        const fallbackSub = subscribeTopic('/user/queue/alerts', (message) => {
-          handleIncomingAlert(message.body);
-        });
-        if (fallbackSub) subscriptions.push(fallbackSub);
-      },
-      (error) => {
-        console.warn('[ProctoringShield] STOMP connection error:', error);
       }
-    );
+    });
+
+    manager.connect();
 
     return () => {
-      subscriptions.forEach((sub) => {
-        try {
-          sub.unsubscribe();
-        } catch {
-          // Ignored
-        }
-      });
+      unsubscribe();
+      manager.disconnect();
     };
-  }, [attemptId, examId, isExamActive, isMasterEnabled]);
+  }, [attemptId, examId, isExamActive, isMasterEnabled, realtimeToken, realtimeWsUrl]);
 
   // 2. Periodic Heartbeat (every 30 seconds)
   useEffect(() => {
