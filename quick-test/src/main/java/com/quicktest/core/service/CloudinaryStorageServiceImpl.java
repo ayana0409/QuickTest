@@ -120,11 +120,12 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
 
         List<String> targetPublicIds = publicIdsOrUrls.stream()
                 .filter(id -> id != null && !id.isBlank())
+                .filter(id -> !id.startsWith("data:"))
                 .map(item -> {
                     String extracted = extractPublicId(item);
                     return (extracted != null && !extracted.isBlank()) ? extracted : item.trim();
                 })
-                .filter(id -> id != null && !id.isBlank())
+                .filter(id -> id != null && !id.isBlank() && !id.startsWith("data:"))
                 .distinct()
                 .toList();
 
@@ -132,18 +133,23 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
             return;
         }
 
-        try {
-            log.info("Batch deleting {} media resources from Cloudinary in a single API call: {}",
-                    targetPublicIds.size(), targetPublicIds);
-            cloudinary.api().deleteResources(targetPublicIds, ObjectUtils.emptyMap());
-            log.info("Successfully executed batch deletion for {} media resources", targetPublicIds.size());
-        } catch (Exception e) {
-            log.warn("Cloudinary batch delete via Admin API failed ({}), falling back to individual destroy calls", e.getMessage());
-            for (String pid : targetPublicIds) {
-                try {
-                    cloudinary.uploader().destroy(pid, ObjectUtils.emptyMap());
-                } catch (Exception ex) {
-                    log.warn("Fallback single delete failed for publicId [{}]: {}", pid, ex.getMessage());
+        // Cloudinary Admin API deleteResources has a hard limit of 100 public IDs per request
+        final int CHUNK_SIZE = 100;
+        for (int i = 0; i < targetPublicIds.size(); i += CHUNK_SIZE) {
+            List<String> chunk = targetPublicIds.subList(i, Math.min(i + CHUNK_SIZE, targetPublicIds.size()));
+            try {
+                log.info("Batch deleting {} media resources from Cloudinary (chunk {}/{}): {}",
+                        chunk.size(), (i / CHUNK_SIZE) + 1, (targetPublicIds.size() + CHUNK_SIZE - 1) / CHUNK_SIZE, chunk);
+                cloudinary.api().deleteResources(chunk, ObjectUtils.emptyMap());
+                log.info("Successfully executed batch deletion for {} media resources", chunk.size());
+            } catch (Exception e) {
+                log.warn("Cloudinary batch delete via Admin API failed ({}), falling back to individual destroy calls", e.getMessage());
+                for (String pid : chunk) {
+                    try {
+                        cloudinary.uploader().destroy(pid, ObjectUtils.emptyMap());
+                    } catch (Exception ex) {
+                        log.warn("Fallback single delete failed for publicId [{}]: {}", pid, ex.getMessage());
+                    }
                 }
             }
         }

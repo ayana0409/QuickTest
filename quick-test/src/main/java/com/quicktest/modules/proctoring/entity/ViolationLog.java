@@ -15,7 +15,9 @@ import java.util.UUID;
 @Table(
     name = "violation_logs",
     indexes = {
-        @Index(name = "idx_violations_attempt_time", columnList = "attempt_id, timestamp")
+        @Index(name = "idx_violations_attempt_time", columnList = "attempt_id, timestamp"),
+        @Index(name = "idx_violations_time", columnList = "timestamp"),
+        @Index(name = "idx_violations_type_time", columnList = "violation_type, timestamp")
     }
 )
 @Getter

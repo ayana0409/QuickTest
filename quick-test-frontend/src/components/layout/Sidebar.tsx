@@ -24,6 +24,7 @@ import {
   Activity,
   Cpu,
   Sparkles,
+  Camera,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -41,6 +42,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Content Moderation', href: '/admin/moderation', icon: ShieldAlert },
     { label: 'Exam Monitoring', href: '/admin/exams', icon: Shield },
     { label: 'System Logs', href: '/admin/logs', icon: FileCheck },
+    { label: 'Ảnh giám sát', href: '/admin/media', icon: Camera },
     { label: 'System Health', href: '/admin/health', icon: Activity },
     { label: 'System Settings', href: '/admin/settings', icon: Settings },
   ],

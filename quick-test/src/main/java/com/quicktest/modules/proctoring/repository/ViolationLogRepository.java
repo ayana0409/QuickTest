@@ -33,4 +33,89 @@ public interface ViolationLogRepository extends JpaRepository<ViolationLog, UUID
             "LEFT JOIN FETCH ea.user u " +
             "ORDER BY v.timestamp DESC")
     List<ViolationLog> findRecentViolations(org.springframework.data.domain.Pageable pageable);
+
+    @Query(value = """
+            SELECT CAST(vl.id AS VARCHAR) FROM violation_logs vl
+            JOIN exam_attempts ea ON ea.id = vl.attempt_id
+            JOIN exams e ON e.id = ea.exam_id
+            LEFT JOIN users u ON u.id = ea.user_id
+            WHERE vl.evidence_url IS NOT NULL AND vl.evidence_url <> ''
+              AND (CAST(:violationType AS VARCHAR) IS NULL OR vl.violation_type = CAST(:violationType AS VARCHAR))
+              AND (CAST(:examId AS UUID) IS NULL OR ea.exam_id = CAST(:examId AS UUID))
+              AND (CAST(:startDate AS TIMESTAMP) IS NULL OR vl.timestamp >= CAST(:startDate AS TIMESTAMP))
+              AND (CAST(:endDate AS TIMESTAMP) IS NULL OR vl.timestamp <= CAST(:endDate AS TIMESTAMP))
+              AND (
+                  CAST(:search AS VARCHAR) IS NULL OR CAST(:search AS VARCHAR) = ''
+                  OR LOWER(e.title) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(u.full_name) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(u.email) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(ea.guest_name) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(ea.guest_identifier) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+              )
+            ORDER BY vl.timestamp DESC, vl.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(vl.id) FROM violation_logs vl
+            JOIN exam_attempts ea ON ea.id = vl.attempt_id
+            JOIN exams e ON e.id = ea.exam_id
+            LEFT JOIN users u ON u.id = ea.user_id
+            WHERE vl.evidence_url IS NOT NULL AND vl.evidence_url <> ''
+              AND (CAST(:violationType AS VARCHAR) IS NULL OR vl.violation_type = CAST(:violationType AS VARCHAR))
+              AND (CAST(:examId AS UUID) IS NULL OR ea.exam_id = CAST(:examId AS UUID))
+              AND (CAST(:startDate AS TIMESTAMP) IS NULL OR vl.timestamp >= CAST(:startDate AS TIMESTAMP))
+              AND (CAST(:endDate AS TIMESTAMP) IS NULL OR vl.timestamp <= CAST(:endDate AS TIMESTAMP))
+              AND (
+                  CAST(:search AS VARCHAR) IS NULL OR CAST(:search AS VARCHAR) = ''
+                  OR LOWER(e.title) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(u.full_name) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(u.email) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(ea.guest_name) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+                  OR LOWER(ea.guest_identifier) LIKE LOWER(CAST(:likePattern AS VARCHAR))
+              )
+            """, nativeQuery = true)
+    org.springframework.data.domain.Page<String> findEvidenceMediaIds(
+            @Param("violationType") String violationType,
+            @Param("examId") UUID examId,
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate,
+            @Param("search") String search,
+            @Param("likePattern") String likePattern,
+            org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT v FROM ViolationLog v " +
+            "JOIN FETCH v.examAttempt ea " +
+            "JOIN FETCH ea.exam e " +
+            "LEFT JOIN FETCH ea.user u " +
+            "WHERE v.id IN :ids")
+    List<ViolationLog> findAllByIdInWithDetails(@Param("ids") List<UUID> ids);
+
+    @Query("SELECT COUNT(v) FROM ViolationLog v WHERE v.evidenceUrl IS NOT NULL AND v.evidenceUrl <> ''")
+    long countAllEvidenceMedia();
+
+    @Query("SELECT COUNT(v) FROM ViolationLog v WHERE v.evidenceUrl IS NOT NULL AND v.evidenceUrl <> '' AND v.violationType = :violationType")
+    long countEvidenceMediaByViolationType(@Param("violationType") ViolationType violationType);
+
+    @Query("SELECT COUNT(v) FROM ViolationLog v WHERE v.evidenceUrl IS NOT NULL AND v.evidenceUrl <> '' AND v.timestamp >= :since")
+    long countEvidenceMediaSince(@Param("since") java.time.LocalDateTime since);
+
+    @Query("SELECT COUNT(v) FROM ViolationLog v WHERE v.evidenceUrl IS NOT NULL AND v.evidenceUrl <> '' AND v.timestamp < :before")
+    long countEvidenceMediaBefore(@Param("before") java.time.LocalDateTime before);
+
+    @Query("SELECT COUNT(DISTINCT ea.exam.id) FROM ViolationLog v JOIN v.examAttempt ea WHERE v.evidenceUrl IS NOT NULL AND v.evidenceUrl <> ''")
+    long countDistinctExamsWithEvidenceMedia();
+
+    @Query(value = """
+            SELECT COUNT(v.id) FROM violation_logs v
+            JOIN exam_attempts ea ON ea.id = v.attempt_id
+            WHERE v.evidence_url IS NOT NULL AND v.evidence_url <> ''
+              AND (CAST(:cutoff AS TIMESTAMP) IS NULL OR v.timestamp < CAST(:cutoff AS TIMESTAMP))
+              AND (CAST(:violationType AS VARCHAR) IS NULL OR v.violation_type = CAST(:violationType AS VARCHAR))
+              AND (CAST(:examId AS UUID) IS NULL OR ea.exam_id = CAST(:examId AS UUID))
+              AND (:onlyFinishedExams = FALSE OR ea.status <> 'IN_PROGRESS')
+            """, nativeQuery = true)
+    long countEvidenceMediaForCleanup(
+            @Param("cutoff") java.time.LocalDateTime cutoff,
+            @Param("violationType") String violationType,
+            @Param("examId") UUID examId,
+            @Param("onlyFinishedExams") boolean onlyFinishedExams);
 }
