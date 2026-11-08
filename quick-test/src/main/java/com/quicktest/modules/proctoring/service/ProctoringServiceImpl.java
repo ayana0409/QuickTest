@@ -189,12 +189,13 @@ public class ProctoringServiceImpl implements ProctoringService {
     public PageResponse<AttemptMonitorResponse> getExamMonitoring(
             UUID examId,
             AttemptStatus status,
+            Boolean hasViolation,
             String search,
             Pageable pageable,
             User currentTeacher) {
 
-        log.debug("Teacher {} querying proctoring monitoring for examId: {}, status: {}",
-                currentTeacher.getId(), examId, status);
+        log.debug("Teacher {} querying proctoring monitoring for examId: {}, status: {}, hasViolation: {}",
+                currentTeacher.getId(), examId, status, hasViolation);
 
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", examId));
@@ -204,7 +205,14 @@ public class ProctoringServiceImpl implements ProctoringService {
         Page<ExamAttempt> attemptsPage;
         boolean hasSearch = search != null && !search.trim().isEmpty();
 
-        if (hasSearch && status != null) {
+        if (Boolean.TRUE.equals(hasViolation)) {
+            if (hasSearch) {
+                String pattern = "%" + search.trim().toLowerCase() + "%";
+                attemptsPage = examAttemptRepository.searchAttemptsByExamIdAndViolations(examId, 0, pattern, pageable);
+            } else {
+                attemptsPage = examAttemptRepository.findByExamIdAndViolationCountGreaterThan(examId, 0, pageable);
+            }
+        } else if (hasSearch && status != null) {
             String pattern = "%" + search.trim().toLowerCase() + "%";
             attemptsPage = examAttemptRepository.searchAttemptsByExamIdAndStatus(examId, status, pattern, pageable);
         } else if (hasSearch) {

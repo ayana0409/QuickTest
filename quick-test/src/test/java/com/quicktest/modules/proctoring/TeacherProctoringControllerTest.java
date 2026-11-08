@@ -90,12 +90,12 @@ class TeacherProctoringControllerTest {
                 PageResponse<AttemptMonitorResponse> pageResponse = PageResponse.from(
                                 new PageImpl<>(List.of(item), PageRequest.of(0, 10), 1));
 
-                when(proctoringService.getExamMonitoring(eq(examId), isNull(), isNull(), any(Pageable.class),
+                when(proctoringService.getExamMonitoring(eq(examId), isNull(), isNull(), isNull(), any(Pageable.class),
                                 eq(teacher)))
                                 .thenReturn(pageResponse);
 
                 var response = teacherProctoringController.getExamMonitoring(
-                                examId, null, null, PageRequest.of(0, 10), currentUser);
+                                examId, null, null, null, PageRequest.of(0, 10), currentUser);
 
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertNotNull(response.getBody());

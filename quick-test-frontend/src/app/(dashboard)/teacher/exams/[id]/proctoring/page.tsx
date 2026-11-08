@@ -22,6 +22,11 @@ import {
   Radio,
   BarChart3,
   FileEdit,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -37,6 +42,7 @@ import {
 import { ExamAttemptsTab } from '@/components/exam/ExamAttemptsTab';
 import { teacherProctoringService } from '@/services/teacherProctoring.service';
 import { examService } from '@/services/exam.service';
+import { gradingService, type ExamAttemptStatsDto } from '@/services/grading.service';
 import { ProctoringRealtimeManager } from '@/lib/realtime/ProctoringRealtimeManager';
 import type {
   AttemptMonitorItem,
@@ -124,8 +130,28 @@ export default function TeacherLiveProctoringPage() {
   const [candidates, setCandidates] = useState<AttemptMonitorItem[]>([]);
   const [loadingCandidates, setLoadingCandidates] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+  // Overall Exam Stats
+  const [examStats, setExamStats] = useState<ExamAttemptStatsDto | null>(null);
+
+  // Pagination & Sorting state
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [pageSize, setPageSize] = useState<number>(24);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalCandidates, setTotalCandidates] = useState<number>(0);
+  const [sortOption, setSortOption] = useState<string>('violationCount,desc');
+
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(0);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   // WebSocket & Live Feed state
   const [connectionStatus, setConnectionStatus] =
@@ -153,35 +179,54 @@ export default function TeacherLiveProctoringPage() {
     }
   }, [examId]);
 
+  // Fetch Aggregated Exam Statistics across all attempts
+  const fetchExamStats = useCallback(async () => {
+    if (!examId) return;
+    try {
+      const data = await gradingService.getExamAttemptStats(examId);
+      setExamStats(data);
+    } catch (err) {
+      console.error('Failed to load exam attempt stats:', err);
+    }
+  }, [examId]);
+
   // Fetch Monitoring Candidate List
   const fetchCandidates = useCallback(async () => {
     if (!examId) return;
     try {
       setLoadingCandidates(true);
+      const isViolation = statusFilter === 'VIOLATION';
       const apiStatus =
         statusFilter !== 'ALL' &&
-          statusFilter !== 'VIOLATION'
+        statusFilter !== 'VIOLATION' &&
+        statusFilter !== 'ONLINE'
           ? (statusFilter as AttemptStatus)
           : undefined;
 
       const response = await teacherProctoringService.getExamMonitoring(examId, {
         status: apiStatus,
-        search: searchQuery.trim() || undefined,
-        size: 100, // Fetch top 100 for live dashboard
+        hasViolation: isViolation ? true : undefined,
+        search: debouncedSearch || undefined,
+        page: currentPage,
+        size: pageSize,
+        sort: sortOption,
       });
 
       setCandidates(response.content || []);
+      setTotalPages(response.totalPages || 1);
+      setTotalCandidates(response.totalElements || 0);
     } catch (err) {
       console.error('Failed to fetch exam monitoring data:', err);
     } finally {
       setLoadingCandidates(false);
     }
-  }, [examId, statusFilter, searchQuery]);
+  }, [examId, statusFilter, debouncedSearch, currentPage, pageSize, sortOption]);
 
   // Initial load
   useEffect(() => {
     fetchExamDetail();
-  }, [fetchExamDetail]);
+    fetchExamStats();
+  }, [fetchExamDetail, fetchExamStats]);
 
   useEffect(() => {
     fetchCandidates();
@@ -347,8 +392,9 @@ export default function TeacherLiveProctoringPage() {
         )
       );
 
-      // Refresh list in background
+      // Refresh list and stats in background
       fetchCandidates();
+      fetchExamStats();
     } catch (err) {
       console.error('Failed to disqualify candidate:', err);
     } finally {
@@ -358,42 +404,28 @@ export default function TeacherLiveProctoringPage() {
 
   // Compute Statistics
   const stats: ProctoringStats = React.useMemo(() => {
-    const total = candidates.length;
-    let online = 0;
-    let inProgress = 0;
-    let withViolations = 0;
-    let disqualified = 0;
-    let submitted = 0;
+    // Priority: use aggregated database statistics from examStats for 100% accuracy across all candidates
+    const total = examStats?.totalAttempts ?? totalCandidates;
+    const submitted = examStats?.completedAttempts ?? 0;
+    const inProgress = examStats?.inProgressAttempts ?? 0;
+    const withViolations = examStats?.attemptsWithViolations ?? 0;
+    const disqualified = examStats?.disqualifiedAttempts ?? 0;
 
+    let online = 0;
     candidates.forEach((c) => {
       if (c.isOnline) online++;
-      if (c.status === 'IN_PROGRESS') inProgress++;
-      if (c.violationCount > 0) withViolations++;
-      if (c.status === 'DISQUALIFIED' || c.isDisqualified) disqualified++;
-      if (c.status === 'SUBMITTED' || c.status === 'COMPLETED') submitted++;
     });
 
     return { total, online, inProgress, withViolations, disqualified, submitted };
-  }, [candidates]);
+  }, [examStats, totalCandidates, candidates]);
 
-  // Filter candidates locally for responsive UI
+  // Filter candidates locally for ephemeral online state
   const filteredCandidates = React.useMemo(() => {
-    return candidates.filter((c) => {
-      // Search matching
-      if (searchQuery.trim()) {
-        const query = searchQuery.trim().toLowerCase();
-        const matchesName = c.candidateName?.toLowerCase().includes(query);
-        const matchesId = c.candidateIdentifier?.toLowerCase().includes(query);
-        if (!matchesName && !matchesId) return false;
-      }
-
-      // Status pill filter
-      if (statusFilter === 'ALL') return true;
-      if (statusFilter === 'VIOLATION') return c.violationCount > 0;
-      if (statusFilter === 'ONLINE') return c.isOnline;
-      return c.status === statusFilter;
-    });
-  }, [candidates, searchQuery, statusFilter]);
+    if (statusFilter === 'ONLINE') {
+      return candidates.filter((c) => c.isOnline);
+    }
+    return candidates;
+  }, [candidates, statusFilter]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -649,7 +681,7 @@ export default function TeacherLiveProctoringPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm..."
+                placeholder="Tìm kiếm theo tên hoặc mã thí sinh..."
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
             </div>
@@ -666,7 +698,10 @@ export default function TeacherLiveProctoringPage() {
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setStatusFilter(tab.id)}
+                  onClick={() => {
+                    setStatusFilter(tab.id);
+                    setCurrentPage(0);
+                  }}
                   className={cn(
                     'px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap',
                     statusFilter === tab.id
@@ -677,6 +712,23 @@ export default function TeacherLiveProctoringPage() {
                   {tab.label}
                 </button>
               ))}
+            </div>
+
+            {/* Sort Selector */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-200 dark:border-zinc-800">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Sắp xếp:</span>
+              <select
+                value={sortOption}
+                onChange={(e) => {
+                  setSortOption(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="px-2.5 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                <option value="violationCount,desc">Vi phạm: Nhiều nhất trước</option>
+                <option value="startTime,desc">Thời gian: Mới nhất trước</option>
+                <option value="startTime,asc">Thời gian: Cũ nhất trước</option>
+              </select>
             </div>
 
             {/* View Mode Toggle */}
@@ -730,6 +782,7 @@ export default function TeacherLiveProctoringPage() {
                 onClick={() => {
                   setSearchQuery('');
                   setStatusFilter('ALL');
+                  setCurrentPage(0);
                 }}
                 className="mt-4 rounded-xl"
               >
@@ -755,6 +808,117 @@ export default function TeacherLiveProctoringPage() {
               onInspect={(id) => setInspectAttemptId(id)}
               onDisqualify={(cand) => setDisqualifyCandidate(cand)}
             />
+          )}
+
+          {/* Pagination Controls */}
+          {totalCandidates > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-zinc-200/80 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400">
+              <div className="flex flex-wrap items-center gap-3">
+                <div>
+                  Đang hiển thị{' '}
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    {candidates.length > 0 ? currentPage * pageSize + 1 : 0}
+                  </span>{' '}
+                  -{' '}
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    {Math.min((currentPage + 1) * pageSize, totalCandidates)}
+                  </span>{' '}
+                  trong tổng số{' '}
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                    {totalCandidates.toLocaleString('vi-VN')}
+                  </span>{' '}
+                  thí sinh
+                </div>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">
+                  <span>Hiển thị:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(0);
+                    }}
+                    className="px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    <option value={12}>12 / trang</option>
+                    <option value={24}>24 / trang</option>
+                    <option value={48}>48 / trang</option>
+                    <option value={100}>100 / trang</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={currentPage === 0 || loadingCandidates}
+                  onClick={() => setCurrentPage(0)}
+                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-700 dark:text-zinc-300 transition-colors"
+                  title="Trang đầu"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage === 0 || loadingCandidates}
+                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-700 dark:text-zinc-300 transition-colors"
+                  title="Trang trước"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i)
+                    .filter((p) => {
+                      if (totalPages <= 7) return true;
+                      if (p === 0 || p === totalPages - 1) return true;
+                      return Math.abs(p - currentPage) <= 1;
+                    })
+                    .map((p, idx, arr) => {
+                      const showEllipsisBefore = idx > 0 && p - arr[idx - 1] > 1;
+                      return (
+                        <React.Fragment key={p}>
+                          {showEllipsisBefore && (
+                            <span className="px-1 text-zinc-400">...</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage(p)}
+                            className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              currentPage === p
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            }`}
+                          >
+                            {p + 1}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages - 1 || loadingCandidates}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-700 dark:text-zinc-300 transition-colors"
+                  title="Trang sau"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages - 1 || loadingCandidates}
+                  onClick={() => setCurrentPage(totalPages - 1)}
+                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-700 dark:text-zinc-300 transition-colors"
+                  title="Trang cuối"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

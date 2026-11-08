@@ -137,6 +137,7 @@ export interface DisqualifyAttemptRequest {
  */
 export interface ExamMonitoringParams {
   status?: AttemptStatus;
+  hasViolation?: boolean;
   search?: string;
   page?: number;
   size?: number;

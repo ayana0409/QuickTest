@@ -53,13 +53,14 @@ public class TeacherProctoringController {
     public ResponseEntity<ApiResponse<PageResponse<AttemptMonitorResponse>>> getExamMonitoring(
             @PathVariable("examId") UUID examId,
             @RequestParam(value = "status", required = false) AttemptStatus status,
+            @RequestParam(value = "hasViolation", required = false) Boolean hasViolation,
             @RequestParam(value = "search", required = false) String search,
-            @PageableDefault(size = 20, sort = "startTime", direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(size = 24, sort = { "violationCount", "startTime" }, direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal UserDetailsImpl currentUser) {
 
         User teacher = getAuthenticatedTeacher(currentUser);
         PageResponse<AttemptMonitorResponse> response = proctoringService.getExamMonitoring(
-                examId, status, search, pageable, teacher);
+                examId, status, hasViolation, search, pageable, teacher);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Monitoring list retrieved successfully"));
     }

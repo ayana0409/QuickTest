@@ -71,6 +71,9 @@ class ProctoringServiceTest {
         @Mock
         private com.quicktest.modules.session.service.ExamSubmissionProducer examSubmissionProducer;
 
+        @Mock
+        private com.quicktest.modules.proctoring.service.ProctoringQueryService proctoringQueryService;
+
         @InjectMocks
         private ProctoringServiceImpl proctoringService;
 
@@ -322,10 +325,9 @@ class ProctoringServiceTest {
                 when(valueOperations.get(contains("count"))).thenReturn("2");
                 when(stringRedisTemplate.hasKey(contains("heartbeat"))).thenReturn(true);
 
-                List<Object[]> grouped = Collections.singletonList(new Object[] { ViolationType.TAB_SWITCH, 2L });
-                when(violationLogRepository.countByViolationTypeGrouped(attemptId)).thenReturn(grouped);
-                when(violationLogRepository.findByExamAttemptIdOrderByTimestampDesc(attemptId))
-                                .thenReturn(Collections.emptyList());
+                ViolationLogResponse log1 = ViolationLogResponse.builder().violationType(ViolationType.TAB_SWITCH).build();
+                ViolationLogResponse log2 = ViolationLogResponse.builder().violationType(ViolationType.TAB_SWITCH).build();
+                when(proctoringQueryService.getAttemptViolationLogs(attemptId, teacher)).thenReturn(List.of(log1, log2));
 
                 AttemptRealtimeStatusResponse status = proctoringService.getAttemptRealtimeStatus(attemptId, teacher);
 
@@ -343,7 +345,7 @@ class ProctoringServiceTest {
                 when(examAttemptRepository.findByExamId(eq(examId), any(Pageable.class))).thenReturn(page);
 
                 PageResponse<AttemptMonitorResponse> result = proctoringService.getExamMonitoring(
-                                examId, null, null, PageRequest.of(0, 10), teacher);
+                                examId, null, null, null, PageRequest.of(0, 10), teacher);
 
                 assertNotNull(result);
                 assertEquals(1, result.getTotalElements());

@@ -28,6 +28,7 @@ public interface ProctoringService {
     PageResponse<AttemptMonitorResponse> getExamMonitoring(
             UUID examId,
             AttemptStatus status,
+            Boolean hasViolation,
             String search,
             Pageable pageable,
             User currentTeacher

@@ -94,6 +94,30 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
     Page<ExamAttempt> findByExamIdAndStatus(UUID examId, AttemptStatus status, Pageable pageable);
 
     /**
+     * Eagerly fetch ExamAttempt with User having violations greater than threshold.
+     */
+    @EntityGraph(attributePaths = {"user"})
+    Page<ExamAttempt> findByExamIdAndViolationCountGreaterThan(UUID examId, Integer minViolations, Pageable pageable);
+
+    /**
+     * Search exam attempts by candidate keyword with violations filter.
+     */
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT ea FROM ExamAttempt ea " +
+           "LEFT JOIN ea.user u " +
+           "WHERE ea.exam.id = :examId " +
+           "AND ea.violationCount > :minViolations " +
+           "AND (LOWER(ea.guestName) LIKE :pattern " +
+           "     OR LOWER(ea.guestIdentifier) LIKE :pattern " +
+           "     OR LOWER(u.fullName) LIKE :pattern " +
+           "     OR LOWER(u.email) LIKE :pattern)")
+    Page<ExamAttempt> searchAttemptsByExamIdAndViolations(
+            @Param("examId") UUID examId,
+            @Param("minViolations") Integer minViolations,
+            @Param("pattern") String pattern,
+            Pageable pageable);
+
+    /**
      * Search exam attempts by candidate keyword without status filter.
      * Uses @EntityGraph to eagerly fetch user and prevent N+1 queries.
      */

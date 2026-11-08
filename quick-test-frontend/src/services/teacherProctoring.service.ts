@@ -28,6 +28,9 @@ export const teacherProctoringService = {
     if (params?.status) {
       queryParams.status = params.status;
     }
+    if (typeof params?.hasViolation === 'boolean') {
+      queryParams.hasViolation = params.hasViolation ? 'true' : 'false';
+    }
     if (params?.search && params.search.trim()) {
       queryParams.search = params.search.trim();
     }
