@@ -64,7 +64,7 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
      */
     @Query(value = "SELECT new com.quicktest.modules.assessment.dto.ExamSummaryResponse(" +
             "e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, " +
-            "e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, " +
+            "e.isProctoringEnabled, e.isCameraProctoringEnabled, e.showResultsToStudents, e.maxViolations, " +
             "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.isPrivate, e.startTime, e.endTime, e.createdAt) " +
             "FROM Exam e LEFT JOIN e.questions q " +
             "WHERE e.createdBy.id = :teacherId " +
@@ -72,7 +72,7 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
             "AND (:status IS NULL OR e.status = :status) " +
             "AND (:pattern IS NULL OR LOWER(e.title) LIKE :pattern OR (e.accessCode IS NOT NULL AND LOWER(e.accessCode) LIKE :pattern)) "
             +
-            "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.isProctoringEnabled, e.showResultsToStudents, e.maxViolations, e.isPrivate, e.startTime, e.endTime, e.createdAt", countQuery = "SELECT COUNT(e) FROM Exam e "
+            "GROUP BY e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, e.isProctoringEnabled, e.isCameraProctoringEnabled, e.showResultsToStudents, e.maxViolations, e.isPrivate, e.startTime, e.endTime, e.createdAt", countQuery = "SELECT COUNT(e) FROM Exam e "
                     +
                     "WHERE e.createdBy.id = :teacherId " +
                     "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +

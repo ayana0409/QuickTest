@@ -1,5 +1,7 @@
 package com.quicktest.modules.proctoring.controller;
 
+import com.cloudinary.Cloudinary;
+import com.quicktest.config.CloudinaryProperties;
 import com.quicktest.core.common.ApiResponse;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.security.UserDetailsImpl;
@@ -41,6 +43,50 @@ public class ViolationIngestionController {
     private final RedisProctoringService redisProctoringService;
     private final RedisExamSessionService redisExamSessionService;
     private final ExamSubmissionProducer examSubmissionProducer;
+    private final Cloudinary cloudinary;
+    private final CloudinaryProperties cloudinaryProperties;
+
+    /**
+     * Generates a signed upload signature for direct evidence upload from candidate client to Cloudinary.
+     * Prevents exposing Cloudinary apiSecret to client.
+     */
+    @GetMapping("/{attemptId}/proctoring/upload-signature")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getUploadSignature(
+            @PathVariable("attemptId") UUID attemptId,
+            @AuthenticationPrincipal UserDetailsImpl currentUser) {
+
+        ExamAttempt attempt = examAttemptRepository.findByIdWithExamAndUser(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("ExamAttempt", "id", attemptId));
+
+        if (currentUser != null && attempt.getUser() != null
+                && !attempt.getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You are not authorized to request upload signature for this attempt");
+        }
+
+        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(400, "Phiên thi không còn ở trạng thái đang làm bài."));
+        }
+
+        long timestamp = System.currentTimeMillis() / 1000L;
+        String folder = "quick-test/proctoring/" + attemptId;
+
+        Map<String, Object> paramsToSign = new java.util.TreeMap<>();
+        paramsToSign.put("folder", folder);
+        paramsToSign.put("timestamp", timestamp);
+
+        String signature = cloudinary.apiSignRequest(paramsToSign, cloudinaryProperties.getApiSecret());
+
+        Map<String, Object> signatureData = Map.of(
+                "signature", signature,
+                "timestamp", timestamp,
+                "apiKey", cloudinaryProperties.getApiKey() != null ? cloudinaryProperties.getApiKey() : "",
+                "cloudName", cloudinaryProperties.getCloudName() != null ? cloudinaryProperties.getCloudName() : "",
+                "folder", folder
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(signatureData, "Upload signature generated successfully"));
+    }
 
     /**
      * Ingest candidate telemetry violation event (e.g. TAB_SWITCH, EXIT_FULLSCREEN, DEVTOOLS_OPEN).

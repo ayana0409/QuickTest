@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.2",
     "@stomp/stompjs": "^7.3.0",
     "axios": "^1.20.0",
     "clsx": "^2.1.1",

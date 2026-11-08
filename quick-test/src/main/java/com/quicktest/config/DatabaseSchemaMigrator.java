@@ -22,9 +22,11 @@ public class DatabaseSchemaMigrator implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         try {
             jdbcTemplate.execute("ALTER TABLE violation_logs DROP CONSTRAINT IF EXISTS violation_logs_violation_type_check");
-            log.info("Synchronized violation_logs_violation_type_check constraint in database.");
+            jdbcTemplate.execute("ALTER TABLE exams ADD COLUMN IF NOT EXISTS is_camera_proctoring_enabled BOOLEAN DEFAULT FALSE");
+            jdbcTemplate.execute("ALTER TABLE violation_logs ADD COLUMN IF NOT EXISTS evidence_url TEXT");
+            log.info("Synchronized database schema for proctoring and camera proctoring.");
         } catch (Exception ex) {
-            log.debug("Skipped violation_logs constraint migration (table may not exist yet): {}", ex.getMessage());
+            log.debug("Skipped schema migration check: {}", ex.getMessage());
         }
     }
 }

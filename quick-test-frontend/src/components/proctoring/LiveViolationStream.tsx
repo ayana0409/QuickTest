@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ShieldAlert,
   Clock,
@@ -10,9 +10,14 @@ import {
   Terminal,
   Copy,
   UserX,
+  Users,
+  Film,
+  Image as ImageIcon,
 } from 'lucide-react';
 import type { CandidateViolationEvent, ViolationType } from '@/types/proctoring';
 import { cn } from '@/lib/utils';
+import { Modal } from '@/components/common/Modal';
+import { EvidenceMediaViewer } from './EvidenceMediaViewer';
 
 interface LiveViolationStreamProps {
   events: CandidateViolationEvent[];
@@ -61,6 +66,18 @@ export function getViolationMeta(type: ViolationType) {
         icon: Copy,
         color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20',
       };
+    case 'NO_FACE_DETECTED':
+      return {
+        label: 'Không thấy mặt thí sinh',
+        icon: UserX,
+        color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
+      };
+    case 'MULTIPLE_FACES':
+      return {
+        label: 'Nhiều người trong camera',
+        icon: Users,
+        color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
+      };
     case 'TEACHER_DISQUALIFY':
       return {
         label: 'Giám thị đình chỉ',
@@ -84,6 +101,8 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
   onInspectCandidate,
   onClearStream,
 }) => {
+  const [selectedEvidenceEvent, setSelectedEvidenceEvent] = useState<CandidateViolationEvent | null>(null);
+
   if (events.length === 0) {
     return (
       <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-950/70 p-4">
@@ -184,18 +203,60 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
                   Số lần vi phạm: {evt.violationCount}
                 </span>
 
-                <button
-                  onClick={() => onInspectCandidate(evt.attemptId)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
-                >
-                  <span>Xem</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {evt.evidenceUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEvidenceEvent(evt)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                    >
+                      {evt.violationType === 'MULTIPLE_FACES' ? (
+                        <>
+                          <Film className="w-3 h-3" />
+                          <span>Xem video</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-3 h-3" />
+                          <span>Xem ảnh</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onInspectCandidate(evt.attemptId)}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+                  >
+                    <span>Xem</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Evidence Viewer Sub-Modal */}
+      {selectedEvidenceEvent && (
+        <Modal
+          isOpen={Boolean(selectedEvidenceEvent)}
+          onClose={() => setSelectedEvidenceEvent(null)}
+          title="Chi tiết vi phạm"
+          size="lg"
+        >
+          <div className="p-2">
+            <EvidenceMediaViewer
+              evidenceUrl={selectedEvidenceEvent.evidenceUrl}
+              violationType={selectedEvidenceEvent.violationType}
+              candidateName={selectedEvidenceEvent.candidateName}
+              timestamp={selectedEvidenceEvent.timestamp}
+              onClose={() => setSelectedEvidenceEvent(null)}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

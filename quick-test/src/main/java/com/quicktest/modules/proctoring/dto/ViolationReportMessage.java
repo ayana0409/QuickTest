@@ -26,5 +26,7 @@ public class ViolationReportMessage {
 
     private String description;
 
+    private String evidenceUrl;
+
     private String clientTimestamp;
 }

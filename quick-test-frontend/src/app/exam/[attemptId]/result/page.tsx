@@ -19,6 +19,7 @@ import {
 import { candidateSessionService } from '@/services/candidateSession.service';
 import { useAuthStore } from '@/stores/authStore';
 import type { SubmitResultResponse } from '@/types/exam';
+import { stopAllAppWebcams } from '@/lib/webcamManager';
 import { cn } from '@/lib/utils';
 
 interface ExamResultPageProps {
@@ -43,6 +44,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
 
   useEffect(() => {
     setMounted(true);
+    stopAllAppWebcams();
   }, []);
 
   useEffect(() => {
@@ -100,9 +102,14 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
     result?.status === 'COMPLETED' ||
     (result?.totalScore !== undefined && result?.totalScore !== null);
 
-  // Candidate is treated as guest if result flags isGuest or no authenticated student account is present
-  const isGuestCandidate =
-    result?.isGuest === true || (mounted ? !isAuthenticated || !user : false);
+  // Candidate is treated as a guest if result flags isGuest === true,
+  // or if there is no authenticated student user session
+  const isGuestCandidate = Boolean(
+    result?.isGuest === true ||
+    !isAuthenticated ||
+    !user ||
+    user?.role !== 'STUDENT'
+  );
 
   const formattedDate = result?.submittedAt
     ? new Date(result.submittedAt).toLocaleString('vi-VN', {
@@ -227,11 +234,9 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
                 <span className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400">
                   {result.totalScore}
                 </span>
-                {result.maxScore !== undefined && result.maxScore !== null && (
-                  <span className="text-xs sm:text-sm font-mono text-zinc-400">
-                    / {result.maxScore} điểm
-                  </span>
-                )}
+                <span className="text-xs sm:text-sm font-mono text-zinc-400">
+                  / {result.maxScore || 10} điểm
+                </span>
               </div>
             </div>
           ) : (
@@ -253,12 +258,12 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
                   href="/"
                   className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 active:scale-[0.99] text-white font-semibold text-sm sm:text-base shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 transition-all flex items-center justify-center gap-2 cursor-pointer group"
                 >
-                  <Home className="w-4 h-4 text-indigo-200" />
+                  <Home className="w-5 h-5 text-indigo-200" />
                   <span>Về trang chủ</span>
                   <ArrowRight className="w-4 h-4 ml-0.5 transition-transform group-hover:translate-x-1" />
                 </Link>
-                <p className="text-[11px] sm:text-xs text-zinc-500 text-center">
-                  Dữ liệu làm bài đã được ghi nhận trên hệ thống.
+                <p className="text-xs text-zinc-400 text-center">
+                  Cảm ơn bạn đã tham gia bài thi. Kết quả làm bài đã được ghi nhận trên hệ thống.
                 </p>
               </div>
             ) : (

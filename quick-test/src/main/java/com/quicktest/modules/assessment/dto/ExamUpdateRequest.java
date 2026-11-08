@@ -41,6 +41,8 @@ public class ExamUpdateRequest {
 
     private Boolean isProctoringEnabled;
 
+    private Boolean isCameraProctoringEnabled;
+
     private Boolean showResultsToStudents;
 
     @Min(value = 1, message = "Max violations must be at least 1")

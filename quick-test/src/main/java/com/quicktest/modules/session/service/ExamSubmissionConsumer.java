@@ -217,19 +217,37 @@ public class ExamSubmissionConsumer {
             }
 
             // 5. Cache final result in Redis for instant client polling
+            double maxScore = questions.stream()
+                    .mapToDouble(q -> q.getPoints() != null ? q.getPoints() : 0.0)
+                    .sum();
+            if (maxScore <= 0.0) {
+                maxScore = 10.0;
+            }
+
+            boolean showResults = message.getShowResultsToStudents() == null || message.getShowResultsToStudents();
+
+            String submitMessage;
+            if (finalStatus == AttemptStatus.DISQUALIFIED) {
+                submitMessage = "Bài thi đã bị đình chỉ do vi phạm quy chế thi.";
+            } else if (!showResults) {
+                submitMessage = "Bài thi đã được nộp thành công. Điểm số và đáp án chi tiết không được giáo viên công bố.";
+            } else if (hasPendingManualGrading) {
+                submitMessage = "Bài thi đã nộp thành công và đang chờ giáo viên chấm phần tự luận.";
+            } else {
+                submitMessage = "Bài thi đã được nộp và hoàn tất chấm điểm tự động.";
+            }
+
             SubmitResultResponse resultResponse = SubmitResultResponse.builder()
                     .attemptId(attemptId)
                     .examTitle(message.getExamTitle())
                     .status(finalStatus)
-                    .totalScore(finalScore)
+                    .totalScore(showResults ? finalScore : null)
+                    .maxScore(showResults ? maxScore : null)
+                    .showResultsToStudents(showResults)
                     .submitTime(submitTime)
                     .isGuest(message.getUserId() == null)
                     .candidateName(message.getCandidateName())
-                    .message(finalStatus == AttemptStatus.DISQUALIFIED
-                            ? "Bài thi đã bị đình chỉ do vi phạm quy chế thi."
-                            : (hasPendingManualGrading
-                                    ? "Bài thi đã nộp thành công và đang chờ giáo viên chấm phần tự luận."
-                                    : "Bài thi đã được nộp và hoàn tất chấm điểm tự động."))
+                    .message(submitMessage)
                     .build();
 
             redisExamSessionService.cacheSubmissionResult(attemptId, resultResponse, 60L);
@@ -316,6 +334,7 @@ public class ExamSubmissionConsumer {
                             .examAttempt(ExamAttempt.builder().id(attemptId).build())
                             .violationType(dto.getViolationType())
                             .description(dto.getDescription())
+                            .evidenceUrl(dto.getEvidenceUrl())
                             .timestamp(dto.getTimestamp() != null ? dto.getTimestamp() : LocalDateTime.now())
                             .build());
                 } catch (Exception ex) {

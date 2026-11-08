@@ -3,7 +3,6 @@ package com.quicktest.modules.assessment.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.ExamStatus;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +16,6 @@ import java.util.UUID;
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class ExamSummaryResponse {
 
     private UUID id;
@@ -27,6 +25,7 @@ public class ExamSummaryResponse {
     private Integer durationMinutes;
     private Integer maxAttempts;
     private Boolean isProctoringEnabled;
+    private Boolean isCameraProctoringEnabled;
     private Boolean showResultsToStudents;
     private Integer maxViolations;
     private Long totalQuestions;
@@ -41,6 +40,66 @@ public class ExamSummaryResponse {
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+
+    /**
+     * Primary all-arguments constructor matching all 16 fields.
+     */
+    public ExamSummaryResponse(
+            UUID id,
+            String title,
+            String accessCode,
+            ExamStatus status,
+            Integer durationMinutes,
+            Integer maxAttempts,
+            Boolean isProctoringEnabled,
+            Boolean isCameraProctoringEnabled,
+            Boolean showResultsToStudents,
+            Integer maxViolations,
+            Long totalQuestions,
+            Double totalPoints,
+            Boolean isPrivate,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            LocalDateTime createdAt) {
+        this.id = id;
+        this.title = title;
+        this.accessCode = accessCode;
+        this.status = status;
+        this.durationMinutes = durationMinutes;
+        this.maxAttempts = maxAttempts;
+        this.isProctoringEnabled = isProctoringEnabled;
+        this.isCameraProctoringEnabled = isCameraProctoringEnabled;
+        this.showResultsToStudents = showResultsToStudents;
+        this.maxViolations = maxViolations;
+        this.totalQuestions = totalQuestions;
+        this.totalPoints = totalPoints;
+        this.isPrivate = isPrivate;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.createdAt = createdAt;
+    }
+
+    /**
+     * JPQL Constructor expression without isCameraProctoringEnabled (defaults isCameraProctoringEnabled to false).
+     */
+    public ExamSummaryResponse(
+            UUID id,
+            String title,
+            String accessCode,
+            ExamStatus status,
+            Integer durationMinutes,
+            Integer maxAttempts,
+            Boolean isProctoringEnabled,
+            Boolean showResultsToStudents,
+            Integer maxViolations,
+            Long totalQuestions,
+            Double totalPoints,
+            Boolean isPrivate,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            LocalDateTime createdAt) {
+        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, false, showResultsToStudents, maxViolations, totalQuestions, totalPoints, isPrivate != null ? isPrivate : true, startTime, endTime, createdAt);
+    }
 
     /**
      * Backward-compatible Constructor expression without isPrivate (defaults isPrivate to true).
@@ -60,7 +119,7 @@ public class ExamSummaryResponse {
             LocalDateTime startTime,
             LocalDateTime endTime,
             LocalDateTime createdAt) {
-        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, showResultsToStudents, maxViolations, totalQuestions, totalPoints, true, startTime, endTime, createdAt);
+        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, false, showResultsToStudents, maxViolations, totalQuestions, totalPoints, true, startTime, endTime, createdAt);
     }
 
     /**
@@ -80,13 +139,16 @@ public class ExamSummaryResponse {
             LocalDateTime startTime,
             LocalDateTime endTime,
             LocalDateTime createdAt) {
-        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, true, maxViolations, totalQuestions, totalPoints, true, startTime, endTime, createdAt);
+        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, false, true, maxViolations, totalQuestions, totalPoints, true, startTime, endTime, createdAt);
     }
 
     /**
      * Factory method creating DTO directly from an Exam entity.
      */
     public static ExamSummaryResponse fromEntity(Exam exam, long totalQuestions, double totalPoints) {
+        if (exam == null) {
+            return null;
+        }
         return ExamSummaryResponse.builder()
                 .id(exam.getId())
                 .title(exam.getTitle())
@@ -95,6 +157,7 @@ public class ExamSummaryResponse {
                 .durationMinutes(exam.getDurationMinutes())
                 .maxAttempts(exam.getMaxAttempts())
                 .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .isCameraProctoringEnabled(exam.getIsCameraProctoringEnabled())
                 .showResultsToStudents(exam.getShowResultsToStudents())
                 .maxViolations(exam.getMaxViolations())
                 .totalQuestions(totalQuestions)

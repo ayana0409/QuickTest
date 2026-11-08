@@ -16,6 +16,9 @@ import {
 import { useExamStore, type CandidateAnswerState } from '@/stores/examStore';
 import { candidateSessionService } from '@/services/candidateSession.service';
 import { ProctoringShield } from '@/components/exam/ProctoringShield';
+import { CameraProctoringMonitor } from '@/components/exam/CameraProctoringMonitor';
+import { stopAllAppWebcams } from '@/lib/webcamManager';
+import { exitFullscreenSafely, isExitingFullscreenSafely } from '@/lib/fullscreenManager';
 import { ExamTopBar } from '@/components/exam/ExamTopBar';
 import { QuestionNavigator } from '@/components/exam/QuestionNavigator';
 import { QuestionCard } from '@/components/exam/QuestionCard';
@@ -121,6 +124,9 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState<string>('');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+
+  // Camera Proctoring Gate State: Candidate must pass camera verification before proctoring & timer start
+  const [isCameraReady, setIsCameraReady] = useState(false);
 
   // Proctoring Settings State (controlled dynamically by teacher/exam configuration)
   const [proctoringSettings, setProctoringSettings] = useState<ProctoringSettings>({
@@ -359,10 +365,9 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
       } finally {
         if (isMounted) {
           setIsLoadingPaper(false);
-          // Show initial fullscreen prompt if not in fullscreen
-          if (!document.fullscreenElement) {
-            setShowFullscreenPrompt(true);
-          }
+          // Never trigger initial fullscreen popup prompt.
+          // Fullscreen is automatically and mandatorily engaged upon exam entry.
+          setShowFullscreenPrompt(false);
         }
       }
     };
@@ -377,16 +382,88 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     };
   }, [attemptId, initExam, loadSavedAnswers]);
 
-  // 2. Fullscreen Change Tracker & Mandatory Enforcement
+  const isCameraRequired = Boolean(
+    examPaper?.isProctoringEnabled && examPaper?.isCameraProctoringEnabled
+  );
+
+  // Exam is actively in-progress ONLY when:
+  // 1. Paper is loaded
+  // 2. Not disqualified
+  // 3. Not submitting (submission in progress or finalized)
+  // 4. Guest re-auth modal is closed
+  // 5. Camera gate is passed (if camera proctoring enabled)
+  const isExamActive =
+    !isLoadingPaper &&
+    !isDisqualified &&
+    !isSubmitting &&
+    !showGuestModal &&
+    (!isCameraRequired || isCameraReady);
+
+  // Instantly terminate all active webcam hardware tracks on the page to turn off the physical camera LED
+  const stopAllWebcamHardwareTracks = () => {
+    try {
+      stopAllAppWebcams();
+      if (typeof document !== 'undefined') {
+        const videoElements = document.querySelectorAll('video');
+        videoElements.forEach((vid) => {
+          try {
+            vid.pause();
+            if (vid.srcObject && vid.srcObject instanceof MediaStream) {
+              vid.srcObject.getTracks().forEach((track) => {
+                track.stop();
+                track.enabled = false;
+              });
+              vid.srcObject = null;
+            }
+          } catch {}
+        });
+      }
+    } catch (err) {
+      console.warn('[ExamRunner] Error stopping camera tracks:', err);
+    }
+  };
+
+  // Stop camera tracks and exit fullscreen on component unmount
+  useEffect(() => {
+    return () => {
+      stopAllWebcamHardwareTracks();
+      exitFullscreenSafely().catch(() => {});
+    };
+  }, []);
+
+  // When candidate is disqualified, instantly cut camera hardware and exit fullscreen
+  useEffect(() => {
+    if (isDisqualified) {
+      stopAllWebcamHardwareTracks();
+      exitFullscreenSafely().catch(() => {});
+    }
+  }, [isDisqualified]);
+
+  // 2. Fullscreen Change Tracker & Mandatory Enforcement (During active exam)
   useEffect(() => {
     const handleFullscreenChange = () => {
       const activeFs = Boolean(document.fullscreenElement);
       setIsFullscreen(activeFs);
+
+      // If candidate is already in fullscreen, NEVER prompt!
+      if (activeFs) {
+        setShowFullscreenPrompt(false);
+        return;
+      }
+
+      // If exit fullscreen was intentional (programmatic submission or cleanup), NEVER prompt!
+      if (isExitingFullscreenSafely() || isSubmitting) {
+        setShowFullscreenPrompt(false);
+        return;
+      }
+
+      // ONLY prompt if candidate deliberately exited fullscreen while exam is actively running!
       if (
-        !activeFs &&
         proctoringSettings.enabled &&
         proctoringSettings.detectFullscreenExit &&
-        !isDisqualified
+        !isDisqualified &&
+        !isSubmitting &&
+        isExamActive
       ) {
         setShowFullscreenPrompt(true);
       }
@@ -396,7 +473,24 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [proctoringSettings.enabled, proctoringSettings.detectFullscreenExit, isDisqualified]);
+  }, [
+    proctoringSettings.enabled,
+    proctoringSettings.detectFullscreenExit,
+    isDisqualified,
+    isExamActive,
+  ]);
+
+  // Seamlessly ensure fullscreen on candidate interaction if proctoring is enabled
+  const ensureFullscreenIfProctoring = useCallback(() => {
+    if (
+      proctoringSettings.enabled &&
+      typeof document !== 'undefined' &&
+      !document.fullscreenElement &&
+      typeof document.documentElement?.requestFullscreen === 'function'
+    ) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }, [proctoringSettings.enabled]);
 
   const handleEnterFullscreen = async () => {
     try {
@@ -426,20 +520,24 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     }
   };
 
-  // 3. Countdown Timer (1 second interval)
+  // 3. Countdown Timer (1 second interval) - only ticks down when exam is actively running
   useEffect(() => {
-    if (isLoadingPaper || remainingSeconds <= 0 || isDisqualified) return;
+    if (!isExamActive || remainingSeconds <= 0) return;
 
     const timerId = setInterval(() => {
       decrementTimer();
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [isLoadingPaper, remainingSeconds, isDisqualified, decrementTimer]);
+  }, [isExamActive, remainingSeconds, decrementTimer]);
 
   // 4. Auto-submit when countdown hits zero
   const handleAutoSubmitOnExpire = useCallback(async () => {
     if (isSubmitting || isDisqualified) return;
+
+    // Immediately stop webcam hardware tracks and exit fullscreen mode
+    stopAllWebcamHardwareTracks();
+    await exitFullscreenSafely();
 
     const activeAttemptId = examPaper?.attemptId || attemptId;
     setSubmitting(true);
@@ -457,6 +555,8 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   const handleExamClosed = useCallback(
     async (reasonMessage?: string) => {
       if (isSubmitting || isDisqualified) return;
+      stopAllWebcamHardwareTracks();
+      await exitFullscreenSafely();
       toast.error(
         reasonMessage || 'Đề thi đã đóng! Hệ thống đang tự động thu bài...',
         { id: 'exam-closed-toast', duration: 4000, icon: '🛑' }
@@ -580,6 +680,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   // Question Answer Handlers
   const handleOptionSelect = (optionId: string, isMultiple: boolean) => {
     if (!examPaper) return;
+    ensureFullscreenIfProctoring();
     const currentQuestion = examPaper.questions[currentQuestionIndex];
     if (!currentQuestion) return;
 
@@ -604,6 +705,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
 
   const handleTextChange = (text: string) => {
     if (!examPaper) return;
+    ensureFullscreenIfProctoring();
     const currentQuestion = examPaper.questions[currentQuestionIndex];
     if (!currentQuestion) return;
 
@@ -617,9 +719,37 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
 
   // 6. Proctoring Violation & Alert Handlers
   const handleClientViolation = (type: ViolationType, description: string) => {
+    // Suppress intrusive popup modal for multi-screen (handled by persistent top banner only)
+    if (type === 'MULTI_SCREEN_DETECTED') {
+      return;
+    }
+
     // Show warning modal on any client-side detected attempt
     setWarningMessage(description);
     setWarningModalOpen(true);
+  };
+
+  const handleCameraViolation = async (
+    type: ViolationType,
+    description: string,
+    evidenceUrl?: string
+  ) => {
+    const activeAttemptId = examPaper?.attemptId || attemptId;
+    try {
+      const alert = await candidateSessionService.reportViolation(activeAttemptId, {
+        violationType: type,
+        description,
+        evidenceUrl,
+      });
+      if (alert) {
+        handleServerAlert(alert);
+      } else {
+        handleClientViolation(type, description);
+      }
+    } catch (err) {
+      console.error('[ExamRunner] Failed to report camera violation:', err);
+      handleClientViolation(type, description);
+    }
   };
 
   const handleServerAlert = (alert: ViolationAlertResponse) => {
@@ -627,7 +757,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
 
     if (alert.disqualified) {
       setWarningModalOpen(false);
-    } else {
+    } else if (alert.violationType !== 'MULTI_SCREEN_DETECTED') {
       setWarningMessage(alert.message || 'Cảnh báo vi phạm quy chế phòng thi.');
       setWarningModalOpen(true);
     }
@@ -640,6 +770,11 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
 
   const handleConfirmSubmit = async () => {
     setIsSubmitModalOpen(false);
+
+    // Immediately stop webcam hardware tracks and exit fullscreen mode BEFORE updating state
+    stopAllWebcamHardwareTracks();
+    await exitFullscreenSafely();
+
     setSubmitting(true);
 
     const activeAttemptId = examPaper?.attemptId || attemptId;
@@ -726,7 +861,8 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
       examId={examPaper?.examId}
       realtimeToken={examPaper?.realtimeToken}
       realtimeWsUrl={examPaper?.realtimeWsUrl}
-      isExamActive={!isDisqualified}
+      isExamActive={isExamActive}
+      isSubmitting={isSubmitting}
       settings={proctoringSettings}
       onViolation={handleClientViolation}
       onServerAlert={handleServerAlert}
@@ -865,28 +1001,24 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           </div>
         )}
 
-        {/* Mandatory / Initial Fullscreen Prompt Modal */}
-        {showFullscreenPrompt && !isDisqualified && (
+        {/* Mandatory Fullscreen Re-entry Prompt (Only when candidate exited fullscreen during active exam) */}
+        {showFullscreenPrompt && !isDisqualified && !isFullscreen && isExamActive && (
           <div
             role="dialog"
             aria-modal="true"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-2xl p-4 select-none animate-in fade-in"
           >
             <div className="relative w-full max-w-md rounded-2xl bg-[#161B22] border border-[#30363D] shadow-2xl p-6 sm:p-8 text-center text-zinc-100">
-              <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
                 <Maximize2 className="w-7 h-7" />
               </div>
 
               <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
-                {proctoringSettings.enabled
-                  ? 'Yêu cầu chế độ Toàn màn hình'
-                  : 'Chế độ Toàn màn hình'}
+                Bạn đã thoát chế độ Toàn màn hình
               </h2>
 
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6 font-normal">
-                {proctoringSettings.enabled
-                  ? 'Bài thi này yêu cầu làm ở chế độ Toàn màn hình để bảo đảm sự tập trung và tuân thủ quy chế phòng thi.'
-                  : 'Để tập trung làm bài thi tốt nhất, bạn nên bật chế độ toàn màn hình.'}
+                Quy chế thi bắt buộc phải làm bài ở chế độ Toàn màn hình để bảo đảm sự tập trung và tuân thủ quy chế phòng thi. Vui lòng quay lại toàn màn hình để tiếp tục làm bài.
               </p>
 
               <button
@@ -895,18 +1027,8 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
                 className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Maximize2 className="w-4 h-4" />
-                Bật toàn màn hình để làm bài
+                Quay lại Toàn màn hình
               </button>
-
-              {!proctoringSettings.enabled && (
-                <button
-                  type="button"
-                  onClick={() => setShowFullscreenPrompt(false)}
-                  className="mt-3 text-xs text-zinc-400 hover:text-zinc-200 transition-colors py-1 cursor-pointer"
-                >
-                  Bỏ qua (tiếp tục ở chế độ cửa sổ)
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -924,7 +1046,10 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         <ExamDisqualifiedOverlay
           isOpen={isDisqualified}
           reason="Bạn đã vi phạm quy chế thi quá số lần quy định hoặc giám thị đã yêu cầu dừng bài thi."
-          onExit={() => router.push('/')}
+          onExit={async () => {
+            await exitFullscreenSafely();
+            router.push('/');
+          }}
         />
 
         {/* Submit Confirmation Modal */}
@@ -947,6 +1072,21 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           onConfirm={handleGuestInfoConfirm}
           onCancel={() => router.push('/exam')}
         />
+
+        {/* Camera Proctoring Monitor & Mandatory Gate */}
+        {isCameraRequired && !isDisqualified && !isSubmitting && (
+          <CameraProctoringMonitor
+            attemptId={examPaper?.attemptId || attemptId}
+            isCameraProctoringEnabled={Boolean(examPaper?.isCameraProctoringEnabled)}
+            isTerminated={isDisqualified || isSubmitting}
+            onViolation={handleCameraViolation}
+            onCameraGatePassed={() => {
+              setIsCameraReady(true);
+              setShowFullscreenPrompt(false);
+            }}
+            onCameraReadyChange={setIsCameraReady}
+          />
+        )}
       </div>
     </ProctoringShield>
   );

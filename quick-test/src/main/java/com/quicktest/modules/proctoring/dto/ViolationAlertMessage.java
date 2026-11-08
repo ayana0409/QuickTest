@@ -25,6 +25,7 @@ public class ViolationAlertMessage {
     private Integer maxAllowed;
     private Integer remainingAllowed;
     private Boolean disqualified;
+    private String evidenceUrl;
     private String message;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

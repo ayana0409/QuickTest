@@ -26,6 +26,9 @@ public class SubmitResultResponse {
     // Total score is populated immediately if all questions are auto-graded
     private Double totalScore;
 
+    // Maximum possible score for the exam
+    private Double maxScore;
+
     private Boolean showResultsToStudents;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

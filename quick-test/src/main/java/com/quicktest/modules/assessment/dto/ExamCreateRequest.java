@@ -54,6 +54,9 @@ public class ExamCreateRequest {
     private Boolean isProctoringEnabled = false;
 
     @Builder.Default
+    private Boolean isCameraProctoringEnabled = false;
+
+    @Builder.Default
     private Boolean showResultsToStudents = true;
 
     @Builder.Default

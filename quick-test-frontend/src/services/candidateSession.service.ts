@@ -8,7 +8,7 @@ import type {
   SubmitResultResponse,
 } from '@/types/exam';
 import type { SaveAnswerRequest } from '@/types/candidateAnswer';
-import type { ViolationAlertResponse } from '@/types/proctoring';
+import type { ViolationAlertResponse, CloudinaryUploadSignatureResponse } from '@/types/proctoring';
 
 /**
  * Service handling Candidate Exam Session operations matching Spring Boot ExamSessionController:
@@ -117,6 +117,7 @@ export const candidateSessionService = {
       attemptId?: string;
       violationType: string;
       description?: string;
+      evidenceUrl?: string;
       clientTimestamp?: string;
       timestamp?: string;
     }
@@ -125,6 +126,7 @@ export const candidateSessionService = {
       attemptId,
       violationType: payload.violationType,
       description: payload.description,
+      evidenceUrl: payload.evidenceUrl,
       clientTimestamp: payload.clientTimestamp || payload.timestamp || new Date().toISOString(),
     };
 
@@ -138,6 +140,54 @@ export const candidateSessionService = {
       }
     );
     return response.data?.data;
+  },
+
+  /**
+   * Request upload signature from backend for uploading evidence directly to Cloudinary.
+   */
+  async getUploadSignature(attemptId: string): Promise<CloudinaryUploadSignatureResponse> {
+    const response = await apiClient.get<ApiResponse<CloudinaryUploadSignatureResponse>>(
+      `/session/${attemptId}/proctoring/upload-signature`,
+      {
+        silent: true,
+        showSuccessToast: false,
+        showErrorToast: false,
+      }
+    );
+    if (!response.data?.data) {
+      throw new Error('Failed to obtain upload signature');
+    }
+    return response.data.data;
+  },
+
+  /**
+   * Upload evidence image directly to Cloudinary using signed parameters.
+   */
+  async uploadEvidenceToCloudinary(
+    signatureInfo: CloudinaryUploadSignatureResponse,
+    fileBlob: Blob,
+    filename: string = 'evidence.webp'
+  ): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', fileBlob, filename);
+    formData.append('api_key', signatureInfo.apiKey);
+    formData.append('timestamp', signatureInfo.timestamp.toString());
+    formData.append('signature', signatureInfo.signature);
+    formData.append('folder', signatureInfo.folder);
+
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${signatureInfo.cloudName}/image/upload`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Cloudinary direct upload failed (${res.status}): ${errText}`);
+    }
+
+    const json = await res.json();
+    return json.secure_url || json.url;
   },
 
   /**

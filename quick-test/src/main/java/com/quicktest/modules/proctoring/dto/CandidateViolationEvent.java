@@ -26,6 +26,7 @@ public class CandidateViolationEvent {
     private ViolationType violationType;
     private Integer violationCount;
     private String description;
+    private String evidenceUrl;
     private Boolean disqualified;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

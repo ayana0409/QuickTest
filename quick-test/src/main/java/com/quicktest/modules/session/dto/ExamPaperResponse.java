@@ -26,6 +26,7 @@ public class ExamPaperResponse {
     private Integer durationMinutes;
     private Integer totalQuestions;
     private Boolean isProctoringEnabled;
+    private Boolean isCameraProctoringEnabled;
     private Integer maxViolations;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

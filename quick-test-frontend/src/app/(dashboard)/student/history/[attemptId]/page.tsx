@@ -13,11 +13,15 @@ import {
   Calendar,
   RefreshCw,
   Lock,
+  Film,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { studentService } from '@/services/student.service';
-import type { StudentAttemptDetailResponse } from '@/types/exam';
+import type { StudentAttemptDetailResponse, StudentViolationItemDto } from '@/types/exam';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
+import { Modal } from '@/components/common/Modal';
+import { EvidenceMediaViewer } from '@/components/proctoring/EvidenceMediaViewer';
 
 interface PageProps {
   params: Promise<{ attemptId: string }>;
@@ -79,6 +83,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
   const [data, setData] = useState<StudentAttemptDetailResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedEvidence, setSelectedEvidence] = useState<StudentViolationItemDto | null>(null);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT' | 'ESSAY'>('ALL');
 
   useEffect(() => {
@@ -376,6 +381,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                     <th className="py-2.5 px-3">Thời gian</th>
                     <th className="py-2.5 px-3">Loại vi phạm</th>
                     <th className="py-2.5 px-3">Chi tiết cảnh báo</th>
+                    <th className="py-2.5 px-3 text-right">Bằng chứng</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -391,6 +397,29 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
                       </td>
                       <td className="py-2.5 px-3 text-zinc-700 dark:text-zinc-300">
                         {v.description}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {v.evidenceUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEvidence(v)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 transition-colors cursor-pointer"
+                          >
+                            {v.violationType === 'MULTIPLE_FACES' ? (
+                              <>
+                                <Film className="w-3.5 h-3.5 text-rose-500" />
+                                <span>Xem video</span>
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                                <span>Xem ảnh</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-zinc-400 text-[11px]">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -611,6 +640,26 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
           )}
         </div>
       </div>
+
+      {/* Evidence Viewer Sub-Modal */}
+      {selectedEvidence && (
+        <Modal
+          isOpen={Boolean(selectedEvidence)}
+          onClose={() => setSelectedEvidence(null)}
+          title="Bằng chứng vi phạm camera"
+          size="lg"
+        >
+          <div className="p-2">
+            <EvidenceMediaViewer
+              evidenceUrl={selectedEvidence.evidenceUrl}
+              violationType={selectedEvidence.violationType}
+              candidateName={data?.accessCode}
+              timestamp={selectedEvidence.timestamp}
+              onClose={() => setSelectedEvidence(null)}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

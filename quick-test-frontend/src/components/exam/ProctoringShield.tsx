@@ -24,6 +24,7 @@ import type {
   ProctoringEvent,
 } from '@/types/proctoring';
 import { DEFAULT_PROCTORING_SETTINGS } from '@/types/proctoring';
+import { isExitingFullscreenSafely } from '@/lib/fullscreenManager';
 import { cn } from '@/lib/utils';
 
 const isUUID = (str: string) =>
@@ -42,6 +43,7 @@ interface ProctoringShieldProps {
   onExamClosed?: (message?: string) => void;
   onSessionEvicted?: (message?: string) => void;
   isExamActive?: boolean;
+  isSubmitting?: boolean;
   settings?: ProctoringSettings;
 }
 
@@ -66,6 +68,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   onExamClosed,
   onSessionEvicted,
   isExamActive = true,
+  isSubmitting = false,
   settings = DEFAULT_PROCTORING_SETTINGS,
 }) => {
   const onViolationRef = useRef(onViolation);
@@ -96,12 +99,30 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   const hasReportedTabSwitchInEpisodeRef = useRef(false);
   const hasReportedMultiScreenRef = useRef(false);
   const blurCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isGracePeriodActiveRef = useRef(true);
 
   useEffect(() => {
     focusLossCountRef.current = focusLossCount;
   }, [focusLossCount]);
 
-  const isMasterEnabled = isExamActive && settings.enabled && !isSessionEvicted;
+  const isMasterEnabled = isExamActive && !isSubmitting && settings.enabled && !isSessionEvicted;
+
+  // Initial activation grace period (1.5 seconds) to allow DOM, fullscreen, and window focus to stabilize
+  useEffect(() => {
+    if (!isMasterEnabled) {
+      isGracePeriodActiveRef.current = true;
+      setIsFocusLostShieldOpen(false);
+      isInBlurEpisodeRef.current = false;
+      hasReportedTabSwitchInEpisodeRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      isGracePeriodActiveRef.current = false;
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [isMasterEnabled]);
 
   // Keep latest callback references
   useEffect(() => {
@@ -126,7 +147,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   // Dispatch violation telemetry to REST API (Redis in-RAM buffer) with STOMP fallback
   const reportViolation = useCallback(
     (type: ViolationType, description: string) => {
-      if (!isMasterEnabled || isSessionEvicted || isNetworkOffline) return;
+      if (!isMasterEnabled || isSessionEvicted || isNetworkOffline || isSubmitting || isExitingFullscreenSafely()) return;
 
       const payload: ViolationTelemetryMessage = {
         attemptId,
@@ -330,7 +351,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
 
   // 3. Tab Visibility, Window Focus, 1-Second hasFocus() Polling & Multi-Screen Detection
   const registerWindowBlurStrike = useCallback(() => {
-    if (!isMasterEnabled || isSessionEvicted || isNetworkOffline) return;
+    if (!isMasterEnabled || isSessionEvicted || isNetworkOffline || isGracePeriodActiveRef.current) return;
 
     const nextCount = focusLossCountRef.current + 1;
     focusLossCountRef.current = nextCount;
@@ -346,19 +367,22 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
 
     // Every 3 focus losses counts as 1 official WINDOW_BLUR violation
     if (nextCount % 3 === 0) {
+      // Reached 3/3 reminders: DO NOT show focus lost shield, trigger official violation alert directly
+      setIsFocusLostShieldOpen(false);
+      isInBlurEpisodeRef.current = false;
       reportViolation(
         'WINDOW_BLUR',
-        `Rời khỏi cửa sổ bài thi ${nextCount} lần.`
+        `Rời khỏi cửa sổ bài thi (${nextCount} lần).`
       );
+    } else {
+      // 1/3 or 2/3 reminders: Show focus lost shield to alert candidate
+      setIsFocusLostShieldOpen(true);
     }
   }, [attemptId, isMasterEnabled, isNetworkOffline, isSessionEvicted, reportViolation]);
 
   const triggerFocusLossEpisode = useCallback(
     (reason: 'TAB_HIDDEN' | 'WINDOW_BLUR' | 'POLL_HAS_FOCUS') => {
-      if (!isMasterEnabled || isSessionEvicted || isNetworkOffline) return;
-
-      // Immediately activate the anti-cheat shield to cover the exam paper
-      setIsFocusLostShieldOpen(true);
+      if (!isMasterEnabled || isSessionEvicted || isNetworkOffline || isGracePeriodActiveRef.current) return;
 
       if (reason === 'TAB_HIDDEN') {
         if (!hasReportedTabSwitchInEpisodeRef.current) {
@@ -368,6 +392,8 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             clearTimeout(blurCheckTimerRef.current);
             blurCheckTimerRef.current = null;
           }
+          // Direct violation: do not show focus lost reminder shield
+          setIsFocusLostShieldOpen(false);
           reportViolation(
             'TAB_SWITCH',
             'Chuyển sang tab khác hoặc thu nhỏ cửa sổ trình duyệt.'
@@ -376,7 +402,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         return;
       }
 
-      // If already in a blur episode, ignore duplicate blur/poll events until user clicks Resume
+      // If already in a blur episode, ignore duplicate blur/poll events until user resumes
       if (isInBlurEpisodeRef.current) {
         return;
       }
@@ -392,6 +418,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         if (typeof document !== 'undefined' && document.hidden) {
           if (!hasReportedTabSwitchInEpisodeRef.current) {
             hasReportedTabSwitchInEpisodeRef.current = true;
+            setIsFocusLostShieldOpen(false);
             reportViolation(
               'TAB_SWITCH',
               'Chuyển sang tab khác hoặc thu nhỏ cửa sổ trình duyệt.'
@@ -438,6 +465,10 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     const handleVisibilityChange = () => {
       if (document.hidden) {
         triggerFocusLossEpisode('TAB_HIDDEN');
+      } else {
+        // Tab became visible again
+        isInBlurEpisodeRef.current = false;
+        hasReportedTabSwitchInEpisodeRef.current = false;
       }
     };
 
@@ -449,22 +480,18 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       }
     };
 
+    const handleWindowFocus = () => {
+      // Regained window focus
+      isInBlurEpisodeRef.current = false;
+      hasReportedTabSwitchInEpisodeRef.current = false;
+    };
+
     // Multi-screen check via Screen Enumeration API (window.screen.isExtended)
-    // Displays warning banner & warning modal without deducting candidate's violation quota
+    // Displays sticky top warning banner without popping up any blocking dialog
     const checkMultiScreen = () => {
       if (typeof window === 'undefined' || !window.screen) return;
       const isExtended = Boolean((window.screen as any).isExtended);
       setIsMultiScreenDetected(isExtended);
-
-      if (isExtended && !hasReportedMultiScreenRef.current) {
-        hasReportedMultiScreenRef.current = true;
-        onViolationRef.current(
-          'MULTI_SCREEN_DETECTED',
-          'Lưu ý: Thiết bị của bạn đang kết nối từ 2 màn hình trở lên. Vui lòng chỉ làm bài trên một màn hình duy nhất trong suốt thời gian thi.'
-        );
-      } else if (!isExtended && hasReportedMultiScreenRef.current) {
-        hasReportedMultiScreenRef.current = false;
-      }
     };
 
     checkMultiScreen();
@@ -484,6 +511,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     const screenObj = typeof window !== 'undefined' ? (window.screen as any) : null;
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
     if (screenObj && typeof screenObj.addEventListener === 'function') {
       screenObj.addEventListener('change', checkMultiScreen);
     }
@@ -495,6 +523,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
       if (screenObj && typeof screenObj.removeEventListener === 'function') {
         screenObj.removeEventListener('change', checkMultiScreen);
       }
@@ -511,6 +540,10 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       if (document.fullscreenElement) {
         hasBeenFullscreen = true;
       } else if (hasBeenFullscreen) {
+        // If candidate or exam is currently submitting, finished, or deactivating, NEVER report violation!
+        if (!isExamActive || isSubmitting || isExitingFullscreenSafely()) {
+          return;
+        }
         reportViolation(
           'EXIT_FULLSCREEN',
           'Thoát khỏi chế độ toàn màn hình.'

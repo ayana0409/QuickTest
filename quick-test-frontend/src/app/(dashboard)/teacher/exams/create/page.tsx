@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -9,6 +9,7 @@ import {
   Calendar,
   Clock,
   ShieldCheck,
+  Camera,
   Eye,
   Lock,
   Sparkles,
@@ -29,6 +30,7 @@ interface CreateExamFormData {
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
   isProctoringEnabled: boolean;
+  isCameraProctoringEnabled: boolean;
   showResultsToStudents: boolean;
   maxViolations: number;
   isPrivate: boolean;
@@ -44,6 +46,7 @@ export default function CreateExamPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateExamFormData>({
     defaultValues: {
@@ -55,6 +58,7 @@ export default function CreateExamPage() {
       shuffleQuestions: true,
       shuffleOptions: true,
       isProctoringEnabled: false,
+      isCameraProctoringEnabled: false,
       showResultsToStudents: true,
       maxViolations: 5,
       isPrivate: true,
@@ -62,6 +66,13 @@ export default function CreateExamPage() {
       endTime: '',
     },
   });
+
+  const isProctoringEnabled = watch('isProctoringEnabled');
+  useEffect(() => {
+    if (!isProctoringEnabled) {
+      setValue('isCameraProctoringEnabled', false);
+    }
+  }, [isProctoringEnabled, setValue]);
 
   const onSubmit = async (data: CreateExamFormData) => {
     setIsSubmitting(true);
@@ -75,6 +86,7 @@ export default function CreateExamPage() {
         shuffleQuestions: Boolean(data.shuffleQuestions),
         shuffleOptions: Boolean(data.shuffleOptions),
         isProctoringEnabled: Boolean(data.isProctoringEnabled),
+        isCameraProctoringEnabled: Boolean(data.isProctoringEnabled && data.isCameraProctoringEnabled),
         showResultsToStudents: Boolean(data.showResultsToStudents),
         maxViolations: Number(data.maxViolations) || 5,
         isPrivate: data.isPrivate !== undefined ? Boolean(data.isPrivate) : true,
@@ -321,6 +333,35 @@ export default function CreateExamPage() {
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                         Tự động phát hiện gian lận như: chuyển tab, mở công cụ, copy/paste,...
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors ${
+                      isProctoringEnabled
+                        ? 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer'
+                        : 'border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/30 opacity-60 cursor-not-allowed'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!isProctoringEnabled}
+                      {...register('isCameraProctoringEnabled')}
+                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 mt-0.5 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <Camera className="w-4 h-4 text-rose-500" />
+                        Giám sát qua Camera
+                      </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Yêu cầu thí sinh bật camera khi làm bài. Tự động ghi lại hình ảnh nếu phát hiện không có người hoặc có người lạ.
+                        {!isProctoringEnabled && (
+                          <span className="block text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                            (Cần bật tính năng Giám sát trực tuyến ở trên trước)
+                          </span>
+                        )}
                       </p>
                     </div>
                   </label>

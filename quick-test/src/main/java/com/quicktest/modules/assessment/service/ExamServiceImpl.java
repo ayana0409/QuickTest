@@ -87,6 +87,9 @@ public class ExamServiceImpl implements ExamService {
         // 2. Resolve access code (custom provided or securely generated)
         String accessCode = resolveAccessCode(request.getAccessCode());
 
+        boolean isProctoring = Boolean.TRUE.equals(request.getIsProctoringEnabled());
+        boolean isCameraProctoring = isProctoring && Boolean.TRUE.equals(request.getIsCameraProctoringEnabled());
+
         // 3. Build and persist domain entity
         Exam exam = Exam.builder()
                 .title(request.getTitle().trim())
@@ -97,7 +100,8 @@ public class ExamServiceImpl implements ExamService {
                 .maxAttempts(request.getMaxAttempts() != null ? request.getMaxAttempts() : 1)
                 .shuffleQuestions(request.getShuffleQuestions() != null ? request.getShuffleQuestions() : true)
                 .shuffleOptions(request.getShuffleOptions() != null ? request.getShuffleOptions() : true)
-                .isProctoringEnabled(Boolean.TRUE.equals(request.getIsProctoringEnabled()))
+                .isProctoringEnabled(isProctoring)
+                .isCameraProctoringEnabled(isCameraProctoring)
                 .showResultsToStudents(request.getShowResultsToStudents() != null ? request.getShowResultsToStudents() : true)
                 .maxViolations(request.getMaxViolations() != null ? request.getMaxViolations() : 5)
                 .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : true)
@@ -147,6 +151,12 @@ public class ExamServiceImpl implements ExamService {
         }
         if (request.getIsProctoringEnabled() != null) {
             exam.setIsProctoringEnabled(request.getIsProctoringEnabled());
+            if (!Boolean.TRUE.equals(request.getIsProctoringEnabled())) {
+                exam.setIsCameraProctoringEnabled(false);
+            }
+        }
+        if (request.getIsCameraProctoringEnabled() != null) {
+            exam.setIsCameraProctoringEnabled(Boolean.TRUE.equals(exam.getIsProctoringEnabled()) && Boolean.TRUE.equals(request.getIsCameraProctoringEnabled()));
         }
         if (request.getShowResultsToStudents() != null) {
             exam.setShowResultsToStudents(request.getShowResultsToStudents());
@@ -420,6 +430,7 @@ public class ExamServiceImpl implements ExamService {
                 .shuffleQuestions(sourceExam.getShuffleQuestions())
                 .shuffleOptions(sourceExam.getShuffleOptions())
                 .isProctoringEnabled(sourceExam.getIsProctoringEnabled())
+                .isCameraProctoringEnabled(sourceExam.getIsCameraProctoringEnabled())
                 .showResultsToStudents(sourceExam.getShowResultsToStudents() != null ? sourceExam.getShowResultsToStudents() : true)
                 .maxViolations(sourceExam.getMaxViolations())
                 .startTime(null)

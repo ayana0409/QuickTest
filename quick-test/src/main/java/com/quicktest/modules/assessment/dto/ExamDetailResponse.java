@@ -34,6 +34,7 @@ public class ExamDetailResponse {
     private Boolean shuffleQuestions;
     private Boolean shuffleOptions;
     private Boolean isProctoringEnabled;
+    private Boolean isCameraProctoringEnabled;
     private Boolean showResultsToStudents;
     private Integer maxViolations;
     private Boolean isPrivate;
@@ -84,6 +85,7 @@ public class ExamDetailResponse {
                 .shuffleQuestions(exam.getShuffleQuestions())
                 .shuffleOptions(exam.getShuffleOptions())
                 .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .isCameraProctoringEnabled(exam.getIsCameraProctoringEnabled())
                 .showResultsToStudents(exam.getShowResultsToStudents())
                 .maxViolations(exam.getMaxViolations())
                 .isPrivate(exam.getIsPrivate() != null ? exam.getIsPrivate() : true)
@@ -122,6 +124,7 @@ public class ExamDetailResponse {
                 .shuffleQuestions(exam.getShuffleQuestions())
                 .shuffleOptions(exam.getShuffleOptions())
                 .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .isCameraProctoringEnabled(exam.getIsCameraProctoringEnabled())
                 .showResultsToStudents(exam.getShowResultsToStudents())
                 .maxViolations(exam.getMaxViolations())
                 .isPrivate(exam.getIsPrivate() != null ? exam.getIsPrivate() : true)

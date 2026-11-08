@@ -66,6 +66,7 @@ public class ProctoringServiceImpl implements ProctoringService {
     private final QuickNotifyDispatcherService quickNotifyDispatcher;
     private final RedisExamSessionService redisExamSessionService;
     private final ExamSubmissionProducer examSubmissionProducer;
+    private final ProctoringQueryService proctoringQueryService;
 
     @Override
     @Transactional
@@ -324,6 +325,7 @@ public class ProctoringServiceImpl implements ProctoringService {
                         .attemptId(attemptId)
                         .violationType(v.getViolationType())
                         .description(v.getDescription())
+                        .evidenceUrl(v.getEvidenceUrl())
                         .timestamp(v.getTimestamp())
                         .build())
                 .collect(Collectors.toList());
@@ -342,27 +344,43 @@ public class ProctoringServiceImpl implements ProctoringService {
         int violationCount = getEffectiveViolationCount(attempt);
         boolean isOnline = isCandidateOnline(attemptId);
 
-        // Aggregated breakdown of violation types
+        // Aggregated breakdown of violation types & recent violations
         Map<ViolationType, Long> breakdown = new EnumMap<>(ViolationType.class);
-        List<Object[]> groupedCounts = violationLogRepository.countByViolationTypeGrouped(attemptId);
-        for (Object[] row : groupedCounts) {
-            ViolationType vType = (ViolationType) row[0];
-            Long count = (Long) row[1];
-            breakdown.put(vType, count);
-        }
+        List<ViolationLogResponse> recentResponses;
 
-        // Top 10 most recent violations
-        List<ViolationLog> recentLogs = violationLogRepository.findByExamAttemptIdOrderByTimestampDesc(attemptId);
-        List<ViolationLogResponse> recentResponses = recentLogs.stream()
-                .limit(10)
-                .map(v -> ViolationLogResponse.builder()
-                        .id(v.getId())
-                        .attemptId(attemptId)
-                        .violationType(v.getViolationType())
-                        .description(v.getDescription())
-                        .timestamp(v.getTimestamp())
-                        .build())
-                .collect(Collectors.toList());
+        if (attempt.getStatus() == AttemptStatus.IN_PROGRESS) {
+            // Live attempt: retrieve uncommitted violation events from Redis cache
+            List<ViolationLogResponse> liveLogs = proctoringQueryService.getAttemptViolationLogs(attemptId, currentTeacher);
+            for (ViolationLogResponse logItem : liveLogs) {
+                if (logItem.getViolationType() != null) {
+                    breakdown.put(logItem.getViolationType(), breakdown.getOrDefault(logItem.getViolationType(), 0L) + 1L);
+                }
+            }
+            recentResponses = liveLogs.stream()
+                    .limit(10)
+                    .collect(Collectors.toList());
+        } else {
+            // Finalized attempt: retrieve persisted violation entities from PostgreSQL
+            List<Object[]> groupedCounts = violationLogRepository.countByViolationTypeGrouped(attemptId);
+            for (Object[] row : groupedCounts) {
+                ViolationType vType = (ViolationType) row[0];
+                Long count = (Long) row[1];
+                breakdown.put(vType, count);
+            }
+
+            List<ViolationLog> recentLogs = violationLogRepository.findByExamAttemptIdOrderByTimestampDesc(attemptId);
+            recentResponses = recentLogs.stream()
+                    .limit(10)
+                    .map(v -> ViolationLogResponse.builder()
+                            .id(v.getId())
+                            .attemptId(attemptId)
+                            .violationType(v.getViolationType())
+                            .description(v.getDescription())
+                            .evidenceUrl(v.getEvidenceUrl())
+                            .timestamp(v.getTimestamp())
+                            .build())
+                    .collect(Collectors.toList());
+        }
 
         return AttemptRealtimeStatusResponse.builder()
                 .attemptId(attemptId)

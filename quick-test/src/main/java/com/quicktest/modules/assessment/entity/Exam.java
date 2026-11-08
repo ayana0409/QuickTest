@@ -63,6 +63,10 @@ public class Exam {
     private Boolean isProctoringEnabled = false; // Flag to enable anti-cheat proctoring
 
     @Builder.Default
+    @Column(name = "is_camera_proctoring_enabled", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isCameraProctoringEnabled = false; // Flag to enforce AI webcam proctoring
+
+    @Builder.Default
     @Column(name = "show_results_to_students", nullable = false, columnDefinition = "boolean default true")
     private Boolean showResultsToStudents = true; // Flag to disclose scores, correct answers, and feedback to students
 

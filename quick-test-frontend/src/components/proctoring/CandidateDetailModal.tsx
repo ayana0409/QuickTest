@@ -10,10 +10,13 @@ import {
   ShieldAlert,
   Loader2,
   FileCheck,
+  Film,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
 import { Badge } from '@/components/common/Badge';
 import { teacherProctoringService } from '@/services/teacherProctoring.service';
+import { EvidenceMediaViewer } from './EvidenceMediaViewer';
 import type {
   AttemptRealtimeStatusDetail,
   ViolationLogEntry,
@@ -44,6 +47,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [statusDetail, setStatusDetail] = useState<AttemptRealtimeStatusDetail | null>(null);
   const [violationLogs, setViolationLogs] = useState<ViolationLogEntry[]>([]);
+  const [selectedEvidenceLog, setSelectedEvidenceLog] = useState<ViolationLogEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,6 +90,17 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   const isDisqualified =
     statusDetail?.isDisqualified || statusDetail?.status === 'DISQUALIFIED';
   const isInProgress = statusDetail?.status === 'IN_PROGRESS';
+
+  // Derive effective breakdown combining statusDetail and violationLogs to ensure counts are always accurate
+  const effectiveBreakdown: Record<string, number> = { ...(statusDetail?.violationBreakdown || {}) };
+  const hasServerBreakdown = Object.values(effectiveBreakdown).some((cnt) => (cnt || 0) > 0);
+  if (!hasServerBreakdown && violationLogs.length > 0) {
+    violationLogs.forEach((log) => {
+      if (log.violationType) {
+        effectiveBreakdown[log.violationType] = (effectiveBreakdown[log.violationType] || 0) + 1;
+      }
+    });
+  }
 
   return (
     <Modal
@@ -202,11 +217,13 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   'EXIT_FULLSCREEN',
                   'DEVTOOLS_OPEN',
                   'COPY_PASTE_ATTEMPT',
+                  'NO_FACE_DETECTED',
+                  'MULTIPLE_FACES',
                 ] as ViolationType[]
               ).map((type) => {
                 const meta = getViolationMeta(type);
                 const Icon = meta.icon;
-                const count = statusDetail.violationBreakdown?.[type] || 0;
+                const count = effectiveBreakdown[type] || 0;
 
                 return (
                   <div
@@ -279,6 +296,30 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                           {log.description}
                         </p>
+
+                        {log.evidenceUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEvidenceLog(log)}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition-all cursor-pointer"
+                          >
+                            {log.violationType === 'MULTIPLE_FACES' ? (
+                              <>
+                                <Film className="w-3.5 h-3.5 text-white" />
+                                <span>Xem video vi phạm</span>
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="w-3.5 h-3.5 text-white" />
+                                <span>Xem ảnh vi phạm</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (log.violationType === 'NO_FACE_DETECTED' || log.violationType === 'MULTIPLE_FACES') ? (
+                          <span className="mt-1.5 inline-block text-[11px] text-zinc-500 italic">
+                            Chưa có ảnh bằng chứng
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -326,6 +367,26 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
           </div>
         </div>
       ) : null}
+
+      {/* Evidence Viewer Sub-Modal */}
+      {selectedEvidenceLog && (
+        <Modal
+          isOpen={Boolean(selectedEvidenceLog)}
+          onClose={() => setSelectedEvidenceLog(null)}
+          title="Chi tiết hình ảnh vi phạm"
+          size="lg"
+        >
+          <div className="p-2">
+            <EvidenceMediaViewer
+              evidenceUrl={selectedEvidenceLog.evidenceUrl}
+              violationType={selectedEvidenceLog.violationType}
+              candidateName={statusDetail?.candidateName}
+              timestamp={selectedEvidenceLog.timestamp}
+              onClose={() => setSelectedEvidenceLog(null)}
+            />
+          </div>
+        </Modal>
+      )}
     </Modal>
   );
 };

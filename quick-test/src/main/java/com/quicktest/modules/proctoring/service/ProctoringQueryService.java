@@ -94,6 +94,7 @@ public class ProctoringQueryService {
                                 .attemptId(attemptId)
                                 .violationType(dto.getViolationType())
                                 .description(dto.getDescription())
+                                .evidenceUrl(dto.getEvidenceUrl())
                                 .timestamp(dto.getTimestamp())
                                 .build());
                     } catch (Exception ex) {
@@ -113,6 +114,7 @@ public class ProctoringQueryService {
                     .attemptId(attemptId)
                     .violationType(v.getViolationType())
                     .description(v.getDescription())
+                    .evidenceUrl(v.getEvidenceUrl())
                     .timestamp(v.getTimestamp())
                     .build());
         }
@@ -162,6 +164,7 @@ public class ProctoringQueryService {
                 .map(v -> ViolationItemRedisDto.builder()
                         .violationType(v.getViolationType())
                         .description(v.getDescription())
+                        .evidenceUrl(v.getEvidenceUrl())
                         .timestamp(v.getTimestamp())
                         .build())
                 .toList();

@@ -268,6 +268,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             String candidateName = currentUser != null
                     ? currentUser.getFullName()
                     : (attempt.getGuestName() != null ? attempt.getGuestName() : attempt.getGuestIdentifier());
+            boolean showResults = attempt.getExam() == null || attempt.getExam().getShowResultsToStudents() == null
+                    || attempt.getExam().getShowResultsToStudents();
 
             SubmissionMessage message = SubmissionMessage.builder()
                     .attemptId(attemptId)
@@ -277,6 +279,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                             : (attempt.getUser() != null ? attempt.getUser().getId() : null))
                     .guestIdentifier(guestIdentifier != null ? guestIdentifier : attempt.getGuestIdentifier())
                     .candidateName(candidateName)
+                    .showResultsToStudents(showResults)
                     .submitTime(submitTime)
                     .answers(answersMap)
                     .build();
@@ -344,11 +347,20 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             message = "Bài thi đã được nộp và hoàn tất chấm điểm tự động.";
         }
 
+        double maxScore = questionRepository.findByExamIdWithOptions(attempt.getExam().getId())
+                .stream()
+                .mapToDouble(q -> q.getPoints() != null ? q.getPoints() : 0.0)
+                .sum();
+        if (maxScore <= 0.0) {
+            maxScore = 10.0;
+        }
+
         return SubmitResultResponse.builder()
                 .attemptId(attemptId)
                 .examTitle(attempt.getExam().getTitle())
                 .status(attempt.getStatus())
                 .totalScore(showResults ? attempt.getTotalScore() : null)
+                .maxScore(showResults ? maxScore : null)
                 .showResultsToStudents(showResults)
                 .submitTime(attempt.getSubmitTime())
                 .message(message)
@@ -449,6 +461,8 @@ public class ExamSessionServiceImpl implements ExamSessionService {
             String candidateName = attempt.getUser() != null
                     ? attempt.getUser().getFullName()
                     : (attempt.getGuestName() != null ? attempt.getGuestName() : attempt.getGuestIdentifier());
+            boolean showResults = attempt.getExam() == null || attempt.getExam().getShowResultsToStudents() == null
+                    || attempt.getExam().getShowResultsToStudents();
 
             SubmissionMessage message = SubmissionMessage.builder()
                     .attemptId(attemptId)
@@ -457,6 +471,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                     .userId(attempt.getUser() != null ? attempt.getUser().getId() : null)
                     .guestIdentifier(attempt.getGuestIdentifier())
                     .candidateName(candidateName)
+                    .showResultsToStudents(showResults)
                     .submitTime(submitTime)
                     .answers(draftAnswers)
                     .build();
@@ -571,6 +586,7 @@ public class ExamSessionServiceImpl implements ExamSessionService {
                 .durationMinutes(exam.getDurationMinutes())
                 .totalQuestions(maskedQuestions.size())
                 .isProctoringEnabled(exam.getIsProctoringEnabled())
+                .isCameraProctoringEnabled(Boolean.TRUE.equals(exam.getIsProctoringEnabled()) && Boolean.TRUE.equals(exam.getIsCameraProctoringEnabled()))
                 .maxViolations(exam.getMaxViolations())
                 .startTime(attempt.getStartTime())
                 .expireAt(attempt.getExpireAt())

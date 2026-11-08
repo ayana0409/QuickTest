@@ -58,6 +58,7 @@ public class QuickNotifyDispatcherService {
         candidateData.put("maxAllowed", alert.getMaxAllowed());
         candidateData.put("remainingAllowed", alert.getRemainingAllowed());
         candidateData.put("disqualified", Boolean.TRUE.equals(alert.getDisqualified()));
+        candidateData.put("evidenceUrl", alert.getEvidenceUrl());
         candidateData.put("timestamp", alert.getTimestamp() != null ? alert.getTimestamp().toString() : null);
 
         sendNotifyEnvelope("att_" + attemptId, "high", candidateData);
@@ -71,6 +72,7 @@ public class QuickNotifyDispatcherService {
         teacherData.put("violationType", alert.getViolationType() != null ? alert.getViolationType().name() : null);
         teacherData.put("violationCount", alert.getViolationCount());
         teacherData.put("disqualified", Boolean.TRUE.equals(alert.getDisqualified()));
+        teacherData.put("evidenceUrl", alert.getEvidenceUrl());
         teacherData.put("timestamp", alert.getTimestamp() != null ? alert.getTimestamp().toString() : null);
 
         sendNotifyEnvelope("exam_monitor_" + examId, "high", teacherData);

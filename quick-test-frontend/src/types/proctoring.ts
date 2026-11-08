@@ -21,6 +21,7 @@ export interface ViolationTelemetryMessage {
   attemptId: string;
   violationType: ViolationType;
   description?: string;
+  evidenceUrl?: string;
   clientTimestamp: string;
 }
 
@@ -35,6 +36,7 @@ export interface ViolationAlertResponse {
   remainingAllowed: number;
   disqualified: boolean;
   message: string;
+  evidenceUrl?: string;
   timestamp: string;
 }
 
@@ -75,6 +77,7 @@ export interface ViolationLogEntry {
   attemptId: string;
   violationType: ViolationType;
   description: string;
+  evidenceUrl?: string;
   timestamp: string;
 }
 
@@ -107,7 +110,19 @@ export interface CandidateViolationEvent {
   violationCount: number;
   description: string;
   disqualified: boolean;
+  evidenceUrl?: string;
   timestamp: string;
+}
+
+/**
+ * Cloudinary signed upload signature returned by backend.
+ */
+export interface CloudinaryUploadSignatureResponse {
+  signature: string;
+  timestamp: number;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
 }
 
 /**

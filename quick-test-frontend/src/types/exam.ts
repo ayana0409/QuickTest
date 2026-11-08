@@ -117,6 +117,7 @@ export interface StudentViolationItemDto {
   id: string;
   violationType: string;
   description: string;
+  evidenceUrl?: string;
   timestamp: string;
 }
 
@@ -176,6 +177,7 @@ export interface Exam {
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
   isProctoringEnabled?: boolean;
+  isCameraProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
   isPrivate?: boolean;
@@ -204,6 +206,7 @@ export interface ExamSummaryResponse {
   durationMinutes: number;
   maxAttempts: number;
   isProctoringEnabled?: boolean;
+  isCameraProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
   isPrivate?: boolean;
@@ -230,6 +233,7 @@ export interface ExamDetailResponse {
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
   isProctoringEnabled?: boolean;
+  isCameraProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
   isPrivate?: boolean;
@@ -255,6 +259,7 @@ export interface ExamCreateRequest {
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
   isProctoringEnabled?: boolean;
+  isCameraProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
   isPrivate?: boolean;
@@ -273,6 +278,7 @@ export interface ExamUpdateRequest {
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
   isProctoringEnabled?: boolean;
+  isCameraProctoringEnabled?: boolean;
   showResultsToStudents?: boolean;
   maxViolations?: number;
   isPrivate?: boolean;
@@ -292,6 +298,7 @@ export interface ExamPaper {
   durationMinutes: number;
   totalQuestions: number;
   isProctoringEnabled?: boolean;
+  isCameraProctoringEnabled?: boolean;
   maxViolations?: number;
   startTime: string;
   expireAt: string;

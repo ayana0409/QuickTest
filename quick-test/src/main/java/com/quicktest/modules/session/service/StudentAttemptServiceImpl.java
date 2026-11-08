@@ -91,6 +91,7 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                                 .id(vl.getId())
                                                 .violationType(vl.getViolationType())
                                                 .description(vl.getDescription())
+                                                .evidenceUrl(vl.getEvidenceUrl())
                                                 .timestamp(vl.getTimestamp())
                                                 .build())
                                 .collect(Collectors.toList());

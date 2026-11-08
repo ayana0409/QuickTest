@@ -28,6 +28,7 @@ public class SubmissionMessage implements Serializable {
     private UUID userId;
     private String guestIdentifier;
     private String candidateName;
+    private Boolean showResultsToStudents;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime submitTime;

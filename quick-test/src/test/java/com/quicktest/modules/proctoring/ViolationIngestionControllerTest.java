@@ -1,6 +1,8 @@
 package com.quicktest.modules.proctoring;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.cloudinary.Cloudinary;
+import com.quicktest.config.CloudinaryProperties;
 import com.quicktest.core.exception.GlobalExceptionHandler;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.proctoring.controller.ViolationIngestionController;
@@ -32,6 +34,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -52,6 +55,12 @@ class ViolationIngestionControllerTest {
 
     @Mock
     private ExamSubmissionProducer examSubmissionProducer;
+
+    @Mock
+    private Cloudinary cloudinary;
+
+    @Mock
+    private CloudinaryProperties cloudinaryProperties;
 
     @InjectMocks
     private ViolationIngestionController controller;
@@ -184,5 +193,21 @@ class ViolationIngestionControllerTest {
                 .andExpect(jsonPath("$.data.disqualified").value(false));
 
         verifyNoInteractions(redisProctoringService);
+    }
+
+    @Test
+    @DisplayName("Should generate signed upload signature when attempt is in progress")
+    void getUploadSignature_Success() throws Exception {
+        when(examAttemptRepository.findByIdWithExamAndUser(attemptId)).thenReturn(Optional.of(activeAttempt));
+        when(cloudinaryProperties.getApiSecret()).thenReturn("test-secret");
+        when(cloudinaryProperties.getApiKey()).thenReturn("test-api-key");
+        when(cloudinaryProperties.getCloudName()).thenReturn("test-cloud");
+        when(cloudinary.apiSignRequest(anyMap(), eq("test-secret"))).thenReturn("mock-signature");
+
+        mockMvc.perform(get("/api/session/{attemptId}/proctoring/upload-signature", attemptId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.signature").value("mock-signature"))
+                .andExpect(jsonPath("$.data.apiKey").value("test-api-key"))
+                .andExpect(jsonPath("$.data.cloudName").value("test-cloud"));
     }
 }

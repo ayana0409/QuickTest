@@ -51,6 +51,7 @@ public class StudentAttemptDetailResponse {
         private UUID id;
         private ViolationType violationType;
         private String description;
+        private String evidenceUrl;
         private LocalDateTime timestamp;
     }
 

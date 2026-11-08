@@ -40,6 +40,9 @@ public class ViolationLog {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "evidence_url", columnDefinition = "TEXT")
+    private String evidenceUrl;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime timestamp;

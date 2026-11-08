@@ -20,15 +20,21 @@ import {
   ChevronUp,
   Check,
   FileSpreadsheet,
+  Film,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
+import { Modal } from '@/components/common/Modal';
+import { EvidenceMediaViewer } from '@/components/proctoring/EvidenceMediaViewer';
 import { gradingService } from '@/services/grading.service';
+import { teacherProctoringService } from '@/services/teacherProctoring.service';
 import type {
   AttemptGradingDetailResponse,
   GradeEssayItemRequest,
 } from '@/types/candidateAnswer';
 import type { AttemptStatus } from '@/types/exam';
+import type { ViolationLogEntry } from '@/types/proctoring';
 import { formatDateTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -55,6 +61,11 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
   const [showAutoGraded, setShowAutoGraded] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Violation Audit & Evidence states
+  const [violations, setViolations] = useState<ViolationLogEntry[]>([]);
+  const [selectedEvidence, setSelectedEvidence] = useState<ViolationLogEntry | null>(null);
+  const [showViolationsList, setShowViolationsList] = useState(false);
+
   // Form state for essay grades
   const [essayGrades, setEssayGrades] = useState<Record<string, EssayFormState>>({});
 
@@ -78,6 +89,18 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
             };
           });
           setEssayGrades(initialForms);
+
+          // Fetch violation audit logs if attempt has recorded violations
+          if ((data.violationCount || 0) > 0) {
+            try {
+              const logs = await teacherProctoringService.getAttemptViolations(attemptId);
+              if (isMounted) {
+                setViolations(logs || []);
+              }
+            } catch {
+              // Silently ignore violation log fetch error
+            }
+          }
         }
       } catch {
         // Error toast is handled automatically by axios interceptor
@@ -305,17 +328,80 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
         </div>
       </div>
 
-      {/* Violation Alert Callout if Any */}
+      {/* Violation Alert Callout & Interactive Audit Table */}
       {hasViolations && (
-        <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-3 text-xs sm:text-sm text-rose-800 dark:text-rose-300">
-          <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-bold">Hệ thống giám sát phát hiện {detail.violationCount} lần vi phạm</p>
-            <p className="text-xs text-rose-700/80 dark:text-rose-400">
-              Thí sinh đã có hành vi chuyển tab, rời khỏi màn hình làm bài hoặc phát hiện cửa sổ khác.
-              Thầy/cô vui lòng đối chiếu kỹ câu trả lời trước khi cho điểm.
-            </p>
+        <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 overflow-hidden text-xs sm:text-sm text-rose-800 dark:text-rose-300 shadow-xs">
+          <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold">Hệ thống giám sát ghi nhận {detail.violationCount} lần vi phạm</p>
+                <p className="text-xs text-rose-700/80 dark:text-rose-400">
+                  Thí sinh có ghi nhận vi phạm quy chế (rời màn hình, phát hiện người lạ, v.v.). Thầy/cô có thể kiểm tra hình ảnh/video bằng chứng bên dưới.
+                </p>
+              </div>
+            </div>
+
+            {violations.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowViolationsList(!showViolationsList)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/50 text-xs font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-100/50 transition-colors cursor-pointer shrink-0 self-start sm:self-center"
+              >
+                <span>{showViolationsList ? 'Thu gọn danh sách' : `Xem chi tiết bằng chứng (${violations.length})`}</span>
+                {showViolationsList ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
           </div>
+
+          {showViolationsList && violations.length > 0 && (
+            <div className="border-t border-rose-200/80 dark:border-rose-900/50 bg-white/70 dark:bg-zinc-900/70 p-3 sm:p-4 overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 font-semibold">
+                    <th className="py-2 px-3">Thời gian</th>
+                    <th className="py-2 px-3">Hành vi vi phạm</th>
+                    <th className="py-2 px-3 text-right">Bằng chứng</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
+                  {violations.map((v) => (
+                    <tr key={v.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
+                      <td className="py-2.5 px-3 font-mono text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+                        {v.timestamp ? new Date(v.timestamp).toLocaleTimeString('vi-VN') : '—'}
+                      </td>
+                      <td className="py-2.5 px-3 font-medium text-zinc-800 dark:text-zinc-200">
+                        {v.description}
+                      </td>
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                        {v.evidenceUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEvidence(v)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100/80 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-300/60 dark:border-rose-800/60 hover:bg-rose-200 transition-colors cursor-pointer"
+                          >
+                            {v.violationType === 'MULTIPLE_FACES' ? (
+                              <>
+                                <Film className="w-3.5 h-3.5 text-rose-500" />
+                                <span>Xem video</span>
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                                <span>Xem ảnh</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-zinc-400 text-[11px]">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -589,6 +675,26 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
           </div>
         </div>
       </div>
+
+      {/* Violation Evidence Modal */}
+      {selectedEvidence && (
+        <Modal
+          isOpen={Boolean(selectedEvidence)}
+          onClose={() => setSelectedEvidence(null)}
+          title="Chi tiết hình ảnh vi phạm"
+          size="lg"
+        >
+          <div className="p-2">
+            <EvidenceMediaViewer
+              evidenceUrl={selectedEvidence.evidenceUrl}
+              violationType={selectedEvidence.violationType}
+              candidateName={detail.candidateName}
+              timestamp={selectedEvidence.timestamp}
+              onClose={() => setSelectedEvidence(null)}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
