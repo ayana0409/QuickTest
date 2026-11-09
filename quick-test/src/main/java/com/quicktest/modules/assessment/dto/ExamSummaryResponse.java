@@ -41,8 +41,50 @@ public class ExamSummaryResponse {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
+    private Long totalEssayQuestions;
+
     /**
-     * Primary all-arguments constructor matching all 16 fields.
+     * Primary all-arguments constructor matching all 17 fields including totalEssayQuestions.
+     */
+    public ExamSummaryResponse(
+            UUID id,
+            String title,
+            String accessCode,
+            ExamStatus status,
+            Integer durationMinutes,
+            Integer maxAttempts,
+            Boolean isProctoringEnabled,
+            Boolean isCameraProctoringEnabled,
+            Boolean showResultsToStudents,
+            Integer maxViolations,
+            Long totalQuestions,
+            Double totalPoints,
+            Boolean isPrivate,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            LocalDateTime createdAt,
+            Long totalEssayQuestions) {
+        this.id = id;
+        this.title = title;
+        this.accessCode = accessCode;
+        this.status = status;
+        this.durationMinutes = durationMinutes;
+        this.maxAttempts = maxAttempts;
+        this.isProctoringEnabled = isProctoringEnabled;
+        this.isCameraProctoringEnabled = isCameraProctoringEnabled;
+        this.showResultsToStudents = showResultsToStudents;
+        this.maxViolations = maxViolations;
+        this.totalQuestions = totalQuestions;
+        this.totalPoints = totalPoints;
+        this.isPrivate = isPrivate;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.createdAt = createdAt;
+        this.totalEssayQuestions = totalEssayQuestions != null ? totalEssayQuestions : 0L;
+    }
+
+    /**
+     * Backward-compatible 16-field constructor.
      */
     public ExamSummaryResponse(
             UUID id,
@@ -61,22 +103,7 @@ public class ExamSummaryResponse {
             LocalDateTime startTime,
             LocalDateTime endTime,
             LocalDateTime createdAt) {
-        this.id = id;
-        this.title = title;
-        this.accessCode = accessCode;
-        this.status = status;
-        this.durationMinutes = durationMinutes;
-        this.maxAttempts = maxAttempts;
-        this.isProctoringEnabled = isProctoringEnabled;
-        this.isCameraProctoringEnabled = isCameraProctoringEnabled;
-        this.showResultsToStudents = showResultsToStudents;
-        this.maxViolations = maxViolations;
-        this.totalQuestions = totalQuestions;
-        this.totalPoints = totalPoints;
-        this.isPrivate = isPrivate;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.createdAt = createdAt;
+        this(id, title, accessCode, status, durationMinutes, maxAttempts, isProctoringEnabled, isCameraProctoringEnabled, showResultsToStudents, maxViolations, totalQuestions, totalPoints, isPrivate, startTime, endTime, createdAt, 0L);
     }
 
     /**
@@ -149,6 +176,12 @@ public class ExamSummaryResponse {
         if (exam == null) {
             return null;
         }
+        long essayCount = 0L;
+        if (exam.getQuestions() != null) {
+            essayCount = exam.getQuestions().stream()
+                    .filter(q -> q != null && q.getQuestionType() == com.quicktest.modules.assessment.entity.QuestionType.ESSAY_TEXT)
+                    .count();
+        }
         return ExamSummaryResponse.builder()
                 .id(exam.getId())
                 .title(exam.getTitle())
@@ -162,6 +195,7 @@ public class ExamSummaryResponse {
                 .maxViolations(exam.getMaxViolations())
                 .totalQuestions(totalQuestions)
                 .totalPoints(totalPoints)
+                .totalEssayQuestions(essayCount)
                 .isPrivate(exam.getIsPrivate() != null ? exam.getIsPrivate() : true)
                 .startTime(exam.getStartTime())
                 .endTime(exam.getEndTime())

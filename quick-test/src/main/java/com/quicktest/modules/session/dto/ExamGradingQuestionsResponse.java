@@ -23,6 +23,7 @@ public class ExamGradingQuestionsResponse {
     private UUID examId;
     private String examTitle;
     private ExamStatus examStatus;
+    private Double totalPoints;
     private Integer totalEssayQuestions;
     private List<QuestionGradingSummaryResponse> questions;
 }

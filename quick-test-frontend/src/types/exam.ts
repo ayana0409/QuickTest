@@ -216,6 +216,7 @@ export interface ExamSummaryResponse {
   createdByTeacherName?: string;
   totalQuestions: number;
   totalPoints: number;
+  totalEssayQuestions?: number;
   published: boolean;
 }
 

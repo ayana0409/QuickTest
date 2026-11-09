@@ -66,7 +66,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
 
   // Filter, Sorting and Pagination state
   const [selectedStatus, setSelectedStatus] = useState<AttemptStatus | 'ALL'>('ALL');
-  const [sortOption, setSortOption] = useState<string>('violationCount,desc');
+  const [sortOption, setSortOption] = useState<string>('submitTime,desc');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);

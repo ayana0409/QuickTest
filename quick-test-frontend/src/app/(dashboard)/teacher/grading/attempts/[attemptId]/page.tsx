@@ -229,11 +229,11 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
       {/* Top Breadcrumbs & Back Navigation */}
       <div>
         <Link
-          href={`/teacher/exams/${detail.examId}/edit`}
+          href={`/teacher/grading/exams/${detail.examId}?tab=attempts`}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-3"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Quay lại: {detail.examTitle}</span>
+          <span>Quay lại danh sách bài làm • {detail.examTitle}</span>
         </Link>
 
         {/* Candidate Profile and Session Header Card */}

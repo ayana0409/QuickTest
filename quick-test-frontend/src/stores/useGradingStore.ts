@@ -23,6 +23,7 @@ export interface GradingState {
   currentExamId: string | null;
   currentExamTitle: string | null;
   currentExamStatus: string | null;
+  currentExamTotalPoints: number;
   questions: QuestionGradingSummaryResponse[];
   isLoadingQuestions: boolean;
 
@@ -66,6 +67,7 @@ export const useGradingStore = create<GradingState>((set, get) => ({
   currentExamId: null,
   currentExamTitle: null,
   currentExamStatus: null,
+  currentExamTotalPoints: 10,
   questions: [],
   isLoadingQuestions: false,
 
@@ -97,6 +99,7 @@ export const useGradingStore = create<GradingState>((set, get) => ({
         questions: questionList,
         currentExamTitle: raw?.examTitle || '',
         currentExamStatus: raw?.examStatus,
+        currentExamTotalPoints: raw?.totalPoints ?? 10,
         isLoadingQuestions: false,
       });
     } catch {

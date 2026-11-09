@@ -104,6 +104,9 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         // Self-heal: auto-resolve any legacy empty pending essay answers for this exam
         autoResolveEmptyPendingAnswersForExam(examId);
 
+        Double totalPoints = questionRepository.sumPointsByExamId(examId);
+        double examTotalPoints = totalPoints != null ? totalPoints : 0.0;
+
         // Fetch ONLY essay questions directly in SQL
         List<Question> essayQuestions = questionRepository
                 .findByExamIdAndQuestionTypeOrderByOrderIndexAsc(examId, QuestionType.ESSAY_TEXT);
@@ -113,6 +116,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                     .examId(exam.getId())
                     .examTitle(exam.getTitle())
                     .examStatus(exam.getStatus())
+                    .totalPoints(examTotalPoints)
                     .totalEssayQuestions(0)
                     .questions(java.util.Collections.emptyList())
                     .build();
@@ -155,6 +159,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                 .examId(exam.getId())
                 .examTitle(exam.getTitle())
                 .examStatus(exam.getStatus())
+                .totalPoints(examTotalPoints)
                 .totalEssayQuestions(summaries.size())
                 .questions(summaries)
                 .build();

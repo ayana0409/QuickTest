@@ -65,7 +65,8 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     @Query(value = "SELECT new com.quicktest.modules.assessment.dto.ExamSummaryResponse(" +
             "e.id, e.title, e.accessCode, e.status, e.durationMinutes, e.maxAttempts, " +
             "e.isProctoringEnabled, e.isCameraProctoringEnabled, e.showResultsToStudents, e.maxViolations, " +
-            "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.isPrivate, e.startTime, e.endTime, e.createdAt) " +
+            "COUNT(q.id), COALESCE(SUM(q.points), 0.0), e.isPrivate, e.startTime, e.endTime, e.createdAt, " +
+            "COALESCE(SUM(CASE WHEN q.questionType = com.quicktest.modules.assessment.entity.QuestionType.ESSAY_TEXT THEN 1L ELSE 0L END), 0L)) " +
             "FROM Exam e LEFT JOIN e.questions q " +
             "WHERE e.createdBy.id = :teacherId " +
             "AND e.status != com.quicktest.modules.assessment.entity.ExamStatus.CLONING " +

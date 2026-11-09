@@ -56,6 +56,7 @@ export interface ExamGradingQuestionsResponse {
   examId: string;
   examTitle: string;
   examStatus: ExamStatus;
+  totalPoints?: number;
   totalEssayQuestions: number;
   questions: QuestionGradingSummaryResponse[];
 }
