@@ -245,14 +245,14 @@ export default function AdminSystemLogsPage() {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60">
             <XCircle className="w-3.5 h-3.5 text-rose-500" />
-            ERROR
+            LỖI
           </span>
         );
       case 'WARN':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/60">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-            WARN
+            CẢNH BÁO
           </span>
         );
       case 'INFO':
@@ -260,7 +260,7 @@ export default function AdminSystemLogsPage() {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-900/60">
             <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" />
-            INFO
+            THÔNG TIN
           </span>
         );
     }
@@ -271,14 +271,14 @@ export default function AdminSystemLogsPage() {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50">
           <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-          SUCCESS
+          THÀNH CÔNG
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
         <XCircle className="w-3 h-3 text-red-500" />
-        FAILURE
+        THẤT BẠI
       </span>
     );
   };
@@ -305,10 +305,10 @@ export default function AdminSystemLogsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                Nhật ký Hệ thống (System Logs)
+                Nhật ký Hoạt động Hệ thống
               </h1>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Truy vết kiểm toán tập trung, giám sát lỗi vận hành và tìm kiếm Full-Text Search PostgreSQL
+                Lưu vết thao tác người dùng, giám sát lỗi vận hành và tra cứu nhanh toàn diện
               </p>
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function AdminSystemLogsPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 dark:border-rose-900/60 transition-colors"
           >
             <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-            Dọn dẹp Log cũ
+            Dọn dẹp nhật ký cũ
           </button>
         </div>
       </div>
@@ -378,9 +378,9 @@ export default function AdminSystemLogsPage() {
             <span className="text-xs text-zinc-500 dark:text-zinc-400">bản ghi</span>
           </div>
           <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
-            <span>INFO: {stats?.infoCount ?? 0}</span>
+            <span>Thông tin: {stats?.infoCount ?? 0}</span>
             <span>•</span>
-            <span className="text-amber-600 dark:text-amber-400">WARN: {stats?.warnCount ?? 0}</span>
+            <span className="text-amber-600 dark:text-amber-400">Cảnh báo: {stats?.warnCount ?? 0}</span>
           </div>
         </div>
 
@@ -435,7 +435,7 @@ export default function AdminSystemLogsPage() {
             </span>
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500">
-            <span>ERROR Severity: {stats?.errorCount ?? 0}</span>
+            <span>Mức độ lỗi: {stats?.errorCount ?? 0}</span>
           </div>
         </div>
 
@@ -443,7 +443,7 @@ export default function AdminSystemLogsPage() {
         <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Độ trễ Trung bình
+              Độ trễ Phản hồi
             </span>
             <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
               <Clock className="w-4 h-4" />
@@ -456,7 +456,7 @@ export default function AdminSystemLogsPage() {
           </div>
           <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
             <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span>Đo lường thời gian thực thi AOP</span>
+            <span>Thời gian xử lý trung bình</span>
           </div>
         </div>
       </div>
@@ -471,7 +471,7 @@ export default function AdminSystemLogsPage() {
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="Full-Text Search: module, action, actor, username, IP, UUID, error, details..."
+              placeholder="Tìm kiếm: chức năng, thao tác, người dùng, IP, nội dung..."
               className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
             {searchKeyword && (
@@ -496,10 +496,10 @@ export default function AdminSystemLogsPage() {
               className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="ALL">Mức độ: Tất cả</option>
-              <option value="INFO">INFO</option>
-              <option value="WARN">WARN</option>
-              <option value="ERROR">ERROR</option>
-              <option value="DEBUG">DEBUG</option>
+              <option value="INFO">Thông tin (INFO)</option>
+              <option value="WARN">Cảnh báo (WARN)</option>
+              <option value="ERROR">Lỗi (ERROR)</option>
+              <option value="DEBUG">Gỡ lỗi (DEBUG)</option>
             </select>
 
             {/* Status */}
@@ -512,8 +512,8 @@ export default function AdminSystemLogsPage() {
               className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="ALL">Trạng thái: Tất cả</option>
-              <option value="SUCCESS">Thành công (SUCCESS)</option>
-              <option value="FAILURE">Thất bại (FAILURE)</option>
+              <option value="SUCCESS">Thành công</option>
+              <option value="FAILURE">Thất bại</option>
             </select>
 
             {/* Module */}
@@ -525,7 +525,7 @@ export default function AdminSystemLogsPage() {
               }}
               className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 max-w-[160px]"
             >
-              <option value="ALL">Module: Tất cả</option>
+              <option value="ALL">Chức năng: Tất cả</option>
               {metadata?.modules?.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -542,7 +542,7 @@ export default function AdminSystemLogsPage() {
               }}
               className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 max-w-[170px]"
             >
-              <option value="ALL">Hành động: Tất cả</option>
+              <option value="ALL">Thao tác: Tất cả</option>
               {metadata?.actions?.map((a) => (
                 <option key={a} value={a}>
                   {a}
@@ -612,10 +612,10 @@ export default function AdminSystemLogsPage() {
                 <th className="py-3.5 px-4">Thời gian</th>
                 <th className="py-3.5 px-3">Mức độ</th>
                 <th className="py-3.5 px-3">Trạng thái</th>
-                <th className="py-3.5 px-4">Module & Hành động</th>
+                <th className="py-3.5 px-4">Chức năng & Thao tác</th>
                 <th className="py-3.5 px-4">Người thực hiện</th>
-                <th className="py-3.5 px-4">Endpoint</th>
-                <th className="py-3.5 px-3">IP Address</th>
+                <th className="py-3.5 px-4">Đường dẫn API</th>
+                <th className="py-3.5 px-3">Địa chỉ IP</th>
                 <th className="py-3.5 px-3">Độ trễ</th>
                 <th className="py-3.5 px-4 text-right">Chi tiết</th>
               </tr>
@@ -642,9 +642,9 @@ export default function AdminSystemLogsPage() {
                       <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400">
                         <Database className="w-6 h-6" />
                       </div>
-                      <p className="font-medium text-zinc-700 dark:text-zinc-300">Không tìm thấy bản ghi log nào</p>
+                      <p className="font-medium text-zinc-700 dark:text-zinc-300">Không tìm thấy bản ghi nhật ký nào</p>
                       <p className="text-xs text-zinc-500">
-                        Hãy thử điều chỉnh từ khóa tìm kiếm FTS hoặc các tiêu chí bộ lọc thời gian.
+                        Hãy thử điều chỉnh từ khóa tìm kiếm hoặc các tiêu chí bộ lọc thời gian.
                       </p>
                     </div>
                   </td>
@@ -698,7 +698,7 @@ export default function AdminSystemLogsPage() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs text-zinc-400 italic">SYSTEM / GUEST</span>
+                        <span className="text-xs text-zinc-400 italic">Hệ thống / Khách</span>
                       )}
                     </td>
 
@@ -819,13 +819,13 @@ export default function AdminSystemLogsPage() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    Chi tiết Nhật ký Kiểm toán
+                    Chi tiết Nhật ký Hoạt động
                   </h3>
                   {renderLevelBadge(detailModalLog.level)}
                   {renderStatusBadge(detailModalLog.status)}
                 </div>
                 <p className="text-xs text-zinc-500 font-mono">
-                  ID: {detailModalLog.id}
+                  Mã bản ghi: {detailModalLog.id}
                 </p>
               </div>
 
@@ -855,7 +855,7 @@ export default function AdminSystemLogsPage() {
                   : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                   }`}
               >
-                Dữ liệu Payload (JSON)
+                Dữ liệu Yêu cầu (JSON)
               </button>
               {detailModalLog.errorMessage && (
                 <button
@@ -866,7 +866,7 @@ export default function AdminSystemLogsPage() {
                     }`}
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  Thông báo Lỗi / Stack Trace
+                  Chi tiết Lỗi Hệ thống
                 </button>
               )}
             </div>
@@ -878,7 +878,7 @@ export default function AdminSystemLogsPage() {
                   {/* Grid Metadata */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Module & Hành động:</span>
+                      <span className="text-zinc-400 font-medium">Chức năng & Thao tác:</span>
                       <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                         {detailModalLog.module} - {detailModalLog.action}
                       </p>
@@ -892,31 +892,31 @@ export default function AdminSystemLogsPage() {
                     </div>
 
                     <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Người thực hiện (Actor):</span>
+                      <span className="text-zinc-400 font-medium">Người thực hiện:</span>
                       <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {detailModalLog.actorUsername || 'SYSTEM'} (Vai trò: {detailModalLog.actorRole || 'N/A'})
+                        {detailModalLog.actorUsername || 'Hệ thống'} (Vai trò: {detailModalLog.actorRole || 'N/A'})
                       </p>
                       {detailModalLog.actorId && (
-                        <p className="text-[11px] font-mono text-zinc-500">ID: {detailModalLog.actorId}</p>
+                        <p className="text-[11px] font-mono text-zinc-500">Mã ID: {detailModalLog.actorId}</p>
                       )}
                     </div>
 
                     <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Độ trễ thực thi (Latency):</span>
+                      <span className="text-zinc-400 font-medium">Thời gian xử lý:</span>
                       <p className="text-sm">{formatExecutionTime(detailModalLog.executionTimeMs)}</p>
                     </div>
 
                     <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">HTTP Endpoint:</span>
+                      <span className="text-zinc-400 font-medium">Đường dẫn API:</span>
                       <p className="font-mono text-zinc-800 dark:text-zinc-200">
-                        {detailModalLog.httpMethod} {detailModalLog.endpoint || 'Internal Job'}
+                        {detailModalLog.httpMethod} {detailModalLog.endpoint || 'Tác vụ nội bộ'}
                       </p>
                     </div>
 
                     <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
                       <span className="text-zinc-400 font-medium">Địa chỉ IP:</span>
                       <p className="font-mono text-zinc-800 dark:text-zinc-200">
-                        {detailModalLog.ipAddress || 'Internal / N/A'}
+                        {detailModalLog.ipAddress || 'Nội bộ / Chưa xác định'}
                       </p>
                     </div>
                   </div>
@@ -926,7 +926,7 @@ export default function AdminSystemLogsPage() {
                     <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900/60 space-y-2">
                       <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-semibold text-xs">
                         <AlertTriangle className="w-4 h-4" />
-                        <span>Thông báo Lỗi ghi nhận:</span>
+                        <span>Thông báo lỗi ghi nhận:</span>
                       </div>
                       <p className="font-mono text-xs text-rose-900 dark:text-rose-200 whitespace-pre-wrap">
                         {detailModalLog.errorMessage}
@@ -940,7 +940,7 @@ export default function AdminSystemLogsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-zinc-500">
-                      Chi tiết tham số & kết quả thực thi (đã che các trường nhạy cảm):
+                      Dữ liệu gửi lên và kết quả thực thi (đã ẩn các thông tin nhạy cảm):
                     </span>
                     <button
                       onClick={() => handleCopy(detailModalLog.details || '{}', 'payload')}
@@ -969,14 +969,14 @@ export default function AdminSystemLogsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
                       <Terminal className="w-3.5 h-3.5" />
-                      Chi tiết Exception / Stack trace:
+                      Chi tiết lỗi kỹ thuật:
                     </span>
                     <button
                       onClick={() => handleCopy(detailModalLog.errorMessage || '', 'error')}
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
                     >
                       {copiedKey === 'error' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      Sao chép Trace
+                      Sao chép lỗi
                     </button>
                   </div>
                   <pre className="p-4 rounded-xl bg-zinc-950 text-rose-300 font-mono text-xs overflow-x-auto max-h-96 leading-relaxed border border-zinc-800 whitespace-pre-wrap">

@@ -49,7 +49,7 @@ const roleNavItems: Record<string, NavItem[]> = {
   TEACHER: [
     { label: 'Quản lý đề thi', href: '/teacher/exams', icon: BookOpen },
     { label: 'Chấm bài tự luận', href: '/teacher/grading', icon: FileCheck },
-    { label: 'Tiến trình AI', href: '/teacher/ai-tasks', icon: Sparkles },
+    { label: 'Tác vụ tự động', href: '/teacher/ai-tasks', icon: Sparkles },
   ],
   STUDENT: [
     { label: 'Kỳ thi của tôi', href: '/student', icon: GraduationCap },

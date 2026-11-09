@@ -103,10 +103,10 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
                 id="proctor-settings-title"
                 className="text-lg font-bold text-[#E6EDF3] tracking-tight"
               >
-                Cài Đặt Bắt Gian Lận (Proctoring)
+                Cài đặt Giám sát Phòng thi
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Tùy chỉnh các quy tắc kiểm soát và giám sát phòng thi
+                Tùy chỉnh các quy định giám sát và bảo vệ đề thi
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
           <div className="pr-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-[#E6EDF3]">
-                Kích hoạt Chế độ Giám sát (Master Switch)
+                Bật chế độ giám sát
               </span>
               {localSettings.enabled ? (
                 <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -185,7 +185,7 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
                   Phát hiện chuyển Tab & Rời trình duyệt
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Cảnh báo và gửi telemetry khi thí sinh chuyển sang tab hoặc ứng dụng khác
+                  Nhắc nhở và ghi nhận khi thí sinh chuyển sang tab hoặc ứng dụng khác
                 </div>
               </div>
             </div>
@@ -226,7 +226,7 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
                   Phát hiện thoát Toàn màn hình
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Cảnh báo khi người dùng nhấn ESC hoặc thoát chế độ toàn màn hình
+                  Nhắc nhở và ghi nhận khi thí sinh thoát khỏi chế độ làm bài toàn màn hình
                 </div>
               </div>
             </div>
@@ -267,7 +267,7 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
                   Chặn Sao chép, Cắt, Dán & Chuột phải
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Khóa bôi đen nội dung câu hỏi, ngăn clipboard và menu ngữ cảnh
+                  Không cho bôi đen câu hỏi và vô hiệu hóa sao chép/dán
                 </div>
               </div>
             </div>
@@ -305,10 +305,10 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
               <Terminal className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
               <div>
                 <div className="text-xs font-semibold text-zinc-200">
-                  Chặn Phím tắt DevTools & Nguồn trang
+                  Chặn công cụ kiểm tra trang web
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Vô hiệu hóa F12, Ctrl+Shift+I/J/C và Ctrl+U
+                  Vô hiệu hóa phím F12 và xem mã nguồn
                 </div>
               </div>
             </div>

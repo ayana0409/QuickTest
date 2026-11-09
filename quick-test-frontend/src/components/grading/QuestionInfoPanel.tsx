@@ -129,7 +129,7 @@ export const QuestionInfoPanel: React.FC<QuestionInfoPanelProps> = ({
             )}
           >
             <CheckSquare className="w-3.5 h-3.5" />
-            <span>Tiêu chí chấm (Rubric)</span>
+            <span>Tiêu chí chấm điểm</span>
           </button>
           <button
             type="button"
@@ -181,10 +181,10 @@ export const QuestionInfoPanel: React.FC<QuestionInfoPanelProps> = ({
             onClick={onTriggerAi}
             leftIcon={<Sparkles className="w-4 h-4" />}
           >
-            Chấm AI toàn bộ câu này
+            Chấm tự động toàn bộ câu này
           </Button>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center mt-1.5">
-            Sử dụng Google Gemini AI đối chiếu rubric và gợi ý điểm số
+            Tự động đối chiếu tiêu chí và gợi ý điểm số cho tất cả bài làm
           </p>
         </div>
       )}

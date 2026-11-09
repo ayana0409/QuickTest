@@ -203,10 +203,10 @@ export default function AdminHealthCheckPage() {
                   </div>
                   <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{sys?.cpu?.usagePercent ?? 0}%</span>
                 </div>
-                <h3 className="font-medium text-slate-700 dark:text-slate-200 mb-2">CPU Usage</h3>
+                <h3 className="font-medium text-slate-700 dark:text-slate-200 mb-2">Hiệu năng CPU</h3>
                 {renderProgressBar(sys?.cpu?.usagePercent ?? 0)}
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  Chỉ số tải hệ thống CPU tổng thể.
+                  Mức độ hoạt động thực tế của bộ vi xử lý.
                 </p>
               </div>
 
@@ -218,7 +218,7 @@ export default function AdminHealthCheckPage() {
                   </div>
                   <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{sys?.ram?.usagePercent ?? 0}%</span>
                 </div>
-                <h3 className="font-medium text-slate-700 dark:text-slate-200 mb-2">System Memory (RAM)</h3>
+                <h3 className="font-medium text-slate-700 dark:text-slate-200 mb-2">Bộ nhớ trong (RAM)</h3>
                 {renderProgressBar(sys?.ram?.usagePercent ?? 0)}
                 <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 mt-2">
                   <span>Sử dụng: <strong className="text-slate-700 dark:text-slate-300">{formatBytes(sys?.ram?.used ?? 0)}</strong></span>
@@ -234,7 +234,7 @@ export default function AdminHealthCheckPage() {
                   </div>
                   <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">{sys?.disk?.usagePercent ?? 0}%</span>
                 </div>
-                <h3 className="font-medium text-slate-700 dark:text-slate-200 mb-2">Storage (Disk)</h3>
+                <h3 className="font-medium text-slate-700 dark:text-slate-200 mb-2">Dung lượng ổ cứng</h3>
                 {renderProgressBar(sys?.disk?.usagePercent ?? 0)}
                 <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 mt-2">
                   <span>Trống: <strong className="text-slate-700 dark:text-slate-300">{formatBytes(sys?.disk?.free ?? 0)}</strong></span>
@@ -249,7 +249,7 @@ export default function AdminHealthCheckPage() {
           <div>
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
               <Box className="w-5 h-5 text-sky-500" />
-              Thành phần Hạ tầng
+              Dịch vụ Nền tảng
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
@@ -262,14 +262,14 @@ export default function AdminHealthCheckPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-800 dark:text-slate-100">PostgreSQL</h3>
-                      <p className="text-xs text-slate-500">Primary Database</p>
+                      <p className="text-xs text-slate-500">Cơ sở dữ liệu chính</p>
                     </div>
                   </div>
                   {getStatusBadge(comps?.database?.status)}
                 </div>
                 <div className="p-5 flex-1">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-slate-500 dark:text-slate-400">Độ trễ kết nối (Latency)</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Độ trễ kết nối</span>
                     <span className={`font-mono font-medium ${getLatencyColor(comps?.database?.latencyMs)}`}>
                       {comps?.database?.latencyMs !== undefined ? `${comps.database.latencyMs} ms` : 'N/A'}
                     </span>
@@ -291,7 +291,7 @@ export default function AdminHealthCheckPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-800 dark:text-slate-100">Redis Cache</h3>
-                      <p className="text-xs text-slate-500">In-memory Store</p>
+                      <p className="text-xs text-slate-500">Bộ nhớ đệm</p>
                     </div>
                   </div>
                   {getStatusBadge(comps?.redis?.status)}
@@ -310,7 +310,7 @@ export default function AdminHealthCheckPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500 dark:text-slate-400">Tổng số Keys</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Tổng số bản ghi đệm</span>
                     <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
                       {comps?.redis?.totalKeys !== undefined ? comps.redis.totalKeys.toLocaleString() : '0'}
                     </span>
@@ -327,7 +327,7 @@ export default function AdminHealthCheckPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-800 dark:text-slate-100">RabbitMQ</h3>
-                      <p className="text-xs text-slate-500">Message Broker</p>
+                      <p className="text-xs text-slate-500">Hệ thống truyền thông điệp</p>
                     </div>
                   </div>
                   {getStatusBadge(comps?.rabbitmq?.status)}
@@ -341,7 +341,7 @@ export default function AdminHealthCheckPage() {
                   </div>
                   
                   <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 block">Hàng đợi (Queues) đang hoạt động</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 block">Hàng đợi đang hoạt động</span>
                     <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
                       {comps?.rabbitmq?.queues?.length ? (
                         comps.rabbitmq.queues.map((q: QueueInfo) => (
@@ -354,12 +354,12 @@ export default function AdminHealthCheckPage() {
                                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 font-bold' 
                                 : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                             }`}>
-                              {q.messageCount} msg
+                              {q.messageCount} tin
                             </span>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-slate-500 italic text-center py-2">Không thể tải thông tin Queues</p>
+                        <p className="text-sm text-slate-500 italic text-center py-2">Không thể tải thông tin hàng đợi</p>
                       )}
                     </div>
                   </div>
@@ -374,7 +374,7 @@ export default function AdminHealthCheckPage() {
       {/* Footer Info */}
       <div className="text-center pt-4">
         <p className="text-xs text-slate-400">
-          Dữ liệu được cập nhật tự động mỗi 10 giây thông qua Actuator & OSHI.
+          Dữ liệu được cập nhật tự động định kỳ 10 giây.
         </p>
       </div>
 

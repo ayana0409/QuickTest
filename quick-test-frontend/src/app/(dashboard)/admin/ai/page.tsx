@@ -342,25 +342,25 @@ export default function AdminAiDashboardPage() {
           <div className="flex items-center gap-2.5 mb-1.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
               <Sparkles className="w-3.5 h-3.5" />
-              AI Infrastructure
+              Dịch vụ Trí tuệ Nhân tạo
             </span>
             {status?.configSource === 'DATABASE' ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <Database className="w-3.5 h-3.5" />
-                DATABASE DRIVEN
+                Cấu hình Cơ sở dữ liệu
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse">
                 <Server className="w-3.5 h-3.5" />
-                ENV SINGLE-KEY FALLBACK
+                Khóa dự phòng môi trường
               </span>
             )}
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Hạ tầng Điều phối & Xoay vòng AI
+            Cấu hình Dịch vụ Trí tuệ Nhân tạo (AI)
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl">
-            Quản trị viên theo dõi real-time hạn mức RPM/TPM, thời gian cooldown khi bị Google 429, tiến trình chấm bài tự động ngầm và cấu hình dynamic API Keys.
+            Quản lý khóa API, kiểm tra tình trạng kết nối và theo dõi tiến trình tạo đề, chấm bài tự động.
           </p>
         </div>
 
@@ -382,10 +382,10 @@ export default function AdminAiDashboardPage() {
             onClick={handleReloadPool}
             disabled={isReloadingPool}
             className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-all duration-200 active:scale-95 shadow-xs"
-            title="Tải lại slots từ DB / Env"
+            title="Đồng bộ lại danh sách khóa từ cơ sở dữ liệu"
           >
             <Zap className={`w-3.5 h-3.5 text-amber-500 ${isReloadingPool ? 'animate-bounce' : ''}`} />
-            <span>{isReloadingPool ? 'Đang nạp...' : 'Tải lại Pool'}</span>
+            <span>{isReloadingPool ? 'Đang đồng bộ...' : 'Đồng bộ khóa API'}</span>
           </button>
 
           <button
@@ -411,7 +411,7 @@ export default function AdminAiDashboardPage() {
           }`}
         >
           <Activity className="w-4 h-4" />
-          <span>Trạng thái Real-time & Slots Pool</span>
+          <span>Trạng thái Hoạt động</span>
           {activeTab === 'metrics' && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
           )}
@@ -427,7 +427,7 @@ export default function AdminAiDashboardPage() {
           }`}
         >
           <Sliders className="w-4 h-4" />
-          <span>Quản lý Khóa API & Models ({keysList.length})</span>
+          <span>Danh sách Khóa API ({keysList.length})</span>
           {activeTab === 'keys' && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full" />
           )}
@@ -441,7 +441,7 @@ export default function AdminAiDashboardPage() {
           <div className="p-5 rounded-[calc(1.5rem-0.25rem)] bg-white dark:bg-zinc-900/90 h-full flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Model Slots Sẵn Sàng
+                Mô hình Sẵn sàng
               </span>
               <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                 <CheckCircle2 className="w-5 h-5" />
@@ -451,11 +451,11 @@ export default function AdminAiDashboardPage() {
               <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
                 {status ? status.availableSlots : 0}
               </span>
-              <span className="text-xs text-zinc-500">/ {status ? status.totalSlots : 0} slots</span>
+              <span className="text-xs text-zinc-500">/ {status ? status.totalSlots : 0} kênh</span>
             </div>
             <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              {status?.exhaustedSlots ? `${status.exhaustedSlots} slot đang chờ cooldown` : 'Tất cả slots hoạt động trơn tru'}
+              {status?.exhaustedSlots ? `${status.exhaustedSlots} kênh đang tạm dừng` : 'Tất cả kênh hoạt động ổn định'}
             </p>
           </div>
         </div>
@@ -465,7 +465,7 @@ export default function AdminAiDashboardPage() {
           <div className="p-5 rounded-[calc(1.5rem-0.25rem)] bg-white dark:bg-zinc-900/90 h-full flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Tổng Công Suất Quota
+                Tổng Công Suất Xử Lý
               </span>
               <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5" />
@@ -475,10 +475,10 @@ export default function AdminAiDashboardPage() {
               <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
                 {status ? status.totalCapacityRpm : 0}
               </span>
-              <span className="text-xs text-zinc-500">RPM / phút</span>
+              <span className="text-xs text-zinc-500">lượt / phút</span>
             </div>
             <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-              Phân bổ xoay vòng thông minh qua {status?.slots?.length || 0} slots
+              Điều phối luân phiên thông minh qua {status?.slots?.length || 0} kênh
             </p>
           </div>
         </div>
@@ -488,7 +488,7 @@ export default function AdminAiDashboardPage() {
           <div className="p-5 rounded-[calc(1.5rem-0.25rem)] bg-white dark:bg-zinc-900/90 h-full flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Tiến Trình Chấm Ngầm
+                Tác vụ Đang Xử Lý
               </span>
               <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 <PlayCircle className="w-5 h-5" />
@@ -498,16 +498,16 @@ export default function AdminAiDashboardPage() {
               <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
                 {status?.activeBackgroundJobsCount ?? 0}
               </span>
-              <span className="text-xs text-zinc-500">workers active</span>
+              <span className="text-xs text-zinc-500">tác vụ đang chạy</span>
             </div>
             <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
               {(status?.activeBackgroundJobsCount ?? 0) > 0 ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                  Đang chấm tự động cho bài thi
+                  Đang chấm bài và tạo đề
                 </>
               ) : (
-                'Không có bài thi nào đang chấm'
+                'Không có tác vụ nào đang xử lý'
               )}
             </p>
           </div>
@@ -518,7 +518,7 @@ export default function AdminAiDashboardPage() {
           <div className="p-5 rounded-[calc(1.5rem-0.25rem)] bg-white dark:bg-zinc-900/90 h-full flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Khóa API Đã Đăng Ký
+                Khóa API Đã Cài Đặt
               </span>
               <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                 <Key className="w-5 h-5" />
@@ -528,10 +528,10 @@ export default function AdminAiDashboardPage() {
               <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
                 {status ? status.totalConfiguredKeys : keysList.length}
               </span>
-              <span className="text-xs text-zinc-500">API keys</span>
+              <span className="text-xs text-zinc-500">khóa API</span>
             </div>
             <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-              Nguồn: {status?.configSource === 'DATABASE' ? 'PostgreSQL Database' : 'Biến môi trường (.env)'}
+              Nguồn: {status?.configSource === 'DATABASE' ? 'Cơ sở dữ liệu hệ thống' : 'Biến môi trường (.env)'}
             </p>
           </div>
         </div>
@@ -551,13 +551,13 @@ export default function AdminAiDashboardPage() {
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        Đang xử lý tác vụ nền AI ({status.activeBackgroundJobs.length})
+                        Tiến trình đang thực hiện ({status.activeBackgroundJobs.length})
                         <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full">
-                          SINGLE-THREAD QUEUE
+                          TỰ ĐỘNG
                         </span>
                       </h3>
                       <p className="text-xs text-zinc-500">
-                        Hệ thống đang điều phối tuần tự các tác vụ chấm thi tự luận và soạn đề AI trên luồng đơn tối ưu hạn mức.
+                        Các tác vụ chấm bài tự luận và tạo đề thi đang được thực hiện.
                       </p>
                     </div>
                   </div>
@@ -566,7 +566,7 @@ export default function AdminAiDashboardPage() {
                     className="px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/80 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Dọn sạch tất cả job treo
+                    Dừng tất cả tác vụ
                   </button>
                 </div>
 
@@ -604,7 +604,7 @@ export default function AdminAiDashboardPage() {
                               {isQueued ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                                   <Clock className="w-3 h-3" />
-                                  {isQuizGen ? 'Chờ tạo đề (Queued)' : 'Đang xếp hàng (Queued)'}
+                                  {isQuizGen ? 'Chờ tạo đề' : 'Đang chờ'}
                                 </span>
                               ) : isQuizGen ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
@@ -614,14 +614,14 @@ export default function AdminAiDashboardPage() {
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                                  Đang chấm (Processing)
+                                  Đang chấm bài
                                 </span>
                               )}
                             </div>
                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono mt-1">
                               {isQueued
-                                ? 'Chờ lượt chạy (Luồng AI đơn 100% quota) • Tự động kích hoạt khi luồng trước xong'
-                                : `Thread: ${job.threadName} • Bắt đầu: ${new Date(job.startedAt).toLocaleTimeString()}`}
+                                ? 'Đang chờ đến lượt xử lý'
+                                : `Bắt đầu lúc: ${new Date(job.startedAt).toLocaleTimeString('vi-VN')}`}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -637,7 +637,7 @@ export default function AdminAiDashboardPage() {
                             <button
                               onClick={() => handleCancelJob(job.jobId)}
                               disabled={isCancellingJob === job.jobId}
-                              title="Hủy tiến trình và giải phóng khóa"
+                              title="Hủy tiến trình"
                               className="p-1 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors disabled:opacity-50"
                             >
                               <X className="w-4 h-4" />
@@ -689,13 +689,13 @@ export default function AdminAiDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  Danh sách Model Slots trong Rotation Pool
+                  Trạng thái Các Mô hình AI
                   <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                    {status?.slots?.length || 0} slots
+                    {status?.slots?.length || 0} mô hình
                   </span>
                 </h2>
                 <p className="text-xs text-zinc-500">
-                  Mỗi slot kết hợp giữa một Key và Model riêng biệt. Khi gặp lỗi 429, hệ thống tự động xoay sang slot kế tiếp.
+                  Danh sách các mô hình đang sẵn sàng phục vụ cho việc tạo đề và chấm bài.
                 </p>
               </div>
             </div>
@@ -721,12 +721,12 @@ export default function AdminAiDashboardPage() {
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                              Slot #{slot.slotIndex}
+                              Kênh #{slot.slotIndex}
                             </span>
                             {isCooldown ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                                 <Clock className="w-3 h-3 animate-spin" />
-                                Cooldown {slot.cooldownRemainingSeconds}s
+                                Tạm dừng {slot.cooldownRemainingSeconds}s
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -801,7 +801,7 @@ export default function AdminAiDashboardPage() {
                           </span>
                           <span className="flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-rose-500" />
-                            429/Lỗi: <strong className="text-zinc-800 dark:text-zinc-200">{slot.failureCount}</strong>
+                            Giới hạn / Lỗi: <strong className="text-zinc-800 dark:text-zinc-200">{slot.failureCount}</strong>
                           </span>
                         </div>
 
@@ -820,10 +820,10 @@ export default function AdminAiDashboardPage() {
               <div className="text-center py-16 bg-white dark:bg-zinc-900/50 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800">
                 <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
                 <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Chưa có Slot AI nào hoạt động
+                  Chưa có Mô hình AI nào hoạt động
                 </h3>
                 <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1">
-                  Vui lòng thêm API Key mới hoặc bấm &quot;Tải lại Pool&quot; để nạp từ biến môi trường.
+                  Vui lòng thêm API Key mới hoặc bấm &quot;Nạp lại danh sách&quot; để nạp từ cấu hình hệ thống.
                 </p>
                 <button
                   type="button"
@@ -845,10 +845,10 @@ export default function AdminAiDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                Bảng Cấu Hình Khóa API Trong Cơ Sở Dữ Liệu
+                Cấu Hình Khóa API Trong Cơ Sở Dữ Liệu
               </h2>
               <p className="text-xs text-zinc-500">
-                Quản trị viên có thể thêm nhiều khóa, chỉnh sửa hạn mức RPM/TPM của từng model, hoặc tạm tắt một khóa mà không cần khởi động lại ứng dụng.
+                Quản trị viên có thể thêm nhiều khóa, chỉnh sửa giới hạn của từng mô hình, hoặc tạm tắt một khóa mà không cần khởi động lại ứng dụng.
               </p>
             </div>
             <button
@@ -886,11 +886,11 @@ export default function AdminAiDashboardPage() {
                                 : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
                             }`}
                           >
-                            {keyItem.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            {keyItem.isActive ? 'ĐANG DÙNG' : 'TẠM TẮT'}
                           </span>
                         </div>
                         <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                          Key Mask: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{keyItem.maskedKey}</span> • Provider: {keyItem.provider}
+                          Mã ẩn: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{keyItem.maskedKey}</span> • Nhà cung cấp: {keyItem.provider}
                         </p>
                       </div>
                     </div>
@@ -913,7 +913,7 @@ export default function AdminAiDashboardPage() {
                         type="button"
                         onClick={() => handleOpenEditModal(keyItem)}
                         className="p-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                        title="Chỉnh sửa Key & Models"
+                        title="Chỉnh sửa Khóa & Mô hình"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -922,7 +922,7 @@ export default function AdminAiDashboardPage() {
                         type="button"
                         onClick={() => setDeletingKeyId(keyItem.id)}
                         className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                        title="Xóa Key này"
+                        title="Xóa khóa này"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -932,7 +932,7 @@ export default function AdminAiDashboardPage() {
                   {/* Configured Models list under this Key */}
                   <div className="space-y-2 pt-3 border-t border-zinc-100 dark:border-zinc-900">
                     <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                      Các Models Cấu Hình ({keyItem.models.length}):
+                      Mô hình áp dụng ({keyItem.models.length}):
                     </span>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -946,7 +946,7 @@ export default function AdminAiDashboardPage() {
                               {model.modelName}
                             </p>
                             <p className="text-[11px] text-zinc-400 mt-0.5">
-                              Limit: <strong className="text-zinc-700 dark:text-zinc-300">{model.rpm} RPM</strong> • {model.tpm.toLocaleString()} TPM
+                              Giới hạn: <strong className="text-zinc-700 dark:text-zinc-300">{model.rpm} RPM</strong> • {model.tpm.toLocaleString()} TPM
                             </p>
                           </div>
 
@@ -956,7 +956,7 @@ export default function AdminAiDashboardPage() {
                             className={`w-7 h-4 rounded-full transition-colors relative ${
                               model.isActive ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'
                             }`}
-                            title={model.isActive ? 'Model đang bật (Click để tắt)' : 'Model đang tắt (Click để bật)'}
+                            title={model.isActive ? 'Mô hình đang bật (Bấm để tắt)' : 'Mô hình đang tắt (Bấm để bật)'}
                           >
                             <span
                               className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
@@ -976,10 +976,10 @@ export default function AdminAiDashboardPage() {
               <div className="text-center py-12 bg-white dark:bg-zinc-900/50 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800">
                 <Database className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
                 <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  Chưa có API Key nào được lưu trong Database
+                  Chưa có API Key nào được lưu trong Cơ sở dữ liệu
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Hệ thống đang tự động fallback về biến môi trường GEMINI_API_KEY. Hãy thêm key vào DB để quản lý trực tiếp.
+                  Hệ thống đang tự động sử dụng khóa dự phòng từ biến môi trường. Hãy thêm khóa mới để chủ động quản lý.
                 </p>
               </div>
             )}
@@ -1014,7 +1014,7 @@ export default function AdminAiDashboardPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Google Cloud Key 1 (Account Chính)"
+                  placeholder="Ví dụ: Google Cloud Key 1 (Tài khoản chính)"
                   value={keyFormData.name}
                   onChange={(e) => setKeyFormData({ ...keyFormData, name: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -1024,20 +1024,20 @@ export default function AdminAiDashboardPage() {
               {/* API Key */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
-                  <span>API Key (AIzaSy...) {editingKey ? '(Để trống nếu giữ nguyên key cũ)' : <span className="text-rose-500">*</span>}</span>
+                  <span>Mã API Key (AIzaSy...) {editingKey ? '(Để trống nếu giữ nguyên khóa cũ)' : <span className="text-rose-500">*</span>}</span>
                   <button
                     type="button"
                     onClick={() => setShowRawKey(!showRawKey)}
                     className="text-xs text-indigo-600 flex items-center gap-1"
                   >
                     {showRawKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    <span>{showRawKey ? 'Ẩn' : 'Hiện key'}</span>
+                    <span>{showRawKey ? 'Ẩn' : 'Hiện khóa'}</span>
                   </button>
                 </label>
                 <input
                   type={showRawKey ? 'text' : 'password'}
                   required={!editingKey}
-                  placeholder={editingKey ? 'Nhập nếu muốn thay đổi key mới...' : 'Nhập mã API Key Google Gemini...'}
+                  placeholder={editingKey ? 'Nhập nếu muốn đổi sang khóa mới...' : 'Nhập mã API Key Google Gemini...'}
                   value={keyFormData.apiKey}
                   onChange={(e) => setKeyFormData({ ...keyFormData, apiKey: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -1048,7 +1048,7 @@ export default function AdminAiDashboardPage() {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
-                    Danh Sách Models Cho Key Này ({keyFormData.models.length})
+                    Danh Sách Mô Hình Cho Khóa Này ({keyFormData.models.length})
                   </label>
                   <button
                     type="button"
@@ -1056,7 +1056,7 @@ export default function AdminAiDashboardPage() {
                     className="text-xs font-semibold text-indigo-600 flex items-center gap-1 hover:underline"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Thêm model tùy chỉnh
+                    Thêm mô hình tùy chỉnh
                   </button>
                 </div>
 
@@ -1084,7 +1084,7 @@ export default function AdminAiDashboardPage() {
                       <input
                         type="text"
                         required
-                        placeholder="Model name (vd: gemini-3.5-flash-lite)"
+                        placeholder="Tên mô hình (vd: gemini-3.5-flash-lite)"
                         value={model.modelName}
                         onChange={(e) => handleUpdateModelInForm(idx, 'modelName', e.target.value)}
                         className="flex-1 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono"
@@ -1141,7 +1141,7 @@ export default function AdminAiDashboardPage() {
                   type="submit"
                   className="px-6 py-2.5 rounded-full text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20"
                 >
-                  {editingKey ? 'Cập Nhật Key' : 'Tạo Key & Áp Dụng Ngay'}
+                  {editingKey ? 'Cập Nhật Khóa' : 'Lưu Khóa & Kích Hoạt'}
                 </button>
               </div>
             </form>
@@ -1161,7 +1161,7 @@ export default function AdminAiDashboardPage() {
                 Xác nhận xóa API Key này?
               </h3>
               <p className="text-xs text-zinc-500 mt-1.5">
-                Các slot liên quan đến khóa này sẽ bị hủy khỏi pool xoay vòng ngay lập tức. Thao tác này không thể hoàn tác!
+                Các cấu hình liên quan đến khóa này sẽ ngừng hoạt động ngay lập tức. Thao tác này không thể hoàn tác!
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">

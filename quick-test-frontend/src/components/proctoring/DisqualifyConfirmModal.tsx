@@ -54,14 +54,13 @@ export const DisqualifyConfirmModal: React.FC<DisqualifyConfirmModalProps> = ({
           <p className="font-semibold mb-1">
             Bạn có chắc muốn đình chỉ {' '}
             <span className="underline decoration-rose-400 font-bold">
-              {candidateName || 'this candidate'}
+              {candidateName || 'thí sinh này'}
             </span>
             ?
           </p>
           <p className="text-rose-700 dark:text-rose-300">
-            Hành động này sẽ ngay lập tức kết thúc phiên thi của thí sinh,
-            thay đổi trạng thái của họ thành <strong>DISQUALIFIED</strong>, và chặn
-            việc nộp bài tiếp theo.
+            Hành động này sẽ ngay lập tức kết thúc lượt thi của thí sinh,
+            chuyển trạng thái thành <strong>Đã đình chỉ</strong> và dừng quyền làm bài.
           </p>
         </div>
 
@@ -73,7 +72,7 @@ export const DisqualifyConfirmModal: React.FC<DisqualifyConfirmModalProps> = ({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             disabled={isLoading}
-            placeholder="e.g. Caught using unauthorized secondary device or severe repeated tab switching..."
+            placeholder="Ví dụ: Sử dụng thiết bị trái phép hoặc liên tục chuyển tab làm bài..."
             rows={3}
             className="w-full text-xs rounded-xl p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition-all resize-none"
           />

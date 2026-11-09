@@ -17,7 +17,7 @@ import { Modal } from '@/components/common/Modal';
 import { Badge } from '@/components/common/Badge';
 import { teacherProctoringService } from '@/services/teacherProctoring.service';
 import { EvidenceMediaViewer } from './EvidenceMediaViewer';
-import { formatAttemptStatus, formatConnectionStatus } from '@/lib/formatters/statusFormatter';
+import { formatAttemptStatus, formatConnectionStatus, formatCandidateInitials } from '@/lib/formatters/statusFormatter';
 import type {
   AttemptRealtimeStatusDetail,
   ViolationLogEntry,
@@ -137,14 +137,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-base flex items-center justify-center border border-indigo-200 dark:border-indigo-800">
-                  {statusDetail.candidateName
-                    ? statusDetail.candidateName
-                      .split(' ')
-                      .map((w) => w[0])
-                      .slice(-2)
-                      .join('')
-                      .toUpperCase()
-                    : 'U'}
+                  {formatCandidateInitials(statusDetail.candidateName)}
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">

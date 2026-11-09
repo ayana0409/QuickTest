@@ -152,7 +152,7 @@ export default function TeacherAiTasksPage() {
 
   // Cancel task handler
   const handleCancelTask = async (taskId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn hủy tác vụ này? Tiến trình đang xử lý sẽ dừng lại.')) {
+    if (!confirm('Bạn có chắc chắn muốn dừng tác vụ này? Hệ thống sẽ ngừng xử lý.')) {
       return;
     }
 
@@ -345,10 +345,10 @@ export default function TeacherAiTasksPage() {
             )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Tiến trình Tác vụ AI
+            Tác vụ Tạo đề & Chấm bài Tự động
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-            Theo dõi tất cả tiến trình tạo đề thi từ tài liệu và chấm tự luận AI chạy ngầm. Bạn có thể tự do rời trang hoặc làm việc khác trong khi hệ thống đang xử lý.
+            Theo dõi kết quả tạo đề thi từ tài liệu và chấm bài tự luận tự động. Bạn có thể tự do làm việc khác trong khi hệ thống đang xử lý.
           </p>
         </div>
 
@@ -531,7 +531,7 @@ export default function TeacherAiTasksPage() {
         <div className="py-20 flex flex-col items-center justify-center text-center">
           <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-3" />
           <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            Đang tải dữ liệu tiến trình tác vụ AI...
+            Đang tải danh sách tác vụ...
           </p>
         </div>
       ) : loadError ? (
@@ -612,7 +612,7 @@ export default function TeacherAiTasksPage() {
                       {isQueued && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                           <Clock className="w-3.5 h-3.5 animate-spin" />
-                          Đang chờ trong hàng đợi
+                          Đang chờ xử lý
                         </span>
                       )}
                       {isProcessing && (
@@ -861,7 +861,7 @@ export default function TeacherAiTasksPage() {
           </div>
         ) : reviewQuestions.length === 0 ? (
           <div className="py-12 text-center text-zinc-500 text-xs">
-            Không tìm thấy câu hỏi nào trong tác vụ này. Có thể tiến trình đã bị gián đoạn.
+            Không tìm thấy câu hỏi nào trong tác vụ này. Tác vụ có thể đã bị gián đoạn hoặc tài liệu không có nội dung phù hợp.
           </div>
         ) : (
           <div className="space-y-4">

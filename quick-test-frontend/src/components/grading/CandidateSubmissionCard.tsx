@@ -89,7 +89,7 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
       case 'PENDING_AI':
         return (
           <Badge variant="info" size="sm" dot>
-            AI đang chấm
+            Đang chấm tự động
           </Badge>
         );
       case 'AUTO_GRADED':
@@ -269,10 +269,10 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
                 isLoading={isAiGrading}
                 disabled={isSaving || isAiGrading || !submission.textAnswer?.trim()}
                 onClick={onAiGrade}
-                title={!submission.textAnswer?.trim() ? 'Thí sinh không nộp câu trả lời' : 'Chấm AI bài này'}
+                title={!submission.textAnswer?.trim() ? 'Thí sinh không nộp câu trả lời' : 'Chấm điểm tự động cho bài này'}
                 leftIcon={<Sparkles className="w-4 h-4 text-indigo-500" />}
               >
-                Chấm AI
+                Chấm tự động
               </Button>
             )}
             <Button

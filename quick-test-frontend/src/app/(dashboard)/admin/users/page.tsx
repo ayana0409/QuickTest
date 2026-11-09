@@ -122,11 +122,11 @@ export default function AdminUsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.username.trim() || !createForm.email.trim() || !createForm.password.trim() || !createForm.fullName.trim()) {
-      toast.error('Please fill in all required fields');
+      toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc');
       return;
     }
     if (createForm.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
 
@@ -162,7 +162,7 @@ export default function AdminUsersPage() {
     e.preventDefault();
     if (!selectedTargetUser) return;
     if (newPasswordInput.length < 6) {
-      toast.error('New password must be at least 6 characters');
+      toast.error('Mật khẩu mới phải có ít nhất 6 ký tự');
       return;
     }
 
@@ -187,7 +187,7 @@ export default function AdminUsersPage() {
     if (!selectedTargetUser) return;
 
     if (selectedTargetUser.id === currentAdmin?.id && newRoleSelect !== 'ADMIN') {
-      toast.error('You cannot remove the ADMIN role from your own account');
+      toast.error('Bạn không thể tự gỡ quyền Quản trị viên của chính mình');
       return;
     }
 
@@ -209,7 +209,7 @@ export default function AdminUsersPage() {
     if (!selectedTargetUser) return;
 
     if (selectedTargetUser.id === currentAdmin?.id) {
-      toast.error('You cannot deactivate your own account');
+      toast.error('Bạn không thể tự khóa tài khoản của chính mình');
       return;
     }
 
@@ -233,20 +233,20 @@ export default function AdminUsersPage() {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
             <Shield className="w-3 h-3" />
-            ADMIN
+            Quản trị viên
           </span>
         );
       case 'TEACHER':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/60">
-            TEACHER
+            Giáo viên
           </span>
         );
       case 'STUDENT':
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60">
-            STUDENT
+            Học sinh
           </span>
         );
     }
@@ -259,14 +259,14 @@ export default function AdminUsersPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              User Management
+              Quản lý Người dùng
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-              {totalElements} Total
+              Tổng số {totalElements} tài khoản
             </span>
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Govern user accounts, assign roles, reset credentials, and manage platform permissions.
+            Quản lý tài khoản người dùng, phân quyền vai trò, đặt lại mật khẩu và điều phối quyền truy cập hệ thống.
           </p>
         </div>
 
@@ -277,7 +277,7 @@ export default function AdminUsersPage() {
             onClick={fetchUsers}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
           >
-            Refresh
+            Làm mới
           </Button>
 
           <Button
@@ -286,7 +286,7 @@ export default function AdminUsersPage() {
             onClick={() => setIsCreateModalOpen(true)}
             leftIcon={<UserPlus className="w-4 h-4" />}
           >
-            Create User
+            Thêm người dùng
           </Button>
         </div>
       </div>
@@ -298,7 +298,7 @@ export default function AdminUsersPage() {
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               type="text"
-              placeholder="Search by username, email, or full name..."
+              placeholder="Tìm theo tên đăng nhập, email hoặc họ và tên..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
@@ -314,10 +314,10 @@ export default function AdminUsersPage() {
               }}
               className="w-full sm:w-auto px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
             >
-              <option value="ALL">All Roles</option>
-              <option value="ADMIN">Admin</option>
-              <option value="TEACHER">Teacher</option>
-              <option value="STUDENT">Student</option>
+              <option value="ALL">Tất cả vai trò</option>
+              <option value="ADMIN">Quản trị viên</option>
+              <option value="TEACHER">Giáo viên</option>
+              <option value="STUDENT">Học sinh</option>
             </select>
 
             <select
@@ -328,13 +328,13 @@ export default function AdminUsersPage() {
               }}
               className="w-full sm:w-auto px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
             >
-              <option value="ALL">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Deactivated</option>
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="ACTIVE">Đang hoạt động</option>
+              <option value="INACTIVE">Đã khóa</option>
             </select>
 
             <Button type="submit" variant="secondary" size="md" className="col-span-2 sm:col-span-1">
-              Filter
+              Lọc
             </Button>
           </div>
         </form>
@@ -346,12 +346,12 @@ export default function AdminUsersPage() {
           <table className="w-full text-left text-sm min-w-[760px]">
             <thead className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
               <tr>
-                <th className="py-3.5 px-4 sm:px-6">User</th>
-                <th className="py-3.5 px-4">Contact & Auth</th>
-                <th className="py-3.5 px-4">Role</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4">Created Date</th>
-                <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                <th className="py-3.5 px-4 sm:px-6">Người dùng</th>
+                <th className="py-3.5 px-4">Email & Đăng nhập</th>
+                <th className="py-3.5 px-4">Vai trò</th>
+                <th className="py-3.5 px-4">Trạng thái</th>
+                <th className="py-3.5 px-4">Ngày tạo</th>
+                <th className="py-3.5 px-4 sm:px-6 text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -359,14 +359,14 @@ export default function AdminUsersPage() {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-zinc-500">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-zinc-400" />
-                    Loading accounts...
+                    Đang tải danh sách tài khoản...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-zinc-500">
                     <Users className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
-                    No user accounts found matching your criteria.
+                    Không tìm thấy tài khoản nào khớp với tiêu chí tìm kiếm.
                   </td>
                 </tr>
               ) : (
@@ -392,7 +392,7 @@ export default function AdminUsersPage() {
                               </span>
                               {isCurrentAdmin && (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200/70 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">
-                                  You
+                                  Bạn
                                 </span>
                               )}
                             </div>
@@ -409,11 +409,11 @@ export default function AdminUsersPage() {
                         <div className="flex items-center gap-1.5 mt-0.5">
                           {isSsoUser ? (
                             <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                              SSO ({u.authProvider})
+                              Đăng nhập SSO ({u.authProvider})
                             </span>
                           ) : (
                             <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
-                              Local Auth
+                              Mật khẩu nội bộ
                             </span>
                           )}
                         </div>
@@ -427,19 +427,19 @@ export default function AdminUsersPage() {
                         {u.isActive ? (
                           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Active
+                            Đang hoạt động
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                            Deactivated
+                            Đã khóa
                           </span>
                         )}
                       </td>
 
                       {/* Created At */}
                       <td className="py-4 px-4 text-xs text-zinc-500 dark:text-zinc-400">
-                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : '—'}
                       </td>
 
                       {/* Actions */}
@@ -450,7 +450,7 @@ export default function AdminUsersPage() {
                             <button
                               type="button"
                               className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                              title="View user details"
+                              title="Xem chi tiết tài khoản"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
@@ -465,7 +465,7 @@ export default function AdminUsersPage() {
                               setIsChangeRoleModalOpen(true);
                             }}
                             className="p-1.5 rounded-lg text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
-                            title="Assign role"
+                            title="Phân quyền vai trò"
                           >
                             <Shield className="w-4 h-4" />
                           </button>
@@ -484,7 +484,7 @@ export default function AdminUsersPage() {
                                 ? 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed'
                                 : 'text-zinc-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40'
                             }`}
-                            title={isSsoUser ? 'Password reset unavailable for SSO accounts' : 'Reset password'}
+                            title={isSsoUser ? 'Không hỗ trợ đặt lại mật khẩu cho tài khoản SSO' : 'Đặt lại mật khẩu'}
                           >
                             <KeyRound className="w-4 h-4" />
                           </button>
@@ -506,10 +506,10 @@ export default function AdminUsersPage() {
                             }`}
                             title={
                               isCurrentAdmin
-                                ? 'Cannot deactivate your own account'
+                                ? 'Không thể tự khóa tài khoản của chính mình'
                                 : u.isActive
-                                ? 'Deactivate account'
-                                : 'Activate account'
+                                ? 'Khóa tài khoản'
+                                : 'Mở khóa tài khoản'
                             }
                           >
                             {u.isActive ? (
@@ -531,8 +531,8 @@ export default function AdminUsersPage() {
         {/* Pagination Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-900/40 text-xs text-zinc-500">
           <div>
-            Showing {users.length > 0 ? currentPage * pageSize + 1 : 0} to{' '}
-            {Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} users
+            Đang hiển thị {users.length > 0 ? currentPage * pageSize + 1 : 0} đến{' '}
+            {Math.min((currentPage + 1) * pageSize, totalElements)} trong tổng số {totalElements} người dùng
           </div>
 
           <div className="flex items-center gap-2">
@@ -543,10 +543,10 @@ export default function AdminUsersPage() {
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
             >
-              Previous
+              Trang trước
             </Button>
             <span className="font-medium text-zinc-700 dark:text-zinc-300 px-1">
-              Page {totalPages > 0 ? currentPage + 1 : 0} of {totalPages}
+              Trang {totalPages > 0 ? currentPage + 1 : 0} / {totalPages}
             </span>
             <Button
               variant="outline"
@@ -555,7 +555,7 @@ export default function AdminUsersPage() {
               onClick={() => setCurrentPage((p) => p + 1)}
               rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
             >
-              Next
+              Trang sau
             </Button>
           </div>
         </div>
@@ -567,8 +567,8 @@ export default function AdminUsersPage() {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Create New User Account"
-        description="Provision a new user account with customized roles and credentials."
+        title="Tạo tài khoản người dùng mới"
+        description="Cấp tài khoản mới với vai trò và thông tin đăng nhập tương ứng."
         size="md"
         footer={
           <>
@@ -578,7 +578,7 @@ export default function AdminUsersPage() {
               onClick={() => setIsCreateModalOpen(false)}
               disabled={isSubmittingCreate}
             >
-              Cancel
+              Hủy bỏ
             </Button>
             <Button
               variant="primary"
@@ -586,41 +586,41 @@ export default function AdminUsersPage() {
               onClick={handleCreateUser}
               isLoading={isSubmittingCreate}
             >
-              Create Account
+              Tạo tài khoản
             </Button>
           </>
         }
       >
         <form onSubmit={handleCreateUser} className="space-y-4">
           <Input
-            label="Full Name *"
-            placeholder="e.g. John Doe"
+            label="Họ và tên *"
+            placeholder="Ví dụ: Nguyễn Văn A"
             value={createForm.fullName}
             onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
             required
           />
 
           <Input
-            label="Username *"
-            placeholder="e.g. johndoe"
+            label="Tên đăng nhập *"
+            placeholder="Ví dụ: nguyenvana"
             value={createForm.username}
             onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
             required
           />
 
           <Input
-            label="Email Address *"
+            label="Địa chỉ Email *"
             type="email"
-            placeholder="e.g. john@example.com"
+            placeholder="Ví dụ: nguyenvana@example.com"
             value={createForm.email}
             onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
             required
           />
 
           <Input
-            label="Password *"
+            label="Mật khẩu ban đầu *"
             type="password"
-            placeholder="At least 6 characters"
+            placeholder="Ít nhất 6 ký tự"
             showPasswordToggle
             value={createForm.password}
             onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
@@ -629,16 +629,16 @@ export default function AdminUsersPage() {
 
           <div>
             <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
-              Assigned Role *
+              Vai trò chỉ định *
             </label>
             <select
               value={createForm.role}
               onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as UserRole })}
               className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
             >
-              <option value="STUDENT">STUDENT (Assessment candidate)</option>
-              <option value="TEACHER">TEACHER (Exam creator & grader)</option>
-              <option value="ADMIN">ADMIN (System administrator)</option>
+              <option value="STUDENT">Học sinh (Thí sinh dự thi)</option>
+              <option value="TEACHER">Giáo viên (Soạn đề & chấm thi)</option>
+              <option value="ADMIN">Quản trị viên (Toàn quyền hệ thống)</option>
             </select>
           </div>
         </form>
@@ -650,11 +650,11 @@ export default function AdminUsersPage() {
       <Modal
         isOpen={isResetPasswordModalOpen}
         onClose={() => setIsResetPasswordModalOpen(false)}
-        title="Reset User Password"
+        title="Đặt lại mật khẩu tài khoản"
         description={
           selectedTargetUser
-            ? `Setting new credentials for ${selectedTargetUser.fullName} (@${selectedTargetUser.username})`
-            : 'Reset credentials'
+            ? `Cập nhật mật khẩu mới cho ${selectedTargetUser.fullName} (@${selectedTargetUser.username})`
+            : 'Đặt lại mật khẩu'
         }
         size="sm"
         footer={
@@ -665,7 +665,7 @@ export default function AdminUsersPage() {
               onClick={() => setIsResetPasswordModalOpen(false)}
               disabled={isSubmittingReset}
             >
-              Cancel
+              Hủy bỏ
             </Button>
             <Button
               variant="primary"
@@ -673,21 +673,21 @@ export default function AdminUsersPage() {
               onClick={handleResetPassword}
               isLoading={isSubmittingReset}
             >
-              Update Password
+              Lưu mật khẩu mới
             </Button>
           </>
         }
       >
         <form onSubmit={handleResetPassword} className="space-y-4">
           <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400">
-            <p className="font-semibold mb-1">Administrative Override</p>
-            This user will immediately be required to use this new password for subsequent logins.
+            <p className="font-semibold mb-1">Lưu ý quản trị</p>
+            Người dùng sẽ cần sử dụng mật khẩu mới này cho những lần đăng nhập tiếp theo.
           </div>
 
           <Input
-            label="New Password *"
+            label="Mật khẩu mới *"
             type="password"
-            placeholder="At least 6 characters"
+            placeholder="Ít nhất 6 ký tự"
             showPasswordToggle
             value={newPasswordInput}
             onChange={(e) => setNewPasswordInput(e.target.value)}
@@ -703,11 +703,11 @@ export default function AdminUsersPage() {
       <Modal
         isOpen={isChangeRoleModalOpen}
         onClose={() => setIsChangeRoleModalOpen(false)}
-        title="Update User Role"
+        title="Cập nhật vai trò người dùng"
         description={
           selectedTargetUser
-            ? `Modify system role & permissions for @${selectedTargetUser.username}`
-            : 'Modify system role'
+            ? `Thay đổi phân quyền hệ thống cho @${selectedTargetUser.username}`
+            : 'Thay đổi phân quyền hệ thống'
         }
         size="sm"
         footer={
@@ -718,7 +718,7 @@ export default function AdminUsersPage() {
               onClick={() => setIsChangeRoleModalOpen(false)}
               disabled={isSubmittingRole}
             >
-              Cancel
+              Hủy bỏ
             </Button>
             <Button
               variant="primary"
@@ -726,7 +726,7 @@ export default function AdminUsersPage() {
               onClick={handleChangeRole}
               isLoading={isSubmittingRole}
             >
-              Save Role
+              Lưu vai trò
             </Button>
           </>
         }
@@ -736,21 +736,32 @@ export default function AdminUsersPage() {
             <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-700 dark:text-rose-400 flex items-start gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
-                <strong>Self-protection active:</strong> You are editing your own administrator
-                account. You cannot demote yourself.
+                <strong>Tự bảo vệ tài khoản:</strong> Bạn đang chỉnh sửa tài khoản quản trị của chính mình. Bạn không thể tự hạ quyền quản trị.
               </div>
             </div>
           )}
 
           <div>
             <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
-              Select Role
+              Chọn vai trò
             </label>
             <div className="space-y-2">
               {(['STUDENT', 'TEACHER', 'ADMIN'] as UserRole[]).map((r) => {
                 const isSelected = newRoleSelect === r;
                 const isDemotingSelf =
                   selectedTargetUser?.id === currentAdmin?.id && r !== 'ADMIN';
+
+                const roleNameMap: Record<UserRole, string> = {
+                  ADMIN: 'Quản trị viên',
+                  TEACHER: 'Giáo viên',
+                  STUDENT: 'Học sinh',
+                };
+
+                const roleDescMap: Record<UserRole, string> = {
+                  ADMIN: 'Toàn quyền quản trị hệ thống và người dùng',
+                  TEACHER: 'Soạn thảo đề thi, chấm điểm và giám sát kỳ thi',
+                  STUDENT: 'Tham gia làm bài thi và xem kết quả',
+                };
 
                 return (
                   <label
@@ -772,13 +783,9 @@ export default function AdminUsersPage() {
                         className="text-zinc-900 focus:ring-zinc-900"
                       />
                       <div>
-                        <div className="font-semibold text-sm">{r}</div>
+                        <div className="font-semibold text-sm">{roleNameMap[r]}</div>
                         <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {r === 'ADMIN'
-                            ? 'Full administrative governance over platform'
-                            : r === 'TEACHER'
-                            ? 'Author exams, evaluate submissions, question banking'
-                            : 'Participate in assessments and view results'}
+                          {roleDescMap[r]}
                         </div>
                       </div>
                     </div>
@@ -797,7 +804,7 @@ export default function AdminUsersPage() {
       <Modal
         isOpen={isToggleStatusModalOpen}
         onClose={() => setIsToggleStatusModalOpen(false)}
-        title={selectedTargetUser?.isActive ? 'Deactivate Account' : 'Activate Account'}
+        title={selectedTargetUser?.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
         size="sm"
         footer={
           <>
@@ -807,7 +814,7 @@ export default function AdminUsersPage() {
               onClick={() => setIsToggleStatusModalOpen(false)}
               disabled={isSubmittingToggle}
             >
-              Cancel
+              Hủy bỏ
             </Button>
             <Button
               variant={selectedTargetUser?.isActive ? 'danger' : 'primary'}
@@ -815,7 +822,7 @@ export default function AdminUsersPage() {
               onClick={handleToggleStatus}
               isLoading={isSubmittingToggle}
             >
-              {selectedTargetUser?.isActive ? 'Confirm Deactivate' : 'Confirm Activate'}
+              {selectedTargetUser?.isActive ? 'Xác nhận khóa' : 'Xác nhận mở khóa'}
             </Button>
           </>
         }
@@ -836,13 +843,11 @@ export default function AdminUsersPage() {
           <p className="text-sm text-zinc-600 dark:text-zinc-300">
             {selectedTargetUser?.isActive ? (
               <>
-                Are you sure you want to <strong>deactivate</strong> this account? The user will be
-                immediately blocked from signing in and interacting with examinations.
+                Bạn có chắc chắn muốn <strong>khóa</strong> tài khoản này không? Người dùng sẽ bị chặn đăng nhập và không thể tham gia các kỳ thi.
               </>
             ) : (
               <>
-                Are you sure you want to <strong>reactivate</strong> this account? The user will
-                regain access to the platform.
+                Bạn có chắc chắn muốn <strong>mở khóa</strong> tài khoản này không? Người dùng sẽ được khôi phục quyền truy cập vào hệ thống.
               </>
             )}
           </p>

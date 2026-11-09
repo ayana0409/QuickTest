@@ -144,16 +144,16 @@ export default function AdminDashboardPage() {
             <div className="text-3xl font-black text-red-600 dark:text-red-400">
               {isLoading ? '...' : stats.totalViolations}
             </div>
-            <p className="text-xs text-zinc-500 mt-1">Được phát hiện và ghi log</p>
+            <p className="text-xs text-zinc-500 mt-1">Được phát hiện và ghi nhận</p>
           </div>
         </div>
 
         {/* Governance Navigation Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <h3 className="text-base font-bold mb-2">Quản lý Người dùng (User Governance)</h3>
+            <h3 className="text-base font-bold mb-2">Quản lý Người dùng</h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-              Tra cứu danh sách tài khoản, kích hoạt / khóa tài khoản, phân quyền quản trị viên hoặc giáo viên.
+              Tra cứu danh sách tài khoản, kích hoạt hoặc khóa tài khoản, phân quyền quản trị viên và giáo viên.
             </p>
             <Link href="/admin/users">
               <Button variant="outline" size="sm">
@@ -163,11 +163,11 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <h3 className="text-base font-bold mb-2">Điều phối Đề thi (Exam Governance)</h3>
+            <h3 className="text-base font-bold mb-2">Quản lý & Giám sát Kỳ thi</h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-              Xem danh sách tất cả kỳ thi trên hệ thống, cưỡng chế đóng kỳ thi (Force Close), hoặc dọn dẹp dữ liệu bài thi.
+              Xem danh sách tất cả kỳ thi trên hệ thống, chủ động đóng kỳ thi hoặc kiểm tra thông tin chi tiết.
             </p>
-            <Link href="/teacher/exams">
+            <Link href="/admin/exams">
               <Button variant="outline" size="sm">
                 Mở danh sách kỳ thi
               </Button>

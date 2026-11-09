@@ -362,7 +362,7 @@ export default function AdminContentModerationPage() {
             className="relative inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all duration-200 disabled:opacity-75 disabled:cursor-not-allowed border border-violet-400/30 group"
           >
             <Sparkles className={`w-4 h-4 ${aiJobStatus?.running ? 'animate-spin text-amber-300' : 'text-violet-200 group-hover:scale-110 transition-transform'}`} />
-            <span>{aiJobStatus?.running ? 'AI đang duyệt...' : 'Chạy kiểm duyệt AI'}</span>
+            <span>{aiJobStatus?.running ? 'Đang kiểm tra...' : 'Kiểm tra tự động'}</span>
           </button>
 
           <button
@@ -397,7 +397,7 @@ export default function AdminContentModerationPage() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    Hệ thống AI Kiểm duyệt Nội dung (Gemini)
+                    Kiểm tra nội dung tự động
                   </span>
                   {aiJobStatus.running ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50">
@@ -405,7 +405,7 @@ export default function AdminContentModerationPage() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                       </span>
-                      Đang xử lý theo lô
+                      Đang kiểm tra...
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
@@ -414,7 +414,7 @@ export default function AdminContentModerationPage() {
                   )}
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Đánh giá toàn diện nội dung, phương án đáp án và hình ảnh để phát hiện ngôn từ thù địch, gian lận hoặc vi phạm chính sách
+                  Tự động phát hiện câu hỏi hoặc hình ảnh có nội dung không phù hợp để quản trị viên xem xét
                 </p>
               </div>
             </div>
@@ -423,7 +423,7 @@ export default function AdminContentModerationPage() {
             <div className="flex items-center gap-3 self-end md:self-auto flex-wrap">
               {aiJobStatus.processedCount > 0 && (
                 <div className="text-xs bg-white/80 dark:bg-zinc-900/80 px-3 py-1.5 rounded-xl border border-violet-200/60 dark:border-violet-800/40 text-zinc-700 dark:text-zinc-300 shadow-sm flex items-center gap-2">
-                  <span>Lần chạy gần nhất:</span>
+                  <span>Kết quả gần nhất:</span>
                   <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
                     {aiJobStatus.safeCount} an toàn
                   </strong>
@@ -439,10 +439,10 @@ export default function AdminContentModerationPage() {
                 onClick={() => setShowResetCursorModal(true)}
                 disabled={aiJobStatus.running}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50 shadow-sm"
-                title="Đặt lại con trỏ duyệt về đầu danh sách"
+                title="Quét lại từ đầu toàn bộ ngân hàng câu hỏi"
               >
                 <History className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Đặt lại con trỏ AI</span>
+                <span>Duyệt lại từ đầu</span>
               </button>
             </div>
           </div>
@@ -457,11 +457,10 @@ export default function AdminContentModerationPage() {
             setFilterSafetyStatus('ALL');
             setCurrentPage(0);
           }}
-          className={`p-6 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 shadow-sm cursor-pointer group ${
-            filterSafetyStatus === 'ALL'
+          className={`p-6 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 shadow-sm cursor-pointer group ${filterSafetyStatus === 'ALL'
               ? 'border-indigo-500 ring-2 ring-indigo-500/20'
               : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
@@ -483,11 +482,10 @@ export default function AdminContentModerationPage() {
             setFilterSafetyStatus((prev) => (prev === 'UNSAFE' ? 'ALL' : 'UNSAFE'));
             setCurrentPage(0);
           }}
-          className={`p-6 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 shadow-sm cursor-pointer group ${
-            filterSafetyStatus === 'UNSAFE'
+          className={`p-6 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 shadow-sm cursor-pointer group ${filterSafetyStatus === 'UNSAFE'
               ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/20 dark:bg-amber-950/10'
               : 'border-zinc-200 dark:border-zinc-800 hover:border-amber-300 dark:hover:border-amber-800/80'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
@@ -511,11 +509,10 @@ export default function AdminContentModerationPage() {
             setFilterSafetyStatus((prev) => (prev === 'SAFE' ? 'ALL' : 'SAFE'));
             setCurrentPage(0);
           }}
-          className={`p-6 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 shadow-sm cursor-pointer group ${
-            filterSafetyStatus === 'SAFE'
+          className={`p-6 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 shadow-sm cursor-pointer group ${filterSafetyStatus === 'SAFE'
               ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-950/10'
               : 'border-zinc-200 dark:border-zinc-800 hover:border-emerald-300 dark:hover:border-emerald-800/80'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
@@ -570,11 +567,10 @@ export default function AdminContentModerationPage() {
               setFilterWithImagesOnly((prev) => !prev);
               setCurrentPage(0);
             }}
-            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 ${
-              filterWithImagesOnly
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200 ${filterWithImagesOnly
                 ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                 : 'bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-            }`}
+              }`}
           >
             <ImageIcon className="w-4 h-4" />
             <span>Chỉ câu có hình ảnh</span>
@@ -594,11 +590,10 @@ export default function AdminContentModerationPage() {
                 setFilterSafetyStatus('ALL');
                 setCurrentPage(0);
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                filterSafetyStatus === 'ALL'
+              className={`px-3 py-1.5 rounded-lg transition-all ${filterSafetyStatus === 'ALL'
                   ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-semibold shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
-              }`}
+                }`}
             >
               Tất cả trạng thái
             </button>
@@ -608,11 +603,10 @@ export default function AdminContentModerationPage() {
                 setFilterSafetyStatus('UNSAFE');
                 setCurrentPage(0);
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                filterSafetyStatus === 'UNSAFE'
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${filterSafetyStatus === 'UNSAFE'
                   ? 'bg-amber-500 text-white font-semibold shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
-              }`}
+                }`}
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               Cần kiểm duyệt
@@ -623,11 +617,10 @@ export default function AdminContentModerationPage() {
                 setFilterSafetyStatus('SAFE');
                 setCurrentPage(0);
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                filterSafetyStatus === 'SAFE'
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${filterSafetyStatus === 'SAFE'
                   ? 'bg-emerald-600 text-white font-semibold shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
-              }`}
+                }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               Đã xác minh an toàn
@@ -810,83 +803,81 @@ export default function AdminContentModerationPage() {
                   {/* Choice Types (SINGLE_CHOICE / MULTIPLE_CHOICE) */}
                   {(question.questionType === 'SINGLE_CHOICE' ||
                     question.questionType === 'MULTIPLE_CHOICE') && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {question.options?.map((option, idx) => {
-                        const optionLabel = String.fromCharCode(65 + idx);
-                        const isCorrect = option.isCorrect;
-                        return (
-                          <div
-                            key={option.id || idx}
-                            className={`p-3.5 rounded-xl border transition-all flex items-start gap-3 ${
-                              isCorrect
-                                ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-500/50 text-emerald-950 dark:text-emerald-200'
-                                : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200'
-                            }`}
-                          >
-                            <span
-                              className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${
-                                isCorrect
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                              }`}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {question.options?.map((option, idx) => {
+                          const optionLabel = String.fromCharCode(65 + idx);
+                          const isCorrect = option.isCorrect;
+                          return (
+                            <div
+                              key={option.id || idx}
+                              className={`p-3.5 rounded-xl border transition-all flex items-start gap-3 ${isCorrect
+                                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-500/50 text-emerald-950 dark:text-emerald-200'
+                                  : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200'
+                                }`}
                             >
-                              {optionLabel}
-                            </span>
+                              <span
+                                className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${isCorrect
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                                  }`}
+                              >
+                                {optionLabel}
+                              </span>
 
-                            <div className="flex-1 min-w-0 space-y-2">
-                              <div className="text-sm font-medium break-words leading-snug">
-                                {option.content || (
-                                  <span className="italic text-zinc-400">
-                                    (Đáp án chỉ có hình ảnh)
-                                  </span>
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div className="text-sm font-medium break-words leading-snug">
+                                  {option.content || (
+                                    <span className="italic text-zinc-400">
+                                      (Đáp án chỉ có hình ảnh)
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Option Image: DIRECTLY VISIBLE IN OPTION BOX */}
+                                {option.imageUrl && (
+                                  <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-950 p-1 group/opt">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={option.imageUrl}
+                                      alt={`Hình ảnh đáp án ${optionLabel}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenLightbox(
+                                          option.imageUrl!,
+                                          `Hình ảnh đáp án ${optionLabel}`
+                                        );
+                                      }}
+                                      className="w-full h-auto object-contain max-h-36 max-w-[200px] rounded cursor-zoom-in transition-all hover:opacity-95"
+                                      loading="lazy"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenLightbox(
+                                          option.imageUrl!,
+                                          `Hình ảnh đáp án ${optionLabel}`
+                                        );
+                                      }}
+                                      className="absolute bottom-2 right-2 p-1 rounded-md bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm transition-all"
+                                      title="Phóng to"
+                                    >
+                                      <Maximize2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                 )}
                               </div>
 
-                              {/* Option Image: DIRECTLY VISIBLE IN OPTION BOX */}
-                              {option.imageUrl && (
-                                <div className="mt-2 relative inline-block rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-950 p-1 group/opt">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={option.imageUrl}
-                                    alt={`Hình ảnh đáp án ${optionLabel}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenLightbox(
-                                        option.imageUrl!,
-                                        `Hình ảnh đáp án ${optionLabel}`
-                                      );
-                                    }}
-                                    className="w-full h-auto object-contain max-h-36 max-w-[200px] rounded cursor-zoom-in transition-all hover:opacity-95"
-                                    loading="lazy"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenLightbox(
-                                        option.imageUrl!,
-                                        `Hình ảnh đáp án ${optionLabel}`
-                                      );
-                                    }}
-                                    className="absolute bottom-2 right-2 p-1 rounded-md bg-black/70 hover:bg-black/90 text-white backdrop-blur-sm transition-all"
-                                    title="Phóng to"
-                                  >
-                                    <Maximize2 className="w-3 h-3" />
-                                  </button>
-                                </div>
+                              {isCorrect && (
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> Đúng
+                                </span>
                               )}
                             </div>
-
-                            {isCorrect && (
-                              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Đúng
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    )}
 
                   {/* Numeric Type */}
                   {question.questionType === 'NUMERIC' && (
@@ -916,7 +907,7 @@ export default function AdminContentModerationPage() {
                       {question.gradingRubric && (
                         <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                           <span className="text-xs text-zinc-500 font-semibold uppercase">
-                            Tiêu chí chấm điểm (Rubric / Context Prompt):
+                            Tiêu chí chấm điểm:
                           </span>
                           <div className="text-sm text-zinc-800 dark:text-zinc-200 mt-1 whitespace-pre-line leading-relaxed">
                             {question.gradingRubric}
@@ -961,11 +952,10 @@ export default function AdminContentModerationPage() {
                       type="button"
                       onClick={() => handleToggleSafety(question)}
                       disabled={isProcessing}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 shadow-sm disabled:opacity-60 active:scale-[0.98] ${
-                        question.isSafe
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 shadow-sm disabled:opacity-60 active:scale-[0.98] ${question.isSafe
                           ? 'bg-amber-500 hover:bg-amber-600 text-white'
                           : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
+                        }`}
                     >
                       {isProcessing ? (
                         <RotateCcw className="w-3.5 h-3.5 animate-spin" />
@@ -1148,7 +1138,7 @@ export default function AdminContentModerationPage() {
               ) : (
                 <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5">
                   <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span>Nội dung câu hỏi và hình ảnh Cloudinary liên kết sẽ bị xóa vĩnh viễn.</span>
+                  <span>Nội dung câu hỏi và hình ảnh đính kèm sẽ bị xóa vĩnh viễn.</span>
                 </div>
               )}
             </div>
@@ -1196,16 +1186,16 @@ export default function AdminContentModerationPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Đặt lại con trỏ duyệt AI
+                  Duyệt lại toàn bộ câu hỏi
                 </h3>
                 <p className="text-xs text-zinc-500">
-                  Đưa điểm đánh dấu duyệt AI về đầu danh sách câu hỏi
+                  Rà soát lại toàn bộ ngân hàng câu hỏi từ đầu
                 </p>
               </div>
             </div>
 
             <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Việc đặt lại con trỏ sẽ xóa vị trí lưu vết hiện tại ({aiJobStatus?.lastProcessedId ? `đang ở ID: ${aiJobStatus.lastProcessedId.substring(0, 8)}...` : 'chưa thiết lập'}). Lần chạy kiểm duyệt AI tiếp theo sẽ quét lại từ câu hỏi đầu tiên.
+              Hệ thống sẽ kiểm tra lại toàn bộ ngân hàng câu hỏi thay vì chỉ quét các câu hỏi mới thêm để bảo đảm mọi nội dung đều tuân thủ quy định.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -1226,12 +1216,12 @@ export default function AdminContentModerationPage() {
                 {isResettingCursor ? (
                   <>
                     <RotateCcw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Đang đặt lại...</span>
+                    <span>Đang thiết lập...</span>
                   </>
                 ) : (
                   <>
                     <History className="w-3.5 h-3.5" />
-                    <span>Xác nhận đặt lại</span>
+                    <span>Xác nhận duyệt lại</span>
                   </>
                 )}
               </button>

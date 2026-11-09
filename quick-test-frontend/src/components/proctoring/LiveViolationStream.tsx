@@ -4,13 +4,6 @@ import {
   Clock,
   ArrowRight,
   Trash2,
-  AlertTriangle,
-  MonitorX,
-  Maximize2,
-  Terminal,
-  Copy,
-  UserX,
-  Users,
   Film,
   Image as ImageIcon,
 } from 'lucide-react';
@@ -84,10 +77,10 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
           <button
             onClick={onClearStream}
             className="flex items-center gap-1 text-xs text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 transition-colors"
-            title="Clear stream list"
+            title="Xóa danh sách cảnh báo"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Dọn</span>
+            <span>Xóa danh sách</span>
           </button>
         )}
       </div>

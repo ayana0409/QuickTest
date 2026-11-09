@@ -72,14 +72,14 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, { label: string; icon: React.Re
     desc: 'Thí sinh chọn một hoặc nhiều đáp án đúng.',
   },
   NUMERIC: {
-    label: 'Điền số (Numeric)',
+    label: 'Điền số',
     icon: <Hash className="w-4 h-4 text-amber-500" />,
     desc: 'Hệ thống tự động chấm theo giá trị số và sai số cho phép.',
   },
   ESSAY_TEXT: {
-    label: 'Tự luận (Essay)',
+    label: 'Tự luận',
     icon: <FileText className="w-4 h-4 text-purple-500" />,
-    desc: 'Trả lời bằng văn bản dài, hỗ trợ barem điểm cho GV hoặc AI chấm.',
+    desc: 'Trả lời bằng văn bản dài, hỗ trợ hướng dẫn chấm bài chi tiết.',
   },
 };
 
@@ -603,7 +603,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
               leftIcon={<Sparkles className="w-4 h-4 animate-pulse" />}
               onClick={() => setIsAiModalOpen(true)}
             >
-              Soạn đề AI
+              Tạo đề bằng AI
             </Button>
             <Button
               variant="outline"

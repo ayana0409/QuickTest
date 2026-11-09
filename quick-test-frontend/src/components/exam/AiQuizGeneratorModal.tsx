@@ -680,9 +680,9 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
           <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-3">
             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="space-y-0.5 text-[11px] leading-relaxed">
-              <p className="font-semibold">Quy định soạn đề tại QuickTest:</p>
+              <p className="font-semibold">Lưu ý khi tạo câu hỏi tự động:</p>
               <p>
-                Mỗi tài khoản chỉ được soạn <strong>1 đề</strong> tại một thời điểm. Tác vụ sẽ xếp hàng an toàn và tự động thực hiện tuần tự.
+                Để đảm bảo chất lượng, hệ thống sẽ xử lý từng tài liệu một cách kỹ lưỡng. Bạn có thể đóng cửa sổ này trong lúc chờ tạo xong.
               </p>
             </div>
           </div>
@@ -726,10 +726,10 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
               </div>
               <div>
                 <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-1">
-                  Đang xếp hàng chờ xử lý...
+                  Đang chuẩn bị nội dung...
                 </h4>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Hệ thống đang xử lý, vui lòng chờ đợi. Bạn có thể tắt hộp thoại này
+                  Hệ thống đang đọc và phân tích tài liệu. Bạn có thể đóng cửa sổ này và quay lại xem kết quả sau.
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 text-xs text-zinc-600 dark:text-zinc-300">
@@ -915,7 +915,15 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
                                 ? 'Điền số'
                                 : 'Tự luận'}
                         </Badge>
-                        <Badge variant="warning">{q.difficulty || 'MEDIUM'}</Badge>
+                        <Badge variant="warning">
+                          {q.difficulty === 'EASY'
+                            ? 'Dễ'
+                            : q.difficulty === 'HARD'
+                              ? 'Khó'
+                              : q.difficulty === 'BALANCED'
+                                ? 'Cân bằng'
+                                : 'Trung bình'}
+                        </Badge>
                         <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                           {q.points || 1.0} điểm
                         </span>
