@@ -9,6 +9,11 @@ import {
 } from 'lucide-react';
 import type { AttemptMonitorItem } from '@/types/proctoring';
 import { Badge } from '@/components/common/Badge';
+import {
+  formatAttemptStatus,
+  formatConnectionStatus,
+  formatCandidateInitials,
+} from '@/lib/formatters/statusFormatter';
 import { cn } from '@/lib/utils';
 
 interface CandidateMonitorCardProps {
@@ -38,15 +43,10 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
   // Determine card warning level
   const hasHighViolations = candidate.violationCount >= maxViolations;
   const hasWarnings = candidate.violationCount > 0 && !hasHighViolations;
+  const statusMeta = formatAttemptStatus(candidate.status);
+  const connMeta = formatConnectionStatus(candidate.isOnline);
 
-  const initials = candidate.candidateName
-    ? candidate.candidateName
-      .split(' ')
-      .map((w) => w[0])
-      .slice(-2)
-      .join('')
-      .toUpperCase()
-    : 'U';
+  const initials = formatCandidateInitials(candidate.candidateName);
 
   return (
     <div
@@ -69,22 +69,26 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
           {/* Top Row: Online status & Badge */}
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-1.5 text-xs">
-              {candidate.isOnline ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium text-[11px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <Wifi className="w-3 h-3" />
-                  <span>Online</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium text-[11px] bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium text-[11px] border',
+                  connMeta.colorClass
+                )}
+              >
+                {candidate.isOnline ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <Wifi className="w-3 h-3" />
+                  </>
+                ) : (
                   <WifiOff className="w-3 h-3" />
-                  <span>Offline</span>
-                </span>
-              )}
+                )}
+                <span>{connMeta.label}</span>
+              </span>
             </div>
 
-            <Badge variant={candidate.status} size="sm">
-              {candidate.status}
+            <Badge variant={statusMeta.variant} size="sm">
+              {statusMeta.shortLabel}
             </Badge>
           </div>
 
@@ -107,10 +111,10 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
 
             <div className="min-w-0 flex-1">
               <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                {candidate.candidateName || 'Anonymous Candidate'}
+                {candidate.candidateName || 'Thí sinh tự do'}
               </h4>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                {candidate.candidateIdentifier || 'No identifier recorded'}
+                {candidate.candidateIdentifier || 'Chưa có mã định danh'}
               </p>
             </div>
           </div>
@@ -127,7 +131,7 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
                       : 'text-zinc-400'
                   )}
                 />
-                <span>Violations</span>
+                <span>Vi phạm</span>
               </span>
               <span
                 className={cn(
@@ -198,8 +202,8 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
           {isInProgress && !isDisqualified && (
             <button
               onClick={() => onDisqualify(candidate)}
-              className="inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 transition-colors"
-              title="Disqualify this candidate"
+              className="inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 transition-colors cursor-pointer"
+              title="Đình chỉ quyền làm bài"
             >
               <UserX className="w-3.5 h-3.5" />
               <span>Đình chỉ</span>
@@ -208,7 +212,7 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
 
           {isDisqualified && (
             <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 px-2 py-1 bg-rose-50 dark:bg-rose-950/30 rounded-lg">
-              Bị đình chỉ
+              Đã đình chỉ
             </span>
           )}
         </div>

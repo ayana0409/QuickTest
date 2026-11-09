@@ -8,6 +8,11 @@ import {
 } from 'lucide-react';
 import type { AttemptMonitorItem } from '@/types/proctoring';
 import { Badge } from '@/components/common/Badge';
+import {
+  formatAttemptStatus,
+  formatConnectionStatus,
+  formatCandidateInitials,
+} from '@/lib/formatters/statusFormatter';
 import { cn } from '@/lib/utils';
 
 interface CandidateMonitorTableProps {
@@ -50,9 +55,9 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
               <th className="py-3.5 px-4">Kết nối</th>
               <th className="py-3.5 px-4">Trạng thái</th>
               <th className="py-3.5 px-4">Vi phạm</th>
-              <th className="py-3.5 px-4">Thời gian bắt đầu</th>
-              <th className="py-3.5 px-4">Thời gian nộp bài</th>
-              <th className="py-3.5 px-4 text-right">Hành động</th>
+              <th className="py-3.5 px-4">Bắt đầu</th>
+              <th className="py-3.5 px-4">Nộp bài</th>
+              <th className="py-3.5 px-4 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -61,15 +66,10 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                 candidate.isDisqualified || candidate.status === 'DISQUALIFIED';
               const isInProgress = candidate.status === 'IN_PROGRESS';
               const hasHighViolations = candidate.violationCount >= maxViolations;
+              const statusMeta = formatAttemptStatus(candidate.status);
+              const connMeta = formatConnectionStatus(candidate.isOnline);
 
-              const initials = candidate.candidateName
-                ? candidate.candidateName
-                  .split(' ')
-                  .map((w) => w[0])
-                  .slice(-2)
-                  .join('')
-                  .toUpperCase()
-                : 'U';
+              const initials = formatCandidateInitials(candidate.candidateName);
 
               return (
                 <tr
@@ -94,10 +94,10 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                       </div>
                       <div className="min-w-0">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[180px]">
-                          {candidate.candidateName || 'Anonymous Candidate'}
+                          {candidate.candidateName || 'Thí sinh tự do'}
                         </div>
                         <div className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate max-w-[180px]">
-                          {candidate.candidateIdentifier || 'No identifier'}
+                          {candidate.candidateIdentifier || 'Chưa có mã'}
                         </div>
                       </div>
                     </div>
@@ -105,24 +105,28 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
 
                   {/* Connection */}
                   <td className="py-3 px-4">
-                    {candidate.isOnline ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <Wifi className="w-3.5 h-3.5" />
-                        <span>Online</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-400">
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 text-[11px] font-medium',
+                        candidate.isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400'
+                      )}
+                    >
+                      {candidate.isOnline ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <Wifi className="w-3.5 h-3.5" />
+                        </>
+                      ) : (
                         <WifiOff className="w-3.5 h-3.5" />
-                        <span>Offline</span>
-                      </span>
-                    )}
+                      )}
+                      <span>{connMeta.label}</span>
+                    </span>
                   </td>
 
                   {/* Status */}
                   <td className="py-3 px-4">
-                    <Badge variant={candidate.status} size="sm">
-                      {candidate.status}
+                    <Badge variant={statusMeta.variant} size="sm">
+                      {statusMeta.shortLabel}
                     </Badge>
                   </td>
 
@@ -174,8 +178,8 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => onInspect(candidate.attemptId)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
-                        title="Inspect telemetry & violation history"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 dark:text-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                        title="Xem chi tiết giám sát & bằng chứng"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>Kiểm tra</span>
@@ -184,8 +188,8 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                       {isInProgress && !isDisqualified && (
                         <button
                           onClick={() => onDisqualify(candidate)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 transition-colors"
-                          title="Disqualify candidate"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 transition-colors cursor-pointer"
+                          title="Đình chỉ quyền làm bài"
                         >
                           <UserX className="w-3.5 h-3.5" />
                           <span>Đình chỉ</span>

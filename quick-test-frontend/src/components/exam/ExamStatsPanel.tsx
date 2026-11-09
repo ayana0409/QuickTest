@@ -16,6 +16,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { gradingService, type ExamAttemptStatsDto } from '@/services/grading.service';
+import { formatDurationCompact } from '@/lib/formatters/statusFormatter';
 
 interface ExamStatsPanelProps {
   examId: string;
@@ -29,16 +30,7 @@ interface ExamStatsPanelProps {
  * e.g. 3723 → "1g 2p 3s"
  */
 function formatDuration(seconds: number | null | undefined): string {
-  if (seconds == null) return '—';
-  const s = Math.round(seconds);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const parts: string[] = [];
-  if (h > 0) parts.push(`${h}g`);
-  if (m > 0) parts.push(`${m}p`);
-  if (sec > 0 || parts.length === 0) parts.push(`${sec}s`);
-  return parts.join(' ');
+  return formatDurationCompact(seconds);
 }
 
 /**
@@ -116,7 +108,7 @@ const AttemptDistributionBar: React.FC<DistBarProps> = ({ stats }) => {
         <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-wide">
           Phân bổ trạng thái
         </p>
-        <span className="text-xs text-zinc-400">{total} phiên</span>
+        <span className="text-xs text-zinc-400">{total} lượt thi</span>
       </div>
 
       {/* Stacked bar */}
@@ -229,9 +221,9 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* Total attempts */}
         <StatCard
-          label="Tổng phiên thi"
+          label="Tổng lượt thi"
           value={stats.totalAttempts}
-          sub={`${stats.completedAttempts} hoàn thành`}
+          sub={`${stats.completedAttempts} bài đã nộp`}
           icon={<Users className="w-5 h-5" />}
           colorClass="indigo"
           iconBg="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
@@ -251,7 +243,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
         <StatCard
           label="Điểm trung bình"
           value={hasAttempts && stats.gradedCount > 0 ? formatScore(stats.averageScore, totalPoints) : '—'}
-          sub={stats.gradedCount > 0 ? `Trên ${stats.gradedCount} phiên đã chấm` : 'Chưa có điểm'}
+          sub={stats.gradedCount > 0 ? `Trên ${stats.gradedCount} bài đã chấm` : 'Chưa có điểm'}
           icon={<Activity className="w-5 h-5" />}
           colorClass="violet"
           iconBg="bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400"
@@ -301,7 +293,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
 
         {/* Fastest / Slowest */}
         <StatCard
-          label="Nhanh / Chậm nhất"
+          label="Nhanh / Lâu nhất"
           value={
             <span className="text-base font-bold">
               <span className="text-emerald-600 dark:text-emerald-400">
@@ -313,7 +305,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
               </span>
             </span>
           }
-          sub="Min / Max thời gian làm bài"
+          sub="Nhanh nhất / Lâu nhất"
           icon={<Award className="w-5 h-5" />}
           colorClass="amber"
           iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"

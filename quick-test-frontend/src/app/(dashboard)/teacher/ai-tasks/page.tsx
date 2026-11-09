@@ -335,7 +335,7 @@ export default function TeacherAiTasksPage() {
           <div className="flex items-center gap-2 mb-1.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/60 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              AI Background Execution
+              Trợ lý AI tự động
             </span>
             {hasActiveTasks && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
@@ -406,7 +406,7 @@ export default function TeacherAiTasksPage() {
               <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
                 {activeCount}
               </p>
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Hàng đợi đơn luồng AI</p>
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Hệ thống đang xử lý</p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 dark:text-amber-400 relative">
               {activeCount > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-500 animate-ping" />}
@@ -443,7 +443,7 @@ export default function TeacherAiTasksPage() {
               <p className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-1">
                 {failedCount}
               </p>
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Đã giải phóng tài nguyên</p>
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Đã dừng tác vụ</p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center text-rose-600 dark:text-rose-400">
               <AlertTriangle className="w-6 h-6" />
@@ -696,7 +696,7 @@ export default function TeacherAiTasksPage() {
                       </div>
                       <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1.5 animate-pulse">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        {task.currentStep || 'Đang chờ xử lý trong hàng đợi nền...'}
+                        {task.currentStep || 'Hệ thống đang chuẩn bị nội dung...'}
                       </p>
                     </div>
                   )}
@@ -715,7 +715,7 @@ export default function TeacherAiTasksPage() {
                   {/* Action Bar */}
                   <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 flex-wrap">
                     <div className="text-[11px] text-zinc-400">
-                      Mã tác vụ: <code className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono text-[10px]">{task.taskId.substring(0, 13)}...</code>
+                      Mã tác vụ: <span className="font-mono text-zinc-600 dark:text-zinc-400">#{task.taskId.substring(0, 8)}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1287,7 +1287,7 @@ export default function TeacherAiTasksPage() {
                             )}
                             {question.gradingRubric && (
                               <div className="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300">
-                                <span className="font-bold">Tiêu chí chấm điểm (Rubric):</span>
+                                <span className="font-bold">Tiêu chí chấm điểm:</span>
                                 <p className="mt-1 leading-relaxed whitespace-pre-wrap">
                                   {question.gradingRubric}
                                 </p>

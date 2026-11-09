@@ -43,6 +43,7 @@ import { ExamAttemptsTab } from '@/components/exam/ExamAttemptsTab';
 import { teacherProctoringService } from '@/services/teacherProctoring.service';
 import { examService } from '@/services/exam.service';
 import { gradingService, type ExamAttemptStatsDto } from '@/services/grading.service';
+import { formatExamStatus } from '@/lib/formatters/statusFormatter';
 import { ProctoringRealtimeManager } from '@/lib/realtime/ProctoringRealtimeManager';
 import type {
   AttemptMonitorItem,
@@ -118,14 +119,6 @@ export default function TeacherLiveProctoringPage() {
     }
   }, [exam, urlTab]);
 
-  // Handle switching sub-tabs and updating query param in URL
-  const handleSwitchSubTab = (newTab: 'live' | 'attempts') => {
-    setActiveSubTab(newTab);
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', newTab);
-    window.history.replaceState({}, '', url.toString());
-  };
-
   // Monitoring data state
   const [candidates, setCandidates] = useState<AttemptMonitorItem[]>([]);
   const [loadingCandidates, setLoadingCandidates] = useState<boolean>(true);
@@ -198,8 +191,8 @@ export default function TeacherLiveProctoringPage() {
       const isViolation = statusFilter === 'VIOLATION';
       const apiStatus =
         statusFilter !== 'ALL' &&
-        statusFilter !== 'VIOLATION' &&
-        statusFilter !== 'ONLINE'
+          statusFilter !== 'VIOLATION' &&
+          statusFilter !== 'ONLINE'
           ? (statusFilter as AttemptStatus)
           : undefined;
 
@@ -222,10 +215,34 @@ export default function TeacherLiveProctoringPage() {
     }
   }, [examId, statusFilter, debouncedSearch, currentPage, pageSize, sortOption]);
 
-  // Initial load
+  // Handle switching sub-tabs, synchronizing stats, and updating query param in URL
+  const handleSwitchSubTab = useCallback(
+    (newTab: 'live' | 'attempts') => {
+      setActiveSubTab(newTab);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', newTab);
+      window.history.replaceState({}, '', url.toString());
+
+      // Instantly synchronize stats across tabs so header badges match the active view
+      fetchExamStats();
+      if (newTab === 'live') {
+        fetchCandidates();
+      }
+    },
+    [fetchExamStats, fetchCandidates]
+  );
+
+  // Initial load & periodic stats synchronization
   useEffect(() => {
     fetchExamDetail();
     fetchExamStats();
+
+    // Auto-refresh stats every 15s for live dashboard accuracy
+    const statsTimer = setInterval(() => {
+      fetchExamStats();
+    }, 15000);
+
+    return () => clearInterval(statsTimer);
   }, [fetchExamDetail, fetchExamStats]);
 
   useEffect(() => {
@@ -405,11 +422,22 @@ export default function TeacherLiveProctoringPage() {
   // Compute Statistics
   const stats: ProctoringStats = React.useMemo(() => {
     // Priority: use aggregated database statistics from examStats for 100% accuracy across all candidates
-    const total = examStats?.totalAttempts ?? totalCandidates;
+    const baseTotal = examStats?.totalAttempts ?? totalCandidates;
     const submitted = examStats?.completedAttempts ?? 0;
-    const inProgress = examStats?.inProgressAttempts ?? 0;
-    const withViolations = examStats?.attemptsWithViolations ?? 0;
-    const disqualified = examStats?.disqualifiedAttempts ?? 0;
+    // Guaranteed consistency: Synchronize with live paginated totalElements when filtering by status
+    const inProgress = Math.max(
+      examStats?.inProgressAttempts ?? 0,
+      statusFilter === 'IN_PROGRESS' ? totalCandidates : 0
+    );
+    const withViolations = Math.max(
+      examStats?.attemptsWithViolations ?? 0,
+      statusFilter === 'VIOLATION' ? totalCandidates : 0
+    );
+    const disqualified = Math.max(
+      examStats?.disqualifiedAttempts ?? 0,
+      statusFilter === 'DISQUALIFIED' ? totalCandidates : 0
+    );
+    const total = Math.max(baseTotal, inProgress + submitted + disqualified);
 
     let online = 0;
     candidates.forEach((c) => {
@@ -417,7 +445,7 @@ export default function TeacherLiveProctoringPage() {
     });
 
     return { total, online, inProgress, withViolations, disqualified, submitted };
-  }, [examStats, totalCandidates, candidates]);
+  }, [examStats, totalCandidates, candidates, statusFilter]);
 
   // Filter candidates locally for ephemeral online state
   const filteredCandidates = React.useMemo(() => {
@@ -440,7 +468,7 @@ export default function TeacherLiveProctoringPage() {
                 leftIcon={<ArrowLeft className="w-4 h-4" />}
                 className="rounded-xl"
               >
-                Back to Exams
+                Quay lại
               </Button>
             </Link>
 
@@ -459,12 +487,12 @@ export default function TeacherLiveProctoringPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                  {loadingExam ? 'Loading Exam...' : exam?.title || 'Giám sát'}
+                  {loadingExam ? 'Đang tải đề thi...' : exam?.title || 'Giám sát'}
                 </h1>
 
                 {exam?.status && (
-                  <Badge variant={exam.status} size="sm">
-                    {exam.status}
+                  <Badge variant={formatExamStatus(exam.status).variant} size="sm">
+                    {formatExamStatus(exam.status).label}
                   </Badge>
                 )}
 
@@ -489,8 +517,8 @@ export default function TeacherLiveProctoringPage() {
                     </span>
                     <button
                       onClick={() => handleCopyCode(exam.accessCode)}
-                      className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors ml-1"
-                      title="Copy access code"
+                      className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors ml-1 cursor-pointer"
+                      title="Sao chép mã vào thi"
                     >
                       {copiedCode ? (
                         <Check className="w-3 h-3 text-emerald-500" />
@@ -527,33 +555,33 @@ export default function TeacherLiveProctoringPage() {
                 connectionStatus === 'CONNECTED_PRIMARY'
                   ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
                   : connectionStatus === 'CONNECTED_FALLBACK'
-                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-                  : connectionStatus === 'CONNECTING'
-                  ? 'bg-sky-500/10 border-sky-500/20 text-sky-400'
-                  : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                    : connectionStatus === 'CONNECTING'
+                      ? 'bg-sky-500/10 border-sky-500/20 text-sky-400'
+                      : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
               )}
               title={
                 connectionStatus === 'CONNECTED_PRIMARY'
-                  ? 'Trực tuyến (QuickNotify Hub)'
+                  ? 'Kết nối trực tiếp ổn định'
                   : connectionStatus === 'CONNECTED_FALLBACK'
-                  ? 'Dự phòng (STOMP Fallback)'
-                  : connectionStatus === 'CONNECTING'
-                  ? 'Đang kết nối...'
-                  : 'Mất tín hiệu mạng'
+                    ? 'Đang dùng đường truyền dự phòng'
+                    : connectionStatus === 'CONNECTING'
+                      ? 'Đang kết nối...'
+                      : 'Mất kết nối mạng'
               }
             >
               {/* Outer pulsing ring for active states */}
               {(connectionStatus === 'CONNECTED_PRIMARY' ||
                 connectionStatus === 'CONNECTING') && (
-                <span
-                  className={cn(
-                    'absolute w-3.5 h-3.5 rounded-full opacity-60 animate-ping',
-                    connectionStatus === 'CONNECTED_PRIMARY'
-                      ? 'bg-emerald-400'
-                      : 'bg-sky-400'
-                  )}
-                />
-              )}
+                  <span
+                    className={cn(
+                      'absolute w-3.5 h-3.5 rounded-full opacity-60 animate-ping',
+                      connectionStatus === 'CONNECTED_PRIMARY'
+                        ? 'bg-emerald-400'
+                        : 'bg-sky-400'
+                    )}
+                  />
+                )}
               {/* Center status dot */}
               <span
                 className={cn(
@@ -561,10 +589,10 @@ export default function TeacherLiveProctoringPage() {
                   connectionStatus === 'CONNECTED_PRIMARY'
                     ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
                     : connectionStatus === 'CONNECTED_FALLBACK'
-                    ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
-                    : connectionStatus === 'CONNECTING'
-                    ? 'bg-sky-400'
-                    : 'bg-rose-500'
+                      ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
+                      : connectionStatus === 'CONNECTING'
+                        ? 'bg-sky-400'
+                        : 'bg-rose-500'
                 )}
               />
             </div>
@@ -574,8 +602,8 @@ export default function TeacherLiveProctoringPage() {
               variant="outline"
               size="sm"
               onClick={() => setSoundEnabled((prev) => !prev)}
-              className="rounded-xl px-2.5"
-              title={soundEnabled ? 'Mute alert sound' : 'Enable alert sound'}
+              className="rounded-xl px-2.5 cursor-pointer"
+              title={soundEnabled ? 'Tắt chuông cảnh báo' : 'Bật chuông cảnh báo'}
             >
               {soundEnabled ? (
                 <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -588,10 +616,13 @@ export default function TeacherLiveProctoringPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fetchCandidates()}
+              onClick={() => {
+                fetchCandidates();
+                fetchExamStats();
+              }}
               isLoading={loadingCandidates}
               leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-              className="rounded-xl"
+              className="rounded-xl cursor-pointer"
             >
               Làm mới
             </Button>
@@ -626,7 +657,7 @@ export default function TeacherLiveProctoringPage() {
                 : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
             )}
           >
-            {stats.online > 0 ? stats.online : stats.inProgress}
+            {stats.inProgress > 0 ? stats.inProgress : (stats.online > 0 ? stats.online : stats.total)}
           </span>
         </button>
 
@@ -736,24 +767,24 @@ export default function TeacherLiveProctoringPage() {
               <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
-                  'p-1.5 rounded-lg text-xs transition-colors',
+                  'p-1.5 rounded-lg text-xs transition-colors cursor-pointer',
                   viewMode === 'grid'
                     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
                 )}
-                title="Grid Monitor View"
+                title="Xem dạng thẻ lưới"
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('table')}
                 className={cn(
-                  'p-1.5 rounded-lg text-xs transition-colors',
+                  'p-1.5 rounded-lg text-xs transition-colors cursor-pointer',
                   viewMode === 'table'
                     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
                 )}
-                title="Table Data View"
+                title="Xem dạng danh sách bảng"
               >
                 <List className="w-4 h-4" />
               </button>
@@ -886,11 +917,10 @@ export default function TeacherLiveProctoringPage() {
                           <button
                             type="button"
                             onClick={() => setCurrentPage(p)}
-                            className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                              currentPage === p
+                            className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all cursor-pointer ${currentPage === p
                                 ? 'bg-indigo-600 text-white shadow-sm'
                                 : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                            }`}
+                              }`}
                           >
                             {p + 1}
                           </button>

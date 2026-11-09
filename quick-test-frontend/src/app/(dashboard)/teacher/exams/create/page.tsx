@@ -332,7 +332,7 @@ export default function CreateExamPage() {
                         Bật giám sát trực tuyến
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Tự động phát hiện gian lận như: chuyển tab, mở công cụ, copy/paste,...
+                        Tự động phát hiện vi phạm như: chuyển tab, mở cửa sổ khác, sao chép hoặc dán nội dung,...
                       </p>
                     </div>
                   </label>

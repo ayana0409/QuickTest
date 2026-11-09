@@ -17,6 +17,7 @@ import { Modal } from '@/components/common/Modal';
 import { Badge } from '@/components/common/Badge';
 import { teacherProctoringService } from '@/services/teacherProctoring.service';
 import { EvidenceMediaViewer } from './EvidenceMediaViewer';
+import { formatAttemptStatus, formatConnectionStatus } from '@/lib/formatters/statusFormatter';
 import type {
   AttemptRealtimeStatusDetail,
   ViolationLogEntry,
@@ -74,7 +75,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
       .catch((err) => {
         if (!isMounted) return;
         console.error('Failed to load candidate proctoring telemetry:', err);
-        setError('Failed to load telemetry data. Please try again.');
+        setError('Không thể tải dữ liệu giám sát. Vui lòng thử lại sau.');
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -90,6 +91,8 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   const isDisqualified =
     statusDetail?.isDisqualified || statusDetail?.status === 'DISQUALIFIED';
   const isInProgress = statusDetail?.status === 'IN_PROGRESS';
+  const statusMeta = formatAttemptStatus(statusDetail?.status || '');
+  const connMeta = formatConnectionStatus(statusDetail?.isOnline ?? false);
 
   // Derive effective breakdown combining statusDetail and violationLogs to ensure counts are always accurate
   const effectiveBreakdown: Record<string, number> = { ...(statusDetail?.violationBreakdown || {}) };
@@ -145,30 +148,34 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
-                    {statusDetail.candidateName || 'Thí sinh ẩn danh'}
+                    {statusDetail.candidateName || 'Thí sinh tự do'}
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    {statusDetail.candidateIdentifier || 'Không có thông tin'}
+                    {statusDetail.candidateIdentifier || 'Chưa có mã định danh'}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2.5">
-                {statusDetail.isOnline ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <Wifi className="w-3.5 h-3.5" />
-                    <span>Online</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border',
+                    connMeta.colorClass
+                  )}
+                >
+                  {statusDetail.isOnline ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <Wifi className="w-3.5 h-3.5" />
+                    </>
+                  ) : (
                     <WifiOff className="w-3.5 h-3.5" />
-                    <span>Offline</span>
-                  </span>
-                )}
+                  )}
+                  <span>{connMeta.label}</span>
+                </span>
 
-                <Badge variant={statusDetail.status} size="md">
-                  {statusDetail.status}
+                <Badge variant={statusMeta.variant} size="md">
+                  {statusMeta.label}
                 </Badge>
               </div>
             </div>

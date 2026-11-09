@@ -696,7 +696,7 @@ export default function TeacherExamsPage() {
       <Modal
         isOpen={!!republishTarget}
         onClose={() => setRepublishTarget(null)}
-        title="Mở lại Đề thi (Republish)"
+        title="Mở lại đề thi"
         description="Cho phép thí sinh tiếp tục tham gia làm bài thi với mã đề hiện tại."
         size="md"
         footer={
@@ -826,7 +826,7 @@ export default function TeacherExamsPage() {
             <ul className="list-disc list-inside space-y-1 text-[11px] opacity-90">
               <li>Mã phòng thi mới ngẫu nhiên, trạng thái ban đầu là <strong>Bản nháp</strong>.</li>
               <li>Sao chép toàn bộ câu hỏi trắc nghiệm, tự luận và các đáp án.</li>
-              <li>Hình ảnh minh họa sẽ được nhân bản độc lập qua hàng đợi ngầm.</li>
+              <li>Hình ảnh minh họa và tệp đính kèm được tự động sao chép sang đề mới.</li>
               <li>Đề thi sẽ tự động xuất hiện trên danh sách ngay sau khi hoàn tất.</li>
             </ul>
           </div>

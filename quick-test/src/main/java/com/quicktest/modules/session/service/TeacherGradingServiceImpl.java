@@ -35,7 +35,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service implementation handling teacher manual grading operations for candidate essay submissions.
+ * Service implementation handling teacher manual grading operations for
+ * candidate essay submissions.
  */
 @Slf4j
 @Service
@@ -72,7 +73,8 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
         if (hasKeyword) {
             String pattern = "%" + search.trim().toLowerCase() + "%";
             if (status != null) {
-                attemptsPage = examAttemptRepository.searchAttemptsByExamIdAndStatus(examId, status, pattern, normalizedPageable);
+                attemptsPage = examAttemptRepository.searchAttemptsByExamIdAndStatus(examId, status, pattern,
+                        normalizedPageable);
             } else {
                 attemptsPage = examAttemptRepository.searchAttemptsByExamId(examId, pattern, normalizedPageable);
             }
@@ -187,8 +189,10 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
 
     @Override
     @Transactional
-    // Evict all grading-stats entries: essay score changes affect aggregated stats (avg, min, max, gradedCount)
-    // allEntries=true because the exact exam+teacher key is not directly available from the request object
+    // Evict all grading-stats entries: essay score changes affect aggregated stats
+    // (avg, min, max, gradedCount)
+    // allEntries=true because the exact exam+teacher key is not directly available
+    // from the request object
     @CacheEvict(value = CacheConfig.CACHE_GRADING_STATS, allEntries = true)
     @AuditLog(module = "GRADING", action = "SUBMIT_ESSAY_GRADES")
     public GradingResultResponse submitEssayGrades(GradeEssaySubmissionRequest request, User currentTeacher) {
@@ -205,10 +209,12 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
 
         for (GradeEssayItemRequest item : request.getGrades()) {
             CandidateAnswer ans = candidateAnswerRepository.findById(item.getCandidateAnswerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("CandidateAnswer", "id", item.getCandidateAnswerId()));
+                    .orElseThrow(
+                            () -> new ResourceNotFoundException("CandidateAnswer", "id", item.getCandidateAnswerId()));
 
             if (!ans.getExamAttempt().getId().equals(attemptId)) {
-                throw new AppException("Candidate answer does not belong to attempt ID: " + attemptId, HttpStatus.BAD_REQUEST);
+                throw new AppException("Candidate answer does not belong to attempt ID: " + attemptId,
+                        HttpStatus.BAD_REQUEST);
             }
 
             Question question = ans.getQuestion();
@@ -267,18 +273,13 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
                 .remainingPendingEssays(remainingPending)
                 .message(remainingPending == 0
                         ? "All essay questions graded successfully. Exam score finalized."
-                        : String.format("Grades saved. %d essay question(s) still pending manual grading.", remainingPending))
+                        : String.format("Grades saved. %d essay question(s) still pending manual grading.",
+                                remainingPending))
                 .build();
     }
 
     @Override
     @Transactional(readOnly = true)
-    // Cache aggregation stats per exam+teacher: single SQL aggregation with 15 computed columns
-    // Key includes currentTeacher.id to prevent cross-teacher cache leaks
-    @Cacheable(
-            value = CacheConfig.CACHE_GRADING_STATS,
-            key = "#examId + ':' + #currentTeacher.id"
-    )
     public ExamAttemptStatsResponse getExamAttemptStats(UUID examId, User currentTeacher) {
         log.debug("Computing attempt statistics for examId: {}, teacherId: {}", examId, currentTeacher.getId());
 
@@ -294,26 +295,27 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
             return ExamAttemptStatsResponse.builder().build();
         }
 
-        // Defensive unwrap: if Spring Data JPA wraps the single row in an outer array (Object[][]), unwrap it
+        // Defensive unwrap: if Spring Data JPA wraps the single row in an outer array
+        // (Object[][]), unwrap it
         if (row.length == 1 && row[0] instanceof Object[]) {
             row = (Object[]) row[0];
         }
 
-        long totalAttempts        = toLong(row[0]);
-        long completedAttempts    = toLong(row[1]);
-        long pendingAttempts      = toLong(row[2]);
-        long inProgressAttempts   = toLong(row[3]);
+        long totalAttempts = toLong(row[0]);
+        long completedAttempts = toLong(row[1]);
+        long pendingAttempts = toLong(row[2]);
+        long inProgressAttempts = toLong(row[3]);
         long disqualifiedAttempts = toLong(row[4]);
-        Double avgScore           = toDouble(row[5]);
-        Double maxScore           = toDouble(row[6]);
-        Double minScore           = toDouble(row[7]);
-        long gradedCount          = toLong(row[8]);
-        long totalViolations      = toLong(row[9]);
-        int maxViolations         = row[10] != null ? ((Number) row[10]).intValue() : 0;
+        Double avgScore = toDouble(row[5]);
+        Double maxScore = toDouble(row[6]);
+        Double minScore = toDouble(row[7]);
+        long gradedCount = toLong(row[8]);
+        long totalViolations = toLong(row[9]);
+        int maxViolations = row[10] != null ? ((Number) row[10]).intValue() : 0;
         long attemptsWithViolations = toLong(row[11]);
-        Double avgDuration        = toDouble(row[12]);
-        Long maxDuration          = row[13] != null ? ((Number) row[13]).longValue() : null;
-        Long minDuration          = row[14] != null ? ((Number) row[14]).longValue() : null;
+        Double avgDuration = toDouble(row[12]);
+        Long maxDuration = row[13] != null ? ((Number) row[13]).longValue() : null;
+        Long minDuration = row[14] != null ? ((Number) row[14]).longValue() : null;
 
         return ExamAttemptStatsResponse.builder()
                 .totalAttempts(totalAttempts)
@@ -373,9 +375,11 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
 
     /**
      * Normalize Pageable sort parameters for exam attempts.
-     * Enforces NULLS LAST for numeric and score attributes so attempts awaiting grading or in-progress
+     * Enforces NULLS LAST for numeric and score attributes so attempts awaiting
+     * grading or in-progress
      * are naturally positioned at the end when sorting ascending or descending.
-     * Sanitizes requested properties against allowed entity fields to prevent runtime JPA errors.
+     * Sanitizes requested properties against allowed entity fields to prevent
+     * runtime JPA errors.
      */
     private Pageable normalizeSortPageable(Pageable pageable) {
         if (pageable == null || pageable.getSort().isUnsorted()) {

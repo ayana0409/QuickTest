@@ -85,7 +85,7 @@ export default function ExamGradingQuestionsPage({ params }: ExamGradingQuestion
               )}
             </div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Quản lý tiến độ chấm và đối chiếu rubric theo từng câu hỏi tự luận
+              Quản lý tiến độ chấm bài và xem biểu điểm chi tiết cho từng câu hỏi tự luận
             </p>
           </div>
 

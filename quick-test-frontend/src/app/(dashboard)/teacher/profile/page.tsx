@@ -93,7 +93,7 @@ export default function TeacherProfilePage() {
     if (!profile?.id) return;
     navigator.clipboard.writeText(profile.id);
     setIsCopiedId(true);
-    toast.success('Đã sao chép User ID!');
+    toast.success('Đã sao chép mã tài khoản!');
     setTimeout(() => setIsCopiedId(false), 2000);
   };
 
@@ -228,7 +228,7 @@ export default function TeacherProfilePage() {
     }
   > = {
     ADMIN: {
-      label: 'Quản trị viên (Admin)',
+      label: 'Quản trị viên',
       code: 'ROLE_ADMIN',
       badgeClass: 'bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 border-purple-200/80 dark:border-purple-800/80',
       homeUrl: '/admin',
@@ -238,16 +238,16 @@ export default function TeacherProfilePage() {
         'Quản trị toàn bộ người dùng, cấp quyền và quản lý trạng thái tài khoản',
         'Cấu hình mô hình AI chấm điểm và kiểm duyệt nội dung câu hỏi toàn hệ thống',
         'Quản lý toàn bộ đề thi, ngân hàng câu hỏi và kết quả thi',
-        'Giám sát nhật ký bảo mật, phân quyền và thiết lập giới hạn tần suất (Rate limit)',
+        'Giám sát nhật ký bảo mật, phân quyền và thiết lập giới hạn truy cập an toàn',
       ],
-      quickLinksTitle: 'Các phân hệ dành cho quản trị viên',
+      quickLinksTitle: 'Các khu vực dành cho quản trị viên',
       quickLinks: [
         { title: 'Quản lý người dùng', desc: 'Danh sách tài khoản, phân quyền và khóa', url: '/admin/users', isUsers: true },
-        { title: 'Cấu hình AI & Hệ thống', desc: 'Quản lý API Key Gemini, rate limit và kiểm duyệt', url: '/admin/ai', isAi: true },
+        { title: 'Cấu hình AI & Hệ thống', desc: 'Quản lý API Key Gemini, giới hạn lượt gọi và kiểm duyệt', url: '/admin/ai', isAi: true },
       ],
     },
     TEACHER: {
-      label: 'Giáo viên (Teacher)',
+      label: 'Giáo viên',
       code: 'ROLE_TEACHER',
       badgeClass: 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border-indigo-200/80 dark:border-indigo-800/80',
       homeUrl: '/teacher/exams',
@@ -255,18 +255,18 @@ export default function TeacherProfilePage() {
       actionUrl: '/teacher/exams',
       permissions: [
         'Khởi tạo và quản lý toàn diện đề thi (Soạn thảo, Xuất bản, Đóng, Nhân bản)',
-        'Tái sử dụng câu hỏi từ Ngân hàng đề thi cá nhân (Deep-copy hình ảnh qua Queue)',
+        'Tái sử dụng câu hỏi và hình ảnh từ Ngân hàng đề thi cá nhân',
         'Chấm điểm câu hỏi tự luận theo barem hoặc kích hoạt AI chấm tự động',
-        'Giám sát phòng thi thời gian thực và xuất báo cáo kết quả ra Excel (.xlsx)',
+        'Giám sát phòng thi thời gian thực và xuất báo cáo kết quả ra bảng tính Excel',
       ],
-      quickLinksTitle: 'Các phân hệ chính dành cho giáo viên',
+      quickLinksTitle: 'Các khu vực chính dành cho giáo viên',
       quickLinks: [
-        { title: 'Quản lý đề thi (Exam Management)', desc: 'Tạo đề, cấu trúc câu hỏi, giám sát và xuất bản', url: '/teacher/exams', isExam: true },
-        { title: 'Chấm bài tự luận (Essay Grading)', desc: 'Chấm bài thủ công theo barem hoặc AI tự động', url: '/teacher/grading', isGrading: true },
+        { title: 'Quản lý đề thi', desc: 'Tạo đề, cấu trúc câu hỏi, giám sát và xuất bản', url: '/teacher/exams', isExam: true },
+        { title: 'Chấm bài tự luận', desc: 'Chấm bài thủ công theo barem hoặc AI tự động', url: '/teacher/grading', isGrading: true },
       ],
     },
     STUDENT: {
-      label: 'Thí sinh / Học viên (Student)',
+      label: 'Học sinh / Thí sinh',
       code: 'ROLE_STUDENT',
       badgeClass: 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800/80',
       homeUrl: '/student',
@@ -278,10 +278,10 @@ export default function TeacherProfilePage() {
         'Xem lại lịch sử làm bài và tra cứu điểm số chi tiết các lần thi',
         'Nhận kết quả chấm điểm tự luận và nhận xét chi tiết từ giảng viên / AI',
       ],
-      quickLinksTitle: 'Các phân hệ dành cho thí sinh',
+      quickLinksTitle: 'Các khu vực dành cho thí sinh',
       quickLinks: [
-        { title: 'Cổng thông tin thí sinh (Portal)', desc: 'Xem danh sách kỳ thi và thông báo mới', url: '/student', isExam: true },
-        { title: 'Lịch sử bài thi (History)', desc: 'Tra cứu bài làm, điểm số và chi tiết nhận xét', url: '/student/history', isHistory: true },
+        { title: 'Cổng thi trực tuyến', desc: 'Xem danh sách kỳ thi và thông báo mới', url: '/student', isExam: true },
+        { title: 'Lịch sử bài thi', desc: 'Tra cứu bài làm, điểm số và chi tiết nhận xét', url: '/student/history', isHistory: true },
       ],
     },
   };
@@ -469,7 +469,7 @@ export default function TeacherProfilePage() {
             </div>
 
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-zinc-500">User ID (UUID):</span>
+              <span className="text-zinc-500">Mã tài khoản:</span>
               <div className="flex items-center gap-1.5">
                 <code className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[11px] font-mono text-zinc-600 dark:text-zinc-300 truncate max-w-[160px] sm:max-w-[200px]">
                   {profile?.id || '—'}
@@ -478,7 +478,7 @@ export default function TeacherProfilePage() {
                   type="button"
                   onClick={handleCopyId}
                   className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  title="Sao chép User ID"
+                  title="Sao chép mã tài khoản"
                 >
                   {isCopiedId ? (
                     <Check className="w-3.5 h-3.5 text-emerald-500" />

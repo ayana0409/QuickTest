@@ -27,6 +27,7 @@ import { gradingService } from '@/services/grading.service';
 import { ExamStatsPanel } from '@/components/exam/ExamStatsPanel';
 import type { AttemptSummaryDto, AttemptStatus, PageResponse } from '@/types/exam';
 import { formatDateTime } from '@/lib/utils';
+import { formatAttemptStatus, formatCandidateInitials } from '@/lib/formatters/statusFormatter';
 import toast from 'react-hot-toast';
 
 interface ExamAttemptsTabProps {
@@ -198,38 +199,12 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
 
   // Helper status label
   const renderStatusBadge = (status: AttemptStatus) => {
-    switch (status) {
-      case 'SUBMITTED':
-        return (
-          <Badge variant="SUBMITTED" size="sm" dot>
-            Đã hoàn thành
-          </Badge>
-        );
-      case 'AWAITING_MANUAL_GRADING':
-        return (
-          <Badge variant="AWAITING_MANUAL_GRADING" size="sm" dot>
-            Chờ chấm tự luận
-          </Badge>
-        );
-      case 'IN_PROGRESS':
-        return (
-          <Badge variant="IN_PROGRESS" size="sm" dot>
-            Đang làm bài
-          </Badge>
-        );
-      case 'DISQUALIFIED':
-        return (
-          <Badge variant="DISQUALIFIED" size="sm" dot>
-            Bị đình chỉ
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="neutral" size="sm">
-            {status}
-          </Badge>
-        );
-    }
+    const meta = formatAttemptStatus(status);
+    return (
+      <Badge variant={meta.variant} size="sm" dot>
+        {meta.label}
+      </Badge>
+    );
   };
 
   return (
@@ -446,14 +421,14 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-semibold text-xs flex items-center justify-center shrink-0 shadow-xs">
-                            {attempt.candidateName?.slice(0, 1).toUpperCase() || 'U'}
+                            {formatCandidateInitials(attempt.candidateName)}
                           </div>
                           <div className="space-y-0.5">
                             <p className="font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">
                               {attempt.candidateName}
                             </p>
                             <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono line-clamp-1">
-                              {attempt.candidateIdentifier || 'Thí sinh tự do (Guest)'}
+                              {attempt.candidateIdentifier || 'Thí sinh tự do'}
                             </p>
                           </div>
                         </div>

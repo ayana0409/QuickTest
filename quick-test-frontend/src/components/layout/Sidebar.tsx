@@ -36,25 +36,25 @@ interface NavItem {
 
 const roleNavItems: Record<string, NavItem[]> = {
   ADMIN: [
-    { label: 'System Overview', href: '/admin', icon: LayoutDashboard },
-    { label: 'AI Management', href: '/admin/ai', icon: Cpu },
-    { label: 'User Management', href: '/admin/users', icon: Users },
-    { label: 'Content Moderation', href: '/admin/moderation', icon: ShieldAlert },
-    { label: 'Exam Monitoring', href: '/admin/exams', icon: Shield },
-    { label: 'System Logs', href: '/admin/logs', icon: FileCheck },
+    { label: 'Tổng quan hệ thống', href: '/admin', icon: LayoutDashboard },
+    { label: 'Cấu hình AI', href: '/admin/ai', icon: Cpu },
+    { label: 'Quản lý người dùng', href: '/admin/users', icon: Users },
+    { label: 'Kiểm duyệt nội dung', href: '/admin/moderation', icon: ShieldAlert },
+    { label: 'Giám sát kỳ thi', href: '/admin/exams', icon: Shield },
+    { label: 'Nhật ký hệ thống', href: '/admin/logs', icon: FileCheck },
     { label: 'Ảnh giám sát', href: '/admin/media', icon: Camera },
-    { label: 'System Health', href: '/admin/health', icon: Activity },
-    { label: 'System Settings', href: '/admin/settings', icon: Settings },
+    { label: 'Tình trạng hệ thống', href: '/admin/health', icon: Activity },
+    { label: 'Cài đặt hệ thống', href: '/admin/settings', icon: Settings },
   ],
   TEACHER: [
-    { label: 'Exam Management', href: '/teacher/exams', icon: BookOpen },
-    { label: 'Essay Grading', href: '/teacher/grading', icon: FileCheck },
-    { label: 'Tác vụ AI', href: '/teacher/ai-tasks', icon: Sparkles },
+    { label: 'Quản lý đề thi', href: '/teacher/exams', icon: BookOpen },
+    { label: 'Chấm bài tự luận', href: '/teacher/grading', icon: FileCheck },
+    { label: 'Tiến trình AI', href: '/teacher/ai-tasks', icon: Sparkles },
   ],
   STUDENT: [
-    { label: 'My Exams', href: '/student', icon: GraduationCap },
-    { label: 'Attempt History', href: '/student/history', icon: Clock },
-    { label: 'Results & Certificates', href: '/student/results', icon: Award },
+    { label: 'Kỳ thi của tôi', href: '/student', icon: GraduationCap },
+    { label: 'Lịch sử làm bài', href: '/student/history', icon: Clock },
+    { label: 'Kết quả & Chứng chỉ', href: '/student/results', icon: Award },
   ],
 };
 

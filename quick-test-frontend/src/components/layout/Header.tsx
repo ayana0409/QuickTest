@@ -53,16 +53,16 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
   // Derive dynamic page title from pathname
   const getPageTitle = (): string => {
     if (pathname.endsWith('/profile')) return 'Thông tin cá nhân';
-    if (pathname.includes('/proctoring')) return 'Phòng thi & Kết quả';
-    if (pathname.startsWith('/admin')) return 'Admin Workspace';
-    if (pathname.startsWith('/teacher/exams')) return 'Exam Management';
-    if (pathname.startsWith('/teacher/grading')) return 'Essay Grading';
+    if (pathname.includes('/proctoring')) return 'Phòng thi & Giám sát';
+    if (pathname.startsWith('/admin')) return 'Không gian quản trị';
+    if (pathname.startsWith('/teacher/exams')) return 'Quản lý đề thi';
+    if (pathname.startsWith('/teacher/grading')) return 'Chấm bài tự luận';
     if (pathname.startsWith('/teacher/ai-tasks')) return 'Tiến trình Tác vụ AI';
-    if (pathname.startsWith('/teacher')) return 'Teacher Hub';
-    if (pathname.startsWith('/student/history')) return 'Submission History';
-    if (pathname.startsWith('/student/results')) return 'Certificates & Results';
-    if (pathname.startsWith('/student')) return 'Student Portal';
-    return 'Dashboard';
+    if (pathname.startsWith('/teacher')) return 'Khu vực giáo viên';
+    if (pathname.startsWith('/student/history')) return 'Lịch sử làm bài';
+    if (pathname.startsWith('/student/results')) return 'Kết quả & Chứng chỉ';
+    if (pathname.startsWith('/student')) return 'Cổng thi trực tuyến';
+    return 'Bảng điều khiển';
   };
 
   return (
@@ -109,7 +109,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
               {/* Profile summary */}
               <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
                 <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                  {user?.fullName || 'Signed In User'}
+                  {user?.fullName || 'Tài khoản người dùng'}
                 </p>
                 <p className="text-[11px] text-zinc-500 truncate mt-0.5">
                   {user?.email || 'user@quicktest.com'}
@@ -133,7 +133,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <Home className="w-4 h-4 text-zinc-400" />
-                  <span>Landing Page</span>
+                  <span>Trang chủ</span>
                 </Link>
 
                 <button
@@ -142,7 +142,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
                   className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                 >
                   <LogOut className="w-4 h-4 shrink-0" />
-                  <span>Log out</span>
+                  <span>Đăng xuất</span>
                 </button>
               </div>
             </div>

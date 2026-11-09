@@ -79,10 +79,10 @@ export default function TeacherGradingHubPage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-xs font-semibold mb-2 border border-indigo-200/60 dark:border-indigo-900/60">
             <GraduationCap className="w-3.5 h-3.5" />
-            <span>Phân hệ Chấm Điểm & Đánh Giá</span>
+            <span>Khu vực Chấm điểm & Đánh giá</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Trung Tâm Chấm Điểm Tự Luận
+            Chấm Điểm Bài Thi Tự Luận
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             Chọn bài thi để xem danh sách câu hỏi tự luận, chấm bài theo từng câu hỏi và kích hoạt trợ lý AI
@@ -117,7 +117,7 @@ export default function TeacherGradingHubPage() {
         <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-              Đang hoạt động (Published)
+              Đề thi đang mở
             </span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
@@ -131,7 +131,7 @@ export default function TeacherGradingHubPage() {
         <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-              Đã kết thúc (Closed)
+              Đề thi đã đóng
             </span>
             <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center">
               <Clock className="w-4 h-4" />
