@@ -243,24 +243,31 @@ export default function AdminSystemLogsPage() {
     switch (level) {
       case 'ERROR':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60">
-            <XCircle className="w-3.5 h-3.5 text-rose-500" />
-            LỖI
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+            <XCircle className="w-3 h-3 text-rose-500" />
+            Lỗi
           </span>
         );
       case 'WARN':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/60">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-            CẢNH BÁO
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+            <AlertTriangle className="w-3 h-3 text-amber-500" />
+            Cảnh báo
+          </span>
+        );
+      case 'DEBUG':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+            <Terminal className="w-3 h-3 text-purple-500" />
+            Gỡ lỗi
           </span>
         );
       case 'INFO':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-900/60">
-            <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" />
-            THÔNG TIN
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shrink-0">
+            <CheckCircle2 className="w-3 h-3 text-sky-500" />
+            Thông tin
           </span>
         );
     }
@@ -269,16 +276,16 @@ export default function AdminSystemLogsPage() {
   const renderStatusBadge = (status: LogStatus) => {
     if (status === 'SUCCESS') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
           <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-          THÀNH CÔNG
+          Thành công
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
-        <XCircle className="w-3 h-3 text-red-500" />
-        THẤT BẠI
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+        <XCircle className="w-3 h-3 text-rose-500" />
+        Thất bại
       </span>
     );
   };
@@ -295,291 +302,306 @@ export default function AdminSystemLogsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-5 pb-12">
       {/* 1. Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50">
-              <Activity className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                Nhật ký Hoạt động Hệ thống
-              </h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Lưu vết thao tác người dùng, giám sát lỗi vận hành và tra cứu nhanh toàn diện
-              </p>
-            </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Nhật ký Hệ thống
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Lưu vết thao tác và giám sát vận hành
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 self-end sm:self-center">
           <button
+            type="button"
             onClick={() => {
               fetchLogs();
               loadStats();
             }}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50"
+            title="Làm mới dữ liệu"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Làm mới
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Làm mới</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setIsCleanupModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 dark:border-rose-900/60 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 dark:border-rose-900/60 transition-colors"
           >
-            <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-            Dọn dẹp nhật ký cũ
+            <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+            <span>Dọn dẹp</span>
           </button>
         </div>
       </div>
 
-      {/* Thông báo tiến trình dọn dẹp */}
+      {/* Progress banner for active cleanup */}
       {cleanupStatus?.running && (
-        <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
+        <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400">
-              <RefreshCw className="w-5 h-5 animate-spin" />
+            <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <RefreshCw className="w-4 h-4 animate-spin" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <span>Hệ thống đang dọn dẹp nhật ký cũ</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 font-medium">
-                  Đã dọn: {cleanupStatus.totalDeleted.toLocaleString()} bản ghi
+              <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <span>Đang dọn dẹp nhật ký cũ</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 font-medium">
+                  {cleanupStatus.totalDeleted.toLocaleString()} bản ghi
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Quá trình xử lý tự động trong nền, các hoạt động thi cử vẫn diễn ra bình thường.
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                Tiến trình chạy nền, hệ thống vẫn hoạt động bình thường.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. Analytical KPI Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Logs */}
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Tổng số Nhật ký
+      {/* 2. Analytical Interactive KPI Metrics Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Total Logs */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedLevel('ALL');
+            setSelectedStatus('ALL');
+            setCurrentPage(0);
+          }}
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 shadow-2xs flex flex-col justify-between ${
+            selectedLevel === 'ALL' && selectedStatus === 'ALL'
+              ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 ring-2 ring-indigo-500/20'
+              : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-indigo-300 dark:hover:border-indigo-800/60'
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 truncate">
+              Tổng số nhật ký
             </span>
-            <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400">
-              <Database className="w-4 h-4" />
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Database className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <div className="mt-2">
+            <div className="text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
               {isStatsLoading ? '...' : (stats?.totalLogs ?? 0).toLocaleString()}
-            </span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">bản ghi</span>
-          </div>
-          <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
-            <span>Thông tin: {stats?.infoCount ?? 0}</span>
-            <span>•</span>
-            <span className="text-amber-600 dark:text-amber-400">Cảnh báo: {stats?.warnCount ?? 0}</span>
-          </div>
-        </div>
-
-        {/* Success Rate */}
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Tỉ lệ Thành công
-            </span>
-            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-zinc-400 truncate mt-0.5">
+              Tất cả bản ghi
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              {isStatsLoading
-                ? '...'
-                : `${(
-                  100 - (stats?.errorRate ?? 0)
-                ).toFixed(1)}%`}
-            </span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              ({stats?.successCount ?? 0} thành công)
-            </span>
-          </div>
-          <div className="mt-3 w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.max(0, Math.min(100, 100 - (stats?.errorRate ?? 0)))}%`,
-              }}
-            />
-          </div>
-        </div>
+        </button>
 
-        {/* Failure & Errors */}
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        {/* Card 2: Success Rate */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedStatus((prev) => (prev === 'SUCCESS' ? 'ALL' : 'SUCCESS'));
+            setCurrentPage(0);
+          }}
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 shadow-2xs flex flex-col justify-between ${
+            selectedStatus === 'SUCCESS'
+              ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 ring-2 ring-emerald-500/20'
+              : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-emerald-300 dark:hover:border-emerald-800/60'
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate">
+              Thành công
+            </span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="text-lg sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
+              {isStatsLoading ? '...' : `${(100 - (stats?.errorRate ?? 0)).toFixed(1)}%`}
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-zinc-400 truncate mt-0.5">
+              {(stats?.successCount ?? 0).toLocaleString()} đạt
+            </div>
+          </div>
+        </button>
+
+        {/* Card 3: Failure & Errors */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedStatus((prev) => (prev === 'FAILURE' ? 'ALL' : 'FAILURE'));
+            setCurrentPage(0);
+          }}
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 shadow-2xs flex flex-col justify-between ${
+            selectedStatus === 'FAILURE' || selectedLevel === 'ERROR'
+              ? 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 ring-2 ring-rose-500/20'
+              : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800/60'
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-semibold text-rose-600 dark:text-rose-400 truncate">
               Lỗi & Thất bại
             </span>
-            <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400">
-              <AlertTriangle className="w-4 h-4" />
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
+          <div className="mt-2">
+            <div className="text-lg sm:text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 font-mono">
               {isStatsLoading ? '...' : (stats?.failureCount ?? 0).toLocaleString()}
-            </span>
-            <span className="text-xs text-rose-600/80 dark:text-rose-400/80">
-              ({(stats?.errorRate ?? 0).toFixed(1)}% tỉ lệ lỗi)
-            </span>
-          </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500">
-            <span>Mức độ lỗi: {stats?.errorCount ?? 0}</span>
-          </div>
-        </div>
-
-        {/* Average Latency */}
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Độ trễ Phản hồi
-            </span>
-            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
-              <Clock className="w-4 h-4" />
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-zinc-400 truncate mt-0.5">
+              {(stats?.errorRate ?? 0).toFixed(1)}% tỉ lệ lỗi
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
-              {isStatsLoading ? '...' : `${stats?.averageExecutionTimeMs ?? 0}ms`}
+        </button>
+
+        {/* Card 4: Latency */}
+        <div className="p-3.5 sm:p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 truncate">
+              Độ trễ trung bình
             </span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Zap className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span>Thời gian xử lý trung bình</span>
+          <div className="mt-2">
+            <div className="text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
+              {isStatsLoading ? '...' : `${stats?.averageExecutionTimeMs ?? 0}ms`}
+            </div>
+            <div className="text-[10px] sm:text-[11px] text-zinc-400 truncate mt-0.5">
+              Tốc độ phản hồi
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Filter Controls & FTS Search */}
-      <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row gap-3">
-          {/* PostgreSQL FTS Search Bar */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="Tìm kiếm: chức năng, thao tác, người dùng, IP, nội dung..."
-              className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            />
-            {searchKeyword && (
-              <button
-                onClick={() => setSearchKeyword('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick Filters */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Level */}
-            <select
-              value={selectedLevel}
-              onChange={(e) => {
-                setSelectedLevel(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+      {/* 3. Filter Controls & Search */}
+      <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xs space-y-2.5">
+        {/* Row 1: Search Bar */}
+        <div className="relative w-full">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="Tìm theo chức năng, người dùng, IP, nội dung..."
+            className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          />
+          {searchKeyword && (
+            <button
+              type="button"
+              onClick={() => setSearchKeyword('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1"
             >
-              <option value="ALL">Mức độ: Tất cả</option>
-              <option value="INFO">Thông tin (INFO)</option>
-              <option value="WARN">Cảnh báo (WARN)</option>
-              <option value="ERROR">Lỗi (ERROR)</option>
-              <option value="DEBUG">Gỡ lỗi (DEBUG)</option>
-            </select>
-
-            {/* Status */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            >
-              <option value="ALL">Trạng thái: Tất cả</option>
-              <option value="SUCCESS">Thành công</option>
-              <option value="FAILURE">Thất bại</option>
-            </select>
-
-            {/* Module */}
-            <select
-              value={selectedModule}
-              onChange={(e) => {
-                setSelectedModule(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 max-w-[160px]"
-            >
-              <option value="ALL">Chức năng: Tất cả</option>
-              {metadata?.modules?.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-
-            {/* Action */}
-            <select
-              value={selectedAction}
-              onChange={(e) => {
-                setSelectedAction(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="px-3 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 max-w-[170px]"
-            >
-              <option value="ALL">Thao tác: Tất cả</option>
-              {metadata?.actions?.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </div>
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Date Range & Reset Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-zinc-500 flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" /> Khoảng thời gian:
-            </span>
-            <input
-              type="datetime-local"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-            />
-            <span className="text-xs text-zinc-400">đến</span>
-            <input
-              type="datetime-local"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-            />
+        {/* Row 2: 4 Quick Filter Selects (2x2 on mobile, 4-col on tablet/desktop) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+          {/* Level */}
+          <select
+            value={selectedLevel}
+            onChange={(e) => {
+              setSelectedLevel(e.target.value);
+              setCurrentPage(0);
+            }}
+            className="w-full px-2.5 py-2 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="ALL">Mức độ: Tất cả</option>
+            <option value="INFO">Thông tin (INFO)</option>
+            <option value="WARN">Cảnh báo (WARN)</option>
+            <option value="ERROR">Lỗi (ERROR)</option>
+            <option value="DEBUG">Gỡ lỗi (DEBUG)</option>
+          </select>
+
+          {/* Status */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(0);
+            }}
+            className="w-full px-2.5 py-2 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="ALL">Trạng thái: Tất cả</option>
+            <option value="SUCCESS">Thành công</option>
+            <option value="FAILURE">Thất bại</option>
+          </select>
+
+          {/* Module */}
+          <select
+            value={selectedModule}
+            onChange={(e) => {
+              setSelectedModule(e.target.value);
+              setCurrentPage(0);
+            }}
+            className="w-full px-2.5 py-2 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="ALL">Chức năng: Tất cả</option>
+            {metadata?.modules?.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+
+          {/* Action */}
+          <select
+            value={selectedAction}
+            onChange={(e) => {
+              setSelectedAction(e.target.value);
+              setCurrentPage(0);
+            }}
+            className="w-full px-2.5 py-2 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="ALL">Thao tác: Tất cả</option>
+            {metadata?.actions?.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Row 3: Date Range & Reset Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
+              <input
+                type="datetime-local"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="w-full sm:w-auto px-2.5 py-1.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="relative w-full sm:w-auto">
+              <input
+                type="datetime-local"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="w-full sm:w-auto px-2.5 py-1.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
             {(searchKeyword ||
               selectedLevel !== 'ALL' ||
               selectedStatus !== 'ALL' ||
@@ -587,73 +609,151 @@ export default function AdminSystemLogsPage() {
               selectedAction !== 'ALL' ||
               startDate ||
               endDate) && (
-                <button
-                  onClick={handleResetFilters}
-                  className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline px-2 py-1"
-                >
-                  Xóa tất cả bộ lọc
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
 
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              Hiển thị <span className="font-semibold text-zinc-900 dark:text-zinc-100">{logs.length}</span> /{' '}
+            <div className="text-[11px] text-zinc-400 font-mono ml-auto sm:ml-0">
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">{logs.length}</span> /{' '}
               <span className="font-semibold text-zinc-900 dark:text-zinc-100">{totalElements}</span> bản ghi
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4. Log Table */}
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-50/80 dark:bg-zinc-800/40 text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
-              <tr>
-                <th className="py-3.5 px-4">Thời gian</th>
-                <th className="py-3.5 px-3">Mức độ</th>
-                <th className="py-3.5 px-3">Trạng thái</th>
-                <th className="py-3.5 px-4">Chức năng & Thao tác</th>
-                <th className="py-3.5 px-4">Người thực hiện</th>
-                <th className="py-3.5 px-4">Đường dẫn API</th>
-                <th className="py-3.5 px-3">Địa chỉ IP</th>
-                <th className="py-3.5 px-3">Độ trễ</th>
-                <th className="py-3.5 px-4 text-right">Chi tiết</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 font-sans">
-              {isLoading ? (
-                Array.from({ length: 8 }).map((_, idx) => (
-                  <tr key={idx} className="animate-pulse">
-                    <td className="py-4 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-28" /></td>
-                    <td className="py-4 px-3"><div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded-full w-16" /></td>
-                    <td className="py-4 px-3"><div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-16" /></td>
-                    <td className="py-4 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-36" /></td>
-                    <td className="py-4 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24" /></td>
-                    <td className="py-4 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-32" /></td>
-                    <td className="py-4 px-3"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20" /></td>
-                    <td className="py-4 px-3"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-12" /></td>
-                    <td className="py-4 px-4 text-right"><div className="h-7 bg-zinc-200 dark:bg-zinc-800 rounded w-16 ml-auto" /></td>
-                  </tr>
-                ))
-              ) : logs.length === 0 ? (
+      {/* 4. Main Content: Desktop Table + Mobile Card List */}
+      {isLoading ? (
+        <div className="py-20 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
+          <RefreshCw className="w-7 h-7 animate-spin mx-auto text-indigo-600 dark:text-indigo-400 mb-2" />
+          <p className="text-xs sm:text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            Đang tải dữ liệu nhật ký...
+          </p>
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="py-16 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-800 p-6 space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 mx-auto flex items-center justify-center">
+            <Database className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+              Không tìm thấy nhật ký nào
+            </h3>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1">
+              Hãy thử điều chỉnh từ khóa tìm kiếm hoặc đặt lại các tiêu chí bộ lọc.
+            </p>
+          </div>
+          {(searchKeyword || selectedLevel !== 'ALL' || selectedStatus !== 'ALL') && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
+            >
+              Đặt lại bộ lọc
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* 1. Mobile Card List (Hidden on desktop) */}
+          <div className="block md:hidden space-y-3">
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className="p-3.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs space-y-2.5"
+              >
+                {/* Top Row: Level + Status + Time */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {renderLevelBadge(log.level)}
+                    {renderStatusBadge(log.status)}
+                  </div>
+                  <div className="text-[11px] text-zinc-400 font-mono shrink-0">
+                    {new Date(log.createdAt).toLocaleTimeString('vi-VN')}
+                  </div>
+                </div>
+
+                {/* Action & Module */}
+                <div>
+                  <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">
+                    {log.action}
+                  </div>
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
+                    {log.module}
+                  </div>
+                </div>
+
+                {/* Actor & Latency */}
+                <div className="flex items-center justify-between text-xs text-zinc-500 pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    <span className="font-medium text-xs text-zinc-800 dark:text-zinc-200 truncate">
+                      {log.actorUsername || 'Hệ thống'}
+                    </span>
+                    {log.actorRole && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-mono shrink-0">
+                        {log.actorRole}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-[11px] shrink-0 font-mono">
+                    {formatExecutionTime(log.executionTimeMs)}
+                  </div>
+                </div>
+
+                {/* Endpoint */}
+                {log.endpoint && (
+                  <div className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 truncate bg-zinc-50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                    {log.httpMethod && (
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold mr-1">
+                        {log.httpMethod}
+                      </span>
+                    )}
+                    {log.endpoint}
+                  </div>
+                )}
+
+                {/* Detail Action */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDetail(log.id)}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Xem chi tiết</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 2. Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/80 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-zinc-500 dark:text-zinc-400">
-                    <div className="max-w-sm mx-auto space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400">
-                        <Database className="w-6 h-6" />
-                      </div>
-                      <p className="font-medium text-zinc-700 dark:text-zinc-300">Không tìm thấy bản ghi nhật ký nào</p>
-                      <p className="text-xs text-zinc-500">
-                        Hãy thử điều chỉnh từ khóa tìm kiếm hoặc các tiêu chí bộ lọc thời gian.
-                      </p>
-                    </div>
-                  </td>
+                  <th className="py-3 px-4">Thời gian</th>
+                  <th className="py-3 px-3">Mức độ</th>
+                  <th className="py-3 px-3">Trạng thái</th>
+                  <th className="py-3 px-4">Chức năng & Thao tác</th>
+                  <th className="py-3 px-4">Người thực hiện</th>
+                  <th className="py-3 px-4">Đường dẫn API</th>
+                  <th className="py-3 px-3">Địa chỉ IP</th>
+                  <th className="py-3 px-3">Độ trễ</th>
+                  <th className="py-3 px-4 text-right">Chi tiết</th>
                 </tr>
-              ) : (
-                logs.map((log) => (
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 font-sans">
+                {logs.map((log) => (
                   <tr
                     key={log.id}
-                    className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30 transition-colors group"
+                    className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors group"
                   >
                     {/* Timestamp */}
                     <td className="py-3 px-4 whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">
@@ -676,10 +776,10 @@ export default function AdminSystemLogsPage() {
                     {/* Module & Action */}
                     <td className="py-3 px-4">
                       <div className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
-                        {log.module}
-                      </div>
-                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
                         {log.action}
+                      </div>
+                      <div className="text-[11px] text-zinc-400 font-mono">
+                        {log.module}
                       </div>
                     </td>
 
@@ -687,25 +787,27 @@ export default function AdminSystemLogsPage() {
                     <td className="py-3 px-4">
                       {log.actorUsername ? (
                         <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-zinc-400" />
-                          <span className="font-medium text-xs text-zinc-800 dark:text-zinc-200">
+                          <div className="w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold text-[10px] flex items-center justify-center shrink-0">
+                            {log.actorUsername.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-medium text-xs text-zinc-800 dark:text-zinc-200 truncate">
                             {log.actorUsername}
                           </span>
                           {log.actorRole && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-mono shrink-0">
                               {log.actorRole}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs text-zinc-400 italic">Hệ thống / Khách</span>
+                        <span className="text-xs text-zinc-400 italic">Hệ thống</span>
                       )}
                     </td>
 
                     {/* Endpoint & HTTP Method */}
                     <td className="py-3 px-4 max-w-[200px] truncate">
                       {log.endpoint ? (
-                        <div className="text-xs font-mono">
+                        <div className="text-xs font-mono truncate">
                           {log.httpMethod && (
                             <span className="font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mr-1.5">
                               {log.httpMethod}
@@ -721,7 +823,7 @@ export default function AdminSystemLogsPage() {
                     </td>
 
                     {/* IP */}
-                    <td className="py-3 px-3 whitespace-nowrap text-xs font-mono text-zinc-600 dark:text-zinc-400">
+                    <td className="py-3 px-3 whitespace-nowrap text-xs font-mono text-zinc-500">
                       {log.ipAddress || '-'}
                     </td>
 
@@ -733,202 +835,226 @@ export default function AdminSystemLogsPage() {
                     {/* Action Detail */}
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       <button
+                        type="button"
                         onClick={() => handleOpenDetail(log.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition-colors"
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        title="Xem chi tiết"
                       >
-                        <Eye className="w-3.5 h-3.5" />
-                        Chi tiết
+                        <Eye className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* 5. Pagination Bar */}
+      <div className="p-3.5 sm:p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600 dark:text-zinc-400">
+        <div className="flex items-center gap-2">
+          <span>Hiển thị</span>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(0);
+            }}
+            className="px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-hidden"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span>bản ghi / trang</span>
         </div>
 
-        {/* 5. Pagination Bar */}
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-600 dark:text-zinc-400">
-          <div className="flex items-center gap-2">
-            <span>Hiển thị</span>
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(0);
-              }}
-              className="px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-            <span>bản ghi / trang</span>
-          </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setCurrentPage(0)}
+            disabled={currentPage === 0 || isLoading}
+            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Trang đầu"
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+            disabled={currentPage === 0 || isLoading}
+            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Trang trước"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setCurrentPage(0)}
-              disabled={currentPage === 0 || isLoading}
-              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Trang đầu"
-            >
-              <ChevronsLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
-              disabled={currentPage === 0 || isLoading}
-              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Trang trước"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+          <span className="px-3 font-medium text-xs">
+            Trang <span className="font-bold text-zinc-900 dark:text-zinc-100">{currentPage + 1}</span> /{' '}
+            {totalPages}
+          </span>
 
-            <span className="px-3 font-medium">
-              Trang <span className="font-bold text-zinc-900 dark:text-zinc-100">{currentPage + 1}</span> /{' '}
-              {totalPages}
-            </span>
-
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-              disabled={currentPage >= totalPages - 1 || isLoading}
-              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Trang sau"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages - 1)}
-              disabled={currentPage >= totalPages - 1 || isLoading}
-              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Trang cuối"
-            >
-              <ChevronsRight className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+            disabled={currentPage >= totalPages - 1 || isLoading}
+            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Trang sau"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentPage(totalPages - 1)}
+            disabled={currentPage >= totalPages - 1 || isLoading}
+            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Trang cuối"
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {/* 6. Detail Modal */}
       {detailModalLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 w-full max-w-4xl rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-3xl rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl flex flex-col max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    Chi tiết Nhật ký Hoạt động
+            <div className="p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-start justify-between gap-3 shrink-0">
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Chi tiết nhật ký hoạt động
                   </h3>
-                  {renderLevelBadge(detailModalLog.level)}
-                  {renderStatusBadge(detailModalLog.status)}
+                  <div className="flex items-center gap-1.5">
+                    {renderLevelBadge(detailModalLog.level)}
+                    {renderStatusBadge(detailModalLog.status)}
+                  </div>
                 </div>
-                <p className="text-xs text-zinc-500 font-mono">
-                  Mã bản ghi: {detailModalLog.id}
-                </p>
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-mono">
+                  <span className="truncate">ID: {detailModalLog.id}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(detailModalLog.id, 'id')}
+                    className="p-1 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors shrink-0"
+                    title="Sao chép ID"
+                  >
+                    {copiedKey === 'id' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
               </div>
 
               <button
+                type="button"
                 onClick={() => setDetailModalLog(null)}
-                className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Tabs */}
-            <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 px-5 gap-4 bg-zinc-50/50 dark:bg-zinc-800/30 text-xs font-medium">
-              <button
-                onClick={() => setActiveDetailTab('OVERVIEW')}
-                className={`py-3 border-b-2 transition-colors ${activeDetailTab === 'OVERVIEW'
-                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-                  }`}
-              >
-                Tổng quan & Ngữ cảnh
-              </button>
-              <button
-                onClick={() => setActiveDetailTab('PAYLOAD')}
-                className={`py-3 border-b-2 transition-colors ${activeDetailTab === 'PAYLOAD'
-                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-                  }`}
-              >
-                Dữ liệu Yêu cầu (JSON)
-              </button>
-              {detailModalLog.errorMessage && (
+            {/* Modal Segmented Tabs */}
+            <div className="p-3 sm:px-5 sm:py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 bg-zinc-200/50 dark:bg-zinc-800/60 p-1 rounded-xl">
                 <button
-                  onClick={() => setActiveDetailTab('ERROR')}
-                  className={`py-3 border-b-2 transition-colors flex items-center gap-1.5 ${activeDetailTab === 'ERROR'
-                    ? 'border-rose-600 text-rose-600 dark:text-rose-400'
-                    : 'border-transparent text-rose-500 hover:text-rose-700'
-                    }`}
+                  type="button"
+                  onClick={() => setActiveDetailTab('OVERVIEW')}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+                    activeDetailTab === 'OVERVIEW'
+                      ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                      : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                  }`}
                 >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Chi tiết Lỗi Hệ thống
+                  Tổng quan
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab('PAYLOAD')}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+                    activeDetailTab === 'PAYLOAD'
+                      ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs'
+                      : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                  }`}
+                >
+                  Dữ liệu JSON
+                </button>
+                {detailModalLog.errorMessage && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveDetailTab('ERROR')}
+                    className={`col-span-2 sm:col-span-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                      activeDetailTab === 'ERROR'
+                        ? 'bg-rose-600 text-white shadow-2xs'
+                        : 'text-rose-500 hover:text-rose-600'
+                    }`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Lỗi hệ thống
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-4">
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
               {activeDetailTab === 'OVERVIEW' && (
-                <div className="space-y-6">
+                <div className="space-y-3.5">
                   {/* Grid Metadata */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Chức năng & Thao tác:</span>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[11px] text-zinc-400 font-medium">Chức năng & Thao tác:</span>
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
                         {detailModalLog.module} - {detailModalLog.action}
                       </p>
                     </div>
 
-                    <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Thời gian ghi nhận:</span>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[11px] text-zinc-400 font-medium">Thời gian:</span>
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
                         {new Date(detailModalLog.createdAt).toLocaleString('vi-VN')}
                       </p>
                     </div>
 
-                    <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Người thực hiện:</span>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {detailModalLog.actorUsername || 'Hệ thống'} (Vai trò: {detailModalLog.actorRole || 'N/A'})
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[11px] text-zinc-400 font-medium">Người thực hiện:</span>
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100 mt-0.5">
+                        {detailModalLog.actorUsername || 'Hệ thống'} {detailModalLog.actorRole ? `(${detailModalLog.actorRole})` : ''}
                       </p>
                       {detailModalLog.actorId && (
-                        <p className="text-[11px] font-mono text-zinc-500">Mã ID: {detailModalLog.actorId}</p>
+                        <p className="text-[10px] font-mono text-zinc-400 mt-0.5">ID: {detailModalLog.actorId}</p>
                       )}
                     </div>
 
-                    <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Thời gian xử lý:</span>
-                      <p className="text-sm">{formatExecutionTime(detailModalLog.executionTimeMs)}</p>
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[11px] text-zinc-400 font-medium">Thời gian xử lý:</span>
+                      <p className="mt-0.5 font-mono">{formatExecutionTime(detailModalLog.executionTimeMs)}</p>
                     </div>
 
-                    <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Đường dẫn API:</span>
-                      <p className="font-mono text-zinc-800 dark:text-zinc-200">
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[11px] text-zinc-400 font-medium">API Endpoint:</span>
+                      <p className="font-mono text-zinc-800 dark:text-zinc-200 mt-0.5">
                         {detailModalLog.httpMethod} {detailModalLog.endpoint || 'Tác vụ nội bộ'}
                       </p>
                     </div>
 
-                    <div className="space-y-1 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700/60">
-                      <span className="text-zinc-400 font-medium">Địa chỉ IP:</span>
-                      <p className="font-mono text-zinc-800 dark:text-zinc-200">
-                        {detailModalLog.ipAddress || 'Nội bộ / Chưa xác định'}
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[11px] text-zinc-400 font-medium">Địa chỉ IP:</span>
+                      <p className="font-mono text-zinc-800 dark:text-zinc-200 mt-0.5">
+                        {detailModalLog.ipAddress || 'Nội bộ'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Inline Error Callout */}
+                  {/* Error Callout */}
                   {detailModalLog.errorMessage && (
-                    <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900/60 space-y-2">
-                      <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-semibold text-xs">
-                        <AlertTriangle className="w-4 h-4" />
-                        <span>Thông báo lỗi ghi nhận:</span>
+                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold text-xs">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Thông báo lỗi:</span>
                       </div>
-                      <p className="font-mono text-xs text-rose-900 dark:text-rose-200 whitespace-pre-wrap">
+                      <p className="font-mono text-xs text-rose-700 dark:text-rose-300 whitespace-pre-wrap leading-relaxed">
                         {detailModalLog.errorMessage}
                       </p>
                     </div>
@@ -940,23 +1066,24 @@ export default function AdminSystemLogsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-zinc-500">
-                      Dữ liệu gửi lên và kết quả thực thi (đã ẩn các thông tin nhạy cảm):
+                      Dữ liệu JSON chi tiết:
                     </span>
                     <button
+                      type="button"
                       onClick={() => handleCopy(detailModalLog.details || '{}', 'payload')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
                     >
                       {copiedKey === 'payload' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      Sao chép JSON
+                      <span>Sao chép JSON</span>
                     </button>
                   </div>
                   <pre className="p-4 rounded-xl bg-zinc-950 text-emerald-400 font-mono text-xs overflow-x-auto max-h-96 leading-relaxed border border-zinc-800">
                     {(() => {
-                      if (!detailModalLog.details) return '// Không có chi tiết bổ sung';
+                      if (!detailModalLog.details) return '// Không có dữ liệu bổ sung';
                       try {
                         const parsed = JSON.parse(detailModalLog.details);
                         return JSON.stringify(parsed, null, 2);
-                      } catch (e) {
+                      } catch {
                         return detailModalLog.details;
                       }
                     })()}
@@ -969,14 +1096,15 @@ export default function AdminSystemLogsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
                       <Terminal className="w-3.5 h-3.5" />
-                      Chi tiết lỗi kỹ thuật:
+                      Chi tiết mã lỗi & Stacktrace:
                     </span>
                     <button
+                      type="button"
                       onClick={() => handleCopy(detailModalLog.errorMessage || '', 'error')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
                     >
                       {copiedKey === 'error' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      Sao chép lỗi
+                      <span>Sao chép lỗi</span>
                     </button>
                   </div>
                   <pre className="p-4 rounded-xl bg-zinc-950 text-rose-300 font-mono text-xs overflow-x-auto max-h-96 leading-relaxed border border-zinc-800 whitespace-pre-wrap">
@@ -987,10 +1115,11 @@ export default function AdminSystemLogsPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex justify-end">
+            <div className="p-3 sm:p-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-end shrink-0">
               <button
+                type="button"
                 onClick={() => setDetailModalLog(null)}
-                className="px-4 py-2 text-sm font-medium rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition-colors"
+                className="px-4 py-2 text-xs font-medium rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition-colors"
               >
                 Đóng
               </button>
@@ -1001,66 +1130,80 @@ export default function AdminSystemLogsPage() {
 
       {/* 7. Retention Cleanup Modal */}
       {isCleanupModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 space-y-5">
-            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
-              <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50">
-                <Trash2 className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Dọn dẹp nhật ký cũ
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Giải phóng dung lượng các bản ghi quá hạn
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                  Dọn dẹp nhật ký cũ
-                </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Giải phóng dung lượng cho các bản ghi đã quá thời hạn lưu trữ
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsCleanupModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-              Bạn có chắc chắn muốn dọn dẹp các bản ghi nhật ký không?
-              Hành động này <strong className="text-rose-600 dark:text-rose-400 font-semibold">không thể hoàn tác</strong>.
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+              Các bản ghi trước thời hạn sẽ bị xóa vĩnh viễn và <strong className="text-rose-600 dark:text-rose-400 font-semibold">không thể khôi phục</strong>.
             </p>
 
             {/* Retention Days Selector */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                 Giữ lại nhật ký trong vòng:
               </label>
-              <div className="flex items-center gap-3">
+
+              {/* 3 Quick Chips Full Width */}
+              <div className="grid grid-cols-3 gap-2">
+                {[7, 30, 90].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setCleanupDays(d)}
+                    className={`py-2 px-3 text-xs rounded-xl border font-semibold transition-all text-center ${
+                      cleanupDays === d
+                        ? 'bg-rose-500/10 border-rose-500 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/20'
+                        : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    {d} ngày
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Number Input */}
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-zinc-500">Hoặc tùy chỉnh:</span>
                 <input
                   type="number"
                   min={1}
                   max={365}
                   value={cleanupDays}
                   onChange={(e) => setCleanupDays(Math.max(1, Number(e.target.value)))}
-                  className="w-24 px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                  className="w-20 px-3 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-rose-500 font-mono text-center"
                 />
-                <span className="text-xs text-zinc-500">ngày</span>
-                <div className="flex flex-wrap gap-1.5 ml-auto">
-                  {[7, 30, 90].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setCleanupDays(d)}
-                      className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${cleanupDays === d
-                        ? 'bg-rose-50 border-rose-300 text-rose-700 font-bold dark:bg-rose-950/60 dark:border-rose-800 dark:text-rose-300'
-                        : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                        }`}
-                    >
-                      {d} ngày
-                    </button>
-                  ))}
-                </div>
+                <span className="text-xs text-zinc-400">ngày</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => setIsCleanupModalOpen(false)}
                 disabled={isCleaningUp}
-                className="px-4 py-2 text-sm font-medium rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-xs font-medium rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 transition-colors disabled:opacity-50"
               >
                 Hủy
               </button>
@@ -1068,9 +1211,9 @@ export default function AdminSystemLogsPage() {
                 type="button"
                 onClick={handleExecuteCleanup}
                 disabled={isCleaningUp}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-500 text-white shadow-sm shadow-rose-600/20 transition-all disabled:opacity-50"
               >
-                {isCleaningUp && <RefreshCw className="w-4 h-4 animate-spin" />}
+                {isCleaningUp && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 Xác nhận dọn dẹp
               </button>
             </div>

@@ -5,14 +5,12 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Maximize2,
   ExternalLink,
   Film,
   Image as ImageIcon,
+  LayoutGrid,
   AlertTriangle,
-  X,
 } from 'lucide-react';
-import { Button } from '@/components/common/Button';
 
 interface EvidenceMediaViewerProps {
   evidenceUrl?: string | null;
@@ -20,12 +18,15 @@ interface EvidenceMediaViewerProps {
   candidateName?: string;
   timestamp?: string;
   onClose?: () => void;
+  hideHeader?: boolean;
+  hideFooter?: boolean;
+  className?: string;
 }
 
 /**
  * Component viewing proctoring violation evidence.
  * Supports:
- * 1. Single static frame (for NO_FACE_DETECTED, etc.)
+ * 1. Single static frame (for NO_FACE_DETECTED, TAB_SWITCH, etc.)
  * 2. 15-frame 5 FPS animated player sliced from a 5x3 sprite sheet canvas (for MULTIPLE_FACES)
  */
 export const EvidenceMediaViewer: React.FC<EvidenceMediaViewerProps> = ({
@@ -33,7 +34,9 @@ export const EvidenceMediaViewer: React.FC<EvidenceMediaViewerProps> = ({
   violationType,
   candidateName,
   timestamp,
-  onClose,
+  hideHeader = false,
+  hideFooter = false,
+  className = '',
 }) => {
   const isMultipleFaces = violationType === 'MULTIPLE_FACES';
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -128,7 +131,7 @@ export const EvidenceMediaViewer: React.FC<EvidenceMediaViewerProps> = ({
 
   if (!evidenceUrl) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 bg-zinc-900 rounded-2xl border border-zinc-800 text-zinc-400">
+      <div className="flex flex-col items-center justify-center p-8 bg-zinc-900/60 rounded-2xl border border-zinc-800 text-zinc-400">
         <AlertTriangle className="w-8 h-8 text-amber-400 mb-2" />
         <p className="text-sm font-medium">Không có bằng chứng hình ảnh cho sự kiện này.</p>
       </div>
@@ -136,39 +139,43 @@ export const EvidenceMediaViewer: React.FC<EvidenceMediaViewerProps> = ({
   }
 
   return (
-    <div className="flex flex-col bg-[#161B22] border border-[#30363D] rounded-2xl overflow-hidden shadow-2xl text-zinc-200">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#0D1117] border-b border-[#30363D]">
-        <div className="flex items-center gap-2">
-          {isMultipleFaces ? (
-            <Film className="w-4 h-4 text-rose-400" />
-          ) : (
-            <ImageIcon className="w-4 h-4 text-indigo-400" />
-          )}
-          <span className="text-sm font-semibold text-zinc-100">
-            {isMultipleFaces ? 'Video ghi nhận vi phạm' : 'Ảnh chụp vi phạm'}
-          </span>
-          {candidateName && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-medium">
-              {candidateName}
+    <div
+      className={`flex flex-col bg-zinc-950 dark:bg-black rounded-2xl overflow-hidden border border-zinc-800/80 shadow-2xl text-zinc-200 ${className}`}
+    >
+      {/* Optional Standalone Header (hidden when embedded inside a modal) */}
+      {!hideHeader && (
+        <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/80 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2 min-w-0">
+            {isMultipleFaces ? (
+              <Film className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <ImageIcon className="w-4 h-4 text-indigo-400 shrink-0" />
+            )}
+            <span className="text-xs sm:text-sm font-semibold text-zinc-100 truncate">
+              {isMultipleFaces ? 'Video vi phạm' : 'Ảnh chụp vi phạm'}
             </span>
-          )}
+            {candidateName && (
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-medium truncate max-w-[140px]">
+                {candidateName}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <a
+              href={evidenceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              title="Mở ảnh gốc trong tab mới"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <a
-            href={evidenceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-            title="Mở ảnh gốc trong tab mới"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
-      </div>
+      )}
 
-      {/* Media Canvas / Viewer */}
-      <div className="relative flex items-center justify-center bg-black/60 p-2 min-h-[260px]">
+      {/* Media Canvas / Viewer Screen */}
+      <div className="relative flex items-center justify-center bg-black min-h-[220px] sm:min-h-[280px] p-2 sm:p-3 overflow-hidden">
         {imageError ? (
           <div className="text-center p-6 text-zinc-400">
             <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-2" />
@@ -181,61 +188,64 @@ export const EvidenceMediaViewer: React.FC<EvidenceMediaViewerProps> = ({
           </div>
         ) : isMultipleFaces ? (
           showFullSprite ? (
-            <div className="max-h-[360px] overflow-auto">
+            <div className="w-full max-h-[420px] overflow-auto rounded-xl border border-zinc-800/80 bg-zinc-950 p-1">
               <img
                 src={evidenceUrl}
-                alt="Hình ảnh bằng chứng"
-                className="w-full max-w-full rounded border border-zinc-800"
+                alt="Toàn bộ khung ảnh sprite"
+                className="w-full h-auto rounded-lg object-contain"
               />
             </div>
           ) : (
-            <div className="relative rounded-xl overflow-hidden border border-zinc-700/80 shadow-lg">
+            <div className="relative w-full max-w-lg mx-auto rounded-xl overflow-hidden border border-zinc-800/80 shadow-2xl bg-zinc-950 flex items-center justify-center">
               <canvas
                 ref={canvasRef}
                 width={FRAME_WIDTH}
                 height={FRAME_HEIGHT}
-                className="w-full max-w-[360px] h-auto aspect-[4/3] block bg-black"
+                className="w-full h-auto aspect-[4/3] object-contain block mx-auto bg-black"
               />
             </div>
           )
         ) : (
-          <div className="relative rounded-xl overflow-hidden border border-zinc-700/80 shadow-lg max-w-[360px]">
+          <div className="relative w-full max-w-lg mx-auto rounded-xl overflow-hidden border border-zinc-800/80 shadow-2xl bg-zinc-950 flex items-center justify-center">
             <img
               src={evidenceUrl}
               alt="Ảnh chụp vi phạm"
-              className="w-full h-auto aspect-[4/3] object-cover"
+              className="w-full h-auto aspect-[4/3] object-contain"
             />
           </div>
         )}
       </div>
 
-      {/* Controls Bar (for animation) */}
+      {/* Video Sprite Playback Controls Bar */}
       {isMultipleFaces && imageLoaded && (
-        <div className="px-4 py-3 bg-[#0D1117] border-t border-[#30363D] space-y-2">
+        <div className="px-3 sm:px-4 py-2.5 bg-zinc-900/90 border-t border-zinc-800/80 space-y-2">
           {!showFullSprite && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Play / Pause Button */}
               <button
                 type="button"
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center"
+                className="w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
                 title={isPlaying ? 'Tạm dừng' : 'Phát tiếp'}
               >
-                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
               </button>
 
+              {/* Replay Button */}
               <button
                 type="button"
                 onClick={() => {
                   setCurrentFrame(0);
                   drawFrame(0);
                 }}
-                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-zinc-300 transition-all cursor-pointer flex items-center justify-center shrink-0"
                 title="Xem lại từ đầu"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
 
-              <div className="flex-1 flex items-center gap-2">
+              {/* Frame Slider & Badge */}
+              <div className="flex-1 flex items-center gap-2 min-w-0">
                 <input
                   type="range"
                   min={0}
@@ -244,34 +254,57 @@ export const EvidenceMediaViewer: React.FC<EvidenceMediaViewerProps> = ({
                   onChange={handleSliderChange}
                   className="w-full accent-indigo-500 cursor-pointer h-1.5 bg-zinc-700 rounded-lg"
                 />
+                <span className="text-[10px] font-mono text-zinc-400 shrink-0 px-1.5 py-0.5 rounded bg-zinc-800">
+                  {currentFrame + 1}/{TOTAL_FRAMES}
+                </span>
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-zinc-400 pt-1 border-t border-zinc-800/80">
-            <span className="text-rose-400 font-medium">
-              Ghi nhận có người lạ xuất hiện trước màn hình
+          {/* Mode Switcher Segmented Control */}
+          <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-800/60">
+            <span className="text-[11px] text-rose-400 font-medium truncate">
+              Phát hiện nhiều khuôn mặt
             </span>
 
-            <button
-              type="button"
-              onClick={() => setShowFullSprite(!showFullSprite)}
-              className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium underline underline-offset-2 cursor-pointer"
-            >
-              {showFullSprite ? 'Xem dạng video' : 'Xem từng ảnh chụp'}
-            </button>
+            {/* Segmented Control Pill */}
+            <div className="inline-flex items-center p-0.5 rounded-lg bg-zinc-800/90 border border-zinc-700/60 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowFullSprite(false)}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all ${
+                  !showFullSprite
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Film className="w-3 h-3" />
+                <span>Video</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFullSprite(true)}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all ${
+                  showFullSprite
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <LayoutGrid className="w-3 h-3" />
+                <span>Lưới ảnh</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Footer Info */}
-      {timestamp && (
-        <div className="px-4 py-2 bg-zinc-950/50 border-t border-zinc-900 text-[11px] text-zinc-500 flex items-center justify-between">
+      {/* Optional Standalone Footer (hidden when embedded inside a modal) */}
+      {!hideFooter && timestamp && (
+        <div className="px-4 py-2 bg-zinc-950/70 border-t border-zinc-900 text-[11px] text-zinc-400 flex items-center justify-between">
           <span>Thời điểm: {new Date(timestamp).toLocaleString('vi-VN')}</span>
-          <span className="text-[11px] text-zinc-500">Tự động ghi nhận</span>
+          <span className="text-zinc-500 font-mono text-[10px]">AI Proctor</span>
         </div>
       )}
     </div>
   );
 };
-

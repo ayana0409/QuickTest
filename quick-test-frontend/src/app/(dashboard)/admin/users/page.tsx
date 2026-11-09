@@ -7,7 +7,6 @@ import {
   Users,
   UserPlus,
   Search,
-  Filter,
   Shield,
   KeyRound,
   Lock,
@@ -15,20 +14,17 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  ExternalLink,
   ShieldAlert,
-  CheckCircle2,
-  XCircle,
   Eye,
   AlertTriangle,
   UserCheck,
+  GraduationCap,
+  X,
+  EyeOff,
+  BookOpen,
+  Check,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button } from '@/components/common/Button';
-import { Input } from '@/components/common/Input';
-import { Badge } from '@/components/common/Badge';
-import { Card } from '@/components/common/Card';
-import { Modal } from '@/components/common/Modal';
 import { adminService } from '@/services/admin.service';
 import { useAuthStore } from '@/stores/authStore';
 import type { PageResponse } from '@/types/exam';
@@ -68,9 +64,11 @@ export default function AdminUsersPage() {
     password: '',
     role: 'STUDENT' as UserRole,
   });
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
 
   const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [isSubmittingReset, setIsSubmittingReset] = useState(false);
 
   const [newRoleSelect, setNewRoleSelect] = useState<UserRole>('STUDENT');
@@ -118,6 +116,14 @@ export default function AdminUsersPage() {
     fetchUsers();
   };
 
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSearchKeyword('');
+    setSelectedRole('ALL');
+    setSelectedStatus('ALL');
+    setCurrentPage(0);
+  };
+
   // Handle Create User
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +146,7 @@ export default function AdminUsersPage() {
         role: createForm.role,
       });
 
-      // Notification is handled automatically by axios interceptor
+      toast.success('Đã tạo tài khoản người dùng thành công!');
       setIsCreateModalOpen(false);
       setCreateForm({
         username: '',
@@ -171,7 +177,7 @@ export default function AdminUsersPage() {
       await adminService.resetUserPassword(selectedTargetUser.id, {
         newPassword: newPasswordInput,
       });
-      // Notification is handled automatically by axios interceptor
+      toast.success('Đã đặt lại mật khẩu mới thành công!');
       setIsResetPasswordModalOpen(false);
       setNewPasswordInput('');
     } catch {
@@ -194,7 +200,7 @@ export default function AdminUsersPage() {
     setIsSubmittingRole(true);
     try {
       await adminService.updateUserRole(selectedTargetUser.id, newRoleSelect);
-      // Notification is handled automatically by axios interceptor
+      toast.success('Đã cập nhật vai trò người dùng thành công!');
       setIsChangeRoleModalOpen(false);
       fetchUsers();
     } catch {
@@ -216,7 +222,7 @@ export default function AdminUsersPage() {
     setIsSubmittingToggle(true);
     try {
       await adminService.toggleUserStatus(selectedTargetUser.id);
-      // Notification is handled automatically by axios interceptor
+      toast.success(selectedTargetUser.isActive ? 'Đã khóa tài khoản thành công!' : 'Đã mở khóa tài khoản thành công!');
       setIsToggleStatusModalOpen(false);
       fetchUsers();
     } catch {
@@ -231,206 +237,347 @@ export default function AdminUsersPage() {
     switch (role) {
       case 'ADMIN':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap">
             <Shield className="w-3 h-3" />
             Quản trị viên
           </span>
         );
       case 'TEACHER':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 whitespace-nowrap">
+            <UserCheck className="w-3 h-3" />
             Giáo viên
           </span>
         );
       case 'STUDENT':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+            <GraduationCap className="w-3 h-3" />
             Học sinh
           </span>
         );
     }
   };
 
+  const isFiltered = searchKeyword || selectedRole !== 'ALL' || selectedStatus !== 'ALL';
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 font-sans">
+      {/* Top Header & Actions (Synchronized with /admin/ai and /admin/moderation) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
               Quản lý Người dùng
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-              Tổng số {totalElements} tài khoản
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+              {totalElements} tài khoản
             </span>
           </div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Quản lý tài khoản người dùng, phân quyền vai trò, đặt lại mật khẩu và điều phối quyền truy cập hệ thống.
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Quản lý tài khoản người dùng, phân quyền vai trò và điều phối truy cập
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
+        {/* Header Action Buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
             onClick={fetchUsers}
-            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
+            disabled={isLoading}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors shadow-2xs flex items-center gap-1.5 whitespace-nowrap"
+            title="Làm mới danh sách"
           >
-            Làm mới
-          </Button>
+            <RefreshCw className={`w-3.5 h-3.5 text-zinc-500 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
+            <span className="hidden md:inline">Làm mới</span>
+          </button>
 
-          <Button
-            variant="primary"
-            size="sm"
+          <button
+            type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            leftIcon={<UserPlus className="w-4 h-4" />}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-1.5 whitespace-nowrap"
           >
-            Thêm người dùng
-          </Button>
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Thêm người dùng</span>
+          </button>
         </div>
       </div>
 
+      {/* 4 Interactive Role Metric Cards (Click to filter by role) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+        {/* Card 1: All Users */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRole('ALL');
+            setCurrentPage(0);
+          }}
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 shadow-2xs flex flex-col justify-between ${
+            selectedRole === 'ALL'
+              ? 'border-indigo-600 bg-white dark:bg-zinc-900 ring-2 ring-indigo-500/20'
+              : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+              Tất cả tài khoản
+            </span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Users className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              {totalElements}
+            </span>
+          </div>
+        </button>
+
+        {/* Card 2: Teachers */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRole((prev) => (prev === 'TEACHER' ? 'ALL' : 'TEACHER'));
+            setCurrentPage(0);
+          }}
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 shadow-2xs flex flex-col justify-between ${
+            selectedRole === 'TEACHER'
+              ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 ring-2 ring-indigo-500/20'
+              : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-indigo-300 dark:hover:border-indigo-800/60'
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate">
+              Giáo viên
+            </span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <UserCheck className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-lg sm:text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              {selectedRole === 'TEACHER' ? totalElements : 'Lọc'}
+            </span>
+          </div>
+        </button>
+
+        {/* Card 3: Students */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRole((prev) => (prev === 'STUDENT' ? 'ALL' : 'STUDENT'));
+            setCurrentPage(0);
+          }}
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 shadow-2xs flex flex-col justify-between ${
+            selectedRole === 'STUDENT'
+              ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 ring-2 ring-emerald-500/20'
+              : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-emerald-300 dark:hover:border-emerald-800/60'
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate">
+              Học sinh
+            </span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <GraduationCap className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+              {selectedRole === 'STUDENT' ? totalElements : 'Lọc'}
+            </span>
+          </div>
+        </button>
+
+        {/* Card 4: Admins */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRole((prev) => (prev === 'ADMIN' ? 'ALL' : 'ADMIN'));
+            setCurrentPage(0);
+          }}
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 shadow-2xs flex flex-col justify-between ${
+            selectedRole === 'ADMIN'
+              ? 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 ring-2 ring-rose-500/20'
+              : 'border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-rose-300 dark:hover:border-rose-800/60'
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="text-[11px] sm:text-xs font-semibold text-rose-600 dark:text-rose-400 truncate">
+              Quản trị viên
+            </span>
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <Shield className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-lg sm:text-2xl font-bold text-rose-600 dark:text-rose-400">
+              {selectedRole === 'ADMIN' ? totalElements : 'Lọc'}
+            </span>
+          </div>
+        </button>
+      </div>
+
       {/* Filter and Search Bar */}
-      <Card className="p-4">
-        <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên đăng nhập, email hoặc họ và tên..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2.5 sm:gap-3">
-            <select
-              value={selectedRole}
-              onChange={(e) => {
-                setSelectedRole(e.target.value);
+      <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {/* Search Input */}
+        <form onSubmit={handleSearchSubmit} className="flex-1 relative">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="text"
+            placeholder="Tìm theo tên, email hoặc tài khoản..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            className="w-full pl-9 pr-9 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-800/50 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          />
+          {searchKeyword && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchKeyword('');
                 setCurrentPage(0);
               }}
-              className="w-full sm:w-auto px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-0.5"
             >
-              <option value="ALL">Tất cả vai trò</option>
-              <option value="ADMIN">Quản trị viên</option>
-              <option value="TEACHER">Giáo viên</option>
-              <option value="STUDENT">Học sinh</option>
-            </select>
-
-            <select
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="w-full sm:w-auto px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang hoạt động</option>
-              <option value="INACTIVE">Đã khóa</option>
-            </select>
-
-            <Button type="submit" variant="secondary" size="md" className="col-span-2 sm:col-span-1">
-              Lọc
-            </Button>
-          </div>
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </form>
-      </Card>
 
-      {/* Users Table */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[760px]">
-            <thead className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-              <tr>
-                <th className="py-3.5 px-4 sm:px-6">Người dùng</th>
-                <th className="py-3.5 px-4">Email & Đăng nhập</th>
-                <th className="py-3.5 px-4">Vai trò</th>
-                <th className="py-3.5 px-4">Trạng thái</th>
-                <th className="py-3.5 px-4">Ngày tạo</th>
-                <th className="py-3.5 px-4 sm:px-6 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {isLoading ? (
+        {/* Secondary Filter Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Status Select */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(0);
+            }}
+            className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/70 text-xs font-medium text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="INACTIVE">Đã khóa</option>
+          </select>
+
+          {/* Reset Filters */}
+          {isFiltered && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="px-2 py-1 text-xs text-zinc-500 hover:text-rose-600 transition-colors whitespace-nowrap underline"
+            >
+              Đặt lại
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content: Desktop Table + Mobile Card List */}
+      {isLoading ? (
+        <div className="py-20 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
+          <RefreshCw className="w-7 h-7 animate-spin mx-auto text-indigo-600 dark:text-indigo-400 mb-2" />
+          <p className="text-xs sm:text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            Đang tải danh sách người dùng...
+          </p>
+        </div>
+      ) : users.length === 0 ? (
+        <div className="py-16 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-800 p-6 space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 mx-auto flex items-center justify-center">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+              Không tìm thấy tài khoản nào
+            </h3>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1">
+              Không có người dùng nào khớp với bộ lọc tìm kiếm hiện tại.
+            </p>
+          </div>
+          {isFiltered && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
+            >
+              Đặt lại bộ lọc
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* 1. Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/80 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-zinc-500">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-zinc-400" />
-                    Đang tải danh sách tài khoản...
-                  </td>
+                  <th className="py-3 px-5">Người dùng</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Vai trò</th>
+                  <th className="py-3 px-4">Trạng thái</th>
+                  <th className="py-3 px-4">Ngày tạo</th>
+                  <th className="py-3 px-5 text-right">Thao tác</th>
                 </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-zinc-500">
-                    <Users className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
-                    Không tìm thấy tài khoản nào khớp với tiêu chí tìm kiếm.
-                  </td>
-                </tr>
-              ) : (
-                users.map((u) => {
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                {users.map((u) => {
                   const isCurrentAdmin = u.id === currentAdmin?.id;
                   const isSsoUser = Boolean(u.authProvider && u.authProvider !== 'LOCAL');
 
                   return (
                     <tr
                       key={u.id}
-                      className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition-colors"
+                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors"
                     >
                       {/* User Info & Avatar */}
-                      <td className="py-4 px-4 sm:px-6">
+                      <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm bg-gradient-to-tr from-zinc-200 to-zinc-100 dark:from-zinc-800 dark:to-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-700/60 shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-700/60 shrink-0">
                             {u.fullName ? u.fullName.charAt(0).toUpperCase() : u.username.charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                                 {u.fullName}
                               </span>
                               {isCurrentAdmin && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200/70 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">
+                                <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 whitespace-nowrap">
                                   Bạn
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
+                            <div className="text-[11px] text-zinc-400 font-mono">
                               @{u.username}
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Contact & Auth Provider */}
-                      <td className="py-4 px-4">
-                        <div className="text-sm text-zinc-700 dark:text-zinc-300">{u.email}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {isSsoUser ? (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                              Đăng nhập SSO ({u.authProvider})
-                            </span>
-                          ) : (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
-                              Mật khẩu nội bộ
-                            </span>
-                          )}
+                      {/* Email & SSO info */}
+                      <td className="py-3.5 px-4">
+                        <div className="text-zinc-700 dark:text-zinc-300 text-xs truncate max-w-[200px]">
+                          {u.email}
                         </div>
+                        {isSsoUser && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 whitespace-nowrap mt-0.5 inline-block">
+                            SSO ({u.authProvider})
+                          </span>
+                        )}
                       </td>
 
                       {/* Role */}
-                      <td className="py-4 px-4">{getRoleBadge(u.role)}</td>
+                      <td className="py-3.5 px-4">{getRoleBadge(u.role)}</td>
 
                       {/* Status */}
-                      <td className="py-4 px-4">
+                      <td className="py-3.5 px-4">
                         {u.isActive ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Đang hoạt động
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Hoạt động
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                             Đã khóa
                           </span>
@@ -438,19 +585,19 @@ export default function AdminUsersPage() {
                       </td>
 
                       {/* Created At */}
-                      <td className="py-4 px-4 text-xs text-zinc-500 dark:text-zinc-400">
+                      <td className="py-3.5 px-4 text-xs text-zinc-400 whitespace-nowrap">
                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : '—'}
                       </td>
 
                       {/* Actions */}
-                      <td className="py-4 px-4 sm:px-6 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3.5 px-5 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           {/* View Detail Button */}
                           <Link href={`/admin/users/${u.id}`}>
                             <button
                               type="button"
-                              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                              title="Xem chi tiết tài khoản"
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                              title="Xem chi tiết"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
@@ -464,7 +611,7 @@ export default function AdminUsersPage() {
                               setNewRoleSelect(u.role);
                               setIsChangeRoleModalOpen(true);
                             }}
-                            className="p-1.5 rounded-lg text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
                             title="Phân quyền vai trò"
                           >
                             <Shield className="w-4 h-4" />
@@ -481,10 +628,10 @@ export default function AdminUsersPage() {
                             }}
                             className={`p-1.5 rounded-lg transition-colors ${
                               isSsoUser
-                                ? 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed'
-                                : 'text-zinc-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                                ? 'text-zinc-200 dark:text-zinc-800 cursor-not-allowed'
+                                : 'text-zinc-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40'
                             }`}
-                            title={isSsoUser ? 'Không hỗ trợ đặt lại mật khẩu cho tài khoản SSO' : 'Đặt lại mật khẩu'}
+                            title={isSsoUser ? 'Không hỗ trợ đổi mật khẩu SSO' : 'Đặt lại mật khẩu'}
                           >
                             <KeyRound className="w-4 h-4" />
                           </button>
@@ -499,14 +646,14 @@ export default function AdminUsersPage() {
                             }}
                             className={`p-1.5 rounded-lg transition-colors ${
                               isCurrentAdmin
-                                ? 'text-zinc-300 dark:text-zinc-700 cursor-not-allowed'
+                                ? 'text-zinc-200 dark:text-zinc-800 cursor-not-allowed'
                                 : u.isActive
-                                ? 'text-zinc-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                                : 'text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                                ? 'text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                                : 'text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                             }`}
                             title={
                               isCurrentAdmin
-                                ? 'Không thể tự khóa tài khoản của chính mình'
+                                ? 'Không thể tự khóa tài khoản của bạn'
                                 : u.isActive
                                 ? 'Khóa tài khoản'
                                 : 'Mở khóa tài khoản'
@@ -522,337 +669,597 @@ export default function AdminUsersPage() {
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Pagination Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-900/40 text-xs text-zinc-500">
-          <div>
-            Đang hiển thị {users.length > 0 ? currentPage * pageSize + 1 : 0} đến{' '}
-            {Math.min((currentPage + 1) * pageSize, totalElements)} trong tổng số {totalElements} người dùng
+          {/* 2. Mobile Responsive Card List (NO horizontal scrolling on small screens!) */}
+          <div className="md:hidden space-y-3">
+            {users.map((u) => {
+              const isCurrentAdmin = u.id === currentAdmin?.id;
+              const isSsoUser = Boolean(u.authProvider && u.authProvider !== 'LOCAL');
+
+              return (
+                <div
+                  key={u.id}
+                  className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs space-y-3"
+                >
+                  {/* Top Row: User Avatar & Role */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-700/60 shrink-0">
+                        {u.fullName ? u.fullName.charAt(0).toUpperCase() : u.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm truncate">
+                            {u.fullName}
+                          </span>
+                          {isCurrentAdmin && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 whitespace-nowrap">
+                              Bạn
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-zinc-400 font-mono truncate">
+                          @{u.username}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-1.5">
+                      {getRoleBadge(u.role)}
+                    </div>
+                  </div>
+
+                  {/* Contact info & Status */}
+                  <div className="flex items-center justify-between text-xs text-zinc-500 pt-1 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
+                    <span className="truncate max-w-[200px]">{u.email}</span>
+                    {u.isActive ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Hoạt động
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 dark:text-rose-400 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        Đã khóa
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Action Bar (One-touch buttons) */}
+                  <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+                    <span className="text-[11px] text-zinc-400">
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : '—'}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <Link href={`/admin/users/${u.id}`}>
+                        <button
+                          type="button"
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedTargetUser(u);
+                          setNewRoleSelect(u.role);
+                          setIsChangeRoleModalOpen(true);
+                        }}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+                        title="Phân quyền vai trò"
+                      >
+                        <Shield className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isSsoUser}
+                        onClick={() => {
+                          setSelectedTargetUser(u);
+                          setNewPasswordInput('');
+                          setIsResetPasswordModalOpen(true);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          isSsoUser
+                            ? 'text-zinc-200 dark:text-zinc-800 cursor-not-allowed'
+                            : 'text-zinc-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                        }`}
+                        title={isSsoUser ? 'Không hỗ trợ tài khoản SSO' : 'Đặt lại mật khẩu'}
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isCurrentAdmin}
+                        onClick={() => {
+                          setSelectedTargetUser(u);
+                          setIsToggleStatusModalOpen(true);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          isCurrentAdmin
+                            ? 'text-zinc-200 dark:text-zinc-800 cursor-not-allowed'
+                            : u.isActive
+                            ? 'text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                            : 'text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                        }`}
+                        title={u.isActive ? 'Khóa' : 'Mở khóa'}
+                      >
+                        {u.isActive ? (
+                          <Lock className="w-4 h-4" />
+                        ) : (
+                          <Unlock className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Pagination Bar */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-4 pt-4 border-t border-zinc-200/80 dark:border-zinc-800 flex-wrap">
+          <div className="text-xs text-zinc-400">
+            Trang <strong className="text-zinc-800 dark:text-zinc-200">{currentPage + 1}</strong> / {totalPages} ({totalElements} tài khoản)
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 0))}
               disabled={currentPage === 0 || isLoading}
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 transition-colors shadow-2xs"
             >
-              Trang trước
-            </Button>
-            <span className="font-medium text-zinc-700 dark:text-zinc-300 px-1">
-              Trang {totalPages > 0 ? currentPage + 1 : 0} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
+              <ChevronLeft className="w-4 h-4" /> Trước
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages - 1))}
               disabled={currentPage >= totalPages - 1 || isLoading}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 transition-colors shadow-2xs"
             >
-              Trang sau
-            </Button>
+              Sau <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
-      {/* MODAL 1: CREATE USER */}
+      {/* MODAL 1: CREATE USER (With Sticky Action Footer) */}
       {/* ========================================================================= */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Tạo tài khoản người dùng mới"
-        description="Cấp tài khoản mới với vai trò và thông tin đăng nhập tương ứng."
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsCreateModalOpen(false)}
-              disabled={isSubmittingCreate}
-            >
-              Hủy bỏ
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleCreateUser}
-              isLoading={isSubmittingCreate}
-            >
-              Tạo tài khoản
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleCreateUser} className="space-y-4">
-          <Input
-            label="Họ và tên *"
-            placeholder="Ví dụ: Nguyễn Văn A"
-            value={createForm.fullName}
-            onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
-            required
-          />
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs">
+          <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
+              <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-indigo-600" />
+                Tạo tài khoản người dùng
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-          <Input
-            label="Tên đăng nhập *"
-            placeholder="Ví dụ: nguyenvana"
-            value={createForm.username}
-            onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
-            required
-          />
+            <form onSubmit={handleCreateUser} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Họ và tên <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Nguyễn Văn A"
+                  value={createForm.fullName}
+                  onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
 
-          <Input
-            label="Địa chỉ Email *"
-            type="email"
-            placeholder="Ví dụ: nguyenvana@example.com"
-            value={createForm.email}
-            onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-            required
-          />
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Tên đăng nhập <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: nguyenvana"
+                  value={createForm.username}
+                  onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
 
-          <Input
-            label="Mật khẩu ban đầu *"
-            type="password"
-            placeholder="Ít nhất 6 ký tự"
-            showPasswordToggle
-            value={createForm.password}
-            onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-            required
-          />
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Địa chỉ Email <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="nguyenvana@example.com"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
-              Vai trò chỉ định *
-            </label>
-            <select
-              value={createForm.role}
-              onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as UserRole })}
-              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-            >
-              <option value="STUDENT">Học sinh (Thí sinh dự thi)</option>
-              <option value="TEACHER">Giáo viên (Soạn đề & chấm thi)</option>
-              <option value="ADMIN">Quản trị viên (Toàn quyền hệ thống)</option>
-            </select>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Mật khẩu ban đầu <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCreatePassword ? 'text' : 'password'}
+                    required
+                    placeholder="Ít nhất 6 ký tự"
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                    className="w-full pl-3.5 pr-10 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-xs sm:text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCreatePassword(!showCreatePassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1"
+                  >
+                    {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Vai trò chỉ định <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as UserRole })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-xs sm:text-sm text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="STUDENT">Học sinh (Làm bài thi)</option>
+                  <option value="TEACHER">Giáo viên (Soạn đề & chấm bài)</option>
+                  <option value="ADMIN">Quản trị viên (Toàn quyền)</option>
+                </select>
+              </div>
+
+              {/* Sticky Action Footer */}
+              <div className="sticky bottom-0 bg-white dark:bg-zinc-900 pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  disabled={isSubmittingCreate}
+                  className="px-4 py-2 rounded-xl text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingCreate}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/20 disabled:opacity-50"
+                >
+                  {isSubmittingCreate ? 'Đang tạo...' : 'Tạo tài khoản'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </Modal>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL 2: RESET PASSWORD */}
       {/* ========================================================================= */}
-      <Modal
-        isOpen={isResetPasswordModalOpen}
-        onClose={() => setIsResetPasswordModalOpen(false)}
-        title="Đặt lại mật khẩu tài khoản"
-        description={
-          selectedTargetUser
-            ? `Cập nhật mật khẩu mới cho ${selectedTargetUser.fullName} (@${selectedTargetUser.username})`
-            : 'Đặt lại mật khẩu'
-        }
-        size="sm"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsResetPasswordModalOpen(false)}
-              disabled={isSubmittingReset}
-            >
-              Hủy bỏ
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleResetPassword}
-              isLoading={isSubmittingReset}
-            >
-              Lưu mật khẩu mới
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleResetPassword} className="space-y-4">
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400">
-            <p className="font-semibold mb-1">Lưu ý quản trị</p>
-            Người dùng sẽ cần sử dụng mật khẩu mới này cho những lần đăng nhập tiếp theo.
-          </div>
+      {isResetPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl overflow-hidden p-5 space-y-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Đặt lại mật khẩu
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">Cấp mật khẩu mới trực tiếp</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsResetPasswordModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-          <Input
-            label="Mật khẩu mới *"
-            type="password"
-            placeholder="Ít nhất 6 ký tự"
-            showPasswordToggle
-            value={newPasswordInput}
-            onChange={(e) => setNewPasswordInput(e.target.value)}
-            required
-            autoFocus
-          />
-        </form>
-      </Modal>
+            {/* Target User Info Mini-Banner */}
+            <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs flex items-center justify-center shrink-0">
+                {selectedTargetUser?.fullName?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                  {selectedTargetUser?.fullName}
+                </div>
+                <div className="text-[11px] text-zinc-400 font-mono truncate">
+                  @{selectedTargetUser?.username}
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Mật khẩu mới <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showResetPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Tối thiểu 6 ký tự"
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-xs sm:text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1"
+                  >
+                    {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsResetPasswordModalOpen(false)}
+                  disabled={isSubmittingReset}
+                  className="px-4 py-2 rounded-xl text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReset}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white shadow-sm shadow-amber-600/20 disabled:opacity-50 transition-all"
+                >
+                  {isSubmittingReset ? 'Đang lưu...' : 'Lưu mật khẩu'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL 3: CHANGE ROLE */}
       {/* ========================================================================= */}
-      <Modal
-        isOpen={isChangeRoleModalOpen}
-        onClose={() => setIsChangeRoleModalOpen(false)}
-        title="Cập nhật vai trò người dùng"
-        description={
-          selectedTargetUser
-            ? `Thay đổi phân quyền hệ thống cho @${selectedTargetUser.username}`
-            : 'Thay đổi phân quyền hệ thống'
-        }
-        size="sm"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsChangeRoleModalOpen(false)}
-              disabled={isSubmittingRole}
-            >
-              Hủy bỏ
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleChangeRole}
-              isLoading={isSubmittingRole}
-            >
-              Lưu vai trò
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleChangeRole} className="space-y-4">
-          {selectedTargetUser?.id === currentAdmin?.id && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-700 dark:text-rose-400 flex items-start gap-2">
-              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>
-                <strong>Tự bảo vệ tài khoản:</strong> Bạn đang chỉnh sửa tài khoản quản trị của chính mình. Bạn không thể tự hạ quyền quản trị.
+      {isChangeRoleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl overflow-hidden p-5 space-y-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Phân quyền vai trò
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">Chọn vai trò hệ thống mới</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChangeRoleModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Target User Info Mini-Banner */}
+            <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs flex items-center justify-center shrink-0">
+                {selectedTargetUser?.fullName?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                  {selectedTargetUser?.fullName}
+                </div>
+                <div className="text-[11px] text-zinc-400 font-mono truncate">
+                  @{selectedTargetUser?.username}
+                </div>
               </div>
             </div>
-          )}
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
-              Chọn vai trò
-            </label>
-            <div className="space-y-2">
-              {(['STUDENT', 'TEACHER', 'ADMIN'] as UserRole[]).map((r) => {
-                const isSelected = newRoleSelect === r;
-                const isDemotingSelf =
-                  selectedTargetUser?.id === currentAdmin?.id && r !== 'ADMIN';
+            <form onSubmit={handleChangeRole} className="space-y-4">
+              {selectedTargetUser?.id === currentAdmin?.id && (
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span className="text-[11px] leading-tight">Không thể tự hạ quyền quản trị của chính bạn.</span>
+                </div>
+              )}
 
-                const roleNameMap: Record<UserRole, string> = {
-                  ADMIN: 'Quản trị viên',
-                  TEACHER: 'Giáo viên',
-                  STUDENT: 'Học sinh',
-                };
+              {/* Linear-style Interactive Role Cards */}
+              <div className="space-y-2">
+                {(
+                  [
+                    {
+                      role: 'ADMIN' as UserRole,
+                      name: 'Quản trị viên',
+                      desc: 'Toàn quyền điều hành hệ thống',
+                      icon: Shield,
+                      activeColor: 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400',
+                    },
+                    {
+                      role: 'TEACHER' as UserRole,
+                      name: 'Giáo viên',
+                      desc: 'Soạn đề thi & chấm điểm',
+                      icon: BookOpen,
+                      activeColor: 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400',
+                    },
+                    {
+                      role: 'STUDENT' as UserRole,
+                      name: 'Học sinh',
+                      desc: 'Tham gia thi & xem điểm',
+                      icon: GraduationCap,
+                      activeColor: 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400',
+                    },
+                  ]
+                ).map(({ role: r, name, desc, icon: Icon, activeColor }) => {
+                  const isSelected = newRoleSelect === r;
+                  const isDemotingSelf = selectedTargetUser?.id === currentAdmin?.id && r !== 'ADMIN';
 
-                const roleDescMap: Record<UserRole, string> = {
-                  ADMIN: 'Toàn quyền quản trị hệ thống và người dùng',
-                  TEACHER: 'Soạn thảo đề thi, chấm điểm và giám sát kỳ thi',
-                  STUDENT: 'Tham gia làm bài thi và xem kết quả',
-                };
-
-                return (
-                  <label
-                    key={r}
-                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-800'
-                        : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'
-                    } ${isDemotingSelf ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="userRole"
-                        value={r}
-                        checked={isSelected}
-                        disabled={isDemotingSelf}
-                        onChange={() => setNewRoleSelect(r)}
-                        className="text-zinc-900 focus:ring-zinc-900"
-                      />
-                      <div>
-                        <div className="font-semibold text-sm">{roleNameMap[r]}</div>
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {roleDescMap[r]}
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      disabled={isDemotingSelf}
+                      onClick={() => setNewRoleSelect(r)}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all duration-200 ${
+                        isSelected
+                          ? `${activeColor} ring-1 ring-current`
+                          : 'border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900/60'
+                      } ${isDemotingSelf ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                          isSelected ? 'bg-current/10' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'
+                        }`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                            {name}
+                          </div>
+                          <div className="text-[11px] text-zinc-400 truncate">
+                            {desc}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    {getRoleBadge(r)}
-                  </label>
-                );
-              })}
-            </div>
+
+                      {isSelected && (
+                        <div className="w-4 h-4 rounded-full bg-current flex items-center justify-center text-white shrink-0 ml-2">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsChangeRoleModalOpen(false)}
+                  disabled={isSubmittingRole}
+                  className="px-4 py-2 rounded-xl text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingRole || newRoleSelect === selectedTargetUser?.role}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition-all"
+                >
+                  {isSubmittingRole ? 'Đang lưu...' : 'Lưu vai trò'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </Modal>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL 4: CONFIRM TOGGLE STATUS */}
       {/* ========================================================================= */}
-      <Modal
-        isOpen={isToggleStatusModalOpen}
-        onClose={() => setIsToggleStatusModalOpen(false)}
-        title={selectedTargetUser?.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
-        size="sm"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsToggleStatusModalOpen(false)}
-              disabled={isSubmittingToggle}
-            >
-              Hủy bỏ
-            </Button>
-            <Button
-              variant={selectedTargetUser?.isActive ? 'danger' : 'primary'}
-              size="sm"
-              onClick={handleToggleStatus}
-              isLoading={isSubmittingToggle}
-            >
-              {selectedTargetUser?.isActive ? 'Xác nhận khóa' : 'Xác nhận mở khóa'}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm bg-zinc-200 dark:bg-zinc-700">
-              {selectedTargetUser?.fullName?.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <div className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                {selectedTargetUser?.fullName}
+      {isToggleStatusModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl overflow-hidden p-5 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  selectedTargetUser?.isActive
+                    ? 'bg-rose-500/10 text-rose-600'
+                    : 'bg-emerald-500/10 text-emerald-600'
+                }`}
+              >
+                {selectedTargetUser?.isActive ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
               </div>
-              <div className="text-xs text-zinc-500">@{selectedTargetUser?.username}</div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  {selectedTargetUser?.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
+                </h3>
+                <p className="text-[11px] text-zinc-400">
+                  {selectedTargetUser?.isActive ? 'Tạm ngưng quyền truy cập hệ thống' : 'Khôi phục quyền truy cập'}
+                </p>
+              </div>
+            </div>
+
+            {/* Target User Info Mini-Banner */}
+            <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs flex items-center justify-center shrink-0">
+                {selectedTargetUser?.fullName?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                  {selectedTargetUser?.fullName}
+                </div>
+                <div className="text-[11px] text-zinc-400 font-mono truncate">
+                  @{selectedTargetUser?.username}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsToggleStatusModalOpen(false)}
+                disabled={isSubmittingToggle}
+                className="px-4 py-2 rounded-xl text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleStatus}
+                disabled={isSubmittingToggle}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all disabled:opacity-50 ${
+                  selectedTargetUser?.isActive
+                    ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/20'
+                    : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
+                }`}
+              >
+                {isSubmittingToggle
+                  ? 'Đang xử lý...'
+                  : selectedTargetUser?.isActive
+                  ? 'Khóa tài khoản'
+                  : 'Mở khóa'}
+              </button>
             </div>
           </div>
-
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
-            {selectedTargetUser?.isActive ? (
-              <>
-                Bạn có chắc chắn muốn <strong>khóa</strong> tài khoản này không? Người dùng sẽ bị chặn đăng nhập và không thể tham gia các kỳ thi.
-              </>
-            ) : (
-              <>
-                Bạn có chắc chắn muốn <strong>mở khóa</strong> tài khoản này không? Người dùng sẽ được khôi phục quyền truy cập vào hệ thống.
-              </>
-            )}
-          </p>
         </div>
-      </Modal>
+      )}
     </div>
   );
 }
