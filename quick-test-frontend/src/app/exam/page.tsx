@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   LogIn,
   HelpCircle,
+  ChevronLeft,
 } from 'lucide-react';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
@@ -38,6 +39,13 @@ function ExamEntryContent() {
     guestIdentifier?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Sync accessCode if URL query parameter changes
+  useEffect(() => {
+    if (initialCode) {
+      setAccessCode(initialCode.toUpperCase());
+    }
+  }, [initialCode]);
 
   // Restore cached guest data if any
   useEffect(() => {
@@ -92,7 +100,6 @@ function ExamEntryContent() {
 
     try {
       if (!isAuthenticated) {
-        // Cache guest credentials locally for background auto-saves and session recovery
         if (typeof window !== 'undefined') {
           localStorage.setItem('quicktest_guest_name', cleanName);
           localStorage.setItem('quicktest_guest_id', cleanIdentifier);
@@ -108,7 +115,6 @@ function ExamEntryContent() {
       if (paper && paper.attemptId) {
         router.push(`/exam/${paper.attemptId}`);
       } else {
-        // Fallback navigate to access code route
         router.push(`/exam/${cleanCode}`);
       }
     } catch {
@@ -119,37 +125,46 @@ function ExamEntryContent() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between bg-[#0D1117] text-[#E6EDF3] selection:bg-indigo-600/30 selection:text-indigo-200">
+    <div className="min-h-[100dvh] w-full flex flex-col justify-between bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
       {/* Top Header */}
-      <header className="w-full border-b border-[#30363D] bg-[#161B22]/60 backdrop-blur-md px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo.png"
-              alt="QuickTest Logo"
-              className="w-9 h-9 object-contain rounded-xl shadow-md shadow-indigo-500/20"
-            />
-            <span className="font-bold text-lg tracking-tight text-white">
-              Quick<span className="text-indigo-400">Test</span>
-            </span>
-          </Link>
+      <header className="w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-4 sm:px-6 h-14 sm:h-16 flex items-center">
+        <div className="max-w-6xl w-full mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="w-8 h-8 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-500 transition-colors"
+              title="Quay lại Trang chủ"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Link>
+            <Link href="/" className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.png"
+                alt="QuickTest Logo"
+                className="w-8 h-8 object-contain rounded-xl shadow-2xs"
+              />
+              <span className="font-extrabold text-lg tracking-tight text-zinc-900 dark:text-zinc-100">
+                Quick<span className="text-indigo-600 dark:text-indigo-400">Test</span>
+              </span>
+            </Link>
+          </div>
 
           <div>
             {isAuthenticated && user ? (
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
-                <span>Thí sinh:</span>
-                <span className="font-semibold text-white">
+              <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <span className="hidden sm:inline">Thí sinh:</span>
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[140px]">
                   {user.fullName || user.username}
                 </span>
               </div>
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/15 transition-colors"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>Đăng nhập tài khoản</span>
+                <span>Đăng nhập</span>
               </Link>
             )}
           </div>
@@ -157,21 +172,21 @@ function ExamEntryContent() {
       </header>
 
       {/* Center Form Card */}
-      <main className="flex-1 flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12">
-        <div className="w-full max-w-lg bg-[#161B22] border border-[#30363D] rounded-3xl p-4 sm:p-10 shadow-2xl relative overflow-hidden">
-          {/* Subtle Ambient Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-b-full shadow-[0_0_20px_rgba(99,102,241,0.5)]" />
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
+        <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl shadow-zinc-900/5 relative overflow-hidden">
+          {/* Top Accent Line */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-b-full" />
 
           {/* Card Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-4 shadow-inner">
-              <KeyRound className="w-7 h-7" />
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 mb-3">
+              <KeyRound className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
               Vào phòng thi trực tuyến
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-2">
-              Nhập mã phòng thi được cung cấp bởi giáo viên hoặc ban tổ chức
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              Nhập mã phòng thi được cung cấp bởi giảng viên
             </p>
           </div>
 
@@ -193,31 +208,30 @@ function ExamEntryContent() {
                 placeholder="VD: GP8W9D"
                 leftIcon={<KeyRound className="w-4 h-4 text-zinc-400" />}
                 autoComplete="off"
-                className="font-mono tracking-widest uppercase text-base"
+                className="font-mono tracking-widest uppercase text-sm font-bold"
                 autoFocus
               />
             </div>
 
-            {/* If Authenticated: Show badge */}
+            {/* If Authenticated: Show account badge */}
             {isAuthenticated && user ? (
-              <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-zinc-300">
-                  <User className="w-4 h-4 text-indigo-400" />
-                  <span>
-                    Tham gia với tài khoản:{' '}
-                    <strong className="text-white">{user.fullName || user.username}</strong>
+              <div className="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-900/50 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300 min-w-0">
+                  <User className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span className="truncate">
+                    Tài khoản: <strong className="text-zinc-900 dark:text-zinc-100">{user.fullName || user.username}</strong>
                   </span>
                 </div>
-                <Link href="/login" className="text-indigo-400 hover:underline">
-                  Đổi tài khoản
+                <Link href="/login" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline shrink-0">
+                  Đổi
                 </Link>
               </div>
             ) : (
               /* If Anonymous Guest: Collect name & identifier */
-              <div className="space-y-4 pt-2 border-t border-[#21262D]">
-                <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-medium">
+              <div className="space-y-3.5 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
                   <ShieldCheck className="w-4 h-4 shrink-0" />
-                  <span>Chế độ thí sinh tự do (Không cần đăng nhập)</span>
+                  <span>Thí sinh tự do (Không cần đăng nhập)</span>
                 </div>
 
                 <div>
@@ -250,41 +264,36 @@ function ExamEntryContent() {
                       }
                     }}
                     error={errors.guestIdentifier}
-                    placeholder="Ví dụ: 2026B123 hoặc email@domain.com"
+                    placeholder="Ví dụ: B20DCCN001 hoặc email..."
                     leftIcon={<IdCard className="w-4 h-4 text-zinc-400" />}
                     autoComplete="off"
                   />
-                  <div className="flex items-center gap-1 mt-1 text-[11px] text-zinc-500">
+                  <div className="flex items-center gap-1 mt-1 text-[11px] text-zinc-400">
                     <HelpCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Dùng để bảo vệ phiên làm bài và nhận kết quả chấm điểm.</span>
+                    <span>Dùng để tự động lưu và khôi phục bài làm nếu mất kết nối.</span>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="pt-4">
+            <div className="pt-2">
               <Button
                 type="submit"
                 size="lg"
                 isLoading={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 shadow-lg shadow-indigo-600/30 transition-all text-sm sm:text-base"
+                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-sm text-sm"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
               >
                 Bắt đầu làm bài thi
               </Button>
             </div>
           </form>
-
-          {/* Quick Notice */}
-          <div className="mt-6 pt-6 border-t border-[#21262D] text-center text-xs text-zinc-500">
-            Hệ thống hỗ trợ tự động lưu bài làm và chống gian lận đa tầng trong suốt thời gian thi.
-          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-xs text-zinc-600 border-t border-[#30363D]">
-        © {new Date().getFullYear()} Quick Test. All rights reserved.
+      <footer className="py-4 text-center text-xs text-zinc-400 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950">
+        © {new Date().getFullYear()} QuickTest Platform. All rights reserved.
       </footer>
     </div>
   );
@@ -294,7 +303,7 @@ export default function ExamEntryPage() {
   return (
     <React.Suspense
       fallback={
-        <div className="min-h-screen bg-[#0D1117] flex items-center justify-center text-zinc-400">
+        <div className="min-h-[100dvh] bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-400">
           <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
         </div>
       }

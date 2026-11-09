@@ -117,14 +117,14 @@ export const QuestionInfoPanel: React.FC<QuestionInfoPanelProps> = ({
 
       {/* Rubric and Sample Answer Toggle */}
       <div className="space-y-3">
-        <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800/80 p-1">
+        <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800/80 p-1 border border-zinc-200/60 dark:border-zinc-700/60">
           <button
             type="button"
             onClick={() => setActiveTab('rubric')}
             className={cn(
-              'flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all text-center flex items-center justify-center gap-1.5',
+              'flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer',
               activeTab === 'rubric'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs font-semibold'
                 : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
             )}
           >
@@ -135,9 +135,9 @@ export const QuestionInfoPanel: React.FC<QuestionInfoPanelProps> = ({
             type="button"
             onClick={() => setActiveTab('sample')}
             className={cn(
-              'flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all text-center flex items-center justify-center gap-1.5',
+              'flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer',
               activeTab === 'sample'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs font-semibold'
                 : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
             )}
           >

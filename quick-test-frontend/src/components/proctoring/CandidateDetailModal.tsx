@@ -382,6 +382,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               violationType={selectedEvidenceLog.violationType}
               candidateName={statusDetail?.candidateName}
               timestamp={selectedEvidenceLog.timestamp}
+              hideHeader={true}
               onClose={() => setSelectedEvidenceLog(null)}
             />
           </div>

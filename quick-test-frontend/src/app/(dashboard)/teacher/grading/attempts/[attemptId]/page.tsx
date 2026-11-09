@@ -230,22 +230,22 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
       <div>
         <Link
           href={`/teacher/exams/${detail.examId}/edit`}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-3"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Quay lại Quản lý đề thi: {detail.examTitle}</span>
+          <span>Quay lại: {detail.examTitle}</span>
         </Link>
 
         {/* Candidate Profile and Session Header Card */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-indigo-600 text-white font-bold text-lg flex items-center justify-center shadow-sm">
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-indigo-600 text-white font-bold text-base flex items-center justify-center shadow-xs shrink-0">
                 {detail.candidateName?.slice(0, 1).toUpperCase() || 'U'}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                  <h1 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
                     {detail.candidateName}
                   </h1>
                   <Badge variant={detail.status as AttemptStatus} size="sm" dot>
@@ -259,31 +259,31 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
                   </Badge>
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
-                  {detail.candidateIdentifier || 'Thí sinh tự do (Không đăng nhập)'}
+                  {detail.candidateIdentifier || 'Thí sinh tự do'}
                 </p>
               </div>
             </div>
 
             {/* Actions & Live Score Summary Chip */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExportExcel}
                 isLoading={isExporting}
-                leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-                className="hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium shadow-xs"
+                leftIcon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                className="hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium text-xs"
               >
-                Xuất Excel bài làm
+                Xuất Excel
               </Button>
-              <div className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 text-right">
-                <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+              <div className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 text-right">
+                <p className="text-[10px] uppercase font-semibold text-indigo-600 dark:text-indigo-400">
                   Điểm tổng kết
                 </p>
-                <p className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+                <p className="text-base sm:text-lg font-bold text-indigo-700 dark:text-indigo-300 leading-tight">
                   {projectedTotalScore}
                   <span className="text-xs font-normal text-indigo-400 dark:text-indigo-500">
-                    /{detail.maxTotalPoints} đ
+                    /{detail.maxTotalPoints}đ
                   </span>
                 </p>
               </div>
@@ -291,35 +291,35 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
           </div>
 
           {/* Quick Metrics & Violation Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
             <div className="space-y-0.5">
-              <span className="text-zinc-400 text-[11px]">Trắc nghiệm tự động</span>
+              <span className="text-zinc-400 text-[11px] block">Trắc nghiệm</span>
               <p className="font-semibold text-zinc-800 dark:text-zinc-200">
                 {detail.autoGradedScore ?? 0} điểm
               </p>
             </div>
             <div className="space-y-0.5">
-              <span className="text-zinc-400 text-[11px]">Câu hỏi tự luận</span>
+              <span className="text-zinc-400 text-[11px] block">Câu tự luận</span>
               <p className="font-semibold text-zinc-800 dark:text-zinc-200">
                 {detail.essayQuestions?.length || 0} câu
               </p>
             </div>
             <div className="space-y-0.5">
-              <span className="text-zinc-400 text-[11px]">Thời gian nộp bài</span>
-              <p className="font-semibold text-zinc-800 dark:text-zinc-200">
+              <span className="text-zinc-400 text-[11px] block">Nộp bài</span>
+              <p className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
                 {detail.submitTime ? formatDateTime(detail.submitTime) : 'Chưa nộp'}
               </p>
             </div>
             <div className="space-y-0.5">
-              <span className="text-zinc-400 text-[11px]">Ghi nhận vi phạm</span>
+              <span className="text-zinc-400 text-[11px] block">Giám sát vi phạm</span>
               {hasViolations ? (
                 <p className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>{detail.violationCount} lần cảnh báo</span>
+                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                  <span>{detail.violationCount} lần</span>
                 </p>
               ) : (
                 <p className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                   <span>Không vi phạm</span>
                 </p>
               )}
@@ -642,37 +642,42 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
         </div>
       )}
 
-      {/* Sticky Bottom Save Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 shadow-lg z-30">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block">
-              <span className="text-xs text-zinc-500 block">Tổng điểm sau khi chấm:</span>
-              <span className="text-base font-bold text-indigo-600 dark:text-indigo-400">
-                {projectedTotalScore} / {detail.maxTotalPoints} điểm
-              </span>
-            </div>
+      {/* Floating Island Save Bar */}
+      <div className="fixed bottom-3 sm:bottom-4 left-3 right-3 sm:left-4 sm:right-4 max-w-5xl mx-auto p-3 sm:p-3.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-xl z-30 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+            <Award className="w-4 h-4" />
           </div>
+          <div>
+            <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
+              Tổng điểm
+            </span>
+            <span className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+              {projectedTotalScore}
+              <span className="text-xs font-normal text-zinc-400">/{detail.maxTotalPoints}đ</span>
+            </span>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => router.push(`/teacher/exams/${detail.examId}/edit`)}
-            >
-              Hủy / Quay lại
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              isLoading={isSaving}
-              onClick={handleSaveGrades}
-              className="bg-indigo-600 hover:bg-indigo-700 shadow-sm"
-              leftIcon={<Save className="w-4 h-4" />}
-            >
-              Lưu kết quả chấm điểm
-            </Button>
-          </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/teacher/exams/${detail.examId}/edit`)}
+            className="text-xs"
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            isLoading={isSaving}
+            onClick={handleSaveGrades}
+            className="bg-indigo-600 hover:bg-indigo-500 shadow-xs text-xs font-semibold"
+            leftIcon={<Save className="w-3.5 h-3.5" />}
+          >
+            <span>Lưu kết quả</span>
+          </Button>
         </div>
       </div>
 
@@ -690,6 +695,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
               violationType={selectedEvidence.violationType}
               candidateName={detail.candidateName}
               timestamp={selectedEvidence.timestamp}
+              hideHeader={true}
               onClose={() => setSelectedEvidence(null)}
             />
           </div>

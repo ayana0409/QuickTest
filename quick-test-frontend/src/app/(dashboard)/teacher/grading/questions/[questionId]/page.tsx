@@ -86,17 +86,17 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-16">
       {/* Top Header Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-1">
         <div>
           <Link
             href={examId ? `/teacher/grading/exams/${examId}` : '/teacher/grading'}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Quay lại {examId ? 'danh sách câu hỏi' : 'trung tâm chấm'}</span>
+            <span>Quay lại</span>
           </Link>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
               Không gian chấm điểm câu hỏi
             </h1>
             {currentQuestionDetail && (
@@ -108,24 +108,24 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
         </div>
 
         {/* Global Save Changes Button if there are dirty drafts */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <Button
             variant="primary"
-            size="md"
+            size="sm"
             isLoading={isBatchSaving}
             disabled={isBatchSaving || dirtyCount === 0}
             onClick={handleSaveBatch}
             className={cn(
-              'transition-all shadow-sm',
+              'transition-all shadow-xs text-xs font-semibold',
               dirtyCount > 0
                 ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20 ring-2 ring-amber-400/20'
                 : 'opacity-70'
             )}
-            leftIcon={<Save className="w-4 h-4" />}
+            leftIcon={<Save className="w-3.5 h-3.5" />}
           >
-            <span>Lưu tất cả thay đổi</span>
+            <span>Lưu thay đổi</span>
             {dirtyCount > 0 && (
-              <span className="ml-1.5 px-2 py-0.5 rounded-full bg-white/20 text-xs font-bold">
+              <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] font-bold">
                 {dirtyCount}
               </span>
             )}
@@ -162,18 +162,18 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
           rightPanel={
             <div className="space-y-6">
               {/* Right Panel Submissions Toolbar */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
+              <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
                     Bài làm của thí sinh
                   </span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold font-mono">
                     {totalElements} bài
                   </span>
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-1 rounded-xl">
+                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60">
                   {(
                     [
                       { key: 'ALL', label: 'Tất cả' },
@@ -186,7 +186,7 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
                       type="button"
                       onClick={() => setStatusFilter(tab.key)}
                       className={cn(
-                        'px-3 py-1 rounded-lg text-xs font-semibold transition-all',
+                        'px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                         statusFilter === tab.key
                           ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
                           : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'

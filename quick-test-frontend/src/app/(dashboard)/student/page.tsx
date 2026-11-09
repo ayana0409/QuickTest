@@ -20,12 +20,14 @@ import {
   ChevronRight,
   User,
   Compass,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { studentService } from '@/services/student.service';
 import { candidateSessionService } from '@/services/candidateSession.service';
 import type { StudentDashboardResponse, StudentExamCardDto } from '@/types/exam';
+import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 /**
@@ -46,17 +48,6 @@ function formatDateTime(dateStr?: string | null): string {
     return dateStr;
   }
 }
-
-/**
- * Vietnamese human-readable labels for candidate attempt statuses.
- */
-const ATTEMPT_STATUS_MAP: Record<string, string> = {
-  IN_PROGRESS: 'Đang làm bài',
-  SUBMITTED: 'Đã hoàn thành',
-  AWAITING_MANUAL_GRADING: 'Chờ chấm tự luận',
-  DISQUALIFIED: 'Bị đình chỉ thi',
-  AUTO_GRADED: 'Đã chấm điểm',
-};
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -156,7 +147,6 @@ export default function StudentDashboardPage() {
     const sourceList = activeTab === 'MY_EXAMS' ? (dashboardData.myExams || []) : (dashboardData.exploreExams || []);
 
     return sourceList.filter((card) => {
-      // Text search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchesTitle = card.title?.toLowerCase().includes(q);
@@ -165,16 +155,9 @@ export default function StudentDashboardPage() {
         if (!matchesTitle && !matchesCode && !matchesTeacher) return false;
       }
 
-      // Status filter
-      if (statusFilter === 'OPEN') {
-        return card.isOpen;
-      }
-      if (statusFilter === 'CLOSED') {
-        return !card.isOpen;
-      }
-      if (statusFilter === 'ACTIVE_SESSION') {
-        return card.hasActiveSession;
-      }
+      if (statusFilter === 'OPEN') return card.isOpen;
+      if (statusFilter === 'CLOSED') return !card.isOpen;
+      if (statusFilter === 'ACTIVE_SESSION') return card.hasActiveSession;
 
       return true;
     });
@@ -186,481 +169,475 @@ export default function StudentDashboardPage() {
   }, [dashboardData]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Welcome Banner & Quick Access */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 p-6 sm:p-8 text-white shadow-xl shadow-indigo-900/10 border border-indigo-500/20">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/20 text-indigo-100">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Cổng Khảo thí & Luyện thi Trực tuyến QuickTest</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
-              Xin chào, {user?.fullName || user?.username || 'Thí sinh'}! 👋
-            </h1>
-            <p className="text-indigo-100/90 text-sm sm:text-base leading-relaxed">
-              Theo dõi tiến độ, kiểm tra số lượt làm bài còn lại và tiếp tục các phiên thi dở dang một cách thuận tiện nhất.
-            </p>
+    <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12">
+      {/* Compact Welcome Header & Quick Access Code Bar */}
+      <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-4 sm:p-6 shadow-2xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
+        <div className="space-y-1.5 max-w-xl">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/60">
+            <Sparkles className="w-3 h-3 text-indigo-500" />
+            <span>Cổng Khảo thí QuickTest</span>
           </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Xin chào, {user?.fullName || user?.username || 'Thí sinh'}! 👋
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            Nhập mã phòng thi để bắt đầu hoặc theo dõi tiến độ các bài kiểm tra đã tham gia.
+          </p>
+        </div>
 
-          {/* Quick Access Code Input Box */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl lg:w-96 shrink-0 shadow-lg">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-indigo-200 mb-2.5 flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-amber-300" />
-              <span>Vào thi bằng mã phòng</span>
-            </h2>
-            <form onSubmit={handleJoinByCode} className="space-y-2.5">
+        {/* Quick Access Code Inline Bar */}
+        <div className="w-full lg:w-96 shrink-0">
+          <form
+            onSubmit={handleJoinByCode}
+            className="p-2 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center gap-2"
+          >
+            <div className="relative flex-1 min-w-0">
+              <KeyRound className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value)}
-                placeholder="Nhập Access Code (VD: JAVA-2026)..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white/95 text-zinc-900 placeholder:text-zinc-400 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-white uppercase tracking-wider"
+                placeholder="Nhập mã phòng (VD: JAVA26)..."
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 placeholder:normal-case text-xs sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider"
               />
-              <Button
-                type="submit"
-                size="sm"
-                variant="secondary"
-                isLoading={isSubmittingCode}
-                className="w-full font-bold shadow-sm"
-                rightIcon={<ArrowRight className="w-4 h-4" />}
-              >
-                Vào phòng thi ngay
-              </Button>
-            </form>
-          </div>
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              variant="primary"
+              isLoading={isSubmittingCode}
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs h-9 px-3.5 shrink-0 shadow-2xs"
+              rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+            >
+              Vào thi
+            </Button>
+          </form>
         </div>
-
-        {/* Decorative background glow circles */}
-        <div className="absolute -right-16 -top-16 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 -bottom-20 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
       </div>
 
-      {/* Global In-Progress Session Alert Banner */}
+      {/* Global In-Progress Session Spotlight Banner */}
       {activeSpotlightExam && (
-        <div className="relative overflow-hidden rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border-2 border-amber-500/40 p-5 text-amber-950 dark:text-amber-100 shadow-md animate-in fade-in duration-300">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start sm:items-center gap-3.5">
-              <div className="p-2.5 rounded-xl bg-amber-500 text-white shrink-0 shadow-sm animate-pulse">
-                <Flame className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                    Phiên thi đang làm dở
-                  </span>
-                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-white/60 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200">
-                    {activeSpotlightExam.accessCode}
-                  </span>
-                </div>
-                <h3 className="font-extrabold text-base sm:text-lg text-zinc-900 dark:text-zinc-100">
-                  {activeSpotlightExam.title}
-                </h3>
-                <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Bạn có một bài làm đang diễn ra. Hãy tiếp tục hoàn thành trước khi hết thời gian làm bài!
-                </p>
-              </div>
+        <div className="rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 p-3.5 sm:p-4 text-amber-950 dark:text-amber-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Flame className="w-4 h-4 animate-pulse" />
             </div>
-
-            <Button
-              onClick={() => router.push(`/exam/${activeSpotlightExam.activeAttemptId}`)}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-bold shrink-0 shadow-sm"
-              size="md"
-              leftIcon={<Play className="w-4 h-4 fill-current" />}
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-            >
-              Tiếp tục thi ngay
-            </Button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.2 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                  Đang làm dở
+                </span>
+                <span className="font-mono text-[11px] font-bold px-1.5 py-0.2 rounded bg-white/70 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200">
+                  #{activeSpotlightExam.accessCode}
+                </span>
+              </div>
+              <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 truncate mt-0.5">
+                {activeSpotlightExam.title}
+              </h3>
+            </div>
           </div>
+
+          <Button
+            onClick={() => router.push(`/exam/${activeSpotlightExam.activeAttemptId}`)}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shrink-0 rounded-xl text-xs h-8 px-3.5 shadow-2xs"
+            size="sm"
+            leftIcon={<Play className="w-3.5 h-3.5 fill-current" />}
+            rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+          >
+            Tiếp tục thi
+          </Button>
         </div>
       )}
 
-      {/* Real-time KPI Metrics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+      {/* KPI Metrics Overview: 2x2 on Mobile, 4 columns on Desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 leading-snug">
               Bài thi đã làm
             </span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
               <BookOpen className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
-            {loading ? '—' : String(dashboardData?.totalExamsAttempted ?? 0).padStart(2, '0')}
+          <div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
+              {loading ? '—' : dashboardData?.totalExamsAttempted ?? 0}
+            </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              Tổng số đề đã tham gia
+            </p>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Các bài thi bạn đã từng tham gia</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Kỳ thi đang mở
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 leading-snug">
+              Đang mở thi
             </span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
-            {loading ? '—' : String(dashboardData?.openExamsCount ?? 0).padStart(2, '0')}
+          <div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+              {loading ? '—' : dashboardData?.openExamsCount ?? 0}
+            </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              Trong thời hạn cho phép
+            </p>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Đang mở trong thời hạn cho phép</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Phiên thi dở dang
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-amber-600 dark:text-amber-400 leading-snug">
+              Phiên dở dang
             </span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
               <RotateCcw className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400">
-            {loading ? '—' : String(dashboardData?.activeSessionsCount ?? 0).padStart(2, '0')}
+          <div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 leading-tight">
+              {loading ? '—' : dashboardData?.activeSessionsCount ?? 0}
+            </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              Đang làm chưa nộp bài
+            </p>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Bài thi đang làm chưa nộp</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-purple-600 dark:text-purple-400 leading-snug">
               Điểm trung bình
             </span>
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
               <Award className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
-            {loading ? '—' : dashboardData?.averageScore != null ? `${dashboardData.averageScore} / 10` : '—'}
+          <div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
+              {loading ? '—' : dashboardData?.averageScore != null ? `${dashboardData.averageScore}/10` : '—'}
+            </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              {dashboardData?.completedAttemptsCount
+                ? `Trên ${dashboardData.completedAttemptsCount} bài đã nộp`
+                : 'Chưa có bài hoàn thành'}
+            </p>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            {dashboardData?.completedAttemptsCount
-              ? `Tính trên ${dashboardData.completedAttemptsCount} bài đã nộp`
-              : 'Chưa có bài thi hoàn thành'}
-          </p>
         </div>
       </div>
 
-      {/* Main Section Header with Tabs, Search, and Refresh */}
+      {/* Main Section: Tabs, Search & Exam Cards */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Section Title & History Action */}
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
-              Danh sách bài thi của bạn
+            <h2 className="text-lg sm:text-xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
+              Danh sách bài thi
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Xem chi tiết số lượt thi còn lại, trạng thái mở đóng và kết quả bài làm
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 hidden sm:block">
+              Kiểm tra số lượt thi còn lại, trạng thái mở đóng và kết quả
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
               onClick={() => loadDashboard(true)}
-              isLoading={refreshing}
-              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
-              className="font-medium"
+              disabled={refreshing}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-60"
+              title="Làm mới danh sách"
             >
-              Làm mới
-            </Button>
+              <RefreshCw className={cn("w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400", refreshing && "animate-spin text-indigo-600")} />
+            </button>
+
             <Link href="/student/history">
               <Button
                 variant="secondary"
                 size="sm"
                 rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
-                className="font-semibold"
+                className="font-semibold text-xs rounded-xl h-8 sm:h-9 px-3"
               >
-                Xem toàn bộ lịch sử thi
+                Lịch sử thi
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Tab Selection & Filtering Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
-          {/* Main Tabs */}
-          <div className="inline-flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 w-fit">
+        {/* Filter Toolbar: Apple Segmented Control + Search & Status */}
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Apple Segmented Control */}
+          <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 w-full md:w-auto">
             <button
+              type="button"
               onClick={() => setActiveTab('MY_EXAMS')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'MY_EXAMS'
-                ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-                }`}
+              className={cn(
+                'flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                activeTab === 'MY_EXAMS'
+                  ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              )}
             >
-              <span>Bài thi đã tham gia</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-indigo-500/10 font-mono">
+              <span>Đã tham gia</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                 {dashboardData?.myExams?.length ?? 0}
               </span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('EXPLORE')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'EXPLORE'
-                ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-                }`}
+              className={cn(
+                'flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                activeTab === 'EXPLORE'
+                  ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              )}
             >
-              <Compass className="w-3.5 h-3.5 text-indigo-500" />
+              <Compass className="w-3.5 h-3.5" />
               <span>Khám phá</span>
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-zinc-200 dark:bg-zinc-700 font-mono">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold font-mono bg-zinc-200/70 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
                 {dashboardData?.exploreExams?.length ?? 0}
               </span>
             </button>
           </div>
 
-          {/* Search Box & Status Filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+          {/* Search & Status Dropdown */}
+          <div className="flex items-center gap-2 flex-1 md:max-w-md">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm theo tên hoặc mã đề..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Tìm tên hoặc mã đề..."
+                className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700/80 bg-zinc-50 dark:bg-zinc-800/60 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700/80 bg-zinc-50 dark:bg-zinc-800/60 text-xs font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shrink-0"
             >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="OPEN">Đang mở thi</option>
+              <option value="ALL">Tất cả</option>
+              <option value="OPEN">Đang mở</option>
               <option value="CLOSED">Đã đóng</option>
-              <option value="ACTIVE_SESSION">Có phiên dở</option>
+              <option value="ACTIVE_SESSION">Làm dở</option>
             </select>
           </div>
         </div>
 
         {/* Discovery Notification Bar */}
         {activeTab === 'EXPLORE' && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-xs text-indigo-900 dark:text-indigo-200">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-900/50 text-xs text-indigo-900 dark:text-indigo-200">
+            <div className="flex items-center gap-2 min-w-0">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-              <span>
-                Mục <strong>Khám phá</strong> gợi ý ngẫu nhiên đề thi công khai từ cộng đồng. Nhấn <strong>Đổi đề khác</strong> để làm mới danh sách gợi ý!
+              <span className="truncate">
+                Đề thi công khai ngẫu nhiên từ cộng đồng.
               </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={() => loadDashboard(true)}
-              isLoading={refreshing}
-              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
-              className="font-semibold shrink-0 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100/60 dark:hover:bg-indigo-900/50"
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 transition-colors shrink-0 cursor-pointer"
             >
-              Đổi đề khác
-            </Button>
+              <RefreshCw className={cn("w-3 h-3", refreshing && "animate-spin")} />
+              <span>Đổi đề</span>
+            </button>
           </div>
         )}
 
         {/* Exam Cards Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 animate-pulse space-y-4"
+                className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 animate-pulse space-y-4"
               >
                 <div className="flex justify-between items-center">
                   <div className="w-20 h-5 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
                   <div className="w-16 h-5 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
                 </div>
-                <div className="w-3/4 h-6 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
+                <div className="w-3/4 h-5 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
                 <div className="w-1/2 h-4 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
-                <div className="h-10 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
+                <div className="h-9 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
               </div>
             ))}
           </div>
         ) : currentList.length === 0 ? (
-          <div className="text-center py-16 px-4 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 space-y-3">
+          <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 space-y-2.5">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               {activeTab === 'MY_EXAMS' ? <GraduationCap className="w-6 h-6" /> : <Compass className="w-6 h-6" />}
             </div>
-            <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
+            <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100">
               {activeTab === 'MY_EXAMS'
                 ? 'Bạn chưa tham gia bài thi nào'
-                : 'Chưa có đề thi công khai nào trong mục Khám phá'}
+                : 'Chưa có đề thi công khai nào'}
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
               {activeTab === 'MY_EXAMS'
-                ? 'Hãy nhập mã phòng thi do giảng viên cung cấp ở ô phía trên để bắt đầu bài kiểm tra đầu tiên của bạn.'
-                : 'Các giảng viên có thể tắt tùy chọn "Đề thi riêng tư" khi tạo đề để chia sẻ bài thi công khai cho cộng đồng luyện tập tại đây.'}
+                ? 'Nhập mã phòng thi do giảng viên cung cấp ở thanh phía trên để bắt đầu.'
+                : 'Hiện chưa có đề thi công khai phù hợp với bộ lọc của bạn.'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
             {currentList.map((card) => {
               const isStartingThis = startingExamCode === card.accessCode;
 
               return (
                 <div
                   key={card.examId}
-                  className={`group relative flex flex-col justify-between rounded-3xl p-1 transition-all duration-300 ${card.hasActiveSession
-                    ? 'bg-gradient-to-b from-amber-400/40 via-amber-500/10 to-transparent shadow-lg shadow-amber-500/5 ring-1 ring-amber-500/30'
-                    : 'bg-gradient-to-b from-zinc-200/80 via-zinc-100/50 to-transparent dark:from-zinc-800/80 dark:via-zinc-900/50 hover:shadow-lg'
-                    }`}
+                  className={cn(
+                    'group flex flex-col justify-between rounded-2xl bg-white dark:bg-zinc-900 border p-4 sm:p-5 shadow-2xs transition-all space-y-4',
+                    card.hasActiveSession
+                      ? 'border-amber-300 dark:border-amber-700/80 ring-1 ring-amber-500/20'
+                      : 'border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                  )}
                 >
-                  {/* Inner Content Card (Double-Bezel concentric architecture) */}
-                  <div className="flex flex-col justify-between h-full bg-white dark:bg-zinc-900 rounded-[calc(1.5rem-4px)] p-5 border border-zinc-200/70 dark:border-zinc-800 shadow-xs space-y-4">
-                    {/* Header: Access Code & Live Exam Status */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
-                          {card.accessCode}
+                  <div className="space-y-3">
+                    {/* Top Row: Access Code & Status */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
+                        #{card.accessCode}
+                      </span>
+
+                      {card.hasActiveSession ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                          Đang làm dở
                         </span>
+                      ) : card.isOpen ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Đang mở
+                        </span>
+                      ) : card.examTimeStatus === 'UPCOMING' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20">
+                          Sắp mở
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                          Đã đóng
+                        </span>
+                      )}
+                    </div>
 
-                        {card.hasActiveSession ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 animate-pulse">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                            Đang làm dở
+                    {/* Title & Teacher */}
+                    <div>
+                      <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">
+                        {card.title}
+                      </h3>
+                      {card.teacherName && (
+                        <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5 truncate">
+                          <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                          <span className="truncate">GV: {card.teacherName}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Meta Info: Duration & Question Count */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span>{card.durationMinutes} phút</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span>{card.questionCount} câu</span>
+                      </div>
+                    </div>
+
+                    {/* Compact Attempt Quota Box */}
+                    <div className="rounded-xl p-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-500 dark:text-zinc-400 font-medium">Lượt thi:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">
+                            {card.attemptsUsed}/{card.maxAttempts}
                           </span>
-                        ) : card.isOpen ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                            Đang mở
-                          </span>
-                        ) : card.examTimeStatus === 'UPCOMING' ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20">
-                            Sắp diễn ra
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                            Đã đóng
-                          </span>
-                        )}
+                          {card.highestScore != null && (
+                            <span className="text-[11px] font-semibold px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                              Cao nhất: {card.highestScore}đ
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Title & Teacher */}
-                      <div>
-                        <h3 className="font-extrabold text-base text-zinc-900 dark:text-zinc-100 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">
-                          {card.title}
-                        </h3>
-                        {card.teacherName && (
-                          <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5 text-zinc-400" />
-                            <span>Giảng viên: {card.teacherName}</span>
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Meta Grid: Duration, Questions */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-xs text-zinc-600 dark:text-zinc-400">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span>{card.durationMinutes} phút</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span>{card.questionCount} câu hỏi</span>
-                        </div>
-                      </div>
-
-                      {/* Attempt Quotas Indicator (User Specific Requirement) */}
-                      <div className="rounded-xl p-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-800/80 space-y-2">
-                        <div className="flex items-center justify-between text-xs font-semibold">
-                          <span className="text-zinc-500 dark:text-zinc-400">Lượt thi của bạn:</span>
-                          <span className="font-mono text-zinc-800 dark:text-zinc-200">
-                            {card.attemptsUsed} / {card.maxAttempts} lần
-                          </span>
-                        </div>
-
-                        {/* Progress Bar of attempts used */}
-                        <div className="w-full bg-zinc-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-300 ${card.remainingAttempts > 0
+                      <div className="w-full bg-zinc-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full transition-all duration-300',
+                            card.remainingAttempts > 0
                               ? 'bg-indigo-600 dark:bg-indigo-500'
                               : 'bg-zinc-400 dark:bg-zinc-500'
-                              }`}
-                            style={{
-                              width: `${Math.min(100, (card.attemptsUsed / Math.max(1, card.maxAttempts)) * 100)}%`,
-                            }}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px]">
-                          {card.remainingAttempts > 0 ? (
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                              Còn {card.remainingAttempts} lượt thi
-                            </span>
-                          ) : (
-                            <span className="font-bold text-zinc-400 dark:text-zinc-500">
-                              Đã hết lượt thi
-                            </span>
                           )}
-
-                          {card.highestScore != null && (
-                            <span className="font-semibold text-purple-600 dark:text-purple-400">
-                              Cao nhất: {card.highestScore} đ
-                            </span>
-                          )}
-                        </div>
+                          style={{
+                            width: `${Math.min(100, (card.attemptsUsed / Math.max(1, card.maxAttempts)) * 100)}%`,
+                          }}
+                        />
                       </div>
-
-                      {/* Active Session Warning Sub-card */}
-                      {card.hasActiveSession && (
-                        <div className="rounded-xl p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-[11px] text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <RotateCcw className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-                            <span>Có phiên thi dở dang</span>
-                          </div>
-                          {card.activeAttemptStartTime && (
-                            <span className="font-mono text-[10px] text-amber-700/80 dark:text-amber-400/80">
-                              Bắt đầu: {formatDateTime(card.activeAttemptStartTime)}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </div>
+                  </div>
 
-                    {/* Footer Actions (Button-in-Button agency tier) */}
-                    <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
-                      {card.hasActiveSession ? (
+                  {/* Card Footer Action */}
+                  <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                    {card.hasActiveSession ? (
+                      <Button
+                        onClick={() => handleStartExam(card)}
+                        className="w-full font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs h-9 shadow-2xs"
+                        size="sm"
+                        leftIcon={<Play className="w-3.5 h-3.5 fill-current" />}
+                        rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                      >
+                        Tiếp tục thi
+                      </Button>
+                    ) : card.isOpen && card.remainingAttempts > 0 ? (
+                      <Button
+                        onClick={() => handleStartExam(card)}
+                        isLoading={isStartingThis}
+                        className="w-full font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs h-9 shadow-2xs"
+                        size="sm"
+                        rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                      >
+                        {card.attemptsUsed > 0 ? 'Thi tiếp lượt mới' : 'Bắt đầu thi'}
+                      </Button>
+                    ) : card.latestAttemptId ? (
+                      <Link href={`/student/history/${card.latestAttemptId}`} className="block w-full">
                         <Button
-                          onClick={() => handleStartExam(card)}
-                          className="w-full font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
-                          size="sm"
-                          leftIcon={<Play className="w-3.5 h-3.5 fill-current" />}
-                          rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-                        >
-                          Tiếp tục làm bài
-                        </Button>
-                      ) : card.isOpen && card.remainingAttempts > 0 ? (
-                        <Button
-                          onClick={() => handleStartExam(card)}
-                          isLoading={isStartingThis}
-                          className="w-full font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
-                          size="sm"
-                          rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-                        >
-                          {card.attemptsUsed > 0 ? 'Thi tiếp lượt mới' : 'Bắt đầu làm bài'}
-                        </Button>
-                      ) : card.latestAttemptId ? (
-                        <Link href={`/student/history/${card.latestAttemptId}`} className="block w-full">
-                          <Button
-                            variant="secondary"
-                            className="w-full font-semibold"
-                            size="sm"
-                            rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
-                          >
-                            Xem kết quả bài làm
-                          </Button>
-                        </Link>
-                      ) : (
-                        <Button
-                          disabled
                           variant="secondary"
-                          className="w-full font-semibold opacity-60"
+                          className="w-full font-semibold rounded-xl text-xs h-9"
                           size="sm"
+                          rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
                         >
-                          {!card.isOpen ? 'Bài thi đã đóng' : 'Đã hết lượt thi'}
+                          Xem kết quả
                         </Button>
-                      )}
-                    </div>
+                      </Link>
+                    ) : (
+                      <Button
+                        disabled
+                        variant="secondary"
+                        className="w-full font-semibold opacity-60 rounded-xl text-xs h-9"
+                        size="sm"
+                      >
+                        {!card.isOpen ? 'Đã đóng' : 'Hết lượt thi'}
+                      </Button>
+                    )}
                   </div>
                 </div>
               );

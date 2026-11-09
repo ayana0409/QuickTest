@@ -24,31 +24,31 @@ export const GradingSplitPane: React.FC<GradingSplitPaneProps> = ({
     <div className={cn('w-full', className)}>
       {/* Mobile Tab Switcher (< lg screens) */}
       <div className="lg:hidden mb-4">
-        <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1">
+        <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800/80 p-1 border border-zinc-200/60 dark:border-zinc-700/60">
           <button
             type="button"
             onClick={() => setMobileTab('submissions')}
             className={cn(
-              'flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5',
+              'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer',
               mobileTab === 'submissions'
-                ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
                 : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
             )}
           >
-            <UserCheck className="w-4 h-4" />
+            <UserCheck className="w-3.5 h-3.5" />
             <span>Bài làm thí sinh</span>
           </button>
           <button
             type="button"
             onClick={() => setMobileTab('info')}
             className={cn(
-              'flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5',
+              'flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer',
               mobileTab === 'info'
-                ? 'bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
                 : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
             )}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-3.5 h-3.5" />
             <span>Đề bài & Tiêu chí</span>
           </button>
         </div>

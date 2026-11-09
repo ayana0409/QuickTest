@@ -186,6 +186,7 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
               violationType={selectedEvidenceEvent.violationType}
               candidateName={selectedEvidenceEvent.candidateName}
               timestamp={selectedEvidenceEvent.timestamp}
+              hideHeader={true}
               onClose={() => setSelectedEvidenceEvent(null)}
             />
           </div>

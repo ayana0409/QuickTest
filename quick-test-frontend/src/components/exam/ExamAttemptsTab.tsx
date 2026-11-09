@@ -242,66 +242,67 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-3">
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-1">
           {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1">
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo tên thí sinh, email hoặc MSSV..."
+              placeholder="Tìm theo tên, email hoặc mã thí sinh..."
               className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
             />
           </div>
 
-          {/* Status Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value as AttemptStatus | 'ALL');
-                setCurrentPage(0);
-              }}
-              className="px-3 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 cursor-pointer font-medium"
-            >
-              {STATUS_FILTERS.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Status & Sort Dropdowns: 2-column grid on mobile, inline on desktop */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+            <div className="relative">
+              <select
+                value={selectedStatus}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value as AttemptStatus | 'ALL');
+                  setCurrentPage(0);
+                }}
+                className="w-full px-2.5 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 cursor-pointer font-medium truncate"
+              >
+                {STATUS_FILTERS.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Sort Dropdown */}
-          <div className="relative">
-            <select
-              value={sortOption}
-              onChange={(e) => {
-                setSortOption(e.target.value);
-                setCurrentPage(0);
-              }}
-              className="px-3 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 cursor-pointer font-medium"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={sortOption}
+                onChange={(e) => {
+                  setSortOption(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="w-full px-2.5 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 cursor-pointer font-medium truncate"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Action / Export / Refresh */}
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex items-center justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800">
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportExcel}
             isLoading={isExporting}
             leftIcon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
-            className="hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium"
+            className="flex-1 sm:flex-initial justify-center hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium text-xs"
           >
             Xuất Excel
           </Button>
@@ -314,6 +315,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
             }}
             isLoading={isRefreshing}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />}
+            className="flex-1 sm:flex-initial justify-center font-medium text-xs"
           >
             Làm mới
           </Button>
@@ -359,8 +361,134 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+          <>
+            {/* Mobile View: High-End Candidate Attempt Cards (< md) */}
+            <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800/80">
+              {attemptsList.map((attempt) => {
+                const hasViolations = (attempt.violationCount || 0) > 0;
+                const isGradable =
+                  attempt.status === 'AWAITING_MANUAL_GRADING' ||
+                  attempt.status === 'SUBMITTED' ||
+                  attempt.hasPendingEssay;
+
+                return (
+                  <div key={attempt.attemptId} className="p-3.5 space-y-3">
+                    {/* Header: Candidate Info + Status Badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                          {formatCandidateInitials(attempt.candidateName)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                            {attempt.candidateName}
+                          </p>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                            {attempt.candidateIdentifier || 'Thí sinh tự do'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shrink-0">
+                        {renderStatusBadge(attempt.status)}
+                      </div>
+                    </div>
+
+                    {/* Pending Essay Notice */}
+                    {attempt.hasPendingEssay && (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                        <Edit3 className="w-3 h-3 shrink-0" />
+                        <span>Còn {attempt.pendingEssayCount} câu tự luận cần chấm</span>
+                      </div>
+                    )}
+
+                    {/* 3-column Key Metrics (Score, Violations, Time) */}
+                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800/60 text-xs">
+                      {/* Score */}
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-400 font-medium block">Điểm số</span>
+                        {attempt.totalScore !== null && attempt.totalScore !== undefined ? (
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
+                            {attempt.totalScore}<span className="text-[10px] font-normal text-zinc-400">/{totalPoints}đ</span>
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-zinc-400 italic">Chờ chấm</span>
+                        )}
+                      </div>
+
+                      {/* Violations */}
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-400 font-medium block">Vi phạm</span>
+                        {hasViolations ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-rose-600 dark:text-rose-400 text-xs">
+                            <AlertTriangle className="w-3 h-3 text-rose-500" />
+                            {attempt.violationCount}
+                          </span>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs">0</span>
+                        )}
+                      </div>
+
+                      {/* Time */}
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-400 font-medium block">Thời gian</span>
+                        <span className="text-[11px] text-zinc-600 dark:text-zinc-300 font-mono block truncate">
+                          {attempt.submitTime
+                            ? new Date(attempt.submitTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : attempt.startTime
+                              ? new Date(attempt.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons: 1 Primary CTA + 1 Secondary Excel icon */}
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <Link
+                        href={`/teacher/grading/attempts/${attempt.attemptId}`}
+                        className="flex-1"
+                      >
+                        <Button
+                          variant={attempt.status === 'AWAITING_MANUAL_GRADING' ? 'primary' : 'outline'}
+                          size="sm"
+                          className={`w-full justify-center text-xs ${
+                            attempt.status === 'AWAITING_MANUAL_GRADING'
+                              ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                              : ''
+                          }`}
+                          leftIcon={
+                            attempt.status === 'AWAITING_MANUAL_GRADING' ? (
+                              <Edit3 className="w-3.5 h-3.5" />
+                            ) : (
+                              <Eye className="w-3.5 h-3.5" />
+                            )
+                          }
+                        >
+                          {attempt.status === 'AWAITING_MANUAL_GRADING'
+                            ? 'Chấm điểm'
+                            : isGradable
+                              ? 'Chấm lại / Xem'
+                              : 'Xem chi tiết'}
+                        </Button>
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExportSingleAttempt(attempt.attemptId, attempt.candidateName)}
+                        disabled={exportingAttemptId === attempt.attemptId}
+                        className="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-600 hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                        title="Xuất bảng điểm bài làm này ra Excel"
+                      >
+                        <FileSpreadsheet className={`w-4 h-4 ${exportingAttemptId === attempt.attemptId ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop View: Full Data Table (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400 text-[11px] uppercase tracking-wider font-semibold">
                   <th className="py-3.5 px-4">Thí sinh</th>
@@ -548,7 +676,8 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
               </tbody>
             </table>
           </div>
-        )}
+        </>
+      )}
 
         {/* Pagination Footer */}
         {attemptsData && attemptsData.totalPages > 1 && (

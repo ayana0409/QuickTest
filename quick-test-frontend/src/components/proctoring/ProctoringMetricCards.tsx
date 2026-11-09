@@ -75,7 +75,7 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
       {cards.map((card) => {
         const Icon = card.icon;
         const isActive = activeFilter === card.id;
@@ -93,33 +93,33 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
             {/* Inner Core */}
             <div
               className={cn(
-                'rounded-xl p-4 bg-white dark:bg-zinc-950/90 transition-all duration-300',
+                'rounded-xl p-3 sm:p-4 bg-white dark:bg-zinc-950/90 transition-all duration-300',
                 'border border-zinc-200/50 dark:border-zinc-800/60',
                 card.accentBorder,
                 isActive && card.activeRing
               )}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   {card.label}
                 </span>
                 <div
                   className={cn(
-                    'w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110',
+                    'w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110',
                     card.iconBg
                   )}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
 
               <div className="flex items-baseline justify-between">
-                <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+                <div className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-zinc-900 dark:text-zinc-100">
                   {card.value}
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                  <span className={cn('w-2 h-2 rounded-full', card.dotColor)} />
-                  <span className="truncate max-w-[110px]">{card.sublabel}</span>
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400">
+                  <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', card.dotColor)} />
+                  <span className="truncate max-w-[90px] sm:max-w-[110px]">{card.sublabel}</span>
                 </div>
               </div>
             </div>

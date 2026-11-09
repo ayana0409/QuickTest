@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { examService } from '@/services/exam.service';
 import type { PublicExamCardResponse } from '@/types/exam';
+import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 export function PublicExamsSection() {
@@ -51,7 +52,6 @@ export function PublicExamsSection() {
     toast.success(`Đã sao chép mã phòng: ${code}`, {
       id: `copy-${code}`,
       duration: 2000,
-      icon: '📋',
     });
     setTimeout(() => {
       setCopiedCode((prev) => (prev === code ? null : prev));
@@ -63,63 +63,57 @@ export function PublicExamsSection() {
   };
 
   return (
-    <section className="py-20 sm:py-28 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/40 relative overflow-hidden">
-      {/* Decorative ambient background glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-600/10 blur-3xl rounded-full pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-72 h-72 bg-purple-500/10 blur-3xl rounded-full pointer-events-none" />
-
+    <section className="py-12 sm:py-20 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-950/40 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300">
-              <Compass className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>ĐỀ THI TỰ DO</span>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/60">
+              <Compass className="w-3.5 h-3.5" />
+              <span>Khám phá đề thi mở</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
               Luyện tập nhanh với{' '}
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                các đề thi mở
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                đề thi công khai
               </span>
             </h2>
-            <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Chọn một đề thi bên dưới để làm bài ngay, hoặc sao chép mã đề để chia sẻ cho bạn bè.
+            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+              Chọn một đề thi bên dưới để thử sức ngay hoặc sao chép mã phòng chia sẻ cho bạn bè.
             </p>
           </div>
 
           {/* Shuffle / Reload Action Button */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => fetchExams(true)}
-              disabled={isRefreshing}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 shadow-sm transition-all duration-200 active:scale-95 disabled:opacity-60 cursor-pointer"
-            >
-              <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
-              <span>{isRefreshing ? 'Đang đổi...' : 'Đổi đề khác'}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => fetchExams(true)}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 shadow-2xs transition-all active:scale-95 disabled:opacity-60 cursor-pointer w-fit shrink-0"
+          >
+            <RotateCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-indigo-600")} />
+            <span>{isRefreshing ? 'Đang tải...' : 'Đổi đề khác'}</span>
+          </button>
         </div>
 
-        {/* Loading Skeletons */}
+        {/* Loading Skeletons (3 on mobile, 6 on desktop) */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 9 }).map((_, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {Array.from({ length: 6 }).map((_, idx) => (
               <div
                 key={idx}
-                className="p-1 rounded-3xl bg-zinc-200/60 dark:bg-zinc-800/40 animate-pulse"
+                className={cn(
+                  "p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 animate-pulse space-y-3.5",
+                  idx >= 3 && "hidden md:block"
+                )}
               >
-                <div className="p-6 rounded-[calc(1.5rem-2px)] bg-white dark:bg-zinc-900 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="h-5 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
-                    <div className="h-6 w-20 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
-                  </div>
-                  <div className="h-6 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
-                  <div className="h-4 w-full bg-zinc-100 dark:bg-zinc-800/60 rounded-md" />
-                  <div className="pt-4 flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800">
-                    <div className="h-4 w-28 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
-                    <div className="h-4 w-12 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
-                  </div>
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
+                  <div className="h-6 w-20 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+                </div>
+                <div className="h-5 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
+                <div className="pt-3 flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800">
+                  <div className="h-4 w-28 bg-zinc-200 dark:bg-zinc-800 rounded-md" />
+                  <div className="h-7 w-7 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
                 </div>
               </div>
             ))}
@@ -128,23 +122,23 @@ export function PublicExamsSection() {
 
         {/* Empty State */}
         {!isLoading && exams.length === 0 && (
-          <div className="p-8 sm:p-12 rounded-3xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/40 text-center max-w-xl mx-auto space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
-              <BookOpen className="w-7 h-7" />
+          <div className="p-8 sm:p-10 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/40 text-center max-w-lg mx-auto space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+              <BookOpen className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
               Hiện chưa có đề thi mở khả dụng
             </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Các đề thi đang được cập nhật. Bạn vẫn có thể nhập mã phòng thi cá nhân để vào làm bài ngay.
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Các đề thi công khai đang được cập nhật. Bạn vẫn có thể nhập mã phòng thi cá nhân để vào làm bài ngay.
             </p>
-            <div className="pt-2">
+            <div className="pt-1">
               <Link
                 href="/exam"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all"
               >
                 <span>Nhập mã phòng thi</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>
@@ -152,90 +146,85 @@ export function PublicExamsSection() {
 
         {/* Exam Cards Grid */}
         {!isLoading && exams.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {exams.map((exam) => {
               const isCopied = copiedCode === exam.accessCode;
+              const hasDesc = Boolean(exam.description?.trim());
 
               return (
                 <div
                   key={exam.id}
                   onClick={() => handleEnterExam(exam.accessCode)}
-                  className="group relative p-1 rounded-3xl bg-zinc-100/90 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 transition-all duration-300 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10 flex flex-col justify-between cursor-pointer"
+                  className="group rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 p-4 sm:p-5 shadow-2xs hover:border-indigo-500/50 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer space-y-4"
                 >
-                  {/* Inner Card Container */}
-                  <div className="p-6 rounded-[calc(1.5rem-2px)] bg-white dark:bg-zinc-900/95 h-full flex flex-col justify-between space-y-5">
-                    {/* Top Row: Teacher Info & Access Code Pill */}
+                  <div className="space-y-3">
+                    {/* Top Row: Teacher Info & Access Code Copy Pill */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                           <User className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 truncate">
-                          {exam.teacherName || 'Giáo viên'}
+                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                          {exam.teacherName || 'Giảng viên'}
                         </span>
                       </div>
 
-                      {/* Access Code with Copy Button */}
                       <button
                         type="button"
                         onClick={(e) => handleCopyCode(e, exam.accessCode)}
-                        title="Bấm để sao chép mã phòng"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono font-bold tracking-wider bg-zinc-100 dark:bg-zinc-800/90 text-zinc-800 dark:text-zinc-200 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-400 border border-zinc-200/80 dark:border-zinc-700/80 transition-all cursor-pointer group/code shrink-0"
+                        title="Sao chép mã phòng"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-400 border border-zinc-200/60 dark:border-zinc-700 transition-colors cursor-pointer shrink-0"
                       >
-                        <span>{exam.accessCode}</span>
+                        <span>#{exam.accessCode}</span>
                         {isCopied ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-scale-in" />
+                          <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                         ) : (
-                          <Copy className="w-3.5 h-3.5 text-zinc-400 group-hover/code:text-indigo-600 dark:group-hover/code:text-indigo-400" />
+                          <Copy className="w-3 h-3 text-zinc-400" />
                         )}
                       </button>
                     </div>
 
-                    {/* Middle: Title & Description */}
-                    <div className="space-y-2.5 flex-1">
+                    {/* Title & Optional Description */}
+                    <div className="space-y-1.5">
                       <h3
-                        className="text-lg font-bold text-zinc-900 dark:text-zinc-100 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+                        className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug"
                         title={exam.title}
                       >
                         {exam.title}
                       </h3>
 
-                      <p
-                        className={`text-xs line-clamp-2 leading-relaxed ${
-                          exam.description?.trim()
-                            ? 'text-zinc-500 dark:text-zinc-400'
-                            : 'text-zinc-400 dark:text-zinc-500 italic'
-                        }`}
-                      >
-                        {exam.description?.trim() ? exam.description.trim() : 'Bài thi không có mô tả'}
-                      </p>
+                      {hasDesc && (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                          {exam.description!.trim()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Meta Indicators & Circular Action Arrow */}
+                  <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>{exam.durationMinutes}p</span>
+                      </span>
+
+                      <span className="inline-flex items-center gap-1">
+                        <FileQuestion className="w-3.5 h-3.5 text-purple-500" />
+                        <span>{exam.questionCount || 0} câu</span>
+                      </span>
+
+                      {exam.totalPoints != null && exam.totalPoints > 0 && (
+                        <span className="inline-flex items-center gap-1">
+                          <Award className="w-3.5 h-3.5 text-amber-500" />
+                          <span>{exam.totalPoints}đ</span>
+                        </span>
+                      )}
                     </div>
 
-                    {/* Meta Indicators: Duration, Questions, Points & Hover hint */}
-                    <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1" title="Thời lượng làm bài">
-                          <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                          <span>{exam.durationMinutes} phút</span>
-                        </div>
-
-                        <div className="flex items-center gap-1" title="Số lượng câu hỏi">
-                          <FileQuestion className="w-3.5 h-3.5 text-purple-500" />
-                          <span>{exam.questionCount || 0} câu</span>
-                        </div>
-
-                        {exam.totalPoints != null && exam.totalPoints > 0 && (
-                          <div className="flex items-center gap-1" title="Thang điểm tối đa">
-                            <Award className="w-3.5 h-3.5 text-amber-500" />
-                            <span>{exam.totalPoints}đ</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center text-zinc-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
+                    <span className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-all shrink-0">
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
                   </div>
                 </div>
               );

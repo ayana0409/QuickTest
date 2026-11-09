@@ -21,12 +21,11 @@ import {
   ShieldCheck,
   Camera,
   Eye,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/common/Card';
-import { Tabs } from '@/components/common/Tabs';
-import { Modal } from '@/components/common/Modal';
 import { QuestionBuilder } from '@/components/exam/QuestionBuilder';
 import { examService } from '@/services/exam.service';
 import { formatDateTimeForPayload } from '@/lib/utils';
@@ -377,8 +376,8 @@ export default function EditExamPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16">
       {/* Top Breadcrumbs and Action Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
-        <div className="space-y-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs">
+        <div className="space-y-1.5 min-w-0">
           <div className="flex items-center gap-2 text-xs text-zinc-500">
             <Link
               href="/teacher/exams"
@@ -388,152 +387,177 @@ export default function EditExamPage() {
               <span>Quản lý đề thi</span>
             </Link>
             <span>/</span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100 line-clamp-1">
+            <span className="font-medium text-zinc-700 dark:text-zinc-300 truncate max-w-[200px]">
               {exam.title}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
               {exam.title}
             </h1>
-            <Badge variant={exam.status} dot>
+            <Badge variant={exam.status} size="sm" dot>
               {exam.status === 'PUBLISHED'
                 ? 'Đang mở'
                 : exam.status === 'CLOSED'
                   ? 'Đã đóng'
                   : 'Bản nháp'}
             </Badge>
+
+            {/* Access Code 1-click copy */}
+            <button
+              type="button"
+              onClick={handleCopyAccessCode}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px] font-mono text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 transition-colors cursor-pointer"
+              title="Sao chép mã phòng thi"
+            >
+              <span className="font-semibold text-indigo-600 dark:text-indigo-400">{exam.accessCode}</span>
+              {isCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-zinc-400" />}
+            </button>
           </div>
 
           {/* Metadata quick stats */}
-          <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{exam.durationMinutes} phút</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 pt-0.5">
+            <div className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+              <span>{exam.durationMinutes}&apos;</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5" />
-              <span>{exam.totalQuestions} câu hỏi ({exam.totalPoints} điểm)</span>
+            <div className="flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5 text-zinc-400" />
+              <span>{exam.totalQuestions} câu hỏi • {exam.totalPoints}đ</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
-              <span>Mã đề:</span>
-              <strong className="text-indigo-600 dark:text-indigo-400">{exam.accessCode}</strong>
-              <button
-                type="button"
-                onClick={handleCopyAccessCode}
-                className="ml-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                title="Sao chép mã đề"
-              >
-                {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            </div>
+            {exam.isProctoringEnabled && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Giám sát AI bật</span>
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
-          <Link href={`/teacher/exams/${exam.id}/proctoring`}>
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
-              title="Mở phòng giám sát thí sinh và xem kết quả nộp bài"
-            >
-              Giám sát
-            </Button>
-          </Link>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleOpenDuplicateModal}
-            leftIcon={<Copy className="w-3.5 h-3.5" />}
-            title="Nhân bản đề thi này sang bản nháp mới"
-          >
-            Nhân bản
-          </Button>
-
-          {isDraft && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30"
-                onClick={() => setIsDeleteModalOpen(true)}
-                leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+        {/* Action Buttons: 1 Primary CTA + Compact Secondary Icons */}
+        <div className="flex items-center gap-1.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800">
+          
+          {/* Primary CTA */}
+          {isPublished && (
+            <Link href={`/teacher/exams/${exam.id}/proctoring`}>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                title="Mở phòng giám sát thí sinh trực tiếp"
               >
-                Xóa đề
-              </Button>
-              <Button
-                size="sm"
-                variant="success"
-                isLoading={isPublishing}
-                onClick={handlePublish}
-                leftIcon={<Globe className="w-3.5 h-3.5" />}
-              >
-                Xuất bản
-              </Button>
-            </>
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Phòng giám sát</span>
+              </button>
+            </Link>
           )}
 
-          {isPublished && (
-            <Button
-              variant="outline"
-              size="sm"
-              isLoading={isClosing}
-              onClick={handleClose}
-              leftIcon={<Lock className="w-3.5 h-3.5" />}
+          {isDraft && (
+            <button
+              type="button"
+              disabled={isPublishing}
+              onClick={handlePublish}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
-              Đóng đề
-            </Button>
+              <Globe className="w-3.5 h-3.5" />
+              <span>Xuất bản</span>
+            </button>
           )}
 
           {isClosed && (
-            <Button
-              size="sm"
-              variant="success"
-              isLoading={isRepublishing}
+            <button
+              type="button"
               onClick={handleOpenRepublishModal}
-              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
-              Mở lại
-            </Button>
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Mở lại đề</span>
+            </button>
+          )}
+
+          {/* Secondary: Duplicate */}
+          <button
+            type="button"
+            onClick={handleOpenDuplicateModal}
+            className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 flex items-center justify-center transition-colors cursor-pointer"
+            title="Nhân bản đề thi này"
+          >
+            <Copy className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Secondary: Close (when published) */}
+          {isPublished && (
+            <button
+              type="button"
+              disabled={isClosing}
+              onClick={handleClose}
+              className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-amber-100 text-zinc-600 hover:text-amber-700 dark:bg-zinc-800 dark:hover:bg-amber-950/40 dark:text-zinc-300 dark:hover:text-amber-400 flex items-center justify-center transition-colors cursor-pointer"
+              title="Đóng đề thi"
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Secondary: Delete (when draft) */}
+          {isDraft && (
+            <button
+              type="button"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-400 flex items-center justify-center transition-colors cursor-pointer"
+              title="Xóa đề nháp"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-        <Tabs
-          items={[
-            {
-              id: 'questions',
-              label: 'Soạn thảo câu hỏi',
-              icon: <Layers className="w-4 h-4" />,
-              badge: (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold">
-                  {exam.questions?.length || 0}
-                </span>
-              ),
-            },
-            {
-              id: 'settings',
-              label: 'Cài đặt',
-              icon: <Settings className="w-4 h-4" />,
-            },
-          ]}
-          activeId={activeTab}
-          onChange={(id) => setActiveTab(id as 'questions' | 'settings')}
-        />
+      {/* Tabs Navigation: Segmented Control */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 w-full sm:w-fit">
+          <button
+            type="button"
+            onClick={() => setActiveTab('questions')}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all cursor-pointer ${
+              activeTab === 'questions'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Soạn thảo câu hỏi</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold font-mono ${
+                activeTab === 'questions'
+                  ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400'
+                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
+              }`}
+            >
+              {exam.questions?.length || 0}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all cursor-pointer ${
+              activeTab === 'settings'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Cài đặt thông số</span>
+          </button>
+        </div>
 
         {!isDraft && (
-          <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-            <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-[11px] text-amber-700 dark:text-amber-400">
+            <Info className="w-3.5 h-3.5 shrink-0" />
             <span>
               {isClosed
-                ? 'Đề thi đã đóng, không thể chỉnh sửa câu hỏi. Bấm Mở lại đề thi để học sinh tiếp tục thi.'
-                : 'Đề thi đã xuất bản, không thể chỉnh sửa câu hỏi.'}
+                ? 'Đề thi đã đóng. Bấm Mở lại đề thi để học sinh tiếp tục thi.'
+                : 'Đề thi đã xuất bản, danh sách câu hỏi đã được khóa an toàn.'}
             </span>
           </div>
         )}
@@ -793,176 +817,243 @@ export default function EditExamPage() {
         </Card>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="Xóa đề thi bản nháp"
-        description="Hành động này sẽ xóa vĩnh viễn đề thi và toàn bộ câu hỏi liên quan."
-        size="sm"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteModalOpen(false)}
-            >
-              Hủy
-            </Button>
-            <Button
-              variant="danger"
-              isLoading={isDeleting}
-              onClick={handleDeleteExam}
-            >
-              Xác nhận xóa
-            </Button>
-          </>
-        }
-      >
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Chỉ những đề thi ở trạng thái <strong>Bản nháp</strong> mới có thể xóa. Dữ liệu sau khi xóa sẽ không thể phục hồi.
-        </p>
-      </Modal>
-
-      {/* Republish Modal */}
-      <Modal
-        isOpen={isRepublishModalOpen}
-        onClose={() => setIsRepublishModalOpen(false)}
-        title="Mở lại đề thi"
-        description="Cho phép thí sinh tiếp tục tham gia làm bài thi với mã đề hiện tại."
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setIsRepublishModalOpen(false)}
-              disabled={isRepublishing}
-            >
-              Hủy
-            </Button>
-            <Button
-              variant="success"
-              isLoading={isRepublishing}
-              onClick={handleConfirmRepublish}
-              leftIcon={<RotateCcw className="w-4 h-4" />}
-            >
-              Xác nhận mở lại
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
-            <p>
-              Đề thi: <strong className="text-zinc-900 dark:text-zinc-100">{exam.title}</strong>
-            </p>
-            <p>
-              Mã phòng thi: <strong className="text-indigo-600 dark:text-indigo-400">{exam.accessCode}</strong>
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                Thời gian mở đề (Bắt đầu)
-              </label>
-              <input
-                type="datetime-local"
-                value={republishStartTime}
-                onChange={(e) => setRepublishStartTime(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
+      {/* 1. Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Xóa đề thi bản nháp
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Hành động này không thể hoàn tác
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                Thời gian đóng đề mới (Hạn chót thi) *
-              </label>
-              <input
-                type="datetime-local"
-                value={republishEndTime}
-                onChange={(e) => setRepublishEndTime(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                Lưu ý: Thời gian kết thúc phải ở tương lai để hệ thống không tự động đóng bài thi.
+            <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-800 text-xs space-y-1">
+              <span className="text-[11px] text-zinc-400 block">Đề thi sẽ bị xóa vĩnh viễn:</span>
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {exam.title}
+              </p>
+              <p className="text-[11px] text-zinc-500 font-mono">
+                Mã đề: {exam.accessCode} • {exam.totalQuestions} câu hỏi • {exam.durationMinutes} phút
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                Thời lượng làm bài (Phút)
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={republishDuration}
-                onChange={(e) => setRepublishDuration(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Chỉ những đề thi ở trạng thái <strong>Bản nháp</strong> mới có thể xóa. Toàn bộ câu hỏi và cài đặt liên quan sẽ bị xóa vĩnh viễn khỏi hệ thống.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteExam}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+              </button>
             </div>
           </div>
         </div>
-      </Modal>
+      )}
 
-      {/* Duplicate Exam Modal */}
-      <Modal
-        isOpen={isDuplicateModalOpen}
-        onClose={() => !isDuplicating && setIsDuplicateModalOpen(false)}
-        title="Nhân bản Đề thi"
-        description="Tạo một đề thi bản nháp mới kế thừa toàn bộ câu hỏi, đáp án và hình ảnh minh họa."
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setIsDuplicateModalOpen(false)}
-              disabled={isDuplicating}
-            >
-              Hủy
-            </Button>
-            <Button
-              variant="primary"
-              isLoading={isDuplicating}
-              onClick={handleConfirmDuplicate}
-              leftIcon={<Copy className="w-4 h-4" />}
-            >
-              Xác nhận nhân bản
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-              Tên đề thi bản sao *
-            </label>
-            <input
-              type="text"
-              value={duplicateTitle}
-              onChange={(e) => setDuplicateTitle(e.target.value)}
-              placeholder="Nhập tên đề thi mới..."
-              className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              disabled={isDuplicating}
-            />
-          </div>
+      {/* 2. Republish Closed Exam Modal */}
+      {isRepublishModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <RotateCcw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Mở lại đợt thi mới
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Mã đề thi: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{exam.accessCode}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isRepublishing}
+                onClick={() => setIsRepublishModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-          <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-xs text-indigo-700 dark:text-indigo-300 space-y-1.5">
-            <p className="font-semibold flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5" />
-              Cơ chế nhân bản đề thi:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-[11px] opacity-90">
-              <li>Mã phòng thi mới ngẫu nhiên, trạng thái ban đầu là <strong>Bản nháp</strong>.</li>
-              <li>Sao chép toàn bộ câu hỏi trắc nghiệm, tự luận và các đáp án.</li>
-              <li>Hình ảnh minh họa và câu hỏi được tự động sao chép sang đề mới.</li>
-              <li>Đề thi sẽ tự động xuất hiện trên danh sách ngay sau khi hoàn tất.</li>
-            </ul>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                  Thời gian mở đề (Bắt đầu)
+                </label>
+                <input
+                  type="datetime-local"
+                  value={republishStartTime}
+                  onChange={(e) => setRepublishStartTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-rose-500" />
+                  Thời gian đóng đề mới (Hạn chót thi) *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={republishEndTime}
+                  onChange={(e) => setRepublishEndTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                  Lưu ý: Thời gian kết thúc phải ở tương lai để hệ thống không tự động đóng bài thi.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                  Thời lượng làm bài (Phút)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={republishDuration}
+                  onChange={(e) => setRepublishDuration(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+              <button
+                type="button"
+                disabled={isRepublishing}
+                onClick={() => setIsRepublishModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isRepublishing}
+                onClick={handleConfirmRepublish}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isRepublishing ? 'Đang mở lại...' : 'Xác nhận mở lại'}</span>
+              </button>
+            </div>
           </div>
         </div>
-      </Modal>
+      )}
+
+      {/* 3. Duplicate Exam Modal */}
+      {isDuplicateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <Copy className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Nhân bản đề thi
+                  </h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Tạo đề nháp mới từ đề thi hiện tại
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isDuplicating}
+                onClick={() => setIsDuplicateModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+                  Tên đề thi bản sao *
+                </label>
+                <input
+                  type="text"
+                  value={duplicateTitle}
+                  onChange={(e) => setDuplicateTitle(e.target.value)}
+                  placeholder="Nhập tên đề thi mới..."
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  disabled={isDuplicating}
+                />
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-xs text-indigo-700 dark:text-indigo-300 space-y-1.5">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  Cơ chế nhân bản đề thi:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-[11px] opacity-90">
+                  <li>Mã phòng thi mới ngẫu nhiên, trạng thái <strong>Bản nháp</strong>.</li>
+                  <li>Sao chép toàn bộ câu hỏi trắc nghiệm, tự luận và các đáp án.</li>
+                  <li>Kế thừa đầy đủ các cài đặt thời gian và cấu hình giám sát AI.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+              <button
+                type="button"
+                disabled={isDuplicating}
+                onClick={() => setIsDuplicateModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isDuplicating || !duplicateTitle.trim()}
+                onClick={handleConfirmDuplicate}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{isDuplicating ? 'Đang tạo bản sao...' : 'Xác nhận nhân bản'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

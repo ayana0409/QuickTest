@@ -27,7 +27,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
   onConfirm,
   isLoading = false,
   title = 'Thông tin thí sinh',
-  description = 'Bạn đang tham gia kỳ thi với tư cách khách. Vui lòng cung cấp các thông tin dưới đây để hệ thống ghi nhận kết quả làm bài của bạn.',
+  description = 'Vui lòng cung cấp họ tên và mã định danh để hệ thống ghi nhận và tự động lưu bài làm của bạn.',
   onCancel,
 }) => {
   const [guestName, setGuestName] = useState('');
@@ -72,7 +72,6 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
     const trimmedName = guestName.trim();
     const trimmedId = guestIdentifier.trim();
 
-    // Persist into localStorage for session persistence & resume operations
     if (typeof window !== 'undefined') {
       localStorage.setItem('quicktest_guest_name', trimmedName);
       localStorage.setItem('quicktest_guest_id', trimmedId);
@@ -82,32 +81,32 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-[#161B22] border border-[#30363D] rounded-2xl p-6 md:p-8 shadow-2xl text-[#E6EDF3] overflow-hidden">
-        {/* Glow Accent */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-b-full shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xl text-zinc-900 dark:text-zinc-100 overflow-hidden">
+        {/* Top Accent Line */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-b-full" />
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white tracking-tight">{title}</h3>
+            <h3 className="text-base sm:text-lg font-bold tracking-tight">{title}</h3>
             {accessCode && (
-              <div className="text-xs text-indigo-400 font-mono mt-0.5">
-                Mã phòng thi: <span className="font-bold tracking-wider">{accessCode.toUpperCase()}</span>
+              <div className="text-xs text-indigo-600 dark:text-indigo-400 font-mono mt-0.5">
+                Mã phòng: <span className="font-bold tracking-wider">#{accessCode.toUpperCase()}</span>
               </div>
             )}
           </div>
         </div>
 
-        <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed">
           {description}
         </p>
 
         {/* Input Form */}
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
           <div>
             <Input
               label="Họ và tên thí sinh *"
@@ -139,34 +138,35 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
                 }
               }}
               error={errors.guestIdentifier}
-              placeholder="Ví dụ: B20DCCN001 hoặc email/sđt..."
+              placeholder="Ví dụ: B20DCCN001 hoặc email..."
               leftIcon={<IdCard className="w-4 h-4 text-zinc-400" />}
               autoComplete="off"
             />
-            <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-zinc-400">
-              <HelpCircle className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-              <span>Thông tin này được dùng để xác thực và khôi phục bài thi nếu tải lại trang hoặc mất mạng.</span>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
+              <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>Dùng để khôi phục phiên thi nếu tải lại trang hoặc mất kết nối.</span>
             </div>
           </div>
 
-          <div className="pt-3 flex items-center justify-end gap-3">
+          <div className="pt-2 flex items-center justify-end gap-2.5">
             {onCancel && (
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
+                size="sm"
                 onClick={onCancel}
                 disabled={isLoading}
-                className="text-zinc-400 hover:text-white"
+                className="rounded-xl text-xs h-9 px-3.5"
               >
                 Hủy bỏ
               </Button>
             )}
             <Button
               type="submit"
-              size="lg"
+              size="sm"
               isLoading={isLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30"
-              rightIcon={<ArrowRight className="w-4 h-4" />}
+              className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-9 text-xs shadow-2xs"
+              rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
             >
               Vào phòng thi
             </Button>

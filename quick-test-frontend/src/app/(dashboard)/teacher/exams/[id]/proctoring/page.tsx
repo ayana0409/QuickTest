@@ -389,7 +389,7 @@ export default function TeacherLiveProctoringPage() {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(true);
-    toast.success('Access code copied to clipboard!');
+    toast.success('Đã sao chép mã phòng thi!');
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
@@ -458,151 +458,85 @@ export default function TeacherLiveProctoringPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Breadcrumb & Header Bar */}
-      <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
+      <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <Link href="/teacher/exams">
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-                className="rounded-xl"
+              <button
+                type="button"
+                className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                title="Quay lại danh sách đề thi"
               >
-                Quay lại
-              </Button>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
             </Link>
 
-            <Link href={`/teacher/exams/${examId}/edit`}>
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<FileEdit className="w-4 h-4" />}
-                className="rounded-xl"
-                title="Soạn thảo câu hỏi & Cài đặt thông số đề thi"
-              >
-                Chỉnh sửa
-              </Button>
-            </Link>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                  {loadingExam ? 'Đang tải đề thi...' : exam?.title || 'Giám sát'}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
+                  {loadingExam ? 'Đang tải đề thi...' : exam?.title || 'Phòng giám sát thi'}
                 </h1>
-
                 {exam?.status && (
                   <Badge variant={formatExamStatus(exam.status).variant} size="sm">
                     {formatExamStatus(exam.status).label}
                   </Badge>
                 )}
-
-                {exam?.isProctoringEnabled ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/50">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Đã bật giám sát tự động</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                    Đã tắt giám sát tự động
-                  </span>
+                {exam?.accessCode && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCode(exam.accessCode)}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[11px] font-mono text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                    title="Sao chép mã phòng thi"
+                  >
+                    <span className="font-semibold text-indigo-600 dark:text-indigo-400">{exam.accessCode}</span>
+                    {copiedCode ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-zinc-400" />}
+                  </button>
                 )}
               </div>
 
-              {/* Subtitle details */}
-              <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 mt-1.5">
-                {exam?.accessCode && (
-                  <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                    <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
-                      Mã: {exam.accessCode}
-                    </span>
-                    <button
-                      onClick={() => handleCopyCode(exam.accessCode)}
-                      className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors ml-1 cursor-pointer"
-                      title="Sao chép mã vào thi"
-                    >
-                      {copiedCode ? (
-                        <Check className="w-3 h-3 text-emerald-500" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </button>
-                  </div>
-                )}
-
+              {/* Subline */}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 {exam?.durationMinutes && (
                   <div className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{exam.durationMinutes} phút</span>
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>{exam.durationMinutes}&apos;</span>
                   </div>
                 )}
-
+                {exam?.isProctoringEnabled ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Giám sát AI bật</span>
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-zinc-400">Giám sát AI tắt</span>
+                )}
                 {exam?.maxViolations && (
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Số lần vi phạm tối đa: {exam.maxViolations}</span>
-                  </div>
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                    Tối đa {exam.maxViolations} vi phạm
+                  </span>
                 )}
               </div>
             </div>
           </div>
 
           {/* Right Live Controls */}
-          <div className="flex items-center gap-2.5">
-            {/* Minimal Live Status Signal */}
-            <div
-              className={cn(
-                'relative flex items-center justify-center w-8 h-8 rounded-xl border transition-all duration-300',
-                connectionStatus === 'CONNECTED_PRIMARY'
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                  : connectionStatus === 'CONNECTED_FALLBACK'
-                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-                    : connectionStatus === 'CONNECTING'
-                      ? 'bg-sky-500/10 border-sky-500/20 text-sky-400'
-                      : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
-              )}
-              title={
-                connectionStatus === 'CONNECTED_PRIMARY'
-                  ? 'Kết nối trực tiếp ổn định'
-                  : connectionStatus === 'CONNECTED_FALLBACK'
-                    ? 'Đang dùng đường truyền dự phòng'
-                    : connectionStatus === 'CONNECTING'
-                      ? 'Đang kết nối...'
-                      : 'Mất kết nối mạng'
-              }
-            >
-              {/* Outer pulsing ring for active states */}
-              {(connectionStatus === 'CONNECTED_PRIMARY' ||
-                connectionStatus === 'CONNECTING') && (
-                  <span
-                    className={cn(
-                      'absolute w-3.5 h-3.5 rounded-full opacity-60 animate-ping',
-                      connectionStatus === 'CONNECTED_PRIMARY'
-                        ? 'bg-emerald-400'
-                        : 'bg-sky-400'
-                    )}
-                  />
-                )}
-              {/* Center status dot */}
-              <span
-                className={cn(
-                  'w-2 h-2 rounded-full transition-colors',
-                  connectionStatus === 'CONNECTED_PRIMARY'
-                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
-                    : connectionStatus === 'CONNECTED_FALLBACK'
-                      ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
-                      : connectionStatus === 'CONNECTING'
-                        ? 'bg-sky-400'
-                        : 'bg-rose-500'
-                )}
-              />
-            </div>
+          <div className="flex items-center gap-1.5 self-start sm:self-center shrink-0">
+            <Link href={`/teacher/exams/${examId}/edit`}>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                title="Soạn thảo & Cài đặt thông số"
+              >
+                <FileEdit className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Chỉnh sửa</span>
+              </button>
+            </Link>
 
             {/* Sound alert toggle */}
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={() => setSoundEnabled((prev) => !prev)}
-              className="rounded-xl px-2.5 cursor-pointer"
+              className="w-8 h-8 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer"
               title={soundEnabled ? 'Tắt chuông cảnh báo' : 'Bật chuông cảnh báo'}
             >
               {soundEnabled ? (
@@ -610,54 +544,85 @@ export default function TeacherLiveProctoringPage() {
               ) : (
                 <VolumeX className="w-4 h-4 text-zinc-400" />
               )}
-            </Button>
+            </button>
 
             {/* Manual Refresh */}
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={() => {
                 fetchCandidates();
                 fetchExamStats();
               }}
-              isLoading={loadingCandidates}
-              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-              className="rounded-xl cursor-pointer"
+              disabled={loadingCandidates}
+              className="w-8 h-8 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-60"
+              title="Làm mới dữ liệu"
             >
-              Làm mới
-            </Button>
+              <RefreshCw className={cn("w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400", loadingCandidates && "animate-spin text-indigo-500")} />
+            </button>
+
+            {/* Connection Signal */}
+            <div
+              className={cn(
+                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all',
+                connectionStatus === 'CONNECTED_PRIMARY'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-400'
+                  : connectionStatus === 'CONNECTED_FALLBACK'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-900/60 text-amber-700 dark:text-amber-400'
+                  : connectionStatus === 'CONNECTING'
+                  ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200/80 dark:border-sky-900/60 text-sky-700 dark:text-sky-400'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200/80 dark:border-rose-900/60 text-rose-700 dark:text-rose-400'
+              )}
+              title={
+                connectionStatus === 'CONNECTED_PRIMARY'
+                  ? 'Kết nối trực tiếp ổn định'
+                  : connectionStatus === 'CONNECTED_FALLBACK'
+                  ? 'Đang dùng đường truyền dự phòng'
+                  : connectionStatus === 'CONNECTING'
+                  ? 'Đang kết nối...'
+                  : 'Mất kết nối mạng'
+              }
+            >
+              <Wifi className="w-3 h-3" />
+              <span className="text-[11px] hidden sm:inline">
+                {connectionStatus === 'CONNECTED_PRIMARY'
+                  ? 'Online'
+                  : connectionStatus === 'CONNECTING'
+                  ? 'Kết nối...'
+                  : 'Offline'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Unified Operations Sub-tabs Navigation */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+      {/* Unified Operations Sub-tabs: Apple Segmented Control */}
+      <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 w-full sm:w-fit">
         <button
           type="button"
           onClick={() => handleSwitchSubTab('live')}
           className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all',
+            'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all cursor-pointer',
             activeSubTab === 'live'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
           )}
         >
           <Radio
             className={cn(
-              'w-4 h-4',
-              activeSubTab === 'live' && 'text-emerald-300 animate-pulse'
+              'w-3.5 h-3.5',
+              activeSubTab === 'live' ? 'text-emerald-500 animate-pulse' : 'text-zinc-400'
             )}
           />
           <span>Giám sát trực tiếp</span>
           <span
             className={cn(
-              'px-2 py-0.5 rounded-full text-xs font-bold',
+              'px-1.5 py-0.5 rounded-full text-[10px] font-bold font-mono',
               activeSubTab === 'live'
-                ? 'bg-white/20 text-white'
-                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400'
+                : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
             )}
           >
-            {stats.inProgress > 0 ? stats.inProgress : (stats.online > 0 ? stats.online : stats.total)}
+            {stats.inProgress > 0 ? stats.inProgress : stats.online > 0 ? stats.online : stats.total}
           </span>
         </button>
 
@@ -665,20 +630,20 @@ export default function TeacherLiveProctoringPage() {
           type="button"
           onClick={() => handleSwitchSubTab('attempts')}
           className={cn(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all',
+            'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all cursor-pointer',
             activeSubTab === 'attempts'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
           )}
         >
-          <BarChart3 className="w-4 h-4" />
+          <BarChart3 className="w-3.5 h-3.5" />
           <span>Danh sách bài thi</span>
           <span
             className={cn(
-              'px-2 py-0.5 rounded-full text-xs font-bold',
+              'px-1.5 py-0.5 rounded-full text-[10px] font-bold font-mono',
               activeSubTab === 'attempts'
-                ? 'bg-white/20 text-white'
-                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400'
+                : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
             )}
           >
             {stats.total}
@@ -704,21 +669,24 @@ export default function TeacherLiveProctoringPage() {
           />
 
           {/* Filter and View Mode Toolbar */}
-          <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 p-3.5 sm:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[240px] max-w-md">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div className="relative w-full md:w-auto md:flex-1 md:max-w-md">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(0);
+                }}
                 placeholder="Tìm kiếm theo tên hoặc mã thí sinh..."
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
             </div>
 
             {/* Status Filter Buttons */}
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 w-full md:w-auto">
               {[
                 { id: 'ALL', label: 'Tất cả' },
                 { id: 'IN_PROGRESS', label: 'Đang thi' },
@@ -734,7 +702,7 @@ export default function TeacherLiveProctoringPage() {
                     setCurrentPage(0);
                   }}
                   className={cn(
-                    'px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap',
+                    'px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer',
                     statusFilter === tab.id
                       ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
                       : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400'
@@ -745,49 +713,51 @@ export default function TeacherLiveProctoringPage() {
               ))}
             </div>
 
-            {/* Sort Selector */}
-            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-200 dark:border-zinc-800">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Sắp xếp:</span>
-              <select
-                value={sortOption}
-                onChange={(e) => {
-                  setSortOption(e.target.value);
-                  setCurrentPage(0);
-                }}
-                className="px-2.5 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
-              >
-                <option value="violationCount,desc">Vi phạm: Nhiều nhất trước</option>
-                <option value="startTime,desc">Thời gian: Mới nhất trước</option>
-                <option value="startTime,asc">Thời gian: Cũ nhất trước</option>
-              </select>
-            </div>
+            {/* Sort Selector + View Mode Toggle combined into one row */}
+            <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto pt-1 md:pt-0 md:pl-2 md:border-l md:border-zinc-200 md:dark:border-zinc-800">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Sắp xếp:</span>
+                <select
+                  value={sortOption}
+                  onChange={(e) => {
+                    setSortOption(e.target.value);
+                    setCurrentPage(0);
+                  }}
+                  className="px-2.5 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                >
+                  <option value="violationCount,desc">Vi phạm nhiều nhất</option>
+                  <option value="startTime,desc">Thời gian mới nhất</option>
+                  <option value="startTime,asc">Thời gian cũ nhất</option>
+                </select>
+              </div>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={cn(
-                  'p-1.5 rounded-lg text-xs transition-colors cursor-pointer',
-                  viewMode === 'grid'
-                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
-                )}
-                title="Xem dạng thẻ lưới"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={cn(
-                  'p-1.5 rounded-lg text-xs transition-colors cursor-pointer',
-                  viewMode === 'table'
-                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
-                )}
-                title="Xem dạng danh sách bảng"
-              >
-                <List className="w-4 h-4" />
-              </button>
+              {/* View Mode Toggle */}
+              <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    'p-1.5 rounded-lg text-xs transition-colors cursor-pointer',
+                    viewMode === 'grid'
+                      ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
+                  )}
+                  title="Xem dạng thẻ lưới"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={cn(
+                    'p-1.5 rounded-lg text-xs transition-colors cursor-pointer',
+                    viewMode === 'table'
+                      ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
+                  )}
+                  title="Xem dạng danh sách bảng"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 

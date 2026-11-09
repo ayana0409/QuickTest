@@ -9,20 +9,21 @@ import {
   Award,
   BookOpen,
   Search,
-  Filter,
   RefreshCw,
-  ExternalLink,
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
   ShieldAlert,
   ArrowUpRight,
   FileSpreadsheet,
+  X,
 } from 'lucide-react';
 import { studentService } from '@/services/student.service';
-import type { StudentAttemptSummaryDto, AttemptStatus, PageResponse } from '@/types/exam';
+import type { StudentAttemptSummaryDto, PageResponse } from '@/types/exam';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
+import { cn } from '@/lib/utils';
 
 /**
  * Helper to format Vietnamese date string nicely.
@@ -131,8 +132,8 @@ export default function StudentAttemptHistoryPage() {
     const avgScore =
       scoredList.length > 0
         ? (
-          scoredList.reduce((acc, curr) => acc + (curr.awardedScore || 0), 0) / scoredList.length
-        ).toFixed(1)
+            scoredList.reduce((acc, curr) => acc + (curr.awardedScore || 0), 0) / scoredList.length
+          ).toFixed(1)
         : '—';
 
     const totalViolations = data.content.reduce(
@@ -144,228 +145,327 @@ export default function StudentAttemptHistoryPage() {
   }, [data]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 p-8 text-white shadow-xl">
-        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs font-medium text-indigo-200">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Theo dõi tiến trình học tập</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Lịch sử làm bài
-            </h1>
-            <p className="text-sm sm:text-base text-indigo-200/90 max-w-2xl">
-              Xem lại toàn bộ kết quả bài kiểm tra và nhật ký của bạn.
-            </p>
+    <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12">
+      {/* Top Header & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/60 mb-1.5">
+            <Clock className="w-3 h-3 text-indigo-500" />
+            <span>Theo dõi tiến trình học tập</span>
           </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Lịch sử làm bài
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Xem lại toàn bộ kết quả bài kiểm tra và nhật ký giám sát của bạn.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={loading || isRefreshing}
+            className="w-9 h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-60"
+            title="Làm mới danh sách"
+          >
+            <RefreshCw className={cn("w-4 h-4 text-zinc-600 dark:text-zinc-400", isRefreshing && "animate-spin text-indigo-600")} />
+          </button>
+
+          <Link href="/student">
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
-              onClick={handleRefresh}
-              disabled={loading || isRefreshing}
-              className="bg-white/10 hover:bg-white/20 border-white/20 text-white gap-2 transition-all"
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-2xs font-semibold text-xs sm:text-sm h-9 px-3.5"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
+              <BookOpen className="w-4 h-4" />
+              <span>Vào phòng thi</span>
             </Button>
-            <Link href="/student">
-              <Button size="sm" className="bg-indigo-500 hover:bg-indigo-600 text-white gap-1.5 shadow-lg shadow-indigo-500/30">
-                <BookOpen className="w-4 h-4" />
-                <span>Vào phòng thi</span>
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </div>
       </div>
 
-      {/* Top Metric Cards (Bento Style) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top Metric Cards: 2x2 on Mobile, 4 columns on Desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Attempts */}
-        <div className="p-1 rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-800 transition-all">
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-between h-full shadow-sm">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Tổng lượt thi
-              </span>
-              <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                {stats.total}
-              </div>
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-500">Tất cả bài thi ghi nhận</p>
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 leading-snug">
+              Tổng lượt thi
+            </span>
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+              <BookOpen className="w-4 h-4" />
             </div>
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-              <BookOpen className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
+              {stats.total}
             </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              Tất cả bài thi ghi nhận
+            </p>
           </div>
         </div>
 
         {/* Completed */}
-        <div className="p-1 rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-800 transition-all">
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-between h-full shadow-sm">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Bài thi hoàn thành
-              </span>
-              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                {stats.completed}
-              </div>
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-500">Đã nộp & có kết quả</p>
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 leading-snug">
+              Đã hoàn thành
+            </span>
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-              <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+              {stats.completed}
             </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              Đã nộp & có kết quả
+            </p>
           </div>
         </div>
 
         {/* Average Score */}
-        <div className="p-1 rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-800 transition-all">
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-between h-full shadow-sm">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Điểm trung bình
-              </span>
-              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                {stats.avgScore}
-                {stats.avgScore !== '—' && <span className="text-sm font-normal text-zinc-400 ml-1">pts</span>}
-              </div>
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-500">Dựa trên các bài đã nộp</p>
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 leading-snug">
+              Điểm trung bình
+            </span>
+            <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+              <Award className="w-4 h-4" />
             </div>
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-              <Award className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 leading-tight">
+              {stats.avgScore}
+              {stats.avgScore !== '—' && <span className="text-xs font-medium text-zinc-400 ml-1">đ</span>}
             </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              Trên các bài đã nộp
+            </p>
           </div>
         </div>
 
         {/* Violations */}
-        <div className="p-1 rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-800 transition-all">
-          <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-between h-full shadow-sm">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Cảnh báo quy chế
-              </span>
-              <div className={`text-2xl font-bold ${stats.totalViolations > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                {stats.totalViolations}
-              </div>
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                {stats.totalViolations === 0 ? 'Tuyệt vời! Không có vi phạm' : 'Ghi nhận bởi hệ thống giám sát'}
-              </p>
+        <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 leading-snug">
+              Cảnh báo quy chế
+            </span>
+            <div
+              className={cn(
+                'flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center',
+                stats.totalViolations > 0
+                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'
+              )}
+            >
+              {stats.totalViolations > 0 ? <ShieldAlert className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
             </div>
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${stats.totalViolations > 0 ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}`}>
-              {stats.totalViolations > 0 ? <ShieldAlert className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
+          </div>
+          <div>
+            <div
+              className={cn(
+                'text-xl sm:text-2xl font-bold tracking-tight leading-tight',
+                stats.totalViolations > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-zinc-100'
+              )}
+            >
+              {stats.totalViolations}
             </div>
+            <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
+              {stats.totalViolations === 0 ? 'Không có vi phạm' : 'Ghi nhận giám sát'}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Main Table Card (Double-Bezel Architecture) */}
-      <div className="rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/60 p-1 border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
-        <div className="rounded-xl bg-white dark:bg-zinc-900 overflow-hidden">
-          {/* Controls Bar */}
-          <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="relative w-full md:w-96">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm theo tên bài kiểm tra..."
-                className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
-              />
-            </div>
-
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <div className="flex items-center gap-2 text-xs text-zinc-500 shrink-0">
-                <Filter className="w-3.5 h-3.5" />
-                <span>Trạng thái:</span>
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                aria-label="Lọc theo trạng thái bài thi"
-                className="text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50 py-2 px-3 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+      {/* Main Content Card */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs overflow-hidden">
+        {/* Controls Bar */}
+        <div className="p-3.5 sm:p-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="relative flex-1 sm:max-w-md">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm theo tên bài kiểm tra..."
+              className="w-full pl-8 pr-7 py-2 text-xs bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
               >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="SUBMITTED">Đã nộp bài</option>
-                <option value="AWAITING_MANUAL_GRADING">Chờ chấm tự luận</option>
-                <option value="IN_PROGRESS">Đang làm bài</option>
-                <option value="DISQUALIFIED">Bị đình chỉ thi</option>
-              </select>
-            </div>
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
-          {/* Table Content */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/30 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                  <th className="py-3.5 px-6">Bài kiểm tra</th>
-                  <th className="py-3.5 px-6">Thời gian làm bài</th>
-                  <th className="py-3.5 px-6">Trạng thái</th>
-                  <th className="py-3.5 px-6 text-center">Điểm số</th>
-                  <th className="py-3.5 px-6 text-center">Cảnh báo quy chế</th>
-                  <th className="py-3.5 px-6 text-right">Hành động</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, idx) => (
-                    <tr key={`skeleton-${idx}`} className="animate-pulse">
-                      <td className="py-4 px-6">
-                        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-48 mb-2" />
-                        <div className="h-3 bg-zinc-100 dark:bg-zinc-800/60 rounded w-24" />
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded w-28" />
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded-full w-20" />
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto" />
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-12 mx-auto" />
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded w-24 ml-auto" />
-                      </td>
-                    </tr>
-                  ))
-                ) : filteredAttempts.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <div className="max-w-sm mx-auto space-y-4">
-                        <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto">
-                          <FileSpreadsheet className="w-7 h-7" />
-                        </div>
-                        <div className="space-y-1">
-                          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                            Chưa có dữ liệu bài làm
-                          </h3>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {searchQuery || statusFilter !== 'ALL'
-                              ? 'Không tìm thấy kết quả phù hợp với bộ lọc hiện tại.'
-                              : 'Bạn chưa tham gia bài thi nào. Hãy nhập mã phòng thi để bắt đầu làm bài!'}
-                          </p>
-                        </div>
-                        <Link href="/student">
-                          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white mt-2">
-                            Xem các đề thi mở
+          <div className="flex items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Lọc theo trạng thái bài thi"
+              className="w-full sm:w-auto text-xs rounded-xl border border-zinc-200 dark:border-zinc-700/80 bg-zinc-50 dark:bg-zinc-800/60 py-2 px-3 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="SUBMITTED">Đã nộp bài</option>
+              <option value="AWAITING_MANUAL_GRADING">Chờ chấm tự luận</option>
+              <option value="IN_PROGRESS">Đang làm bài</option>
+              <option value="DISQUALIFIED">Bị đình chỉ thi</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Loading / Empty / Data Views */}
+        {loading ? (
+          <div className="p-4 sm:p-6 space-y-3">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={`skeleton-${idx}`} className="p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 animate-pulse flex items-center justify-between gap-4">
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-48" />
+                  <div className="h-3 bg-zinc-100 dark:bg-zinc-800/60 rounded w-32" />
+                </div>
+                <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded-xl w-24" />
+              </div>
+            ))}
+          </div>
+        ) : filteredAttempts.length === 0 ? (
+          <div className="py-16 px-4 text-center max-w-sm mx-auto space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto">
+              <FileSpreadsheet className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                Chưa có dữ liệu bài làm
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                {searchQuery || statusFilter !== 'ALL'
+                  ? 'Không tìm thấy kết quả phù hợp với bộ lọc hiện tại.'
+                  : 'Bạn chưa tham gia bài thi nào. Hãy nhập mã phòng thi để bắt đầu làm bài!'}
+              </p>
+            </div>
+            <Link href="/student">
+              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs mt-2">
+                Xem các đề thi mở
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* Mobile View: Responsive Attempt History Cards (< md) */}
+            <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+              {filteredAttempts.map((attempt) => {
+                const isInProgress = attempt.status === 'IN_PROGRESS';
+                const isDisqualified = attempt.status === 'DISQUALIFIED';
+
+                return (
+                  <div key={attempt.attemptId} className="p-4 space-y-3">
+                    {/* Top Row: Exam Title & Status Badge */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">
+                          {attempt.examTitle || 'Bài kiểm tra không tên'}
+                        </h4>
+                        <span className="text-[11px] text-zinc-400 font-mono block mt-0.5">
+                          #{attempt.attemptId.slice(0, 8)}
+                        </span>
+                      </div>
+                      <div className="shrink-0">
+                        <Badge variant={attempt.status} dot size="sm">
+                          {STATUS_LABELS[attempt.status] || attempt.status}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Middle Row: 3-column metrics strip */}
+                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 text-center">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-400 font-medium block">Điểm số</span>
+                        {attempt.awardedScore != null ? (
+                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                            {attempt.awardedScore}/{attempt.maxScore ?? 10}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-zinc-400 italic">Chờ chấm</span>
+                        )}
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-400 font-medium block">Vi phạm</span>
+                        {attempt.violationCount > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="w-3 h-3" />
+                            {attempt.violationCount}
+                          </span>
+                        ) : (
+                          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">0</span>
+                        )}
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-400 font-medium block">Thời gian</span>
+                        <span className="text-[11px] text-zinc-600 dark:text-zinc-300 font-mono block truncate">
+                          {formatDateTime(attempt.submitTime || attempt.startTime)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action CTA */}
+                    <div>
+                      {isInProgress ? (
+                        <Link href={`/exam/${attempt.attemptId}`} className="block w-full">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="w-full justify-center text-xs rounded-xl bg-amber-600 hover:bg-amber-700 text-white h-8"
+                            rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
+                          >
+                            Tiếp tục làm bài
                           </Button>
                         </Link>
-                      </div>
-                    </td>
+                      ) : (
+                        <Link href={`/student/history/${attempt.attemptId}`} className="block w-full">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={cn(
+                              'w-full justify-center text-xs rounded-xl h-8',
+                              isDisqualified
+                                ? 'border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400'
+                                : 'border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200'
+                            )}
+                            rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                          >
+                            {isDisqualified ? 'Xem nhật ký vi phạm' : 'Xem kết quả bài làm'}
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop View: Full 6-Column Data Table (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/30 text-[11px] uppercase tracking-wider font-semibold text-zinc-500 dark:text-zinc-400">
+                    <th className="py-3.5 px-5">Bài kiểm tra</th>
+                    <th className="py-3.5 px-5">Thời gian</th>
+                    <th className="py-3.5 px-5">Trạng thái</th>
+                    <th className="py-3.5 px-5 text-center">Điểm số</th>
+                    <th className="py-3.5 px-5 text-center">Quy chế</th>
+                    <th className="py-3.5 px-5 text-right">Thao tác</th>
                   </tr>
-                ) : (
-                  filteredAttempts.map((attempt) => {
-                    const isSubmitted =
-                      attempt.status === 'SUBMITTED' ||
-                      attempt.status === 'COMPLETED' ||
-                      attempt.status === 'AUTO_GRADED';
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {filteredAttempts.map((attempt) => {
                     const isInProgress = attempt.status === 'IN_PROGRESS';
                     const isDisqualified = attempt.status === 'DISQUALIFIED';
 
@@ -375,17 +475,17 @@ export default function StudentAttemptHistoryPage() {
                         className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors group"
                       >
                         {/* Exam Title */}
-                        <td className="py-4 px-6">
-                          <div className="font-medium text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <td className="py-3.5 px-5">
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {attempt.examTitle || 'Bài kiểm tra không tên'}
                           </div>
-                          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">
-                            ID: {attempt.attemptId.slice(0, 8)}...
+                          <div className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                            #{attempt.attemptId.slice(0, 8)}
                           </div>
                         </td>
 
                         {/* Timing */}
-                        <td className="py-4 px-6 text-zinc-600 dark:text-zinc-300">
+                        <td className="py-3.5 px-5 text-zinc-600 dark:text-zinc-300">
                           <div className="flex flex-col text-xs space-y-0.5">
                             <span>Bắt đầu: {formatDateTime(attempt.startTime)}</span>
                             {attempt.submitTime && (
@@ -397,20 +497,16 @@ export default function StudentAttemptHistoryPage() {
                         </td>
 
                         {/* Status Badge */}
-                        <td className="py-4 px-6">
-                          <Badge
-                            variant={attempt.status}
-                            dot
-                            size="sm"
-                          >
+                        <td className="py-3.5 px-5">
+                          <Badge variant={attempt.status} dot size="sm">
                             {STATUS_LABELS[attempt.status] || attempt.status}
                           </Badge>
                         </td>
 
-                        {/* Awarded Score / Max Score */}
-                        <td className="py-4 px-6 text-center">
+                        {/* Awarded Score */}
+                        <td className="py-3.5 px-5 text-center">
                           {attempt.awardedScore != null ? (
-                            <div className="inline-flex items-center gap-1 font-semibold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/80 px-2.5 py-1 rounded-lg text-xs">
+                            <div className="inline-flex items-center gap-1 font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/80 px-2.5 py-1 rounded-lg text-xs">
                               <span className="text-indigo-600 dark:text-indigo-400">
                                 {attempt.awardedScore}
                               </span>
@@ -418,36 +514,36 @@ export default function StudentAttemptHistoryPage() {
                               <span>{attempt.maxScore ?? 10}</span>
                             </div>
                           ) : (
-                            <span className="text-xs text-zinc-400 italic">Chưa có điểm</span>
+                            <span className="text-xs text-zinc-400 italic">Chờ chấm</span>
                           )}
                         </td>
 
-                        {/* Violation Count with Warning Indicator */}
-                        <td className="py-4 px-6 text-center">
+                        {/* Violation Count */}
+                        <td className="py-3.5 px-5 text-center">
                           {attempt.violationCount > 0 ? (
                             <div
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/40"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/40"
                               title={`Hệ thống ghi nhận ${attempt.violationCount} lần vi phạm quy chế`}
                             >
-                              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                              <AlertTriangle className="w-3 h-3 shrink-0" />
                               <span>{attempt.violationCount} lần</span>
                             </div>
                           ) : (
                             <div className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                               <ShieldCheck className="w-3.5 h-3.5" />
-                              <span>Không có</span>
+                              <span>Chuẩn mực</span>
                             </div>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-4 px-6 text-right">
+                        <td className="py-3.5 px-5 text-right">
                           {isInProgress ? (
                             <Link href={`/exam/${attempt.attemptId}`}>
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="text-xs border-sky-300 dark:border-sky-800 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 gap-1"
+                                variant="primary"
+                                className="text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-xl h-8 px-3 gap-1"
                               >
                                 <span>Tiếp tục</span>
                                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -458,88 +554,59 @@ export default function StudentAttemptHistoryPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className={`text-xs gap-1 ${isDisqualified
+                                className={cn(
+                                  'text-xs rounded-xl h-8 px-3 gap-1',
+                                  isDisqualified
                                     ? 'border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
-                                    : 'border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30'
-                                  }`}
+                                    : 'border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                                )}
                               >
-                                <span>{isDisqualified ? 'Xem vi phạm' : 'Xem chi tiết'}</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>{isDisqualified ? 'Xem vi phạm' : 'Xem kết quả'}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
                               </Button>
                             </Link>
                           )}
                         </td>
                       </tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Controls */}
-          {data && data.totalPages > 1 && (
-            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
-              <div>
-                Trang {data.page + 1} / {data.totalPages} ({data.totalElements} bài thi)
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={data.isFirst || loading}
-                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-                  className="h-8 px-2.5 text-xs gap-1"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  <span>Trước</span>
-                </Button>
-
-                {Array.from({ length: data.totalPages }).map((_, i) => {
-                  if (
-                    i === 0 ||
-                    i === data.totalPages - 1 ||
-                    Math.abs(i - data.page) <= 1
-                  ) {
-                    return (
-                      <button
-                        key={`page-${i}`}
-                        onClick={() => setCurrentPage(i)}
-                        className={`w-8 h-8 rounded-lg font-medium transition-all ${i === data.page
-                            ? 'bg-indigo-600 text-white'
-                            : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                          }`}
-                      >
-                        {i + 1}
-                      </button>
-                    );
-                  } else if (
-                    (i === 1 && data.page > 2) ||
-                    (i === data.totalPages - 2 && data.page < data.totalPages - 3)
-                  ) {
-                    return (
-                      <span key={`ellipsis-${i}`} className="px-1 text-zinc-400">
-                        ...
-                      </span>
-                    );
-                  }
-                  return null;
-                })}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={data.isLast || loading}
-                  onClick={() => setCurrentPage((p) => Math.min(data.totalPages - 1, p + 1))}
-                  className="h-8 px-2.5 text-xs gap-1"
-                >
-                  <span>Sau</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+          </>
+        )}
+
+        {/* Pagination Controls */}
+        {data && data.totalPages > 1 && (
+          <div className="p-3.5 sm:p-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
+            <div>
+              Trang <strong>{data.page + 1}</strong> / {data.totalPages} ({data.totalElements} bài)
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={data.isFirst || loading}
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                className="h-8 px-2.5 text-xs rounded-xl gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Trước</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={data.isLast || loading}
+                onClick={() => setCurrentPage((p) => Math.min(data.totalPages - 1, p + 1))}
+                className="h-8 px-2.5 text-xs rounded-xl gap-1"
+              >
+                <span className="hidden sm:inline">Sau</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

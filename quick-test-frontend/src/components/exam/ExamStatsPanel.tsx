@@ -53,17 +53,23 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, iconBg }) => (
-  <div className="flex items-start gap-3 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs min-w-0">
-    <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
-      {icon}
+  <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between min-w-0">
+    <div className="flex items-center justify-between gap-1.5 mb-1.5">
+      <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 leading-snug line-clamp-1">
+        {label}
+      </span>
+      <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
+        {icon}
+      </div>
     </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">{label}</p>
-      <p className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mt-0.5 leading-tight">
+    <div>
+      <div className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight">
         {value}
-      </p>
+      </div>
       {sub && (
-        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">{sub}</p>
+        <p className="text-[10px] sm:text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 leading-snug truncate">
+          {sub}
+        </p>
       )}
     </div>
   </div>
@@ -218,13 +224,13 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
       <AttemptDistributionBar stats={stats} />
 
       {/* Stat cards grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Total attempts */}
         <StatCard
           label="Tổng lượt thi"
           value={stats.totalAttempts}
           sub={`${stats.completedAttempts} bài đã nộp`}
-          icon={<Users className="w-5 h-5" />}
+          icon={<Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="indigo"
           iconBg="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
         />
@@ -234,7 +240,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
           label="Đã có điểm"
           value={`${stats.gradedCount} / ${stats.totalAttempts}`}
           sub={stats.pendingGradingAttempts > 0 ? `${stats.pendingGradingAttempts} chờ chấm` : 'Tất cả đã có điểm'}
-          icon={<CheckCircle2 className="w-5 h-5" />}
+          icon={<CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="emerald"
           iconBg="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
         />
@@ -244,7 +250,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
           label="Điểm trung bình"
           value={hasAttempts && stats.gradedCount > 0 ? formatScore(stats.averageScore, totalPoints) : '—'}
           sub={stats.gradedCount > 0 ? `Trên ${stats.gradedCount} bài đã chấm` : 'Chưa có điểm'}
-          icon={<Activity className="w-5 h-5" />}
+          icon={<Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="violet"
           iconBg="bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400"
         />
@@ -253,7 +259,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
         <StatCard
           label="Điểm cao nhất"
           value={formatScore(stats.highestScore, totalPoints)}
-          icon={<TrendingUp className="w-5 h-5" />}
+          icon={<TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="emerald"
           iconBg="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
         />
@@ -262,7 +268,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
         <StatCard
           label="Điểm thấp nhất"
           value={formatScore(stats.lowestScore, totalPoints)}
-          icon={<TrendingDown className="w-5 h-5" />}
+          icon={<TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="rose"
           iconBg="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
         />
@@ -273,10 +279,10 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
           value={stats.totalViolations}
           sub={
             stats.attemptsWithViolations > 0
-              ? `${stats.attemptsWithViolations} thí sinh vi phạm · Cao nhất: ${stats.maxViolations}`
+              ? `${stats.attemptsWithViolations} thí sinh vi phạm`
               : 'Không có vi phạm'
           }
-          icon={<ShieldAlert className="w-5 h-5" />}
+          icon={<ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="rose"
           iconBg="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
         />
@@ -285,8 +291,8 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
         <StatCard
           label="Thời gian TB"
           value={formatDuration(stats.averageDurationSeconds)}
-          sub="Tính từ lúc bắt đầu → nộp bài"
-          icon={<Timer className="w-5 h-5" />}
+          sub="Bắt đầu → Nộp bài"
+          icon={<Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="amber"
           iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
         />
@@ -295,18 +301,18 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
         <StatCard
           label="Nhanh / Lâu nhất"
           value={
-            <span className="text-base font-bold">
+            <span className="text-sm sm:text-base font-bold">
               <span className="text-emerald-600 dark:text-emerald-400">
                 {formatDuration(stats.minDurationSeconds)}
               </span>
-              <span className="text-zinc-400 dark:text-zinc-500 font-normal mx-1">/</span>
+              <span className="text-zinc-400 dark:text-zinc-500 font-normal mx-0.5 sm:mx-1">/</span>
               <span className="text-amber-600 dark:text-amber-400">
                 {formatDuration(stats.maxDurationSeconds)}
               </span>
             </span>
           }
           sub="Nhanh nhất / Lâu nhất"
-          icon={<Award className="w-5 h-5" />}
+          icon={<Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           colorClass="amber"
           iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
         />
@@ -317,7 +323,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
             label="Chờ chấm tự luận"
             value={stats.pendingGradingAttempts}
             sub="Cần chấm điểm thủ công"
-            icon={<Edit3 className="w-5 h-5" />}
+            icon={<Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             colorClass="amber"
             iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
           />

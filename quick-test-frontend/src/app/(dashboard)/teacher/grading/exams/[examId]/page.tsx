@@ -57,34 +57,34 @@ export default function ExamGradingQuestionsPage({ params }: ExamGradingQuestion
     totalSubmissions > 0 ? Math.round((totalGraded / totalSubmissions) * 100) : 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
+    <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-12">
       {/* Top Breadcrumb & Header */}
       <div>
         <Link
           href="/teacher/grading"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-3"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-2.5"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Quay lại Trung tâm chấm điểm</span>
+          <span>Quay lại</span>
         </Link>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
                 {isLoadingQuestions ? 'Đang tải thông tin đề thi...' : currentExamTitle || 'Chấm điểm bài thi'}
               </h1>
               {currentExamStatus && (
                 <Badge variant={currentExamStatus as any} size="sm" dot>
                   {currentExamStatus === 'PUBLISHED'
-                    ? 'Đang diễn ra'
+                    ? 'Đang mở'
                     : currentExamStatus === 'CLOSED'
-                    ? 'Đã kết thúc'
+                    ? 'Đã đóng'
                     : 'Bản nháp'}
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
               Quản lý tiến độ chấm bài và xem biểu điểm chi tiết cho từng câu hỏi tự luận
             </p>
           </div>
@@ -94,60 +94,67 @@ export default function ExamGradingQuestionsPage({ params }: ExamGradingQuestion
             <Button
               variant="primary"
               size="md"
-              className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:opacity-95 shadow-md shadow-indigo-500/20"
+              className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:opacity-95 shadow-md shadow-indigo-500/20 text-xs sm:text-sm self-start md:self-auto shrink-0"
               isLoading={isTriggeringAi}
               disabled={isTriggeringAi || isLoadingQuestions}
               onClick={handleTriggerEntireExamAi}
               leftIcon={<Sparkles className="w-4 h-4" />}
             >
-              Chấm AI toàn bộ đề thi
+              <span>Chấm AI toàn bộ đề thi</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Overview Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">
-            Câu hỏi tự luận
-          </span>
-          <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2 flex items-center justify-between">
-            <span>{totalEssayQuestions} câu</span>
-            <FileQuestion className="w-5 h-5 text-indigo-500" />
+      {/* Overview Metrics Cards: 2x2 on Mobile, 4-col on Desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">
+              Câu tự luận
+            </span>
+            <FileQuestion className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 shrink-0" />
+          </div>
+          <div className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1 sm:mt-2">
+            {totalEssayQuestions} <span className="text-xs font-normal text-zinc-400">câu</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">
-            Tổng lượt bài nộp
-          </span>
-          <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2 flex items-center justify-between">
-            <span>{totalSubmissions} bài</span>
-            <Layers className="w-5 h-5 text-zinc-400" />
+        <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">
+              Tổng bài nộp
+            </span>
+            <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400 shrink-0" />
+          </div>
+          <div className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-1 sm:mt-2">
+            {totalSubmissions} <span className="text-xs font-normal text-zinc-400">bài</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">
-            Chờ chấm điểm
-          </span>
-          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2 flex items-center justify-between">
-            <span>{totalPending} bài</span>
-            <Layers className="w-5 h-5 text-amber-500" />
+        <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">
+              Chờ chấm điểm
+            </span>
+            <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
+          </div>
+          <div className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1 sm:mt-2">
+            {totalPending} <span className="text-xs font-normal text-zinc-400">bài</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">
-            Tiến độ hoàn thành
-          </span>
-          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-2 flex items-center justify-between">
-            <span>{overallProgressPercent}%</span>
-            <TrendingUp className="w-5 h-5 text-indigo-500" />
+        <div className="p-3.5 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">
+              Tiến độ chấm
+            </span>
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500 shrink-0" />
+          </div>
+          <div className="text-lg sm:text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1 sm:mt-2">
+            {overallProgressPercent}%
           </div>
         </div>
-
       </div>
 
       {/* Questions Section */}
