@@ -256,4 +256,17 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
         @Query(value = "UPDATE questions SET is_safe = false, reviewed_at = NULL WHERE id = ANY(CAST(:ids AS uuid[]))",
                 nativeQuery = true)
         int bulkMarkAsUnsafe(@Param("ids") String ids);
+
+        /**
+         * Compute question bank moderation totals in a single table scan.
+         * Columns: [0]=total, [1]=safe, [2]=unsafe, [3]=unreviewed.
+         */
+        @Query(value = """
+                SELECT COUNT(*),
+                       COALESCE(SUM(CASE WHEN q.is_safe = true THEN 1 ELSE 0 END), 0),
+                       COALESCE(SUM(CASE WHEN q.is_safe = false THEN 1 ELSE 0 END), 0),
+                       COALESCE(SUM(CASE WHEN q.is_safe IS NULL THEN 1 ELSE 0 END), 0)
+                FROM questions q
+                """, nativeQuery = true)
+        Object[] computeQuestionModerationSummary();
 }

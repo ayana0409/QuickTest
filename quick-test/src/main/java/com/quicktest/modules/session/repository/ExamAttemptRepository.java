@@ -250,4 +250,34 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
     Page<StudentAttemptSummaryDto> findStudentAttemptSummaries(
             @Param("userId") UUID userId,
             Pageable pageable);
+
+    /**
+     * Compute global attempt counters and average submitted score in a single table scan.
+     * Columns: [0]=total, [1]=inProgress, [2]=submitted, [3]=awaitingGrading, [4]=disqualified, [5]=avgScore.
+     */
+    @Query(value = """
+            SELECT COUNT(*),
+                   COALESCE(SUM(CASE WHEN a.status = 'IN_PROGRESS' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'SUBMITTED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'AWAITING_MANUAL_GRADING' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'DISQUALIFIED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(AVG(CASE WHEN a.status = 'SUBMITTED' AND a.total_score IS NOT NULL THEN a.total_score END), 0.0)
+            FROM exam_attempts a
+            """, nativeQuery = true)
+    Object[] computeGlobalAttemptMetrics();
+
+    /**
+     * Group daily exam attempt counts and completed submissions starting from the given timestamp.
+     * Columns: [0]=activityDate (DATE), [1]=attemptsCount, [2]=submittedCount.
+     */
+    @Query(value = """
+            SELECT CAST(a.start_time AS DATE) AS activity_date,
+                   COUNT(*),
+                   COALESCE(SUM(CASE WHEN a.status = 'SUBMITTED' THEN 1 ELSE 0 END), 0)
+            FROM exam_attempts a
+            WHERE a.start_time >= :since
+            GROUP BY CAST(a.start_time AS DATE)
+            ORDER BY activity_date ASC
+            """, nativeQuery = true)
+    List<Object[]> countDailyAttemptsSince(@Param("since") java.time.LocalDateTime since);
 }

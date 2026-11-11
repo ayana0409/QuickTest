@@ -11,8 +11,8 @@ import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.iam.entity.Role;
 import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
+import com.quicktest.modules.proctoring.entity.ViolationType;
 import com.quicktest.modules.proctoring.repository.ViolationLogRepository;
-import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +26,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -482,28 +483,36 @@ class AdminServiceTest {
     // =========================================================================
 
     @Test
-    @DisplayName("getDashboard: Should return all aggregate metrics and recent violations")
+    @DisplayName("getDashboard: Should aggregate single-pass metrics, 7-day series, and violations")
     void getDashboard_Success() {
-        when(userRepository.count()).thenReturn(100L);
-        when(userRepository.countByRole(Role.TEACHER)).thenReturn(20L);
-        when(userRepository.countByRole(Role.STUDENT)).thenReturn(78L);
-        when(userRepository.countByRole(Role.ADMIN)).thenReturn(2L);
-        when(userRepository.countByIsActive(true)).thenReturn(95L);
-        when(userRepository.countByIsActive(false)).thenReturn(5L);
+        LocalDate today = LocalDate.now();
+        when(userRepository.computeUserDashboardMetrics(any()))
+                .thenReturn(new Object[]{100L, 20L, 78L, 2L, 95L, 5L, 14L});
 
-        when(examRepository.count()).thenReturn(30L);
-        when(examRepository.countByStatus(ExamStatus.DRAFT)).thenReturn(5L);
-        when(examRepository.countByStatus(ExamStatus.PUBLISHED)).thenReturn(15L);
-        when(examRepository.countByStatus(ExamStatus.CLOSED)).thenReturn(8L);
-        when(examRepository.countByStatus(ExamStatus.ARCHIVED)).thenReturn(2L);
+        when(examRepository.computeExamDashboardMetrics())
+                .thenReturn(new Object[]{30L, 5L, 15L, 8L, 2L});
 
-        when(examAttemptRepository.count()).thenReturn(500L);
-        when(examAttemptRepository.countByStatus(AttemptStatus.IN_PROGRESS)).thenReturn(50L);
-        when(examAttemptRepository.countByStatus(AttemptStatus.SUBMITTED)).thenReturn(420L);
-        when(examAttemptRepository.countByStatus(AttemptStatus.AWAITING_MANUAL_GRADING)).thenReturn(25L);
-        when(examAttemptRepository.countByStatus(AttemptStatus.DISQUALIFIED)).thenReturn(5L);
+        when(questionRepository.computeQuestionModerationSummary())
+                .thenReturn(new Object[]{240L, 200L, 10L, 30L});
 
-        when(violationLogRepository.count()).thenReturn(12L);
+        // Simulate Hibernate 6 wrapping a single multi-column native aggregate row as Object[][]
+        Object[] innerAttemptRow = new Object[]{500L, 50L, 420L, 25L, 5L, 7.846};
+        when(examAttemptRepository.computeGlobalAttemptMetrics())
+                .thenReturn(new Object[]{innerAttemptRow});
+
+        when(examAttemptRepository.countDailyAttemptsSince(any()))
+                .thenReturn(Collections.singletonList(
+                        new Object[]{java.sql.Date.valueOf(today), 32L, 28L}));
+
+        when(violationLogRepository.countDailyViolationsSince(any()))
+                .thenReturn(Collections.singletonList(
+                        new Object[]{java.sql.Date.valueOf(today), 4L}));
+
+        when(violationLogRepository.countAllGroupedByViolationType())
+                .thenReturn(List.of(
+                        new Object[]{ViolationType.TAB_SWITCH, 9L},
+                        new Object[]{ViolationType.WINDOW_BLUR, 3L}));
+
         when(violationLogRepository.findRecentViolations(any())).thenReturn(Collections.emptyList());
 
         AdminDashboardResponse dashboard = adminService.getDashboard();
@@ -514,10 +523,50 @@ class AdminServiceTest {
         assertEquals(78L, dashboard.getTotalStudents());
         assertEquals(2L, dashboard.getTotalAdmins());
         assertEquals(95L, dashboard.getActiveUsers());
+        assertEquals(5L, dashboard.getInactiveUsers());
+        assertEquals(14L, dashboard.getNewUsersLast7Days());
+
         assertEquals(30L, dashboard.getTotalExams());
         assertEquals(15L, dashboard.getPublishedExams());
+        assertEquals(240L, dashboard.getTotalQuestions());
+        assertEquals(200L, dashboard.getSafeQuestions());
+        assertEquals(10L, dashboard.getUnsafeQuestions());
+        assertEquals(30L, dashboard.getUnreviewedQuestions());
+
         assertEquals(500L, dashboard.getTotalAttempts());
+        assertEquals(50L, dashboard.getInProgressAttempts());
+        assertEquals(420L, dashboard.getSubmittedAttempts());
+        assertEquals(25L, dashboard.getAwaitingGradingAttempts());
+        assertEquals(5L, dashboard.getDisqualifiedAttempts());
+        assertEquals(7.85, dashboard.getAverageScore(), 0.001);
+
         assertEquals(12L, dashboard.getTotalViolations());
+        assertEquals(9L, dashboard.getViolationByTypes().get("TAB_SWITCH"));
+        assertEquals(3L, dashboard.getViolationByTypes().get("WINDOW_BLUR"));
+        assertEquals(7, dashboard.getDailyActivities().size());
+        assertEquals(32L, dashboard.getDailyActivities().get(6).getAttemptsCount());
+        assertEquals(28L, dashboard.getDailyActivities().get(6).getSubmittedCount());
+        assertEquals(4L, dashboard.getDailyActivities().get(6).getViolationsCount());
         assertTrue(dashboard.getRecentViolations().isEmpty());
+    }
+
+    @Test
+    @DisplayName("refreshDashboard: Should recompute dashboard metrics on explicit refresh")
+    void refreshDashboard_Success() {
+        when(userRepository.computeUserDashboardMetrics(any())).thenReturn(new Object[]{10L, 2L, 7L, 1L, 10L, 0L, 1L});
+        when(examRepository.computeExamDashboardMetrics()).thenReturn(new Object[]{4L, 1L, 2L, 1L, 0L});
+        when(questionRepository.computeQuestionModerationSummary()).thenReturn(new Object[]{40L, 40L, 0L, 0L});
+        when(examAttemptRepository.computeGlobalAttemptMetrics()).thenReturn(new Object[]{20L, 2L, 18L, 0L, 0L, 8.0});
+        when(examAttemptRepository.countDailyAttemptsSince(any())).thenReturn(Collections.emptyList());
+        when(violationLogRepository.countDailyViolationsSince(any())).thenReturn(Collections.emptyList());
+        when(violationLogRepository.countAllGroupedByViolationType()).thenReturn(Collections.emptyList());
+        when(violationLogRepository.findRecentViolations(any())).thenReturn(Collections.emptyList());
+
+        AdminDashboardResponse refreshed = adminService.refreshDashboard();
+
+        assertNotNull(refreshed);
+        assertEquals(10L, refreshed.getTotalUsers());
+        assertEquals(7, refreshed.getDailyActivities().size());
+        verify(userRepository, times(1)).computeUserDashboardMetrics(any());
     }
 }

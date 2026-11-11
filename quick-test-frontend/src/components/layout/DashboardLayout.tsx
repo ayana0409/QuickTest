@@ -84,7 +84,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col lg:flex-row">
+    <div className="min-h-screen w-full overflow-x-clip bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col lg:flex-row">
       {/* Dynamic Role-Aware Sidebar */}
       <Sidebar
         isMobileOpen={isMobileOpen}
@@ -94,12 +94,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full">
         {/* Responsive Header */}
         <Header onOpenMobileSidebar={() => setIsMobileOpen(true)} />
 
         {/* Page Content Container */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

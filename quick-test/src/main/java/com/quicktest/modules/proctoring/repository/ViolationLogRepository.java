@@ -118,4 +118,25 @@ public interface ViolationLogRepository extends JpaRepository<ViolationLog, UUID
             @Param("violationType") String violationType,
             @Param("examId") UUID examId,
             @Param("onlyFinishedExams") boolean onlyFinishedExams);
+
+    /**
+     * Count total violations grouped by violation type across the whole system.
+     * Columns: [0]=violationType, [1]=count.
+     */
+    @Query("SELECT v.violationType, COUNT(v) FROM ViolationLog v GROUP BY v.violationType")
+    List<Object[]> countAllGroupedByViolationType();
+
+    /**
+     * Group daily violation counts starting from the given timestamp.
+     * Columns: [0]=activityDate (DATE), [1]=violationsCount.
+     */
+    @Query(value = """
+            SELECT CAST(v.timestamp AS DATE) AS activity_date,
+                   COUNT(*)
+            FROM violation_logs v
+            WHERE v.timestamp >= :since
+            GROUP BY CAST(v.timestamp AS DATE)
+            ORDER BY activity_date ASC
+            """, nativeQuery = true)
+    List<Object[]> countDailyViolationsSince(@Param("since") java.time.LocalDateTime since);
 }

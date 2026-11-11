@@ -23,6 +23,7 @@ import com.quicktest.modules.session.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
@@ -34,7 +35,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -333,61 +339,152 @@ public class AdminServiceImpl implements AdminService {
     // Dashboard & Analytics
     // =========================================================================
 
+    private static final DateTimeFormatter DASHBOARD_DAY_LABEL = DateTimeFormatter.ofPattern("dd/MM");
+    private static final int DASHBOARD_SERIES_DAYS = 7;
+
     @Override
     @Transactional(readOnly = true)
-    // Cache dashboard: executes 15+ COUNT queries across 5 tables on every call
     @Cacheable(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
     public AdminDashboardResponse getDashboard() {
-        // User metrics
-        long totalUsers = userRepository.count();
-        long totalTeachers = userRepository.countByRole(Role.TEACHER);
-        long totalStudents = userRepository.countByRole(Role.STUDENT);
-        long totalAdmins = userRepository.countByRole(Role.ADMIN);
-        long activeUsers = userRepository.countByIsActive(true);
-        long inactiveUsers = userRepository.countByIsActive(false);
+        return computeDashboardMetrics();
+    }
 
-        // Exam metrics
-        long totalExams = examRepository.count();
-        long draftExams = examRepository.countByStatus(ExamStatus.DRAFT);
-        long publishedExams = examRepository.countByStatus(ExamStatus.PUBLISHED);
-        long closedExams = examRepository.countByStatus(ExamStatus.CLOSED);
-        long archivedExams = examRepository.countByStatus(ExamStatus.ARCHIVED);
+    @Override
+    @Transactional(readOnly = true)
+    @CachePut(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+    public AdminDashboardResponse refreshDashboard() {
+        return computeDashboardMetrics();
+    }
 
-        // Attempt metrics
-        long totalAttempts = examAttemptRepository.count();
-        long inProgressAttempts = examAttemptRepository.countByStatus(AttemptStatus.IN_PROGRESS);
-        long submittedAttempts = examAttemptRepository.countByStatus(AttemptStatus.SUBMITTED);
-        long awaitingGradingAttempts = examAttemptRepository.countByStatus(AttemptStatus.AWAITING_MANUAL_GRADING);
-        long disqualifiedAttempts = examAttemptRepository.countByStatus(AttemptStatus.DISQUALIFIED);
+    /**
+     * Build the system-wide dashboard snapshot using single-scan aggregate queries
+     * across each table rather than separate per-status COUNT queries.
+     */
+    private AdminDashboardResponse computeDashboardMetrics() {
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(DASHBOARD_SERIES_DAYS - 1L);
+        LocalDateTime sinceStartOfWindow = startDate.atStartOfDay();
 
-        // Proctoring violation metrics
-        long totalViolations = violationLogRepository.count();
+        Object[] userRow = unwrapSingleRow(userRepository.computeUserDashboardMetrics(sinceStartOfWindow));
+        Object[] examRow = unwrapSingleRow(examRepository.computeExamDashboardMetrics());
+        Object[] questionRow = unwrapSingleRow(questionRepository.computeQuestionModerationSummary());
+        Object[] attemptRow = unwrapSingleRow(examAttemptRepository.computeGlobalAttemptMetrics());
+
+        Map<LocalDate, long[]> attemptSeriesMap = new HashMap<>();
+        for (Object[] row : examAttemptRepository.countDailyAttemptsSince(sinceStartOfWindow)) {
+            LocalDate date = toLocalDate(row[0]);
+            if (date != null) {
+                attemptSeriesMap.put(date, new long[]{toLong(row, 1), toLong(row, 2)});
+            }
+        }
+
+        Map<LocalDate, Long> violationSeriesMap = new HashMap<>();
+        for (Object[] row : violationLogRepository.countDailyViolationsSince(sinceStartOfWindow)) {
+            LocalDate date = toLocalDate(row[0]);
+            if (date != null) {
+                violationSeriesMap.put(date, toLong(row, 1));
+            }
+        }
+
+        List<AdminDashboardResponse.DailyActivityPoint> dailyActivities = new ArrayList<>(DASHBOARD_SERIES_DAYS);
+        for (int i = 0; i < DASHBOARD_SERIES_DAYS; i++) {
+            LocalDate day = startDate.plusDays(i);
+            long[] dayAttempts = attemptSeriesMap.getOrDefault(day, new long[]{0L, 0L});
+            long dayViolations = violationSeriesMap.getOrDefault(day, 0L);
+
+            dailyActivities.add(AdminDashboardResponse.DailyActivityPoint.builder()
+                    .date(day.toString())
+                    .label(day.format(DASHBOARD_DAY_LABEL))
+                    .attemptsCount(dayAttempts[0])
+                    .submittedCount(dayAttempts[1])
+                    .violationsCount(dayViolations)
+                    .build());
+        }
+
+        Map<String, Long> violationByTypes = new LinkedHashMap<>();
+        long totalViolations = 0L;
+        for (Object[] row : violationLogRepository.countAllGroupedByViolationType()) {
+            String key = row[0] != null ? row[0].toString() : "OTHER";
+            long count = toLong(row, 1);
+            violationByTypes.merge(key, count, Long::sum);
+            totalViolations += count;
+        }
+
         Pageable recentLimit = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "timestamp"));
         List<ViolationLog> recentLogs = violationLogRepository.findRecentViolations(recentLimit);
-
         List<RecentViolationResponse> recentViolations = recentLogs.stream()
                 .map(RecentViolationResponse::fromEntity)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        double rawAverageScore = toDouble(attemptRow, 5);
+        double roundedAverageScore = Math.round(rawAverageScore * 100.0) / 100.0;
 
         return AdminDashboardResponse.builder()
-                .totalUsers(totalUsers)
-                .totalTeachers(totalTeachers)
-                .totalStudents(totalStudents)
-                .totalAdmins(totalAdmins)
-                .activeUsers(activeUsers)
-                .inactiveUsers(inactiveUsers)
-                .totalExams(totalExams)
-                .draftExams(draftExams)
-                .publishedExams(publishedExams)
-                .closedExams(closedExams)
-                .archivedExams(archivedExams)
-                .totalAttempts(totalAttempts)
-                .inProgressAttempts(inProgressAttempts)
-                .submittedAttempts(submittedAttempts)
-                .awaitingGradingAttempts(awaitingGradingAttempts)
-                .disqualifiedAttempts(disqualifiedAttempts)
+                .totalUsers(toLong(userRow, 0))
+                .totalTeachers(toLong(userRow, 1))
+                .totalStudents(toLong(userRow, 2))
+                .totalAdmins(toLong(userRow, 3))
+                .activeUsers(toLong(userRow, 4))
+                .inactiveUsers(toLong(userRow, 5))
+                .newUsersLast7Days(toLong(userRow, 6))
+                .totalExams(toLong(examRow, 0))
+                .draftExams(toLong(examRow, 1))
+                .publishedExams(toLong(examRow, 2))
+                .closedExams(toLong(examRow, 3))
+                .archivedExams(toLong(examRow, 4))
+                .totalQuestions(toLong(questionRow, 0))
+                .safeQuestions(toLong(questionRow, 1))
+                .unsafeQuestions(toLong(questionRow, 2))
+                .unreviewedQuestions(toLong(questionRow, 3))
+                .totalAttempts(toLong(attemptRow, 0))
+                .inProgressAttempts(toLong(attemptRow, 1))
+                .submittedAttempts(toLong(attemptRow, 2))
+                .awaitingGradingAttempts(toLong(attemptRow, 3))
+                .disqualifiedAttempts(toLong(attemptRow, 4))
+                .averageScore(roundedAverageScore)
+                .dailyActivities(dailyActivities)
+                .violationByTypes(violationByTypes)
                 .totalViolations(totalViolations)
                 .recentViolations(recentViolations)
                 .build();
+    }
+
+    private Object[] unwrapSingleRow(Object[] raw) {
+        if (raw == null || raw.length == 0) {
+            return new Object[0];
+        }
+        // Hibernate may wrap a single multi-column native aggregate row inside a 1-element Object[]
+        if (raw.length == 1 && raw[0] instanceof Object[] nested) {
+            return nested;
+        }
+        return raw;
+    }
+
+    private long toLong(Object[] row, int index) {
+        if (row == null || index >= row.length || row[index] == null) {
+            return 0L;
+        }
+        return ((Number) row[index]).longValue();
+    }
+
+    private double toDouble(Object[] row, int index) {
+        if (row == null || index >= row.length || row[index] == null) {
+            return 0.0;
+        }
+        return ((Number) row[index]).doubleValue();
+    }
+
+    private LocalDate toLocalDate(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalDate localDate) {
+            return localDate;
+        }
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        String text = value.toString();
+        return text.length() >= 10 ? LocalDate.parse(text.substring(0, 10)) : null;
     }
 }

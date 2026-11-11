@@ -58,4 +58,21 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             @Param("isActive") Boolean isActive,
             @Param("pattern") String pattern,
             Pageable pageable);
+
+    /**
+     * Compute global user governance counters in a single table scan.
+     * Columns: [0]=total, [1]=teachers, [2]=students, [3]=admins,
+     * [4]=active, [5]=inactive, [6]=newSince.
+     */
+    @Query(value = """
+            SELECT COUNT(*),
+                   COALESCE(SUM(CASE WHEN u.role = 'TEACHER' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN u.role = 'STUDENT' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN u.role = 'ADMIN' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN u.is_active = true THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN u.is_active = false THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN u.created_at >= :since THEN 1 ELSE 0 END), 0)
+            FROM users u
+            """, nativeQuery = true)
+    Object[] computeUserDashboardMetrics(@Param("since") java.time.LocalDateTime since);
 }

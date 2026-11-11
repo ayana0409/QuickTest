@@ -117,4 +117,19 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Exam e WHERE e.id = :id")
     void deleteExamById(@Param("id") UUID id);
+
+    /**
+     * Compute global exam lifecycle counters in a single table scan, excluding temporary cloning exams.
+     * Columns: [0]=total, [1]=draft, [2]=published, [3]=closed, [4]=archived.
+     */
+    @Query(value = """
+            SELECT COUNT(*),
+                   COALESCE(SUM(CASE WHEN e.status = 'DRAFT' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN e.status = 'PUBLISHED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN e.status = 'ARCHIVED' THEN 1 ELSE 0 END), 0)
+            FROM exams e
+            WHERE e.status <> 'CLONING'
+            """, nativeQuery = true)
+    Object[] computeExamDashboardMetrics();
 }

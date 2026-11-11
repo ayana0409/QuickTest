@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -24,10 +25,14 @@ public class AdminDashboardController {
 
     /**
      * Get system-wide analytics, user/exam/attempt counters, and recent proctoring violation logs.
+     * Pass {@code refresh=true} to bypass the short-lived cache and recompute fresh metrics.
      */
     @GetMapping({"", "/overview"})
-    public ResponseEntity<ApiResponse<AdminDashboardResponse>> getDashboard() {
-        AdminDashboardResponse response = adminService.getDashboard();
+    public ResponseEntity<ApiResponse<AdminDashboardResponse>> getDashboard(
+            @RequestParam(name = "refresh", defaultValue = "false") boolean refresh) {
+        AdminDashboardResponse response = refresh
+                ? adminService.refreshDashboard()
+                : adminService.getDashboard();
         return ResponseEntity.ok(ApiResponse.success(response, "Admin dashboard statistics retrieved successfully"));
     }
 }

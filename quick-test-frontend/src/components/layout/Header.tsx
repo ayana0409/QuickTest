@@ -67,27 +67,27 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between">
+    <header className="sticky top-0 z-30 h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between gap-2 min-w-0">
       {/* Left section: Hamburger button & page header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
           onClick={onOpenMobileSidebar}
-          className="lg:hidden p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          className="lg:hidden shrink-0 p-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           aria-label="Open sidebar menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-base sm:text-lg text-zinc-900 dark:text-zinc-100">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="truncate font-semibold text-base sm:text-lg text-zinc-900 dark:text-zinc-100">
             {getPageTitle()}
           </span>
         </div>
       </div>
 
       {/* Right section: User profile menu */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
 
         {/* User Account Dropdown */}
         <div className="relative" ref={userDropdownRef}>

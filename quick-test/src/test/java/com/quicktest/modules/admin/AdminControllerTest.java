@@ -353,4 +353,25 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data.totalAttempts").value(150));
     }
+
+    @Test
+    @DisplayName("GET /api/admin/dashboard?refresh=true: Should call refreshDashboard")
+    void getDashboard_WithRefreshParam_CallsRefreshDashboard() throws Exception {
+        AdminDashboardResponse refreshed = AdminDashboardResponse.builder()
+                .totalUsers(64L)
+                .totalQuestions(120L)
+                .recentViolations(Collections.emptyList())
+                .build();
+
+        when(adminService.refreshDashboard()).thenReturn(refreshed);
+
+        dashboardMockMvc.perform(get("/api/admin/dashboard").param("refresh", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.totalUsers").value(64))
+                .andExpect(jsonPath("$.data.totalQuestions").value(120));
+
+        verify(adminService, times(1)).refreshDashboard();
+        verify(adminService, never()).getDashboard();
+    }
 }

@@ -41,4 +41,10 @@ public interface AdminService {
 
     // --- System Analytics ---
     AdminDashboardResponse getDashboard();
+
+    /**
+     * Bypass the cached dashboard snapshot and compute fresh system metrics,
+     * updating the cache entry in place.
+     */
+    AdminDashboardResponse refreshDashboard();
 }

@@ -6,6 +6,7 @@ import type {
   AdminCreateUserRequest,
   AdminUpdateProfileRequest,
   AdminResetPasswordRequest,
+  AdminDashboardStats,
   UserFilterParams,
   UserRole,
 } from '@/types/admin';
@@ -165,6 +166,18 @@ export const adminService = {
    */
   async resetAiModerationCursor(): Promise<void> {
     await apiClient.delete<ApiResponse<void>>('/admin/moderation/ai-cursor');
+  },
+
+  /**
+   * Fetch aggregated system analytics for the admin dashboard.
+   * Uses silent mode so inline dashboard error states do not clash with interceptor toasts.
+   */
+  async getDashboardStats(refresh = false): Promise<AdminDashboardStats> {
+    const res = await apiClient.get<ApiResponse<AdminDashboardStats>>('/admin/dashboard', {
+      params: refresh ? { refresh: true } : undefined,
+      silent: true,
+    });
+    return res.data.data;
   },
 };
 

@@ -114,3 +114,52 @@ export interface AiModerationJobStatusResponse {
   message: string;
 }
 
+export interface AdminDailyActivityPoint {
+  date: string;
+  label: string;
+  attemptsCount: number;
+  submittedCount: number;
+  violationsCount: number;
+}
+
+export interface AdminRecentViolation {
+  id: string;
+  attemptId: string;
+  candidateName: string;
+  candidateIdentifier: string;
+  examId: string;
+  examTitle: string;
+  violationType: string;
+  description: string | null;
+  timestamp: string;
+}
+
+export interface AdminDashboardStats {
+  totalUsers: number;
+  totalTeachers: number;
+  totalStudents: number;
+  totalAdmins: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  newUsersLast7Days: number;
+  totalExams: number;
+  draftExams: number;
+  publishedExams: number;
+  closedExams: number;
+  archivedExams: number;
+  totalQuestions: number;
+  safeQuestions: number;
+  unsafeQuestions: number;
+  unreviewedQuestions: number;
+  totalAttempts: number;
+  inProgressAttempts: number;
+  submittedAttempts: number;
+  awaitingGradingAttempts: number;
+  disqualifiedAttempts: number;
+  averageScore: number;
+  dailyActivities: AdminDailyActivityPoint[];
+  violationByTypes: Record<string, number>;
+  totalViolations: number;
+  recentViolations: AdminRecentViolation[];
+}
+
