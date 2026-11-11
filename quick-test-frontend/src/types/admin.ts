@@ -146,7 +146,6 @@ export interface AdminDashboardStats {
   draftExams: number;
   publishedExams: number;
   closedExams: number;
-  archivedExams: number;
   totalQuestions: number;
   safeQuestions: number;
   unsafeQuestions: number;

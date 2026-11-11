@@ -269,4 +269,21 @@ public interface QuestionRepository extends JpaRepository<Question, UUID> {
                 FROM questions q
                 """, nativeQuery = true)
         Object[] computeQuestionModerationSummary();
+
+        /**
+         * Compute question type distribution across all non-cloning exams owned by a teacher.
+         * Columns: [0]=total, [1]=singleChoice, [2]=multipleChoice, [3]=numeric, [4]=essay.
+         */
+        @Query(value = """
+                SELECT COUNT(q.id),
+                       COALESCE(SUM(CASE WHEN q.question_type = 'SINGLE_CHOICE' THEN 1 ELSE 0 END), 0),
+                       COALESCE(SUM(CASE WHEN q.question_type = 'MULTIPLE_CHOICE' THEN 1 ELSE 0 END), 0),
+                       COALESCE(SUM(CASE WHEN q.question_type = 'NUMERIC' THEN 1 ELSE 0 END), 0),
+                       COALESCE(SUM(CASE WHEN q.question_type = 'ESSAY_TEXT' THEN 1 ELSE 0 END), 0)
+                FROM questions q
+                JOIN exams e ON e.id = q.exam_id
+                WHERE e.created_by = :teacherId
+                  AND e.status <> 'CLONING'
+                """, nativeQuery = true)
+        Object[] computeTeacherQuestionMetrics(@Param("teacherId") UUID teacherId);
 }

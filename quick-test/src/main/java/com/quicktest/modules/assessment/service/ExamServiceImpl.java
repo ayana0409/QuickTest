@@ -73,11 +73,13 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    // Evict teacher-exams, admin-exams and admin-dashboard: totalExams count and exam list change
+    // Evict teacher-exams, admin-exams and admin-dashboard: totalExams count and
+    // exam list change
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
-            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
     })
     @AuditLog(module = "EXAM", action = "CREATE_EXAM")
     public ExamDetailResponse createExam(ExamCreateRequest request, User teacher) {
@@ -102,7 +104,8 @@ public class ExamServiceImpl implements ExamService {
                 .shuffleOptions(request.getShuffleOptions() != null ? request.getShuffleOptions() : true)
                 .isProctoringEnabled(isProctoring)
                 .isCameraProctoringEnabled(isCameraProctoring)
-                .showResultsToStudents(request.getShowResultsToStudents() != null ? request.getShowResultsToStudents() : true)
+                .showResultsToStudents(
+                        request.getShowResultsToStudents() != null ? request.getShowResultsToStudents() : true)
                 .maxViolations(request.getMaxViolations() != null ? request.getMaxViolations() : 5)
                 .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : true)
                 .startTime(request.getStartTime())
@@ -117,21 +120,18 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    // Evict teacher-exams, admin-exams and admin-dashboard: totalExams count and exam list change
+    // Evict teacher-exams, admin-exams and admin-dashboard: totalExams count and
+    // exam list change
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
-            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
     })
     @AuditLog(module = "EXAM", action = "UPDATE_EXAM")
     public ExamDetailResponse updateExam(UUID examId, ExamUpdateRequest request, User teacher) {
         Exam exam = findExamWithCreatorOrThrow(examId);
         verifyOwnership(exam, teacher);
-
-        // Disallow modifications only when exam is archived
-        if (exam.getStatus() == ExamStatus.ARCHIVED) {
-            throw new AppException("Cannot update an exam with status " + exam.getStatus());
-        }
 
         // Validate time window
         validateTimeWindow(request.getStartTime(), request.getEndTime());
@@ -156,7 +156,8 @@ public class ExamServiceImpl implements ExamService {
             }
         }
         if (request.getIsCameraProctoringEnabled() != null) {
-            exam.setIsCameraProctoringEnabled(Boolean.TRUE.equals(exam.getIsProctoringEnabled()) && Boolean.TRUE.equals(request.getIsCameraProctoringEnabled()));
+            exam.setIsCameraProctoringEnabled(Boolean.TRUE.equals(exam.getIsProctoringEnabled())
+                    && Boolean.TRUE.equals(request.getIsCameraProctoringEnabled()));
         }
         if (request.getShowResultsToStudents() != null) {
             exam.setShowResultsToStudents(request.getShowResultsToStudents());
@@ -177,11 +178,13 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    // Evict teacher-exams + admin-exams + admin-dashboard: exam count and list change after deletion
+    // Evict teacher-exams + admin-exams + admin-dashboard: exam count and list
+    // change after deletion
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
-            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
     })
     @AuditLog(module = "EXAM", action = "DELETE_EXAM")
     public void deleteExam(UUID examId, User teacher) {
@@ -194,7 +197,8 @@ public class ExamServiceImpl implements ExamService {
                     "Cannot delete an exam that has been " + exam.getStatus() + ". Only DRAFT exams can be deleted.");
         }
 
-        // 1. Gather all media identifiers (questions & answer options) in fast lightweight queries
+        // 1. Gather all media identifiers (questions & answer options) in fast
+        // lightweight queries
         List<String> mediaIdentifiers = new ArrayList<>();
         mediaIdentifiers.addAll(questionRepository.findImageIdentifiersByExamId(examId));
         mediaIdentifiers.addAll(answerOptionRepository.findImageIdentifiersByExamId(examId));
@@ -210,7 +214,8 @@ public class ExamServiceImpl implements ExamService {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        log.info("Exam deletion transaction committed. Offloading {} media items to RabbitMQ for examId={}",
+                        log.info(
+                                "Exam deletion transaction committed. Offloading {} media items to RabbitMQ for examId={}",
                                 mediaIdentifiers.size(), examId);
                         mediaDeleteProducer.sendDeleteBatches(examId, mediaIdentifiers, "EXAM_DELETION");
                     }
@@ -221,16 +226,14 @@ public class ExamServiceImpl implements ExamService {
         }
     }
 
-
     @Override
     @Transactional(readOnly = true)
-    // Cache teacher exam list: single paginated query per teacher filtered by status/search
+    // Cache teacher exam list: single paginated query per teacher filtered by
+    // status/search
     // Key includes teacher.id to prevent cross-teacher cache leaks
-    @Cacheable(
-            value = CacheConfig.CACHE_TEACHER_EXAMS,
-            key = "#teacher.id + ':' + (#search != null ? #search.trim() : '') + ':' + (#status != null ? #status.name() : 'ALL') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize"
-    )
-    public Page<ExamSummaryResponse> getTeacherExams(User teacher, String search, ExamStatus status, Pageable pageable) {
+    @Cacheable(value = CacheConfig.CACHE_TEACHER_EXAMS, key = "#teacher.id + ':' + (#search != null ? #search.trim() : '') + ':' + (#status != null ? #status.name() : 'ALL') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
+    public Page<ExamSummaryResponse> getTeacherExams(User teacher, String search, ExamStatus status,
+            Pageable pageable) {
         String pattern = (search != null && !search.trim().isBlank())
                 ? "%" + search.trim().toLowerCase() + "%"
                 : null;
@@ -255,11 +258,13 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    // Evict caches: exam status changes (DRAFT→PUBLISHED) affect list filters and admin dashboard stats
+    // Evict caches: exam status changes (DRAFT→PUBLISHED) affect list filters and
+    // admin dashboard stats
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
-            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
     })
     @AuditLog(module = "EXAM", action = "PUBLISH_EXAM")
     public ExamDetailResponse publishExam(UUID examId, User teacher) {
@@ -268,9 +273,6 @@ public class ExamServiceImpl implements ExamService {
 
         if (exam.getStatus() == ExamStatus.PUBLISHED) {
             throw new AppException("Exam is already published");
-        }
-        if (exam.getStatus() == ExamStatus.ARCHIVED) {
-            throw new AppException("Cannot publish an archived exam");
         }
 
         // Business rule: Must contain at least one question
@@ -294,11 +296,13 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    // Evict caches: exam status changes (PUBLISHED→CLOSED) affect list filters and admin dashboard stats
+    // Evict caches: exam status changes (PUBLISHED→CLOSED) affect list filters and
+    // admin dashboard stats
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
-            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
     })
     @AuditLog(module = "EXAM", action = "CLOSE_EXAM")
     public ExamDetailResponse closeExam(UUID examId, User teacher) {
@@ -312,7 +316,8 @@ public class ExamServiceImpl implements ExamService {
         exam.setStatus(ExamStatus.CLOSED);
         Exam closedExam = examRepository.save(exam);
 
-        // Automatically collect and submit all active in-progress attempts for this closed exam
+        // Automatically collect and submit all active in-progress attempts for this
+        // closed exam
         examSessionService.autoSubmitActiveAttemptsForExam(examId, "Exam closed by teacher");
 
         List<QuestionResponse> questions = fetchQuestionsWithOptions(examId);
@@ -321,11 +326,13 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    // Evict caches: exam status changes (CLOSED→PUBLISHED) affect list filters and admin dashboard stats
+    // Evict caches: exam status changes (CLOSED→PUBLISHED) affect list filters and
+    // admin dashboard stats
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
-            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
     })
     public ExamDetailResponse republishExam(UUID examId, ExamRepublishRequest request, User teacher) {
         log.info("Republishing exam ID: {} by teacher ID: {}", examId, teacher.getId());
@@ -335,9 +342,6 @@ public class ExamServiceImpl implements ExamService {
 
         if (exam.getStatus() == ExamStatus.PUBLISHED) {
             throw new AppException("Exam is already published");
-        }
-        if (exam.getStatus() == ExamStatus.ARCHIVED) {
-            throw new AppException("Cannot republish an archived exam");
         }
 
         // Business rule: Must contain at least one question
@@ -366,7 +370,8 @@ public class ExamServiceImpl implements ExamService {
         validateTimeWindow(exam.getStartTime(), exam.getEndTime());
 
         if (exam.getEndTime() != null && exam.getEndTime().isBefore(LocalDateTime.now())) {
-            throw new AppException("Thời gian kết thúc của đề thi phải sau thời điểm hiện tại (" + LocalDateTime.now() + ")");
+            throw new AppException(
+                    "Thời gian kết thúc của đề thi phải sau thời điểm hiện tại (" + LocalDateTime.now() + ")");
         }
 
         exam.setStatus(ExamStatus.PUBLISHED);
@@ -379,11 +384,13 @@ public class ExamServiceImpl implements ExamService {
 
     @Override
     @Transactional
-    // Evict teacher-exams + admin-exams + admin-dashboard: a new duplicate exam appears in the list
+    // Evict teacher-exams + admin-exams + admin-dashboard: a new duplicate exam
+    // appears in the list
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.CACHE_TEACHER_EXAMS, allEntries = true),
             @CacheEvict(value = CacheConfig.CACHE_ADMIN_EXAMS, allEntries = true),
-            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'")
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_DASHBOARD, key = "'global'"),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
     })
     @AuditLog(module = "EXAM", action = "DUPLICATE_EXAM")
     public ExamDetailResponse duplicateExam(UUID examId, ExamDuplicateRequest request, User teacher) {
@@ -415,7 +422,8 @@ public class ExamServiceImpl implements ExamService {
                         break;
                     }
                 }
-                if (hasImages) break;
+                if (hasImages)
+                    break;
             }
         }
 
@@ -431,7 +439,8 @@ public class ExamServiceImpl implements ExamService {
                 .shuffleOptions(sourceExam.getShuffleOptions())
                 .isProctoringEnabled(sourceExam.getIsProctoringEnabled())
                 .isCameraProctoringEnabled(sourceExam.getIsCameraProctoringEnabled())
-                .showResultsToStudents(sourceExam.getShowResultsToStudents() != null ? sourceExam.getShowResultsToStudents() : true)
+                .showResultsToStudents(
+                        sourceExam.getShowResultsToStudents() != null ? sourceExam.getShowResultsToStudents() : true)
                 .maxViolations(sourceExam.getMaxViolations())
                 .startTime(null)
                 .endTime(null)
@@ -627,7 +636,8 @@ public class ExamServiceImpl implements ExamService {
                 .map(Exam::getId)
                 .collect(Collectors.toList());
 
-        // Eagerly fetch exams with teacher details to eliminate lazy loading N+1 queries
+        // Eagerly fetch exams with teacher details to eliminate lazy loading N+1
+        // queries
         List<Exam> examsWithTeacher = examRepository.findByIdInWithCreatedBy(examIds);
         Map<UUID, Exam> examMap = examsWithTeacher.stream()
                 .collect(Collectors.toMap(Exam::getId, e -> e, (existing, replacement) -> existing));

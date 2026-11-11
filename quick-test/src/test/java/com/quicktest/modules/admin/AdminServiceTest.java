@@ -490,7 +490,7 @@ class AdminServiceTest {
                 .thenReturn(new Object[]{100L, 20L, 78L, 2L, 95L, 5L, 14L});
 
         when(examRepository.computeExamDashboardMetrics())
-                .thenReturn(new Object[]{30L, 5L, 15L, 8L, 2L});
+                .thenReturn(new Object[]{30L, 5L, 15L, 8L});
 
         when(questionRepository.computeQuestionModerationSummary())
                 .thenReturn(new Object[]{240L, 200L, 10L, 30L});
@@ -554,7 +554,7 @@ class AdminServiceTest {
     @DisplayName("refreshDashboard: Should recompute dashboard metrics on explicit refresh")
     void refreshDashboard_Success() {
         when(userRepository.computeUserDashboardMetrics(any())).thenReturn(new Object[]{10L, 2L, 7L, 1L, 10L, 0L, 1L});
-        when(examRepository.computeExamDashboardMetrics()).thenReturn(new Object[]{4L, 1L, 2L, 1L, 0L});
+        when(examRepository.computeExamDashboardMetrics()).thenReturn(new Object[]{4L, 1L, 2L, 1L});
         when(questionRepository.computeQuestionModerationSummary()).thenReturn(new Object[]{40L, 40L, 0L, 0L});
         when(examAttemptRepository.computeGlobalAttemptMetrics()).thenReturn(new Object[]{20L, 2L, 18L, 0L, 0L, 8.0});
         when(examAttemptRepository.countDailyAttemptsSince(any())).thenReturn(Collections.emptyList());

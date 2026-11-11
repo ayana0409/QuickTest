@@ -10,6 +10,7 @@ import type {
   PageResponse,
   ExamStatus,
   PublicExamCardResponse,
+  TeacherDashboardStats,
 } from '@/types/exam';
 import type {
   QuestionResponse,
@@ -351,5 +352,19 @@ export const examService = {
       { silent: true }
     );
     return response.data.data || [];
+  },
+
+  /**
+   * Fetch aggregated dashboard metrics, 7-day trend, priority exams, and alerts for the teacher.
+   */
+  async getTeacherDashboard(refresh = false): Promise<TeacherDashboardStats> {
+    const response = await apiClient.get<ApiResponse<TeacherDashboardStats>>(
+      '/teacher/dashboard',
+      {
+        params: refresh ? { refresh: true } : undefined,
+        silent: true,
+      }
+    );
+    return response.data.data;
   },
 };

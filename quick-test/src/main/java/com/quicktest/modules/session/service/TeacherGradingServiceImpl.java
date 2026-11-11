@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -189,11 +190,13 @@ public class TeacherGradingServiceImpl implements TeacherGradingService {
 
     @Override
     @Transactional
-    // Evict all grading-stats entries: essay score changes affect aggregated stats
-    // (avg, min, max, gradedCount)
-    // allEntries=true because the exact exam+teacher key is not directly available
-    // from the request object
-    @CacheEvict(value = CacheConfig.CACHE_GRADING_STATS, allEntries = true)
+    // Evict all grading-stats entries and teacher dashboard: essay score changes
+    // affect aggregated stats
+    // (avg, min, max, gradedCount) and pending grading counts
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_GRADING_STATS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#currentTeacher.id", condition = "#currentTeacher != null && #currentTeacher.id != null")
+    })
     @AuditLog(module = "GRADING", action = "SUBMIT_ESSAY_GRADES")
     public GradingResultResponse submitEssayGrades(GradeEssaySubmissionRequest request, User currentTeacher) {
         UUID attemptId = request.getAttemptId();

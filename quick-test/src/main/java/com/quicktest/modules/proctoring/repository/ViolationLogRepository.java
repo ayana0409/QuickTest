@@ -139,4 +139,40 @@ public interface ViolationLogRepository extends JpaRepository<ViolationLog, UUID
             ORDER BY activity_date ASC
             """, nativeQuery = true)
     List<Object[]> countDailyViolationsSince(@Param("since") java.time.LocalDateTime since);
+
+    /**
+     * Group daily violation counts starting from the given timestamp across a teacher's exams.
+     * Columns: [0]=activityDate (DATE), [1]=violationsCount.
+     */
+    @Query(value = """
+            SELECT CAST(v.timestamp AS DATE) AS activity_date,
+                   COUNT(*)
+            FROM violation_logs v
+            JOIN exam_attempts ea ON ea.id = v.attempt_id
+            JOIN exams e ON e.id = ea.exam_id
+            WHERE e.created_by = :teacherId
+              AND e.status <> 'CLONING'
+              AND v.timestamp >= :since
+            GROUP BY CAST(v.timestamp AS DATE)
+            ORDER BY activity_date ASC
+            """, nativeQuery = true)
+    List<Object[]> countTeacherDailyViolationsSince(
+            @Param("teacherId") UUID teacherId,
+            @Param("since") java.time.LocalDateTime since);
+
+    /**
+     * Retrieve recent proctoring violations recorded within a teacher's exams with full eager associations.
+     */
+    @Query("""
+            SELECT v FROM ViolationLog v
+            JOIN FETCH v.examAttempt ea
+            JOIN FETCH ea.exam e
+            LEFT JOIN FETCH ea.user u
+            WHERE e.createdBy.id = :teacherId
+              AND e.status <> com.quicktest.modules.assessment.entity.ExamStatus.CLONING
+            ORDER BY v.timestamp DESC
+            """)
+    List<ViolationLog> findRecentViolationsByTeacherId(
+            @Param("teacherId") UUID teacherId,
+            org.springframework.data.domain.Pageable pageable);
 }

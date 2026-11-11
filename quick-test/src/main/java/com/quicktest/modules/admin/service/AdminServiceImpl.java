@@ -5,6 +5,7 @@ import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.exception.UserAlreadyExistsException;
 import com.quicktest.core.logging.AuditLog;
+import static com.quicktest.core.util.NativeQueryResultUtils.*;
 import com.quicktest.modules.admin.dto.*;
 import com.quicktest.modules.assessment.dto.ExamDetailResponse;
 import com.quicktest.modules.assessment.entity.Exam;
@@ -431,7 +432,6 @@ public class AdminServiceImpl implements AdminService {
                 .draftExams(toLong(examRow, 1))
                 .publishedExams(toLong(examRow, 2))
                 .closedExams(toLong(examRow, 3))
-                .archivedExams(toLong(examRow, 4))
                 .totalQuestions(toLong(questionRow, 0))
                 .safeQuestions(toLong(questionRow, 1))
                 .unsafeQuestions(toLong(questionRow, 2))
@@ -447,44 +447,5 @@ public class AdminServiceImpl implements AdminService {
                 .totalViolations(totalViolations)
                 .recentViolations(recentViolations)
                 .build();
-    }
-
-    private Object[] unwrapSingleRow(Object[] raw) {
-        if (raw == null || raw.length == 0) {
-            return new Object[0];
-        }
-        // Hibernate may wrap a single multi-column native aggregate row inside a 1-element Object[]
-        if (raw.length == 1 && raw[0] instanceof Object[] nested) {
-            return nested;
-        }
-        return raw;
-    }
-
-    private long toLong(Object[] row, int index) {
-        if (row == null || index >= row.length || row[index] == null) {
-            return 0L;
-        }
-        return ((Number) row[index]).longValue();
-    }
-
-    private double toDouble(Object[] row, int index) {
-        if (row == null || index >= row.length || row[index] == null) {
-            return 0.0;
-        }
-        return ((Number) row[index]).doubleValue();
-    }
-
-    private LocalDate toLocalDate(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof LocalDate localDate) {
-            return localDate;
-        }
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate();
-        }
-        String text = value.toString();
-        return text.length() >= 10 ? LocalDate.parse(text.substring(0, 10)) : null;
     }
 }

@@ -204,4 +204,21 @@ public interface CandidateAnswerRepository extends JpaRepository<CandidateAnswer
                         "WHERE ca.question.id IN :questionIds " +
                         "GROUP BY ca.question.id")
         List<Object[]> getGradingCountsByQuestionIds(@Param("questionIds") List<UUID> questionIds);
+
+        /**
+         * Count non-empty manual essay answers still waiting for teacher grading across a teacher's exams.
+         */
+        @Query("""
+                        SELECT COUNT(ca.id)
+                        FROM CandidateAnswer ca
+                        JOIN ca.examAttempt ea
+                        JOIN ea.exam e
+                        WHERE e.createdBy.id = :teacherId
+                          AND e.status <> com.quicktest.modules.assessment.entity.ExamStatus.CLONING
+                          AND ea.status = com.quicktest.modules.session.entity.AttemptStatus.AWAITING_MANUAL_GRADING
+                          AND ca.gradingStatus = com.quicktest.modules.session.entity.GradingStatus.PENDING_MANUAL
+                          AND ca.textAnswer IS NOT NULL
+                          AND TRIM(ca.textAnswer) <> ''
+                        """)
+        long countPendingManualAnswersByTeacherId(@Param("teacherId") UUID teacherId);
 }

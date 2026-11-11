@@ -280,4 +280,46 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
             ORDER BY activity_date ASC
             """, nativeQuery = true)
     List<Object[]> countDailyAttemptsSince(@Param("since") java.time.LocalDateTime since);
+
+    /**
+     * Compute attempt counters, average submitted score, and recorded violation totals
+     * across all non-cloning exams owned by a specific teacher in a single scan.
+     * Columns: [0]=totalAttempts, [1]=inProgress, [2]=submitted, [3]=awaitingGrading,
+     *          [4]=disqualified, [5]=avgScore, [6]=totalViolations.
+     */
+    @Query(value = """
+            SELECT COUNT(a.id),
+                   COALESCE(SUM(CASE WHEN a.status = 'IN_PROGRESS' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'SUBMITTED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'AWAITING_MANUAL_GRADING' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'DISQUALIFIED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(AVG(CASE WHEN a.status = 'SUBMITTED' AND a.total_score IS NOT NULL THEN a.total_score END), 0.0),
+                   COALESCE(SUM(COALESCE(a.violation_count, 0)), 0)
+            FROM exam_attempts a
+            JOIN exams e ON e.id = a.exam_id
+            WHERE e.created_by = :teacherId
+              AND e.status <> 'CLONING'
+            """, nativeQuery = true)
+    Object[] computeTeacherAttemptMetrics(@Param("teacherId") UUID teacherId);
+
+    /**
+     * Group daily attempt counts and completed submissions starting from the given timestamp
+     * across all non-cloning exams owned by a specific teacher.
+     * Columns: [0]=activityDate (DATE), [1]=attemptsCount, [2]=submittedCount.
+     */
+    @Query(value = """
+            SELECT CAST(a.start_time AS DATE) AS activity_date,
+                   COUNT(a.id),
+                   COALESCE(SUM(CASE WHEN a.status = 'SUBMITTED' THEN 1 ELSE 0 END), 0)
+            FROM exam_attempts a
+            JOIN exams e ON e.id = a.exam_id
+            WHERE e.created_by = :teacherId
+              AND e.status <> 'CLONING'
+              AND a.start_time >= :since
+            GROUP BY CAST(a.start_time AS DATE)
+            ORDER BY activity_date ASC
+            """, nativeQuery = true)
+    List<Object[]> countTeacherDailyAttemptsSince(
+            @Param("teacherId") UUID teacherId,
+            @Param("since") java.time.LocalDateTime since);
 }

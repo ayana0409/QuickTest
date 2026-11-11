@@ -1,5 +1,6 @@
 package com.quicktest.modules.session.service;
 
+import com.quicktest.config.CacheConfig;
 import com.quicktest.core.service.GeminiRotationService;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.exception.AppException;
@@ -25,6 +26,8 @@ import com.quicktest.modules.session.entity.ExamAttempt;
 import com.quicktest.modules.session.entity.GradingStatus;
 import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -243,6 +246,10 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_GRADING_STATS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_TEACHER_DASHBOARD, key = "#teacher.id", condition = "#teacher != null && #teacher.id != null")
+    })
     @AuditLog(module = "GRADING", action = "SAVE_MANUAL_GRADES")
     public ManualBatchGradeResponse saveManualGrades(
             UUID questionId, ManualBatchGradeRequest request, User teacher) {

@@ -77,11 +77,6 @@ export function formatExamStatus(status: ExamStatus | string): {
         label: 'Đã đóng',
         variant: 'CLOSED',
       };
-    case 'ARCHIVED':
-      return {
-        label: 'Đã lưu trữ',
-        variant: 'ARCHIVED',
-      };
     default:
       return {
         label: status || 'Không xác định',

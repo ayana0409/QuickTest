@@ -120,16 +120,61 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
 
     /**
      * Compute global exam lifecycle counters in a single table scan, excluding temporary cloning exams.
-     * Columns: [0]=total, [1]=draft, [2]=published, [3]=closed, [4]=archived.
+     * Columns: [0]=total, [1]=draft, [2]=published, [3]=closed.
      */
     @Query(value = """
             SELECT COUNT(*),
                    COALESCE(SUM(CASE WHEN e.status = 'DRAFT' THEN 1 ELSE 0 END), 0),
                    COALESCE(SUM(CASE WHEN e.status = 'PUBLISHED' THEN 1 ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN e.status = 'ARCHIVED' THEN 1 ELSE 0 END), 0)
+                   COALESCE(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END), 0)
             FROM exams e
             WHERE e.status <> 'CLONING'
             """, nativeQuery = true)
     Object[] computeExamDashboardMetrics();
+
+    /**
+     * Compute exam lifecycle status counts for a specific teacher in a single scan.
+     * Columns: [0]=total, [1]=draft, [2]=published, [3]=closed.
+     */
+    @Query(value = """
+            SELECT COUNT(*),
+                   COALESCE(SUM(CASE WHEN e.status = 'DRAFT' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN e.status = 'PUBLISHED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN e.status = 'CLOSED' THEN 1 ELSE 0 END), 0)
+            FROM exams e
+            WHERE e.created_by = :teacherId
+              AND e.status <> 'CLONING'
+            """, nativeQuery = true)
+    Object[] computeTeacherExamMetrics(@Param("teacherId") UUID teacherId);
+
+    /**
+     * Retrieve top 5 priority exams for the teacher ordered by pending manual grading,
+     * active live attempts, published status, and creation timestamp.
+     * Columns: [0]=id, [1]=title, [2]=accessCode, [3]=status, [4]=durationMinutes, [5]=createdAt,
+     *          [6]=totalAttempts, [7]=inProgressCount, [8]=submittedCount, [9]=pendingGradingCount, [10]=avgScore.
+     */
+    @Query(value = """
+            SELECT e.id,
+                   e.title,
+                   e.access_code,
+                   e.status,
+                   e.duration_minutes,
+                   e.created_at,
+                   COUNT(a.id) AS total_attempts,
+                   COALESCE(SUM(CASE WHEN a.status = 'IN_PROGRESS' THEN 1 ELSE 0 END), 0) AS in_progress_count,
+                   COALESCE(SUM(CASE WHEN a.status = 'SUBMITTED' THEN 1 ELSE 0 END), 0) AS submitted_count,
+                   COALESCE(SUM(CASE WHEN a.status = 'AWAITING_MANUAL_GRADING' THEN 1 ELSE 0 END), 0) AS pending_grading_count,
+                   COALESCE(AVG(CASE WHEN a.status = 'SUBMITTED' AND a.total_score IS NOT NULL THEN a.total_score END), 0.0) AS avg_score
+            FROM exams e
+            LEFT JOIN exam_attempts a ON a.exam_id = e.id
+            WHERE e.created_by = :teacherId
+              AND e.status <> 'CLONING'
+            GROUP BY e.id, e.title, e.access_code, e.status, e.duration_minutes, e.created_at
+            ORDER BY pending_grading_count DESC,
+                     in_progress_count DESC,
+                     CASE WHEN e.status = 'PUBLISHED' THEN 0 WHEN e.status = 'DRAFT' THEN 1 ELSE 2 END ASC,
+                     e.created_at DESC
+            LIMIT 5
+            """, nativeQuery = true)
+    List<Object[]> findTeacherPriorityExams(@Param("teacherId") UUID teacherId);
 }

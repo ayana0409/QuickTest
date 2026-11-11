@@ -34,7 +34,6 @@ export const Badge: React.FC<BadgeProps> = ({
       case 'EXPIRED':
       case 'danger':
         return 'bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/40';
-      case 'ARCHIVED':
       case 'IN_PROGRESS':
       case 'info':
         return 'bg-sky-50 text-sky-700 border-sky-200/80 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800/40';
@@ -62,7 +61,6 @@ export const Badge: React.FC<BadgeProps> = ({
       case 'EXPIRED':
       case 'danger':
         return 'bg-rose-500';
-      case 'ARCHIVED':
       case 'IN_PROGRESS':
       case 'info':
         return 'bg-sky-500 animate-pulse';

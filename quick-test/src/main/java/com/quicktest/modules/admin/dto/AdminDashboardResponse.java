@@ -31,7 +31,6 @@ public class AdminDashboardResponse {
     private long draftExams;
     private long publishedExams;
     private long closedExams;
-    private long archivedExams;
 
     // Question Bank & Moderation Metrics
     private long totalQuestions;

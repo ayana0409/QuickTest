@@ -8,7 +8,7 @@ export * from './candidateAnswer';
 /**
  * Exam lifecycle states matching backend ExamStatus enum.
  */
-export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'CLOSED' | 'CLONING';
+export type ExamStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'CLONING';
 
 /**
  * Candidate exam attempt progression status matching backend AttemptStatus enum.
@@ -444,6 +444,79 @@ export interface PublicExamCardResponse {
   examTimeStatus: 'OPEN' | 'UPCOMING' | 'CLOSED';
   isOpen: boolean;
   createdAt: string;
+}
+
+/**
+ * Daily candidate attempt and proctoring violation point for the teacher dashboard 7-day trend.
+ */
+export interface TeacherDailyActivityPoint {
+  date: string;
+  label: string;
+  attemptsCount: number;
+  submittedCount: number;
+  violationsCount: number;
+}
+
+/**
+ * Priority exam summary item displayed on the teacher dashboard for immediate triage.
+ */
+export interface TeacherPriorityExamItem {
+  id: string;
+  title: string;
+  accessCode: string;
+  status: ExamStatus;
+  durationMinutes: number;
+  createdAt: string | null;
+  totalAttempts: number;
+  inProgressCount: number;
+  submittedCount: number;
+  pendingGradingCount: number;
+  averageScore: number;
+}
+
+/**
+ * Recent proctoring violation entry scoped to exams created by the authenticated teacher.
+ */
+export interface TeacherRecentViolation {
+  id: string;
+  attemptId: string;
+  candidateName: string;
+  candidateIdentifier?: string | null;
+  examId: string;
+  examTitle: string;
+  violationType: string;
+  description?: string | null;
+  timestamp: string;
+}
+
+/**
+ * Comprehensive teacher dashboard metrics and workload summary returned by GET /api/teacher/dashboard.
+ */
+export interface TeacherDashboardStats {
+  totalExams: number;
+  draftExams: number;
+  publishedExams: number;
+  closedExams: number;
+
+  totalQuestions: number;
+  singleChoiceQuestions: number;
+  multipleChoiceQuestions: number;
+  numericQuestions: number;
+  essayQuestions: number;
+
+  totalAttempts: number;
+  inProgressAttempts: number;
+  submittedAttempts: number;
+  awaitingGradingAttempts: number;
+  disqualifiedAttempts: number;
+  pendingManualAnswers: number;
+  averageScore: number;
+
+  totalViolations: number;
+
+  dailyActivities: TeacherDailyActivityPoint[];
+  priorityExams: TeacherPriorityExamItem[];
+  recentViolations: TeacherRecentViolation[];
 }
 
 
