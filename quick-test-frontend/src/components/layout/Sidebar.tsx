@@ -47,6 +47,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Cài đặt hệ thống', href: '/admin/settings', icon: Settings },
   ],
   TEACHER: [
+    { label: 'Tổng quan', href: '/teacher', icon: LayoutDashboard },
     { label: 'Quản lý đề thi', href: '/teacher/exams', icon: BookOpen },
     { label: 'Chấm bài tự luận', href: '/teacher/grading', icon: FileCheck },
     { label: 'Tác vụ tự động', href: '/teacher/ai-tasks', icon: Sparkles },
@@ -99,6 +100,18 @@ export function Sidebar({
     }
   }, [pathname]);
 
+  // Dismiss mobile drawer when pressing Escape for keyboard accessibility
+  React.useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onMobileClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen, onMobileClose]);
+
   const currentRole = (activeRole || 'STUDENT').toUpperCase();
   const navItems = roleNavItems[currentRole] || roleNavItems.STUDENT;
   const isProfileActive = pathname === '/profile' || pathname.startsWith('/teacher/profile');
@@ -144,12 +157,13 @@ export function Sidebar({
 
 
       {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav aria-label="Điều hướng chính" className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         <div className="space-y-1">
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== '/admin' &&
+                item.href !== '/teacher' &&
                 item.href !== '/student' &&
                 pathname.startsWith(item.href));
 
@@ -160,6 +174,7 @@ export function Sidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onMobileClose}
+                aria-current={isActive ? 'page' : undefined}
                 title={isCollapsed ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
@@ -233,6 +248,7 @@ export function Sidebar({
                       key={item.href}
                       href={item.href}
                       onClick={onMobileClose}
+                      aria-current={isActive ? 'page' : undefined}
                       title={isCollapsed ? item.label : undefined}
                       className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
                         isActive
@@ -311,6 +327,7 @@ export function Sidebar({
                       key={item.href}
                       href={item.href}
                       onClick={onMobileClose}
+                      aria-current={isActive ? 'page' : undefined}
                       title={isCollapsed ? item.label : undefined}
                       className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
                         isActive
@@ -352,7 +369,7 @@ export function Sidebar({
                   onClick={() => {
                     setActiveRole('TEACHER');
                     onMobileClose();
-                    router.push('/teacher/exams');
+                    router.push('/teacher');
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer ${
                     isCollapsed ? 'justify-center px-2' : ''
@@ -384,7 +401,7 @@ export function Sidebar({
             </div>
           </div>
         )}
-      </div>
+      </nav>
 
       {/* User Info & Actions at Bottom */}
       <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
@@ -393,6 +410,7 @@ export function Sidebar({
           <Link
             href="/profile"
             onClick={onMobileClose}
+            aria-current={isProfileActive ? 'page' : undefined}
             title={isCollapsed ? 'Thông tin cá nhân' : undefined}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
               isProfileActive

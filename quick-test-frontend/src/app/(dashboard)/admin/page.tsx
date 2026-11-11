@@ -39,7 +39,7 @@ export default function AdminDashboardPage() {
       const normalizedRoles = rawRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
       if (!normalizedRoles.includes('ADMIN')) {
         const isTeacher = normalizedRoles.includes('TEACHER');
-        window.location.replace(isTeacher ? '/teacher/exams' : '/student');
+        window.location.replace(isTeacher ? '/teacher' : '/student');
         return;
       }
     }

@@ -20,7 +20,7 @@ function getDestination(user: User | null | undefined, rawCallbackUrl?: string |
   const normalizedRoles = userRoles.map((r) => r.replace(/^ROLE_/, '').toUpperCase());
   const isAdmin = normalizedRoles.includes('ADMIN');
   const isTeacher = normalizedRoles.includes('TEACHER');
-  const defaultHome = isAdmin ? '/admin' : isTeacher ? '/teacher/exams' : '/student';
+  const defaultHome = isAdmin ? '/admin' : isTeacher ? '/teacher' : '/student';
 
   if (
     rawCallbackUrl &&

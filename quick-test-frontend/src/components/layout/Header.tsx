@@ -55,6 +55,7 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
     if (pathname.endsWith('/profile')) return 'Thông tin cá nhân';
     if (pathname.includes('/proctoring')) return 'Phòng thi & Giám sát';
     if (pathname.startsWith('/admin')) return 'Không gian quản trị';
+    if (pathname === '/teacher') return 'Tổng quan giảng dạy';
     if (pathname.startsWith('/teacher/exams')) return 'Quản lý đề thi';
     if (pathname.startsWith('/teacher/grading')) return 'Chấm bài tự luận';
     if (pathname.startsWith('/teacher/ai-tasks')) return 'Tác vụ Tạo đề & Chấm bài';

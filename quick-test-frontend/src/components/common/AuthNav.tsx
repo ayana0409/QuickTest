@@ -30,7 +30,7 @@ export function AuthNav() {
     const getWorkspaceHref = (): string => {
       const currentRole = activeRole || (user.roles?.[0] ? user.roles[0].replace(/^ROLE_/, '') : 'STUDENT');
       if (currentRole === 'ADMIN') return '/admin';
-      if (currentRole === 'TEACHER') return '/teacher/exams';
+      if (currentRole === 'TEACHER') return '/teacher';
       return '/student';
     };
 

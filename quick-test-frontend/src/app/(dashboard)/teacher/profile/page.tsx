@@ -250,9 +250,9 @@ export default function TeacherProfilePage() {
       label: 'Giáo viên',
       code: 'ROLE_TEACHER',
       badgeClass: 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border-indigo-200/80 dark:border-indigo-800/80',
-      homeUrl: '/teacher/exams',
-      actionLabel: 'Đề thi của tôi',
-      actionUrl: '/teacher/exams',
+      homeUrl: '/teacher',
+      actionLabel: 'Tổng quan giảng dạy',
+      actionUrl: '/teacher',
       permissions: [
         'Khởi tạo và quản lý toàn diện đề thi (Soạn thảo, Xuất bản, Đóng, Nhân bản)',
         'Tái sử dụng câu hỏi và hình ảnh từ Ngân hàng đề thi cá nhân',

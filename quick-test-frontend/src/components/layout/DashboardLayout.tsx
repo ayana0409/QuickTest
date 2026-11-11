@@ -57,7 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       // Restrict /admin strictly to ADMIN
       if (pathname.startsWith('/admin') && !isAdmin) {
-        const target = isTeacher ? '/teacher/exams' : '/student';
+        const target = isTeacher ? '/teacher' : '/student';
         window.location.replace(target);
         return;
       }

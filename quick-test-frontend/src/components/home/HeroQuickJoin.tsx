@@ -70,7 +70,7 @@ export function HeroQuickJoin() {
         </Link>
 
         <Link
-          href="/teacher/exams"
+          href="/teacher"
           className="group inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold shadow-2xs transition-all"
         >
           <BookOpen className="w-3.5 h-3.5 text-purple-500" />
