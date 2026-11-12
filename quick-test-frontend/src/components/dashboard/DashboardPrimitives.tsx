@@ -69,7 +69,10 @@ export function formatRelativeTime(timestamp: string): string {
   });
 }
 
-export function buildWeeklyActivitySummary(series: DashboardDailyActivityPoint[]) {
+export function buildWeeklyActivitySummary(
+  series: DashboardDailyActivityPoint[],
+  includeViolations = true
+) {
   if (series.length === 0) {
     return {
       series,
@@ -95,8 +98,10 @@ export function buildWeeklyActivitySummary(series: DashboardDailyActivityPoint[]
   }
 
   const insight =
-    weeklyAttempts === 0 && weeklyViolations === 0
-      ? 'Trong 7 ngày gần nhất chưa phát sinh lượt tham gia hay cảnh báo nào.'
+    weeklyAttempts === 0 && (!includeViolations || weeklyViolations === 0)
+      ? includeViolations
+        ? 'Trong 7 ngày gần nhất chưa phát sinh lượt tham gia hay cảnh báo nào.'
+        : 'Trong 7 ngày gần nhất bạn chưa có lượt làm bài nào.'
       : `Tổng ${formatDashboardNumber(weeklyAttempts)} lượt tham gia tuần qua · Cao điểm ngày ${peak.label} (${formatDashboardNumber(peak.attemptsCount)} lượt).`;
 
   return {
@@ -294,6 +299,7 @@ interface ActivityTrendChartCardProps {
   gradientPrefix: string;
   footerNote?: string;
   className?: string;
+  showViolationsSeries?: boolean;
 }
 
 /**
@@ -306,12 +312,30 @@ export function ActivityTrendChartCard({
   gradientPrefix,
   footerNote = 'Số liệu gộp theo ngày trong 7 ngày gần nhất',
   className = 'lg:col-span-8',
+  showViolationsSeries = true,
 }: ActivityTrendChartCardProps) {
   const [trendMode, setTrendMode] = useState<TrendViewMode>('all');
-  const trendSummary = useMemo(() => buildWeeklyActivitySummary(series), [series]);
+  const trendSummary = useMemo(
+    () => buildWeeklyActivitySummary(series, showViolationsSeries),
+    [series, showViolationsSeries]
+  );
 
   const attemptsGradientId = `${gradientPrefix}AttemptsFill`;
   const submittedGradientId = `${gradientPrefix}SubmittedFill`;
+
+  const modeOptions = useMemo(() => {
+    if (!showViolationsSeries) {
+      return [
+        { id: 'all' as const, label: 'Tất cả' },
+        { id: 'attempts' as const, label: 'Lượt làm bài' },
+      ];
+    }
+    return [
+      { id: 'all' as const, label: 'Tất cả' },
+      { id: 'attempts' as const, label: 'Lượt làm bài' },
+      { id: 'violations' as const, label: 'Cảnh báo' },
+    ];
+  }, [showViolationsSeries]);
 
   return (
     <BentoCard className={className} innerClassName="flex flex-col justify-between p-5 sm:p-6">
@@ -325,42 +349,42 @@ export function ActivityTrendChartCard({
           </p>
         </div>
 
-        <div
-          role="group"
-          aria-label="Chế độ xem xu hướng 7 ngày"
-          className="inline-flex max-w-full flex-wrap self-start rounded-full bg-zinc-100 p-1 ring-1 ring-black/5 dark:bg-zinc-800/80 dark:ring-white/10"
-        >
-          {(
-            [
-              { id: 'all', label: 'Tất cả' },
-              { id: 'attempts', label: 'Lượt làm bài' },
-              { id: 'violations', label: 'Cảnh báo' },
-            ] as const
-          ).map((option) => {
-            const active = trendMode === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setTrendMode(option.id)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${active
-                  ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-50'
-                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-                  }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
+        {modeOptions.length > 1 && (
+          <div
+            role="group"
+            aria-label="Chế độ xem xu hướng 7 ngày"
+            className="inline-flex max-w-full flex-wrap self-start rounded-full bg-zinc-100 p-1 ring-1 ring-black/5 dark:bg-zinc-800/80 dark:ring-white/10"
+          >
+            {modeOptions.map((option) => {
+              const active = trendMode === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setTrendMode(option.id)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${active
+                    ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-50'
+                    : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                    }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <figure className="relative mt-5 w-full min-w-0 overflow-hidden">
         <div
           className="h-[260px] w-full min-w-0 text-zinc-500 sm:h-[300px] dark:text-zinc-400"
           role="img"
-          aria-label={`Biểu đồ 7 ngày qua: ${formatDashboardNumber(trendSummary.weeklyAttempts)} lượt tham gia, ${formatDashboardNumber(trendSummary.weeklySubmitted)} bài hoàn thành và ${formatDashboardNumber(trendSummary.weeklyViolations)} cảnh báo.`}
+          aria-label={
+            showViolationsSeries
+              ? `Biểu đồ 7 ngày qua: ${formatDashboardNumber(trendSummary.weeklyAttempts)} lượt tham gia, ${formatDashboardNumber(trendSummary.weeklySubmitted)} bài hoàn thành và ${formatDashboardNumber(trendSummary.weeklyViolations)} cảnh báo.`
+              : `Biểu đồ 7 ngày qua: ${formatDashboardNumber(trendSummary.weeklyAttempts)} lượt tham gia và ${formatDashboardNumber(trendSummary.weeklySubmitted)} bài hoàn thành.`
+          }
         >
           {hasMounted ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -433,7 +457,7 @@ export function ActivityTrendChartCard({
                   </>
                 )}
 
-                {(trendMode === 'all' || trendMode === 'violations') && (
+                {showViolationsSeries && (trendMode === 'all' || trendMode === 'violations') && (
                   <Bar
                     dataKey="violationsCount"
                     name="Cảnh báo"
@@ -450,13 +474,13 @@ export function ActivityTrendChartCard({
         </div>
         <figcaption className="sr-only">{trendSummary.insight}</figcaption>
         <table className="sr-only">
-          <caption>Số liệu làm bài và cảnh báo phòng thi theo từng ngày trong 7 ngày qua</caption>
+          <caption>Số liệu làm bài và tiến độ trong 7 ngày qua</caption>
           <thead>
             <tr>
               <th scope="col">Ngày</th>
               <th scope="col">Lượt tham gia</th>
               <th scope="col">Đã hoàn thành</th>
-              <th scope="col">Cảnh báo</th>
+              {showViolationsSeries && <th scope="col">Cảnh báo</th>}
             </tr>
           </thead>
           <tbody>
@@ -465,7 +489,7 @@ export function ActivityTrendChartCard({
                 <td>{point.label}</td>
                 <td>{point.attemptsCount}</td>
                 <td>{point.submittedCount}</td>
-                <td>{point.violationsCount}</td>
+                {showViolationsSeries && <td>{point.violationsCount}</td>}
               </tr>
             ))}
           </tbody>
@@ -488,13 +512,15 @@ export function ActivityTrendChartCard({
               {formatDashboardNumber(trendSummary.weeklySubmitted)}
             </strong>
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-rose-600" aria-hidden="true" />
-            Cảnh báo:{' '}
-            <strong className="tabular-nums text-zinc-900 dark:text-zinc-100">
-              {formatDashboardNumber(trendSummary.weeklyViolations)}
-            </strong>
-          </span>
+          {showViolationsSeries && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-rose-600" aria-hidden="true" />
+              Cảnh báo:{' '}
+              <strong className="tabular-nums text-zinc-900 dark:text-zinc-100">
+                {formatDashboardNumber(trendSummary.weeklyViolations)}
+              </strong>
+            </span>
+          )}
         </div>
         <span className="text-[11px] text-zinc-400 dark:text-zinc-500">{footerNote}</span>
       </div>
@@ -546,29 +572,31 @@ export function BreakdownDonutChartCard<T extends string>({
           </p>
         </div>
 
-        <div
-          role="group"
-          aria-label="Chọn nhóm dữ liệu phân bổ"
-          className="grid grid-cols-3 rounded-full bg-zinc-100 p-1 ring-1 ring-black/5 dark:bg-zinc-800/80 dark:ring-white/10"
-        >
-          {tabs.map((tab) => {
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onTabChange(tab.id)}
-                className={`rounded-full px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${active
-                  ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-50'
-                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-                  }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        {tabs.length > 1 && (
+          <div
+            role="group"
+            aria-label="Chọn nhóm dữ liệu phân bổ"
+            className={`grid rounded-full bg-zinc-100 p-1 ring-1 ring-black/5 dark:bg-zinc-800/80 dark:ring-white/10 ${tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}
+          >
+            {tabs.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onTabChange(tab.id)}
+                  className={`rounded-full px-2 py-1 text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${active
+                    ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-50'
+                    : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {total === 0 ? (

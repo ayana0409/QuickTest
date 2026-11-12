@@ -100,6 +100,30 @@ export interface StudentExamCardDto {
 }
 
 /**
+ * Daily attempt activity and proctoring alert point for the student 7-day trend chart.
+ */
+export interface StudentDailyActivityPoint {
+  date: string;
+  label: string;
+  attemptsCount: number;
+  submittedCount: number;
+  violationsCount?: number;
+}
+
+/**
+ * Recent proctoring notice recorded on one of the student's attempts.
+ */
+export interface StudentRecentViolation {
+  id: string;
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  violationType: string;
+  description?: string | null;
+  timestamp: string;
+}
+
+/**
  * Aggregated response for the authenticated student dashboard.
  */
 export interface StudentDashboardResponse {
@@ -107,7 +131,18 @@ export interface StudentDashboardResponse {
   openExamsCount: number;
   activeSessionsCount: number;
   completedAttemptsCount: number;
+  totalAttemptsCount?: number;
+  submittedAttemptsCount?: number;
+  inProgressAttemptsCount?: number;
+  awaitingGradingCount?: number;
+  disqualifiedAttemptsCount?: number;
   averageScore?: number | null;
+  bestScore?: number | null;
+  totalViolations?: number;
+  attemptsWithViolations?: number;
+  violationByTypes?: Record<string, number>;
+  recentViolations?: StudentRecentViolation[];
+  dailyActivities?: StudentDailyActivityPoint[];
   myExams: StudentExamCardDto[];
   exploreExams: StudentExamCardDto[];
 }

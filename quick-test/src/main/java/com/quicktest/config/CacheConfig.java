@@ -85,6 +85,9 @@ public class CacheConfig implements CachingConfigurer {
     /** Per-teacher dashboard analytics (5 scoped aggregate queries). TTL: 1 min. */
     public static final String CACHE_TEACHER_DASHBOARD = "teacher-dashboard";
 
+    /** Per-student dashboard analytics (aggregate metrics + 7-day trend + cards). TTL: 1 min. */
+    public static final String CACHE_STUDENT_DASHBOARD = "student-dashboard";
+
     /** Public random exams on landing page. TTL: 1 min. */
     public static final String CACHE_PUBLIC_RANDOM_EXAMS = "public-random-exams";
 
@@ -136,6 +139,7 @@ public class CacheConfig implements CachingConfigurer {
         regionConfigs.put(CACHE_ADMIN_EXAMS,                base.entryTtl(Duration.ofMinutes(1)));
         regionConfigs.put(CACHE_TEACHER_EXAMS,              base.entryTtl(Duration.ofMinutes(1)));
         regionConfigs.put(CACHE_TEACHER_DASHBOARD,          base.entryTtl(Duration.ofMinutes(1)));
+        regionConfigs.put(CACHE_STUDENT_DASHBOARD,          base.entryTtl(Duration.ofMinutes(1)));
         regionConfigs.put(CACHE_PUBLIC_RANDOM_EXAMS,        base.entryTtl(Duration.ofMinutes(1)));
 
         log.info("Initializing RedisCacheManager with {} cache regions", regionConfigs.size());

@@ -175,4 +175,44 @@ public interface ViolationLogRepository extends JpaRepository<ViolationLog, UUID
     List<ViolationLog> findRecentViolationsByTeacherId(
             @Param("teacherId") UUID teacherId,
             org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Count total recorded violations grouped by violation type for a specific authenticated student.
+     * Columns: [0]=violationType, [1]=count.
+     */
+    @Query("SELECT v.violationType, COUNT(v) FROM ViolationLog v JOIN v.examAttempt ea WHERE ea.user.id = :userId GROUP BY v.violationType")
+    List<Object[]> countStudentViolationsGroupedByType(@Param("userId") UUID userId);
+
+    /**
+     * Group daily violation counts starting from the given timestamp for a specific student.
+     * Columns: [0]=activityDate (DATE), [1]=violationsCount.
+     */
+    @Query(value = """
+            SELECT CAST(v.timestamp AS DATE) AS activity_date,
+                   COUNT(*)
+            FROM violation_logs v
+            JOIN exam_attempts ea ON ea.id = v.attempt_id
+            WHERE ea.user_id = :userId
+              AND v.timestamp >= :since
+            GROUP BY CAST(v.timestamp AS DATE)
+            ORDER BY activity_date ASC
+            """, nativeQuery = true)
+    List<Object[]> countStudentDailyViolationsSince(
+            @Param("userId") UUID userId,
+            @Param("since") java.time.LocalDateTime since);
+
+    /**
+     * Retrieve recent proctoring violations recorded for a specific student with eager exam association.
+     */
+    @Query("""
+            SELECT v FROM ViolationLog v
+            JOIN FETCH v.examAttempt ea
+            JOIN FETCH ea.exam e
+            LEFT JOIN FETCH ea.user u
+            WHERE ea.user.id = :userId
+            ORDER BY v.timestamp DESC
+            """)
+    List<ViolationLog> findRecentViolationsByStudentId(
+            @Param("userId") UUID userId,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -322,4 +322,45 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, UUID> 
     List<Object[]> countTeacherDailyAttemptsSince(
             @Param("teacherId") UUID teacherId,
             @Param("since") java.time.LocalDateTime since);
+
+    /**
+     * Compute attempt counters, average submitted score, best submitted score,
+     * and violation totals for a specific authenticated student in a single table scan.
+     * Columns: [0]=totalAttempts, [1]=inProgress, [2]=submitted, [3]=awaitingGrading,
+     *          [4]=disqualified, [5]=avgScore, [6]=bestScore,
+     *          [7]=totalViolations, [8]=attemptsWithViolations.
+     */
+    @Query(value = """
+            SELECT COUNT(a.id),
+                   COALESCE(SUM(CASE WHEN a.status = 'IN_PROGRESS' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'SUBMITTED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'AWAITING_MANUAL_GRADING' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN a.status = 'DISQUALIFIED' THEN 1 ELSE 0 END), 0),
+                   AVG(CASE WHEN a.status = 'SUBMITTED' AND a.total_score IS NOT NULL THEN a.total_score END),
+                   MAX(CASE WHEN a.status = 'SUBMITTED' AND a.total_score IS NOT NULL THEN a.total_score END),
+                   COALESCE(SUM(COALESCE(a.violation_count, 0)), 0),
+                   COALESCE(SUM(CASE WHEN COALESCE(a.violation_count, 0) > 0 THEN 1 ELSE 0 END), 0)
+            FROM exam_attempts a
+            WHERE a.user_id = :userId
+            """, nativeQuery = true)
+    Object[] computeStudentAttemptMetrics(@Param("userId") UUID userId);
+
+    /**
+     * Group daily attempt counts and completed submissions for a specific student
+     * starting from the given timestamp.
+     * Columns: [0]=activityDate (DATE), [1]=attemptsCount, [2]=submittedCount.
+     */
+    @Query(value = """
+            SELECT CAST(a.start_time AS DATE) AS activity_date,
+                   COUNT(a.id),
+                   COALESCE(SUM(CASE WHEN a.status = 'SUBMITTED' THEN 1 ELSE 0 END), 0)
+            FROM exam_attempts a
+            WHERE a.user_id = :userId
+              AND a.start_time >= :since
+            GROUP BY CAST(a.start_time AS DATE)
+            ORDER BY activity_date ASC
+            """, nativeQuery = true)
+    List<Object[]> countStudentDailyAttemptsSince(
+            @Param("userId") UUID userId,
+            @Param("since") java.time.LocalDateTime since);
 }

@@ -20,10 +20,10 @@ export const studentService = {
    * Retrieve aggregated dashboard information for authenticated student.
    * Calls GET /api/student/dashboard
    */
-  async getStudentDashboard(): Promise<StudentDashboardResponse> {
+  async getStudentDashboard(refresh = false): Promise<StudentDashboardResponse> {
     const response = await apiClient.get<ApiResponse<StudentDashboardResponse>>(
       '/student/dashboard',
-      { silent: true }
+      { params: { refresh }, silent: true }
     );
     return response.data.data;
   },

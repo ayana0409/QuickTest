@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -376,11 +377,42 @@ class StudentAttemptServiceTest {
     }
 
     @Test
-    @DisplayName("Should retrieve aggregated student dashboard with active sessions and quotas")
+    @DisplayName("Should retrieve aggregated student dashboard with active sessions, violations, and 7-day trend")
     void testGetStudentDashboard_Success() {
         exam.setMaxAttempts(2);
         attempt.setStatus(AttemptStatus.IN_PROGRESS);
         attempt.setExpireAt(LocalDateTime.now().plusHours(1));
+
+        Object[] metricsRow = new Object[]{3L, 1L, 2L, 0L, 0L, 8.25, 9.5, 4L, 2L};
+        when(examAttemptRepository.computeStudentAttemptMetrics(studentId)).thenReturn(new Object[]{metricsRow});
+
+        LocalDate today = LocalDate.now();
+        List<Object[]> dailyRows = new ArrayList<>();
+        dailyRows.add(new Object[]{java.sql.Date.valueOf(today.minusDays(1)), 2L, 1L});
+        dailyRows.add(new Object[]{java.sql.Date.valueOf(today), 1L, 1L});
+        when(examAttemptRepository.countStudentDailyAttemptsSince(eq(studentId), any(LocalDateTime.class)))
+                .thenReturn(dailyRows);
+
+        List<Object[]> dailyViolationRows = new ArrayList<>();
+        dailyViolationRows.add(new Object[]{java.sql.Date.valueOf(today), 3L});
+        when(violationLogRepository.countStudentDailyViolationsSince(eq(studentId), any(LocalDateTime.class)))
+                .thenReturn(dailyViolationRows);
+
+        List<Object[]> groupedViolations = new ArrayList<>();
+        groupedViolations.add(new Object[]{ViolationType.TAB_SWITCH, 3L});
+        groupedViolations.add(new Object[]{ViolationType.EXIT_FULLSCREEN, 1L});
+        when(violationLogRepository.countStudentViolationsGroupedByType(studentId))
+                .thenReturn(groupedViolations);
+
+        ViolationLog recentLog = ViolationLog.builder()
+                .id(UUID.randomUUID())
+                .examAttempt(attempt)
+                .violationType(ViolationType.TAB_SWITCH)
+                .description("Switched away from exam tab")
+                .timestamp(LocalDateTime.now().minusMinutes(5))
+                .build();
+        when(violationLogRepository.findRecentViolationsByStudentId(eq(studentId), any(Pageable.class)))
+                .thenReturn(List.of(recentLog));
 
         when(examAttemptRepository.findByUserIdWithExamAndCreator(studentId)).thenReturn(List.of(attempt));
         List<Object[]> countRows = new ArrayList<>();
@@ -393,6 +425,31 @@ class StudentAttemptServiceTest {
         assertNotNull(response);
         assertEquals(1, response.getTotalExamsAttempted());
         assertEquals(1, response.getActiveSessionsCount());
+        assertEquals(3, response.getTotalAttemptsCount());
+        assertEquals(1, response.getInProgressAttemptsCount());
+        assertEquals(2, response.getSubmittedAttemptsCount());
+        assertEquals(2, response.getCompletedAttemptsCount());
+        assertEquals(8.25, response.getAverageScore());
+        assertEquals(9.5, response.getBestScore());
+        assertEquals(4, response.getTotalViolations());
+        assertEquals(2, response.getAttemptsWithViolations());
+        assertEquals(3L, response.getViolationByTypes().get("TAB_SWITCH"));
+        assertEquals(1L, response.getViolationByTypes().get("EXIT_FULLSCREEN"));
+        assertEquals(1, response.getRecentViolations().size());
+        assertEquals(ViolationType.TAB_SWITCH, response.getRecentViolations().get(0).getViolationType());
+
+        assertNotNull(response.getDailyActivities());
+        assertEquals(7, response.getDailyActivities().size());
+        StudentDashboardResponse.DailyActivityPoint todayPoint = response.getDailyActivities().get(6);
+        assertEquals(today.toString(), todayPoint.getDate());
+        assertEquals(1, todayPoint.getAttemptsCount());
+        assertEquals(1, todayPoint.getSubmittedCount());
+        assertEquals(3, todayPoint.getViolationsCount());
+        StudentDashboardResponse.DailyActivityPoint yesterdayPoint = response.getDailyActivities().get(5);
+        assertEquals(2, yesterdayPoint.getAttemptsCount());
+        assertEquals(1, yesterdayPoint.getSubmittedCount());
+        assertEquals(0, yesterdayPoint.getViolationsCount());
+
         assertNotNull(response.getMyExams());
         assertEquals(1, response.getMyExams().size());
 
@@ -403,5 +460,38 @@ class StudentAttemptServiceTest {
         assertEquals(attempt.getId(), card.getActiveAttemptId());
         assertEquals(1, card.getAttemptsUsed());
         assertEquals(1, card.getRemainingAttempts());
+    }
+
+    @Test
+    @DisplayName("refreshStudentDashboard: Should recompute metrics cleanly when student has no graded attempts")
+    void testRefreshStudentDashboard_NoScores() {
+        Object[] metricsRow = new Object[]{1L, 0L, 0L, 1L, 0L, null, null, 0L, 0L};
+        when(examAttemptRepository.computeStudentAttemptMetrics(studentId)).thenReturn(metricsRow);
+        when(examAttemptRepository.countStudentDailyAttemptsSince(eq(studentId), any(LocalDateTime.class)))
+                .thenReturn(Collections.emptyList());
+        when(violationLogRepository.countStudentDailyViolationsSince(eq(studentId), any(LocalDateTime.class)))
+                .thenReturn(Collections.emptyList());
+        when(violationLogRepository.countStudentViolationsGroupedByType(studentId))
+                .thenReturn(Collections.emptyList());
+        when(violationLogRepository.findRecentViolationsByStudentId(eq(studentId), any(Pageable.class)))
+                .thenReturn(Collections.emptyList());
+        when(examAttemptRepository.findByUserIdWithExamAndCreator(studentId)).thenReturn(Collections.emptyList());
+        when(examRepository.findRandomExploreExams()).thenReturn(Collections.emptyList());
+
+        StudentDashboardResponse response = studentAttemptService.refreshStudentDashboard(studentId);
+
+        assertNotNull(response);
+        assertEquals(1, response.getTotalAttemptsCount());
+        assertEquals(1, response.getAwaitingGradingCount());
+        assertEquals(0, response.getTotalViolations());
+        assertEquals(0, response.getAttemptsWithViolations());
+        assertTrue(response.getViolationByTypes().isEmpty());
+        assertTrue(response.getRecentViolations().isEmpty());
+        assertNull(response.getAverageScore());
+        assertNull(response.getBestScore());
+        assertEquals(7, response.getDailyActivities().size());
+        assertTrue(response.getDailyActivities().stream()
+                .allMatch(p -> p.getAttemptsCount() == 0 && p.getViolationsCount() == 0));
+        verify(examAttemptRepository, times(1)).computeStudentAttemptMetrics(studentId);
     }
 }

@@ -68,7 +68,7 @@ class StudentDashboardControllerTest {
         when(studentAttemptService.getStudentDashboard(studentId)).thenReturn(mockResponse);
 
         ResponseEntity<ApiResponse<StudentDashboardResponse>> response =
-                studentDashboardController.getStudentDashboard(currentUser);
+                studentDashboardController.getStudentDashboard(currentUser, false);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -76,15 +76,39 @@ class StudentDashboardControllerTest {
         assertEquals(200, response.getBody().getStatus());
         assertEquals(1, response.getBody().getData().getTotalExamsAttempted());
         verify(studentAttemptService, times(1)).getStudentDashboard(studentId);
+        verify(studentAttemptService, never()).refreshStudentDashboard(any());
+    }
+
+    @Test
+    @DisplayName("Should refresh and return 200 OK when refresh=true is requested")
+    void testRefreshStudentDashboard_Success() {
+        StudentDashboardResponse mockResponse = StudentDashboardResponse.builder()
+                .totalExamsAttempted(2)
+                .bestScore(9.5)
+                .averageScore(8.75)
+                .build();
+
+        when(studentAttemptService.refreshStudentDashboard(studentId)).thenReturn(mockResponse);
+
+        ResponseEntity<ApiResponse<StudentDashboardResponse>> response =
+                studentDashboardController.getStudentDashboard(currentUser, true);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(9.5, response.getBody().getData().getBestScore());
+        verify(studentAttemptService, times(1)).refreshStudentDashboard(studentId);
+        verify(studentAttemptService, never()).getStudentDashboard(any());
     }
 
     @Test
     @DisplayName("Should throw 401 UNAUTHORIZED when currentUser is null")
     void testGetStudentDashboard_Unauthenticated() {
         AppException ex = assertThrows(AppException.class, () ->
-                studentDashboardController.getStudentDashboard(null));
+                studentDashboardController.getStudentDashboard(null, false));
 
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
         verify(studentAttemptService, never()).getStudentDashboard(any());
+        verify(studentAttemptService, never()).refreshStudentDashboard(any());
     }
 }

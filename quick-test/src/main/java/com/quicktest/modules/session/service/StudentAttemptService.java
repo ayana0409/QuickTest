@@ -42,4 +42,12 @@ public interface StudentAttemptService {
      * @return Aggregated student dashboard response
      */
     StudentDashboardResponse getStudentDashboard(UUID userId);
+
+    /**
+     * Bypass the dashboard cache and recompute fresh aggregated metrics for the authenticated student.
+     *
+     * @param userId Authenticated student user ID
+     * @return Freshly computed student dashboard response
+     */
+    StudentDashboardResponse refreshStudentDashboard(UUID userId);
 }

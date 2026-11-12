@@ -23,17 +23,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.quicktest.config.CacheConfig;
+import com.quicktest.modules.admin.dto.RecentViolationResponse;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.session.dto.StudentDashboardResponse;
 import com.quicktest.modules.session.dto.StudentExamCardDto;
 import com.quicktest.modules.session.entity.AttemptStatus;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.quicktest.core.util.NativeQueryResultUtils.*;
 
 /**
  * Service implementation managing student attempt history queries and detailed
@@ -44,6 +52,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @SuppressWarnings("null")
 public class StudentAttemptServiceImpl implements StudentAttemptService {
+
+        private static final int DASHBOARD_SERIES_DAYS = 7;
+        private static final int RECENT_VIOLATION_LIMIT = 5;
+        private static final DateTimeFormatter DASHBOARD_DAY_LABEL = DateTimeFormatter.ofPattern("dd/MM");
 
         private final ExamAttemptRepository examAttemptRepository;
         private final CandidateAnswerRepository candidateAnswerRepository;
@@ -174,9 +186,30 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
 
         @Override
         @Transactional(readOnly = true)
+        @Cacheable(value = CacheConfig.CACHE_STUDENT_DASHBOARD, key = "#userId")
         public StudentDashboardResponse getStudentDashboard(UUID userId) {
                 log.info("Fetching student dashboard for user: {}", userId);
+                return computeStudentDashboard(userId);
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        @CachePut(value = CacheConfig.CACHE_STUDENT_DASHBOARD, key = "#userId")
+        public StudentDashboardResponse refreshStudentDashboard(UUID userId) {
+                log.info("Refreshing student dashboard cache for user: {}", userId);
+                return computeStudentDashboard(userId);
+        }
+
+        private StudentDashboardResponse computeStudentDashboard(UUID userId) {
+                LocalDate today = LocalDate.now();
+                LocalDate startDate = today.minusDays(DASHBOARD_SERIES_DAYS - 1L);
+                LocalDateTime sinceStartOfWindow = startDate.atStartOfDay();
                 LocalDateTime now = LocalDateTime.now();
+
+                // 0. Fetch aggregate attempt metrics and 7-day daily activity in single-pass DB queries
+                Object[] metricsRow = unwrapSingleRow(examAttemptRepository.computeStudentAttemptMetrics(userId));
+                List<StudentDashboardResponse.DailyActivityPoint> dailyActivities = buildDailyActivitySeries(
+                                userId, startDate, sinceStartOfWindow);
 
                 // 1. Fetch all candidate attempts with parent exam and creator (ordered by
                 // startTime DESC)
@@ -211,9 +244,6 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                 // 3. Build card DTOs for exams the student has attempted
                 List<StudentExamCardDto> myExams = new ArrayList<>();
                 int activeSessionsCount = 0;
-                int completedAttemptsCount = 0;
-                double totalScoreSum = 0.0;
-                int gradedAttemptsCount = 0;
 
                 for (Map.Entry<UUID, List<ExamAttempt>> entry : attemptsByExam.entrySet()) {
                         UUID examId = entry.getKey();
@@ -269,12 +299,7 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                         ExamAttempt latestAttempt = examAttempts.get(0); // Recent first
                         Double highestScore = null;
                         for (ExamAttempt ea : examAttempts) {
-                                if (ea.getStatus() == AttemptStatus.SUBMITTED) {
-                                        completedAttemptsCount++;
-                                }
                                 if (ea.getTotalScore() != null) {
-                                        totalScoreSum += ea.getTotalScore();
-                                        gradedAttemptsCount++;
                                         if (highestScore == null || ea.getTotalScore() > highestScore) {
                                                 highestScore = ea.getTotalScore();
                                         }
@@ -379,20 +404,119 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                         .build());
                 }
 
-                // 5. Calculate summary metrics
+                // 5. Extract single-pass DB metrics, proctoring summaries, and assemble response
                 int openExamsCount = (int) myExams.stream().filter(StudentExamCardDto::getIsOpen).count();
-                Double avgScore = gradedAttemptsCount > 0
-                                ? Math.round((totalScoreSum / gradedAttemptsCount) * 100.0) / 100.0
+                int totalAttemptsCount = toInt(metricsRow, 0);
+                int inProgressAttemptsCount = toInt(metricsRow, 1);
+                int submittedAttemptsCount = toInt(metricsRow, 2);
+                int awaitingGradingCount = toInt(metricsRow, 3);
+                int disqualifiedAttemptsCount = toInt(metricsRow, 4);
+                Double avgScore = (metricsRow.length > 5 && metricsRow[5] != null)
+                                ? roundTwoDecimals(toDouble(metricsRow, 5))
                                 : null;
+                Double bestScore = (metricsRow.length > 6 && metricsRow[6] != null)
+                                ? roundTwoDecimals(toDouble(metricsRow, 6))
+                                : null;
+                int totalViolations = toInt(metricsRow, 7);
+                int attemptsWithViolations = toInt(metricsRow, 8);
+
+                Map<String, Long> violationByTypes = buildViolationBreakdown(userId);
+                List<RecentViolationResponse> recentViolations = fetchRecentViolations(userId);
 
                 return StudentDashboardResponse.builder()
                                 .totalExamsAttempted(myExams.size())
                                 .openExamsCount(openExamsCount)
                                 .activeSessionsCount(activeSessionsCount)
-                                .completedAttemptsCount(completedAttemptsCount)
+                                .completedAttemptsCount(submittedAttemptsCount)
+                                .totalAttemptsCount(totalAttemptsCount)
+                                .submittedAttemptsCount(submittedAttemptsCount)
+                                .inProgressAttemptsCount(inProgressAttemptsCount)
+                                .awaitingGradingCount(awaitingGradingCount)
+                                .disqualifiedAttemptsCount(disqualifiedAttemptsCount)
                                 .averageScore(avgScore)
+                                .bestScore(bestScore)
+                                .totalViolations(totalViolations)
+                                .attemptsWithViolations(attemptsWithViolations)
+                                .violationByTypes(violationByTypes)
+                                .recentViolations(recentViolations)
+                                .dailyActivities(dailyActivities)
                                 .myExams(myExams)
                                 .exploreExams(exploreExams)
                                 .build();
+        }
+
+        private Map<String, Long> buildViolationBreakdown(UUID userId) {
+                Map<String, Long> breakdown = new HashMap<>();
+                List<Object[]> rows = violationLogRepository.countStudentViolationsGroupedByType(userId);
+                if (rows != null) {
+                        for (Object[] row : rows) {
+                                if (row != null && row.length >= 2 && row[0] != null) {
+                                        breakdown.put(row[0].toString(), toLong(row, 1));
+                                }
+                        }
+                }
+                return breakdown;
+        }
+
+        private List<RecentViolationResponse> fetchRecentViolations(UUID userId) {
+                List<ViolationLog> recentLogs = violationLogRepository.findRecentViolationsByStudentId(
+                                userId, PageRequest.of(0, RECENT_VIOLATION_LIMIT));
+                if (recentLogs == null || recentLogs.isEmpty()) {
+                        return new ArrayList<>();
+                }
+                return recentLogs.stream()
+                                .map(RecentViolationResponse::fromEntity)
+                                .collect(Collectors.toCollection(ArrayList::new));
+        }
+
+        private List<StudentDashboardResponse.DailyActivityPoint> buildDailyActivitySeries(
+                        UUID userId, LocalDate startDate, LocalDateTime sinceStartOfWindow) {
+                Map<LocalDate, int[]> dailyMap = new HashMap<>();
+                List<Object[]> rows = examAttemptRepository.countStudentDailyAttemptsSince(userId, sinceStartOfWindow);
+                if (rows != null) {
+                        for (Object[] row : rows) {
+                                if (row == null || row.length < 3) {
+                                        continue;
+                                }
+                                LocalDate date = toLocalDate(row[0]);
+                                if (date != null) {
+                                        dailyMap.put(date, new int[]{toInt(row, 1), toInt(row, 2)});
+                                }
+                        }
+                }
+
+                Map<LocalDate, Integer> dailyViolationsMap = new HashMap<>();
+                List<Object[]> violationRows = violationLogRepository.countStudentDailyViolationsSince(
+                                userId, sinceStartOfWindow);
+                if (violationRows != null) {
+                        for (Object[] row : violationRows) {
+                                if (row == null || row.length < 2) {
+                                        continue;
+                                }
+                                LocalDate date = toLocalDate(row[0]);
+                                if (date != null) {
+                                        dailyViolationsMap.put(date, toInt(row, 1));
+                                }
+                        }
+                }
+
+                List<StudentDashboardResponse.DailyActivityPoint> series = new ArrayList<>(DASHBOARD_SERIES_DAYS);
+                for (int i = 0; i < DASHBOARD_SERIES_DAYS; i++) {
+                        LocalDate day = startDate.plusDays(i);
+                        int[] counts = dailyMap.getOrDefault(day, new int[]{0, 0});
+                        int dayViolations = dailyViolationsMap.getOrDefault(day, 0);
+                        series.add(StudentDashboardResponse.DailyActivityPoint.builder()
+                                        .date(day.toString())
+                                        .label(day.format(DASHBOARD_DAY_LABEL))
+                                        .attemptsCount(counts[0])
+                                        .submittedCount(counts[1])
+                                        .violationsCount(dayViolations)
+                                        .build());
+                }
+                return series;
+        }
+
+        private double roundTwoDecimals(double value) {
+                return Math.round(value * 100.0) / 100.0;
         }
 }

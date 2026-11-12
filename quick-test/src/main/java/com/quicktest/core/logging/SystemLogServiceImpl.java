@@ -1,7 +1,6 @@
 package com.quicktest.core.logging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.modules.admin.dto.AdminSystemLogDetailResponse;
 import com.quicktest.modules.admin.dto.AdminSystemLogMetadataResponse;
@@ -39,9 +38,9 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-
 /**
- * Implementation of SystemLogService providing asynchronous non-blocking log persistence,
+ * Implementation of SystemLogService providing asynchronous non-blocking log
+ * persistence,
  * sensitive data masking, and resilient error recovery.
  */
 @Slf4j
@@ -50,8 +49,8 @@ import java.util.stream.Collectors;
 public class SystemLogServiceImpl implements SystemLogService {
 
     private static final int MAX_DETAILS_LENGTH = 10_000;
-    private static final Pattern SENSITIVE_KEY_PATTERN =
-            Pattern.compile("(?i)(password|secret|token|credential|authorization|accesstoken|refreshtoken)");
+    private static final Pattern SENSITIVE_KEY_PATTERN = Pattern
+            .compile("(?i)(password|secret|token|credential|authorization|accesstoken|refreshtoken)");
 
     private final SystemLogRepository systemLogRepository;
     private final ObjectMapper objectMapper;
@@ -77,7 +76,8 @@ public class SystemLogServiceImpl implements SystemLogService {
         try {
             saveWithTruncation(systemLog);
         } catch (Exception e) {
-            // Fail-safe: A failure to persist audit log must never bubble up or disrupt normal operations
+            // Fail-safe: A failure to persist audit log must never bubble up or disrupt
+            // normal operations
             log.warn("[AuditLog] Failed to persist system log asynchronously: {}", e.getMessage());
         }
     }
@@ -125,7 +125,8 @@ public class SystemLogServiceImpl implements SystemLogService {
     }
 
     /**
-     * Recursively sanitizes objects to filter out binary streams, servlets, and mask credentials.
+     * Recursively sanitizes objects to filter out binary streams, servlets, and
+     * mask credentials.
      */
     private Object sanitizeObject(Object obj, int depth) {
         if (obj == null || depth > 4) {
@@ -137,8 +138,7 @@ public class SystemLogServiceImpl implements SystemLogService {
                     "type", "MultipartFile",
                     "originalFilename", String.valueOf(multipartFile.getOriginalFilename()),
                     "size", multipartFile.getSize(),
-                    "contentType", String.valueOf(multipartFile.getContentType())
-            );
+                    "contentType", String.valueOf(multipartFile.getContentType()));
         }
 
         if (obj instanceof byte[] bytes) {
@@ -192,8 +192,10 @@ public class SystemLogServiceImpl implements SystemLogService {
         String likePattern = trimmedSearch != null ? "%" + trimmedSearch + "%" : null;
 
         // Step 1: Query IDs only using index scan with FTS & filters
-        // Use unsorted pageable for native query because ORDER BY l.created_at DESC, l.id DESC
-        // is already hardcoded in the native query, preventing Spring Data from appending unmapped property names
+        // Use unsorted pageable for native query because ORDER BY l.created_at DESC,
+        // l.id DESC
+        // is already hardcoded in the native query, preventing Spring Data from
+        // appending unmapped property names
         Pageable nativePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         Page<String> idPage = systemLogRepository.findLogIds(
                 level, status, module, action, actorId, startDate, endDate, trimmedSearch, likePattern, nativePageable);
@@ -283,15 +285,16 @@ public class SystemLogServiceImpl implements SystemLogService {
         int safeDays = Math.max(daysToKeep, 1);
         int defaultBatchSize = 500;
         LocalDateTime cutoff = LocalDateTime.now().minusDays(safeDays);
-        log.info("[AuditLog] Starting synchronous batch cleanup for logs older than {} days (cutoff: {}, batchSize: {})",
+        log.info(
+                "[AuditLog] Starting synchronous batch cleanup for logs older than {} days (cutoff: {}, batchSize: {})",
                 safeDays, cutoff, defaultBatchSize);
 
         TransactionTemplate txTemplate = getTransactionTemplate();
         long totalDeleted = 0;
 
         while (!Thread.currentThread().isInterrupted()) {
-            Integer deleted = txTemplate.execute(status ->
-                    systemLogRepository.deleteBatchBeforeCutoff(cutoff, defaultBatchSize));
+            Integer deleted = txTemplate
+                    .execute(status -> systemLogRepository.deleteBatchBeforeCutoff(cutoff, defaultBatchSize));
 
             if (deleted == null || deleted <= 0) {
                 break;
@@ -315,7 +318,8 @@ public class SystemLogServiceImpl implements SystemLogService {
 
         if (!isCleaningUp.compareAndSet(false, true)) {
             SystemLogCleanupStatusResponse status = getCleanupStatus();
-            log.warn("[AuditLog] Cleanup job already running since {}. Refusing concurrent trigger.", status.getStartedAt());
+            log.warn("[AuditLog] Cleanup job already running since {}. Refusing concurrent trigger.",
+                    status.getStartedAt());
             return status;
         }
 
@@ -341,8 +345,7 @@ public class SystemLogServiceImpl implements SystemLogService {
         final long finalEstimated = estimatedRemaining;
         CompletableFuture.runAsync(
                 () -> executeBatchCleanupLoop(cutoff, safeDays, safeBatchSize, finalEstimated),
-                loggingExecutor
-        );
+                loggingExecutor);
 
         return currentCleanupStatus;
     }
@@ -350,15 +353,16 @@ public class SystemLogServiceImpl implements SystemLogService {
     private void executeBatchCleanupLoop(LocalDateTime cutoff, int safeDays, int batchSize, long estimated) {
         long totalDeleted = 0;
         try {
-            log.info("[AuditLog] Background batch log cleanup started: cutoff={}, safeDays={}, batchSize={}, estimated={}",
+            log.info(
+                    "[AuditLog] Background batch log cleanup started: cutoff={}, safeDays={}, batchSize={}, estimated={}",
                     cutoff, safeDays, batchSize, estimated);
 
             TransactionTemplate txTemplate = getTransactionTemplate();
 
             while (!Thread.currentThread().isInterrupted()) {
                 final int currentBatch = batchSize;
-                Integer deletedInBatch = txTemplate.execute(status ->
-                        systemLogRepository.deleteBatchBeforeCutoff(cutoff, currentBatch));
+                Integer deletedInBatch = txTemplate
+                        .execute(status -> systemLogRepository.deleteBatchBeforeCutoff(cutoff, currentBatch));
 
                 if (deletedInBatch == null || deletedInBatch <= 0) {
                     break;
@@ -382,7 +386,8 @@ public class SystemLogServiceImpl implements SystemLogService {
                     break; // Reached last chunk
                 }
 
-                // Yield CPU and disk I/O to avoid starvation on low-spec hardware (e.g., Core i3 / 512MB RAM)
+                // Yield CPU and disk I/O to avoid starvation on low-spec hardware (e.g., Core
+                // i3 / 512MB RAM)
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException ie) {
@@ -403,7 +408,8 @@ public class SystemLogServiceImpl implements SystemLogService {
                     .startedAt(currentCleanupStatus.getStartedAt())
                     .finishedAt(LocalDateTime.now())
                     .status("COMPLETED")
-                    .message(String.format("Successfully cleaned up %d log records older than %d days.", totalDeleted, safeDays))
+                    .message(String.format("Successfully cleaned up %d log records older than %d days.", totalDeleted,
+                            safeDays))
                     .build();
 
         } catch (Exception e) {
@@ -438,4 +444,3 @@ public class SystemLogServiceImpl implements SystemLogService {
         return currentCleanupStatus;
     }
 }
-
