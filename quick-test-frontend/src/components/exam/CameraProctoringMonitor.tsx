@@ -166,6 +166,8 @@ export const CameraProctoringMonitor: React.FC<CameraProctoringMonitorProps> = (
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.onended = () => {
+          // Ignore track end triggered by intentional camera teardown on submit/disqualification
+          if (!isCameraDesiredRef.current || isTerminated) return;
           console.warn('[CameraProctoring] Camera stream track ended unexpectedly.');
           setStreamActive(false);
           setCameraError('Tín hiệu camera đã bị ngắt. Vui lòng kết nối lại để tiếp tục.');

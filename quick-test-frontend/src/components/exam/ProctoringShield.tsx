@@ -96,6 +96,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   const focusLossCountRef = useRef<number>(focusLossCount);
   const [isMultiScreenDetected, setIsMultiScreenDetected] = useState(false);
   const isInBlurEpisodeRef = useRef(false);
+  const isFocusLostShieldOpenRef = useRef(false);
   const hasReportedTabSwitchInEpisodeRef = useRef(false);
   const hasReportedMultiScreenRef = useRef(false);
   const blurCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -111,6 +112,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
   useEffect(() => {
     if (!isMasterEnabled) {
       isGracePeriodActiveRef.current = true;
+      isFocusLostShieldOpenRef.current = false;
       setIsFocusLostShieldOpen(false);
       isInBlurEpisodeRef.current = false;
       hasReportedTabSwitchInEpisodeRef.current = false;
@@ -367,15 +369,18 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
 
     // Every 3 focus losses counts as 1 official WINDOW_BLUR violation
     if (nextCount % 3 === 0) {
-      // Reached 3/3 reminders: DO NOT show focus lost shield, trigger official violation alert directly
+      // Reached 3/3 reminders: DO NOT show focus lost shield, trigger official violation alert directly.
+      // Keep blur episode active while window lacks focus so 1s polling does not immediately count strike 4 (1/3).
+      isFocusLostShieldOpenRef.current = false;
       setIsFocusLostShieldOpen(false);
-      isInBlurEpisodeRef.current = false;
+      isInBlurEpisodeRef.current = typeof document !== 'undefined' ? !document.hasFocus() : true;
       reportViolation(
         'WINDOW_BLUR',
         `Rời khỏi cửa sổ bài thi (${nextCount} lần).`
       );
     } else {
       // 1/3 or 2/3 reminders: Show focus lost shield to alert candidate
+      isFocusLostShieldOpenRef.current = true;
       setIsFocusLostShieldOpen(true);
     }
   }, [attemptId, isMasterEnabled, isNetworkOffline, isSessionEvicted, reportViolation]);
@@ -393,6 +398,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             blurCheckTimerRef.current = null;
           }
           // Direct violation: do not show focus lost reminder shield
+          isFocusLostShieldOpenRef.current = false;
           setIsFocusLostShieldOpen(false);
           reportViolation(
             'TAB_SWITCH',
@@ -402,8 +408,8 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         return;
       }
 
-      // If already in a blur episode, ignore duplicate blur/poll events until user resumes
-      if (isInBlurEpisodeRef.current) {
+      // If already in a blur episode or waiting for explicit resume from shield, ignore duplicate blur/poll events
+      if (isInBlurEpisodeRef.current || isFocusLostShieldOpenRef.current) {
         return;
       }
 
@@ -415,9 +421,11 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         clearTimeout(blurCheckTimerRef.current);
       }
       blurCheckTimerRef.current = setTimeout(() => {
+        blurCheckTimerRef.current = null;
         if (typeof document !== 'undefined' && document.hidden) {
           if (!hasReportedTabSwitchInEpisodeRef.current) {
             hasReportedTabSwitchInEpisodeRef.current = true;
+            isFocusLostShieldOpenRef.current = false;
             setIsFocusLostShieldOpen(false);
             reportViolation(
               'TAB_SWITCH',
@@ -440,6 +448,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       clearTimeout(blurCheckTimerRef.current);
       blurCheckTimerRef.current = null;
     }
+    isFocusLostShieldOpenRef.current = false;
     setIsFocusLostShieldOpen(false);
     if (typeof window !== 'undefined') {
       window.focus();
@@ -466,8 +475,10 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       if (document.hidden) {
         triggerFocusLossEpisode('TAB_HIDDEN');
       } else {
-        // Tab became visible again
-        isInBlurEpisodeRef.current = false;
+        // Tab became visible again; clear blur episode only if focus shield is closed and window has focus
+        if (!isFocusLostShieldOpenRef.current && document.hasFocus()) {
+          isInBlurEpisodeRef.current = false;
+        }
         hasReportedTabSwitchInEpisodeRef.current = false;
       }
     };
@@ -481,8 +492,10 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
     };
 
     const handleWindowFocus = () => {
-      // Regained window focus
-      isInBlurEpisodeRef.current = false;
+      // Regained window focus; clear blur episode only if candidate is not blocked by focus lost shield
+      if (!isFocusLostShieldOpenRef.current && (typeof document === 'undefined' || document.hasFocus())) {
+        isInBlurEpisodeRef.current = false;
+      }
       hasReportedTabSwitchInEpisodeRef.current = false;
     };
 

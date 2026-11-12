@@ -124,6 +124,8 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState<string>('');
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const isSubmissionStartedRef = useRef(false);
 
   // Camera Proctoring Gate State: Candidate must pass camera verification before proctoring & timer start
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -396,6 +398,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     !isLoadingPaper &&
     !isDisqualified &&
     !isSubmitting &&
+    !hasSubmitted &&
     !showGuestModal &&
     (!isCameraRequired || isCameraReady);
 
@@ -531,52 +534,65 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     return () => clearInterval(timerId);
   }, [isExamActive, remainingSeconds, decrementTimer]);
 
-  // 4. Auto-submit when countdown hits zero
-  const handleAutoSubmitOnExpire = useCallback(async () => {
-    if (isSubmitting || isDisqualified) return;
+  // Shared terminal submission transition: lock proctoring/camera UI first before stopping hardware tracks
+  const submitAndNavigate = useCallback(async () => {
+    if (isSubmissionStartedRef.current || isDisqualified) return;
+    isSubmissionStartedRef.current = true;
 
-    // Immediately stop webcam hardware tracks and exit fullscreen mode
-    stopAllWebcamHardwareTracks();
+    // Terminate camera gate and proctoring overlays BEFORE stopping webcam tracks or exiting fullscreen
+    setHasSubmitted(true);
+    setSubmitting(true);
+    setIsSubmitModalOpen(false);
+    setWarningModalOpen(false);
+    setShowFullscreenPrompt(false);
+
+    // Yield to let React unmount CameraProctoringMonitor & proctoring overlays before sweeping hardware tracks
     await exitFullscreenSafely();
+    stopAllWebcamHardwareTracks();
 
     const activeAttemptId = examPaper?.attemptId || attemptId;
-    setSubmitting(true);
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (pendingSavePayloadRef.current) {
+      try {
+        await candidateSessionService.autoSaveAnswer(
+          activeAttemptId,
+          pendingSavePayloadRef.current
+        );
+      } catch {
+        // Continue with submission regardless
+      }
+      pendingSavePayloadRef.current = null;
+    }
+
     try {
       await candidateSessionService.submitExam(activeAttemptId);
-      router.push(`/exam/${activeAttemptId}/result`);
-    } catch {
-      router.push(`/exam/${activeAttemptId}/result`);
-    } finally {
-      setSubmitting(false);
+    } catch (err) {
+      console.error('Submit exam error:', err);
     }
-  }, [attemptId, examPaper, isSubmitting, isDisqualified, router, setSubmitting]);
+    router.push(`/exam/${activeAttemptId}/result`);
+  }, [attemptId, examPaper?.attemptId, isDisqualified, router, setSubmitting]);
+
+  // 4. Auto-submit when countdown hits zero
+  const handleAutoSubmitOnExpire = useCallback(async () => {
+    await submitAndNavigate();
+  }, [submitAndNavigate]);
 
   // 4b. Real-time auto-submit when exam is closed by teacher/admin or background scheduler
   const handleExamClosed = useCallback(
     async (reasonMessage?: string) => {
-      if (isSubmitting || isDisqualified) return;
-      stopAllWebcamHardwareTracks();
-      await exitFullscreenSafely();
+      if (isSubmissionStartedRef.current || isSubmitting || isDisqualified) return;
       toast.error(
         reasonMessage || 'Đề thi đã đóng! Hệ thống đang tự động thu bài...',
         { id: 'exam-closed-toast', duration: 4000, icon: '🛑' }
       );
-      // Flush pending save draft immediately if any
-      if (pendingSavePayloadRef.current) {
-        const activeAttemptId = examPaper?.attemptId || attemptId;
-        try {
-          await candidateSessionService.autoSaveAnswer(
-            activeAttemptId,
-            pendingSavePayloadRef.current
-          );
-        } catch {
-          // Ignored
-        }
-        pendingSavePayloadRef.current = null;
-      }
-      handleAutoSubmitOnExpire();
+      await submitAndNavigate();
     },
-    [attemptId, examPaper?.attemptId, handleAutoSubmitOnExpire, isDisqualified, isSubmitting]
+    [isDisqualified, isSubmitting, submitAndNavigate]
   );
 
   // 5. Debounced Auto-Save Mechanism (800ms responsive debounce)
@@ -769,39 +785,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
   };
 
   const handleConfirmSubmit = async () => {
-    setIsSubmitModalOpen(false);
-
-    // Immediately stop webcam hardware tracks and exit fullscreen mode BEFORE updating state
-    stopAllWebcamHardwareTracks();
-    await exitFullscreenSafely();
-
-    setSubmitting(true);
-
-    const activeAttemptId = examPaper?.attemptId || attemptId;
-
-    // Flush any pending auto-save immediately before submit
-    if (autoSaveTimerRef.current && pendingSavePayloadRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-      try {
-        await candidateSessionService.autoSaveAnswer(
-          activeAttemptId,
-          pendingSavePayloadRef.current
-        );
-      } catch {
-        // Continue with submission regardless
-      }
-    }
-
-    try {
-      await candidateSessionService.submitExam(activeAttemptId);
-      router.push(`/exam/${activeAttemptId}/result`);
-    } catch (err) {
-      console.error('Submit exam error:', err);
-      // Even on error, attempt navigation to result page so candidate can view state
-      router.push(`/exam/${activeAttemptId}/result`);
-    } finally {
-      setSubmitting(false);
-    }
+    await submitAndNavigate();
   };
 
   // 8. Loading & Error Views
@@ -862,7 +846,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
       realtimeToken={examPaper?.realtimeToken}
       realtimeWsUrl={examPaper?.realtimeWsUrl}
       isExamActive={isExamActive}
-      isSubmitting={isSubmitting}
+      isSubmitting={isSubmitting || hasSubmitted}
       settings={proctoringSettings}
       onViolation={handleClientViolation}
       onServerAlert={handleServerAlert}
@@ -1035,7 +1019,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
 
         {/* Proctoring Warning Modal (Non-dismissable until acknowledged) */}
         <ExamWarningModal
-          isOpen={warningModalOpen && !isDisqualified}
+          isOpen={warningModalOpen && !isDisqualified && !isSubmitting && !hasSubmitted}
           violationCount={violationCount}
           maxAllowed={examPaper.maxViolations || 5}
           message={warningMessage}
@@ -1061,7 +1045,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           answeredCount={answeredCount}
           unansweredIndices={unansweredIndices}
           onJumpToQuestion={setCurrentQuestionIndex}
-          isSubmitting={isSubmitting}
+          isSubmitting={isSubmitting || hasSubmitted}
         />
 
         {/* Guest Candidate Info Modal (Re-authentication) */}
@@ -1074,11 +1058,11 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         />
 
         {/* Camera Proctoring Monitor & Mandatory Gate */}
-        {isCameraRequired && !isDisqualified && !isSubmitting && (
+        {isCameraRequired && !isDisqualified && !isSubmitting && !hasSubmitted && (
           <CameraProctoringMonitor
             attemptId={examPaper?.attemptId || attemptId}
             isCameraProctoringEnabled={Boolean(examPaper?.isCameraProctoringEnabled)}
-            isTerminated={isDisqualified || isSubmitting}
+            isTerminated={isDisqualified || isSubmitting || hasSubmitted}
             onViolation={handleCameraViolation}
             onCameraGatePassed={() => {
               setIsCameraReady(true);
