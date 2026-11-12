@@ -73,6 +73,39 @@ public class StudentAttemptServiceImpl implements StudentAttemptService {
                                 userId,
                                 PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()));
 
+                List<StudentAttemptSummaryDto> summaries = pageResult.getContent();
+                if (!summaries.isEmpty()) {
+                        List<UUID> examIds = summaries.stream()
+                                        .map(StudentAttemptSummaryDto::getExamId)
+                                        .filter(Objects::nonNull)
+                                        .distinct()
+                                        .collect(Collectors.toList());
+
+                        if (!examIds.isEmpty()) {
+                                List<Object[]> pointRows = questionRepository.countQuestionsAndPointsByExamIds(examIds);
+                                Map<UUID, Double> maxScoreByExamId = new HashMap<>();
+                                if (pointRows != null) {
+                                        for (Object[] row : pointRows) {
+                                                if (row != null && row.length >= 3 && row[0] instanceof UUID
+                                                                && row[2] instanceof Number) {
+                                                        double totalPoints = ((Number) row[2]).doubleValue();
+                                                        if (totalPoints > 0) {
+                                                                double rounded = Math.round(totalPoints * 100.0) / 100.0;
+                                                                maxScoreByExamId.put((UUID) row[0], rounded);
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                for (StudentAttemptSummaryDto summary : summaries) {
+                                        if (summary.getExamId() != null
+                                                        && maxScoreByExamId.containsKey(summary.getExamId())) {
+                                                summary.setMaxScore(maxScoreByExamId.get(summary.getExamId()));
+                                        }
+                                }
+                        }
+                }
+
                 return PageResponse.from(pageResult);
         }
 

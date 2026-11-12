@@ -174,6 +174,35 @@ class StudentAttemptServiceTest {
     }
 
     @Test
+    @DisplayName("getStudentAttempts: Should populate real maxScore summed from exam questions")
+    void getStudentAttempts_UsesExamTotalPointsAsMaxScore() {
+        Pageable pageable = PageRequest.of(0, 10);
+        UUID examId = exam.getId();
+        StudentAttemptSummaryDto summary = new StudentAttemptSummaryDto(
+                attemptId,
+                examId,
+                "Final Exam 25 Points",
+                attempt.getStartTime(),
+                attempt.getSubmitTime(),
+                AttemptStatus.SUBMITTED,
+                21.5,
+                null,
+                0L
+        );
+        Page<StudentAttemptSummaryDto> page = new PageImpl<>(List.of(summary), pageable, 1);
+
+        when(examAttemptRepository.findStudentAttemptSummaries(eq(studentId), any(Pageable.class)))
+                .thenReturn(page);
+        when(questionRepository.countQuestionsAndPointsByExamIds(eq(List.of(examId))))
+                .thenReturn(List.<Object[]>of(new Object[]{examId, 10L, 25.0}));
+
+        PageResponse<StudentAttemptSummaryDto> result = studentAttemptService.getStudentAttempts(studentId, pageable);
+
+        assertNotNull(result);
+        assertEquals(25.0, result.getContent().get(0).getMaxScore());
+    }
+
+    @Test
     @DisplayName("getStudentAttemptDetail: Should return full attempt details with questions, answers, and violations")
     void getStudentAttemptDetail_Success() {
         // Prepare question and options

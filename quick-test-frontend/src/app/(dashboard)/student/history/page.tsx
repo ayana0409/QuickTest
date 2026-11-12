@@ -25,6 +25,10 @@ import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { cn } from '@/lib/utils';
 
+function formatScore(score: number): number {
+  return Math.round(score * 100) / 100;
+}
+
 /**
  * Helper to format Vietnamese date string nicely.
  */
@@ -388,7 +392,10 @@ export default function StudentAttemptHistoryPage() {
                         <span className="text-[10px] text-zinc-400 font-medium block">Điểm số</span>
                         {attempt.awardedScore != null ? (
                           <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                            {attempt.awardedScore}/{attempt.maxScore ?? 10}
+                            {formatScore(attempt.awardedScore)}
+                            {attempt.maxScore != null && attempt.maxScore > 0
+                              ? `/${formatScore(attempt.maxScore)}`
+                              : ' đ'}
                           </span>
                         ) : (
                           <span className="text-[11px] text-zinc-400 italic">Chờ chấm</span>
@@ -508,10 +515,16 @@ export default function StudentAttemptHistoryPage() {
                           {attempt.awardedScore != null ? (
                             <div className="inline-flex items-center gap-1 font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/80 px-2.5 py-1 rounded-lg text-xs">
                               <span className="text-indigo-600 dark:text-indigo-400">
-                                {attempt.awardedScore}
+                                {formatScore(attempt.awardedScore)}
                               </span>
-                              <span className="text-zinc-400">/</span>
-                              <span>{attempt.maxScore ?? 10}</span>
+                              {attempt.maxScore != null && attempt.maxScore > 0 ? (
+                                <>
+                                  <span className="text-zinc-400">/</span>
+                                  <span>{formatScore(attempt.maxScore)}</span>
+                                </>
+                              ) : (
+                                <span className="text-zinc-400 font-medium">đ</span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-xs text-zinc-400 italic">Chờ chấm</span>
