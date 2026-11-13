@@ -1,6 +1,6 @@
-# QuickTest Online Exam System - Comprehensive API Documentation
+﻿# QuickTest Online Exam System - Comprehensive API Documentation
 
-Tài liệu đặc tả toàn bộ **78+ RESTful Endpoints** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL Full-Text Search, Redis, RabbitMQ, Cloudinary, Google Gemini AI, Centralized Audit Logging).
+Tài liệu đặc tả toàn bộ **118+ RESTful Endpoints & WebSocket Protocols** của hệ thống thi trực tuyến **QuickTest** (Spring Boot 3.x, PostgreSQL Full-Text Search, Redis, RabbitMQ, Cloudinary, Google Gemini AI, Centralized Audit Logging).
 
 ---
 
@@ -52,92 +52,124 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 
 | # | Nhóm chức năng | Method | Endpoint | Quyền hạn | Mô tả chức năng |
 |:---|:---|:---:|:---|:---:|:---|
-| 1 | **IAM & Auth** | `POST` | `/api/auth/register` | `PUBLIC` | Đăng ký tài khoản mới |
-| 2 | | `POST` | `/api/auth/login` | `PUBLIC` | Đăng nhập hệ thống & nhận JWT |
+| 1 | **IAM & Auth** | `POST` | `/api/auth/register` | `PUBLIC` | Đăng ký tài khoản mới (STUDENT hoặc TEACHER) |
+| 2 | | `POST` | `/api/auth/login` | `PUBLIC` | Đăng nhập hệ thống & nhận JWT Access / Refresh Token |
 | 3 | | `GET` | `/api/auth/me` | Authenticated | Lấy hồ sơ tài khoản hiện tại |
-| 4 | **Teacher Exams** | `POST` | `/api/teacher/exams` | `TEACHER` | Tạo đề thi mới (DRAFT) |
-| 5 | | `GET` | `/api/teacher/exams` | `TEACHER` | Lấy danh sách đề thi của giáo viên |
-| 6 | | `GET` | `/api/teacher/exams/{id}` | `TEACHER` | Lấy chi tiết cấu hình đề thi |
-| 7 | | `PUT` | `/api/teacher/exams/{id}` | `TEACHER` | Cập nhật thông tin đề thi (cho phép cả khi CLOSED) |
-| 8 | | `PATCH` | `/api/teacher/exams/{id}/publish` | `TEACHER` | Xuất bản đề thi (từ DRAFT hoặc CLOSED -> PUBLISHED) |
-| 9 | | `PATCH` | `/api/teacher/exams/{id}/close` | `TEACHER` | Đóng đề thi (CLOSED) & tự động thu các bài dở dang |
-| 10 | | `PATCH` | `/api/teacher/exams/{id}/republish` | `TEACHER` | Mở lại đề thi đã đóng (cập nhật hạn chót, chuyển sang PUBLISHED) |
-| 11 | | `POST` | `/api/teacher/exams/{id}/duplicate` | `TEACHER` | Nhân bản đề thi sang bản nháp mới (bất đồng bộ sao chép ảnh qua RabbitMQ) |
-| 12 | | `DELETE` | `/api/teacher/exams/{id}` | `TEACHER` | Xóa đề thi (chỉ xóa DRAFT) |
-| 11 | **Questions** | `POST` | `/api/teacher/exams/{examId}/questions` | `TEACHER` | Thêm câu hỏi vào đề thi |
-| 12 | | `PUT` | `/api/teacher/questions/{questionId}` | `TEACHER` | Cập nhật câu hỏi và đáp án |
-| 13 | | `PUT` | `/api/teacher/questions/{questionId}/image` | `TEACHER` | Cập nhật trực tiếp ảnh câu hỏi (xóa ảnh cũ Cloudinary) |
-| 14 | | `DELETE` | `/api/teacher/questions/{questionId}` | `TEACHER` | Xóa câu hỏi (tự động dọn ảnh câu hỏi + đáp án trên Cloudinary) |
-| 15 | | `GET` | `/api/teacher/question-bank` | `TEACHER` | Lấy ngân hàng câu hỏi của giáo viên (phân trang, lọc theo đề/từ khóa) |
-| 16 | | `POST` | `/api/teacher/exams/{examId}/questions/import` | `TEACHER` | Nhập câu hỏi từ ngân hàng vào đề thi (deep copy dữ liệu & ảnh) |
-| 17 | **Media Upload** | `POST` | `/api/teacher/media/upload` | `TEACHER` | Upload 1 file ảnh đồng bộ lên Cloudinary |
-| 16 | | `POST` | `/api/teacher/media/batch-upload` | `TEACHER` | Upload hàng loạt ảnh chạy nền (Async RabbitMQ) |
-| 17 | | `GET` | `/api/teacher/media/batch/{batchId}/status` | `TEACHER` | Kiểm tra tiến độ upload batch & lấy danh sách URL |
-| 18 | **Candidate Session** | `POST` | `/api/session/start` | All (Student/Guest) | Bắt đầu hoặc khôi phục lượt thi, nhận đề thi masked |
-| 19 | | `PUT` | `/api/session/{attemptId}/save` | All (Student/Guest) | Auto-save câu trả lời đơn lẻ vào Redis Hash |
-| 20 | | `GET` | `/api/session/{attemptId}/resume` | All (Student/Guest) | Khôi phục bài làm kèm danh sách nháp đã lưu |
-| 21 | | `POST` | `/api/session/{attemptId}/submit` | All (Student/Guest) | Nộp bài thi bất đồng bộ qua RabbitMQ (202 Accepted) |
-| 22 | | `GET` | `/api/session/{attemptId}/result` | All (Student/Guest) | Xem kết quả điểm số và trạng thái chấm bài |
-| 23 | **Candidate Proctoring** | `POST` | `/api/session/proctoring/violations` | All (Student/Guest) | Báo cáo sự kiện vi phạm viễn trắc (telemetry) |
-| 24 | | `POST` | `/api/session/proctoring/heartbeat` | All (Student/Guest) | Gửi tín hiệu heartbeat giữ phiên làm bài active |
-| 25 | **Teacher Proctoring** | `GET` | `/api/teacher/proctoring/exams/{examId}/attempts` | `TEACHER` | Giám sát thí sinh phòng thi theo thời gian thực |
-| 26 | | `GET` | `/api/teacher/proctoring/attempts/{attemptId}/violations` | `TEACHER` | Xem nhật ký kiểm toán (audit log) vi phạm của thí sinh |
-| 27 | | `GET` | `/api/teacher/proctoring/attempts/{attemptId}/status` | `TEACHER` | Xem trạng thái viễn trắc, heartbeat, tỷ lệ tập trung |
-| 28 | | `POST` | `/api/teacher/proctoring/attempts/{attemptId}/disqualify` | `TEACHER` | Đình chỉ thi cưỡng chế thí sinh vi phạm |
-| 29 | **Attempt Grading** | `GET` | `/api/teacher/grading/exams/{examId}/attempts` | `TEACHER` | Lấy danh sách bài nộp cần chấm theo đề thi |
-| 30 | | `GET` | `/api/teacher/grading/exams/{examId}/stats` | `TEACHER` | Lấy thống kê tổng quan các phiên thi (điểm, thời gian, vi phạm) |
-| 31 | | `GET` | `/api/teacher/grading/exams/{examId}/attempts/export-excel` | `TEACHER` | Xuất file Excel (.xlsx) danh sách phiên thi đầy đủ thông tin |
-| 32 | | `GET` | `/api/teacher/grading/attempts/{attemptId}` | `TEACHER` | Xem chi tiết bài làm của 1 thí sinh để chấm |
-| 33 | | `GET` | `/api/teacher/grading/attempts/{attemptId}/export-excel` | `TEACHER` | Xuất file Excel (.xlsx) bài làm riêng lẻ kèm điểm từng câu & feedback |
-| 34 | | `POST` | `/api/teacher/grading/attempts/submit-grades` | `TEACHER` | Lưu điểm các câu tự luận của 1 bài thi |
-| 32 | **Question Grading** | `GET` | `/api/teacher/grading/exams/{examId}/questions` | `TEACHER` | Danh sách câu hỏi tự luận cần chấm (thống kê tiến độ) |
-| 33 | | `GET` | `/api/teacher/grading/questions/{questionId}/submissions` | `TEACHER` | Xem biểu điểm và bài làm học sinh theo câu hỏi |
-| 34 | | `POST` | `/api/teacher/grading/questions/{questionId}/manual` | `TEACHER` | Chấm tay hàng loạt/lẻ theo câu hỏi (tính điểm tự động) |
-| 35 | | `POST` | `/api/teacher/grading/trigger-ai` | `TEACHER` | Kích hoạt Google Gemini chấm tự động theo batch (202 Accepted) |
-| 36 | **Admin Dashboard** | `GET` | `/api/admin/dashboard` | `ADMIN` | Xem thống kê toàn hệ thống & nhật ký vi phạm gần nhất |
-| 37 | **Admin Users** | `GET` | `/api/admin/users` | `ADMIN` | Lấy danh sách tài khoản (lọc role, isActive, search) |
-| 38 | | `GET` | `/api/admin/users/{id}` | `ADMIN` | Xem chi tiết thông tin tài khoản |
-| 39 | | `PATCH` | `/api/admin/users/{id}/toggle-status` | `ADMIN` | Kích hoạt / Vô hiệu hóa tài khoản (chống tự khóa) |
-| 40 | | `PATCH` | `/api/admin/users/{id}/role` | `ADMIN` | Phân quyền vai trò người dùng (chống tự hạ quyền) |
-| 41 | **Admin Exams** | `GET` | `/api/admin/exams` | `ADMIN` | Quản lý danh sách toàn bộ đề thi của tất cả giáo viên |
-| 42 | | `GET` | `/api/admin/exams/{id}` | `ADMIN` | Xem chi tiết đề thi và câu hỏi |
-| 43 | | `PATCH` | `/api/admin/exams/{id}/close` | `ADMIN` | Đóng khẩn cấp đề thi đang mở |
-| 44 | | `DELETE` | `/api/admin/exams/{id}` | `ADMIN` | Xóa đề thi (chỉ DRAFT/CLOSED và chưa có lượt thi) |
-| 45 | **Student History** | `GET` | `/api/student/attempts` | `STUDENT` | Lấy danh sách lịch sử thi phân trang của sinh viên |
-| 46 | | `GET` | `/api/student/attempts/{attemptId}` | `STUDENT` | Xem chi tiết bài làm, điểm từng câu, đáp án & vi phạm quy chế |
-| 47 | **Admin System Logs** | `GET` | `/api/admin/logs` | `ADMIN` | Tìm kiếm FTS & Lọc nhật ký đa tiêu chí (phân trang 2 bước) |
-| 48 | | `GET` | `/api/admin/logs/{id}` | `ADMIN` | Xem chi tiết nhật ký kiểm toán, Payload JSON và Stacktrace |
-| 49 | | `GET` | `/api/admin/logs/stats` | `ADMIN` | Thống kê phân tích KPI nhật ký, tỉ lệ lỗi và độ trễ |
-| 50 | | `GET` | `/api/admin/logs/metadata` | `ADMIN` | Lấy danh mục distinct module & action phục vụ lọc động |
-| 51 | | `DELETE` | `/api/admin/logs/cleanup` | `ADMIN` | Dọn dẹp nhật ký cũ theo chu kỳ ngày lưu trữ retention |
-| 52 | **Teacher AI Quiz Gen** | `POST` | `/api/teacher/ai-generate/from-document` | `TEACHER` | Đưa tài liệu/văn bản vào hàng đợi AI soạn đề thi ngầm (202 Accepted) |
-| 53 | | `GET` | `/api/teacher/ai-generate/jobs/{jobId}` | `TEACHER` | Kiểm tra tiến độ và danh sách câu hỏi xem trước của job tạo đề |
-| 54 | | `POST` | `/api/teacher/ai-generate/jobs/{jobId}/cancel` | `TEACHER` | Hủy tiến trình tạo đề thi ngầm và giải phóng khóa tài khoản |
-| 55 | | `POST` | `/api/teacher/ai-generate/commit-to-exam/{examId}` | `TEACHER` | Lưu các câu hỏi AI đã duyệt trực tiếp vào đề thi |
-| 56 | **Teacher AI Tasks** | `GET` | `/api/teacher/ai-tasks` | `TEACHER` | Lấy danh sách tác vụ AI ngầm của giáo viên (soạn đề & chấm thi) |
-| 57 | | `GET` | `/api/teacher/ai-tasks/{taskId}` | `TEACHER` | Lấy chi tiết tác vụ AI và dữ liệu câu hỏi xem trước |
-| 58 | | `POST` | `/api/teacher/ai-tasks/{taskId}/cancel` | `TEACHER` | Hủy tác vụ AI đang xếp hàng / đang chạy và giải phóng khóa |
-| 59 | | `DELETE` | `/api/teacher/ai-tasks/{taskId}` | `TEACHER` | Xóa tác vụ AI khỏi lịch sử theo dõi |
-| 60 | **Admin AI Pool** | `GET` | `/api/admin/ai/status` | `ADMIN` | Xem tổng quan trạng thái hệ thống AI, slot metrics live & active workers |
-| 61 | | `GET` | `/api/admin/ai/keys` | `ADMIN` | Lấy danh sách toàn bộ AI API Keys và model slots cấu hình |
-| 62 | | `GET` | `/api/admin/ai/keys/{id}` | `ADMIN` | Xem chi tiết cấu hình 1 AI API Key |
-| 63 | | `POST` | `/api/admin/ai/keys` | `ADMIN` | Thêm AI API Key mới kèm giới hạn RPM/TPM từng model |
-| 64 | | `PUT` | `/api/admin/ai/keys/{id}` | `ADMIN` | Cập nhật thông tin AI API Key và model limits |
-| 65 | | `DELETE` | `/api/admin/ai/keys/{id}` | `ADMIN` | Xóa AI API Key khỏi cơ sở dữ liệu và rotation pool |
-| 66 | | `PATCH` | `/api/admin/ai/keys/{id}/toggle` | `ADMIN` | Bật / Tắt kích hoạt AI API Key |
-| 67 | | `PATCH` | `/api/admin/ai/models/{id}/toggle` | `ADMIN` | Bật / Tắt kích hoạt slot model cụ thể |
-| 68 | | `POST` | `/api/admin/ai/reload` | `ADMIN` | Buộc nạp lại toàn bộ slot xoay vòng AI từ Database |
-| 69 | | `DELETE` | `/api/admin/ai/jobs/{jobId}` | `ADMIN` | Hủy khẩn cấp 1 tác vụ chấm thi / soạn đề ngầm bị kẹt |
-| 70 | | `DELETE` | `/api/admin/ai/jobs` | `ADMIN` | Dọn dẹp toàn bộ tác vụ AI đang chạy và giải phóng toàn bộ khóa thi |
-| 71 | **Admin Moderation** | `GET` | `/api/admin/moderation/questions` | `ADMIN` | Danh sách câu hỏi kiểm duyệt nội dung (lọc an toàn, ảnh, loại câu, FTS) |
-| 72 | | `GET` | `/api/admin/moderation/stats` | `ADMIN` | Thống kê số lượng câu hỏi an toàn, vi phạm, chờ duyệt |
-| 73 | | `PATCH` | `/api/admin/moderation/questions/{id}/safety` | `ADMIN` | Cập nhật nhãn an toàn (đánh dấu an toàn / thu hồi cờ) |
-| 74 | | `DELETE` | `/api/admin/moderation/questions/{id}` | `ADMIN` | Xóa câu hỏi vi phạm tiêu chuẩn cộng đồng |
-| 75 | | `POST` | `/api/admin/moderation/ai-run` | `ADMIN` | Kích hoạt tác vụ AI quét kiểm duyệt hàng loạt ngầm (202 Accepted) |
-| 76 | | `GET` | `/api/admin/moderation/ai-status` | `ADMIN` | Kiểm tra tiến độ tác vụ AI kiểm duyệt nội dung |
-| 77 | | `DELETE` | `/api/admin/moderation/ai-cursor` | `ADMIN` | Đặt lại con trỏ duyệt AI trên Redis để quét lại từ đầu |
-| 78 | **Admin Health** | `GET` | `/api/admin/system/health` | `ADMIN` | Kiểm tra trạng thái sức khỏe hệ thống (Database, Redis, Disk, RAM) |
-| 79 | **Public Ping Probe** | `GET` | `/api/ping` (hoặc `/`, `/ping`) | Công khai | Kiểm tra kết nối, trạng thái máy chủ, trả về JSON hoặc HTML Dashboard |
+| 4 | | `POST` | `/api/auth/refresh` | `PUBLIC` | Cấp mới Access Token bằng Refresh Token |
+| 5 | | `POST` | `/api/auth/sso/quickbite` | `PUBLIC` | Xác thực / cấp tài khoản tự động qua QuickBite Access Token |
+| 6 | | `POST` | `/api/auth/sso/quickbite/login` | `PUBLIC` | Đăng nhập trực tiếp bằng tài khoản QuickBite (Resource Owner flow) |
+| 7 | | `POST` | `/api/auth/sso/quickbite/code` | `PUBLIC` | Trao đổi Authorization Code lấy token QuickTest (OIDC Redirect flow) |
+| 8 | | `PUT` | `/api/auth/profile` | Authenticated | Cập nhật thông tin cá nhân (họ tên) của tài khoản hiện tại |
+| 9 | | `PUT` | `/api/auth/password` | Authenticated | Đổi mật khẩu tài khoản hiện tại |
+| 10 | **Teacher Exams & Dashboard** | `GET` | `/api/teacher/dashboard` | `TEACHER` | Dashboard tổng quan KPI, tiến độ giảng dạy, đề thi ưu tiên & cảnh báo |
+| 11 | | `POST` | `/api/teacher/exams` | `TEACHER` | Tạo đề thi mới (DRAFT) |
+| 12 | | `GET` | `/api/teacher/exams` | `TEACHER` | Lấy danh sách đề thi của giáo viên (phân trang, lọc theo trạng thái/mã truy cập) |
+| 13 | | `GET` | `/api/teacher/exams/{id}` | `TEACHER` | Lấy chi tiết cấu hình và danh sách câu hỏi đề thi |
+| 14 | | `PUT` | `/api/teacher/exams/{id}` | `TEACHER` | Cập nhật thông tin đề thi (cho phép cả khi CLOSED) |
+| 15 | | `PATCH` | `/api/teacher/exams/{id}/publish` | `TEACHER` | Xuất bản đề thi (từ DRAFT hoặc CLOSED -> PUBLISHED) |
+| 16 | | `PATCH` | `/api/teacher/exams/{id}/close` | `TEACHER` | Đóng đề thi (CLOSED) & tự động thu các bài dở dang |
+| 17 | | `PATCH` | `/api/teacher/exams/{id}/republish` | `TEACHER` | Mở lại đề thi đã đóng (cập nhật hạn chót, chuyển sang PUBLISHED) |
+| 18 | | `POST` | `/api/teacher/exams/{id}/duplicate` | `TEACHER` | Nhân bản đề thi sang bản nháp mới (bất đồng bộ sao chép ảnh qua RabbitMQ) |
+| 19 | | `DELETE` | `/api/teacher/exams/{id}` | `TEACHER` | Xóa đề thi (chỉ xóa DRAFT) |
+| 20 | **Questions & Bank** | `POST` | `/api/teacher/exams/{examId}/questions` | `TEACHER` | Thêm câu hỏi vào đề thi (dữ liệu JSON) |
+| 21 | | `POST` | `/api/teacher/exams/{examId}/questions/with-media` | `TEACHER` | Thêm câu hỏi kèm tải lên tệp ảnh trực tiếp (multipart/form-data) |
+| 22 | | `PUT` | `/api/teacher/questions/{questionId}` | `TEACHER` | Cập nhật câu hỏi và đáp án (dữ liệu JSON) |
+| 23 | | `PUT` | `/api/teacher/questions/{questionId}/with-media` | `TEACHER` | Cập nhật câu hỏi kèm tải lên tệp ảnh trực tiếp (multipart/form-data) |
+| 24 | | `PUT` | `/api/teacher/questions/{questionId}/image` | `TEACHER` | Cập nhật trực tiếp ảnh câu hỏi (xóa ảnh cũ Cloudinary) |
+| 25 | | `DELETE` | `/api/teacher/questions/{questionId}` | `TEACHER` | Xóa câu hỏi (tự động dọn ảnh câu hỏi + đáp án trên Cloudinary) |
+| 26 | | `GET` | `/api/teacher/question-bank` | `TEACHER` | Lấy ngân hàng câu hỏi của giáo viên (phân trang, lọc theo đề/từ khóa FTS) |
+| 27 | | `POST` | `/api/teacher/exams/{examId}/questions/import` | `TEACHER` | Nhập câu hỏi từ ngân hàng vào đề thi (deep copy dữ liệu & ảnh) |
+| 28 | **Media Upload** | `POST` | `/api/teacher/media/upload` | `TEACHER` | Upload 1 file ảnh đồng bộ lên Cloudinary |
+| 29 | | `POST` | `/api/teacher/media/batch-upload` | `TEACHER` | Upload hàng loạt ảnh chạy nền (Async RabbitMQ) |
+| 30 | | `GET` | `/api/teacher/media/batch/{batchId}/status` | `TEACHER` | Kiểm tra tiến độ upload batch & lấy danh sách URL |
+| 31 | **Candidate Session** | `GET` | `/api/public/exams` | `PUBLIC` | Khám phá tối đa 10 đề thi công khai mở tự do trên trang chủ (Redis Cache 60s) |
+| 32 | | `POST` | `/api/session/start` | All (Student/Guest) | Bắt đầu hoặc khôi phục lượt thi, nhận đề thi masked |
+| 33 | | `PUT` | `/api/session/{attemptId}/save` | All (Student/Guest) | Auto-save câu trả lời đơn lẻ vào Redis Hash |
+| 34 | | `GET` | `/api/session/{attemptId}/resume` | All (Student/Guest) | Khôi phục bài làm kèm danh sách nháp đã lưu trong Redis |
+| 35 | | `POST` | `/api/session/{attemptId}/submit` | All (Student/Guest) | Nộp bài thi bất đồng bộ qua RabbitMQ (202 Accepted) |
+| 36 | | `GET` | `/api/session/{attemptId}/result` | All (Student/Guest) | Xem kết quả điểm số và trạng thái chấm bài |
+| 37 | **Candidate Proctoring** | `GET` | `/api/session/{attemptId}/proctoring/upload-signature` | All (Student/Guest) | Lấy chữ ký ủy quyền upload thẳng ảnh bằng chứng lên Cloudinary từ client |
+| 38 | | `POST` | `/api/session/{attemptId}/proctoring/violation` | All (Student/Guest) | Ingestion báo cáo vi phạm viễn trắc thông lượng cao (<1ms, Redis buffer) |
+| 39 | | `POST` | `/api/session/proctoring/violations` | All (Student/Guest) | Báo cáo sự kiện vi phạm viễn trắc tổng quát |
+| 40 | | `POST` | `/api/session/proctoring/heartbeat` | All (Student/Guest) | Gửi tín hiệu heartbeat giữ phiên làm bài active |
+| 41 | **Teacher Proctoring** | `GET` | `/api/teacher/proctoring/exams/{examId}/attempts` | `TEACHER` | Giám sát thí sinh phòng thi theo thời gian thực (alias `/monitoring`) |
+| 42 | | `GET` | `/api/teacher/proctoring/exams/{examId}/realtime-token` | `TEACHER` | Lấy vé JWT giám sát thời gian thực & địa chỉ QuickNotify Go Hub |
+| 43 | | `GET` | `/api/teacher/proctoring/attempts/{attemptId}/violations` | `TEACHER` | Xem nhật ký kiểm toán (audit log) vi phạm của thí sinh |
+| 44 | | `GET` | `/api/teacher/proctoring/attempts/{attemptId}/violations/detailed` | `TEACHER` | Xem chi tiết vi phạm kèm phân tích nguồn dữ liệu (Redis vs Postgres) |
+| 45 | | `GET` | `/api/teacher/proctoring/attempts/{attemptId}/status` | `TEACHER` | Xem trạng thái viễn trắc, heartbeat, tỷ lệ tập trung |
+| 46 | | `POST` | `/api/teacher/proctoring/attempts/{attemptId}/disqualify` | `TEACHER` | Đình chỉ thi cưỡng chế thí sinh vi phạm |
+| 47 | **Attempt Grading** | `GET` | `/api/teacher/grading/exams/{examId}/attempts` | `TEACHER` | Lấy danh sách bài nộp cần chấm theo đề thi |
+| 48 | | `GET` | `/api/teacher/grading/exams/{examId}/stats` | `TEACHER` | Lấy thống kê tổng quan các phiên thi (điểm, thời gian, vi phạm) |
+| 49 | | `GET` | `/api/teacher/grading/exams/{examId}/attempts/export-excel` | `TEACHER` | Xuất file Excel (.xlsx) danh sách phiên thi đầy đủ thông tin |
+| 50 | | `GET` | `/api/teacher/grading/attempts/{attemptId}` | `TEACHER` | Xem chi tiết bài làm của 1 thí sinh để chấm |
+| 51 | | `GET` | `/api/teacher/grading/attempts/{attemptId}/export-excel` | `TEACHER` | Xuất file Excel (.xlsx) bài làm riêng lẻ kèm điểm từng câu & feedback |
+| 52 | | `POST` | `/api/teacher/grading/attempts/submit-grades` | `TEACHER` | Lưu điểm các câu tự luận của 1 bài thi |
+| 53 | **Question Grading** | `GET` | `/api/teacher/grading/exams/{examId}/questions` | `TEACHER` | Danh sách câu hỏi tự luận cần chấm (thống kê tiến độ) |
+| 54 | | `GET` | `/api/teacher/grading/questions/{questionId}/submissions` | `TEACHER` | Xem biểu điểm và bài làm học sinh theo câu hỏi |
+| 55 | | `POST` | `/api/teacher/grading/questions/{questionId}/manual` | `TEACHER` | Chấm tay hàng loạt/lẻ theo câu hỏi (tính điểm tự động) |
+| 56 | | `POST` | `/api/teacher/grading/answers/{candidateAnswerId}/ai` | `TEACHER` | Chấm tự động 1 câu trả lời tự luận đơn lẻ bằng Google Gemini AI |
+| 57 | | `POST` | `/api/teacher/grading/trigger-ai` | `TEACHER` | Kích hoạt Google Gemini chấm tự động theo batch (202 Accepted) |
+| 58 | **Admin Dashboard** | `GET` | `/api/admin/dashboard` | `ADMIN` | Xem thống kê toàn hệ thống & nhật ký vi phạm gần nhất (alias `/overview`, `/analytics`) |
+| 59 | **Admin Users** | `GET` | `/api/admin/users` | `ADMIN` | Lấy danh sách tài khoản (lọc role, isActive, search FTS) |
+| 60 | | `GET` | `/api/admin/users/{id}` | `ADMIN` | Xem chi tiết thông tin tài khoản |
+| 61 | | `POST` | `/api/admin/users` | `ADMIN` | Tạo tài khoản người dùng mới trực tiếp với bất kỳ vai trò nào |
+| 62 | | `PUT` | `/api/admin/users/{id}/profile` | `ADMIN` | Cập nhật thông tin hồ sơ người dùng (họ tên, email, username) |
+| 63 | | `PUT` | `/api/admin/users/{id}/password` | `ADMIN` | Đặt lại mật khẩu trực tiếp cho người dùng |
+| 64 | | `PATCH` | `/api/admin/users/{id}/toggle-status` | `ADMIN` | Kích hoạt / Vô hiệu hóa tài khoản (chống tự khóa) |
+| 65 | | `PATCH` | `/api/admin/users/{id}/role` | `ADMIN` | Phân quyền vai trò người dùng (chống tự hạ quyền) |
+| 66 | **Admin Exams** | `GET` | `/api/admin/exams` | `ADMIN` | Quản lý danh sách toàn bộ đề thi của tất cả giáo viên |
+| 67 | | `GET` | `/api/admin/exams/{id}` | `ADMIN` | Xem chi tiết đề thi và câu hỏi |
+| 68 | | `PATCH` | `/api/admin/exams/{id}/close` | `ADMIN` | Đóng khẩn cấp đề thi đang mở |
+| 69 | | `DELETE` | `/api/admin/exams/{id}` | `ADMIN` | Xóa đề thi (chỉ DRAFT/CLOSED và chưa có lượt thi) |
+| 70 | **Student Dashboard & History** | `GET` | `/api/student/dashboard` | `STUDENT` | Thống kê tổng quan học tập, điểm TB, bài thi của tôi & bài thi khám phá |
+| 71 | | `GET` | `/api/student/attempts` | `STUDENT` | Lấy danh sách lịch sử thi phân trang của sinh viên |
+| 72 | | `GET` | `/api/student/attempts/{attemptId}` | `STUDENT` | Xem chi tiết bài làm, điểm từng câu, đáp án & vi phạm quy chế |
+| 73 | **Admin System Logs** | `GET` | `/api/admin/logs` | `ADMIN` | Tìm kiếm FTS & Lọc nhật ký đa tiêu chí (alias `/api/v1/admin/logs`) |
+| 74 | | `GET` | `/api/admin/logs/{id}` | `ADMIN` | Xem chi tiết nhật ký kiểm toán, Payload JSON và Stacktrace |
+| 75 | | `GET` | `/api/admin/logs/stats` | `ADMIN` | Thống kê phân tích KPI nhật ký, tỉ lệ lỗi và độ trễ |
+| 76 | | `GET` | `/api/admin/logs/metadata` | `ADMIN` | Lấy danh mục distinct module & action phục vụ lọc động |
+| 77 | | `DELETE` | `/api/admin/logs/cleanup` | `ADMIN` | Kích hoạt dọn dẹp nhật ký cũ ngầm theo chu kỳ ngày lưu trữ retention |
+| 78 | | `GET` | `/api/admin/logs/cleanup/status` | `ADMIN` | Kiểm tra tiến độ và trạng thái tiến trình dọn dẹp nhật ký ngầm |
+| 79 | **Teacher AI Quiz Gen** | `POST` | `/api/teacher/ai-generate/from-document` | `TEACHER` | Đưa tài liệu/văn bản vào hàng đợi AI soạn đề thi ngầm (202 Accepted) |
+| 80 | | `GET` | `/api/teacher/ai-generate/jobs/{jobId}` | `TEACHER` | Kiểm tra tiến độ và danh sách câu hỏi xem trước của job tạo đề |
+| 81 | | `POST` | `/api/teacher/ai-generate/jobs/{jobId}/cancel` | `TEACHER` | Hủy tiến trình tạo đề thi ngầm và giải phóng khóa tài khoản |
+| 82 | | `POST` | `/api/teacher/ai-generate/commit-to-exam/{examId}` | `TEACHER` | Lưu các câu hỏi AI đã duyệt trực tiếp vào đề thi |
+| 83 | **Teacher AI Tasks** | `GET` | `/api/teacher/ai-tasks` | `TEACHER` | Lấy danh sách tác vụ AI ngầm của giáo viên (soạn đề & chấm thi) |
+| 84 | | `GET` | `/api/teacher/ai-tasks/{taskId}` | `TEACHER` | Lấy chi tiết tác vụ AI và dữ liệu câu hỏi xem trước |
+| 85 | | `POST` | `/api/teacher/ai-tasks/{taskId}/cancel` | `TEACHER` | Hủy tác vụ AI đang xếp hàng / đang chạy và giải phóng khóa |
+| 86 | | `DELETE` | `/api/teacher/ai-tasks/{taskId}` | `TEACHER` | Xóa tác vụ AI khỏi lịch sử theo dõi |
+| 87 | **Admin AI Pool** | `GET` | `/api/admin/ai/status` | `ADMIN` | Xem tổng quan trạng thái hệ thống AI, slot metrics live & active workers |
+| 88 | | `GET` | `/api/admin/ai/keys` | `ADMIN` | Lấy danh sách toàn bộ AI API Keys và model slots cấu hình |
+| 89 | | `GET` | `/api/admin/ai/keys/{id}` | `ADMIN` | Xem chi tiết cấu hình 1 AI API Key |
+| 90 | | `POST` | `/api/admin/ai/keys` | `ADMIN` | Thêm AI API Key mới kèm giới hạn RPM/TPM từng model |
+| 91 | | `PUT` | `/api/admin/ai/keys/{id}` | `ADMIN` | Cập nhật thông tin AI API Key và model limits |
+| 92 | | `DELETE` | `/api/admin/ai/keys/{id}` | `ADMIN` | Xóa AI API Key khỏi cơ sở dữ liệu và rotation pool |
+| 93 | | `PATCH` | `/api/admin/ai/keys/{id}/toggle` | `ADMIN` | Bật / Tắt kích hoạt AI API Key |
+| 94 | | `PATCH` | `/api/admin/ai/models/{id}/toggle` | `ADMIN` | Bật / Tắt kích hoạt slot model cụ thể |
+| 95 | | `POST` | `/api/admin/ai/reload` | `ADMIN` | Buộc nạp lại toàn bộ slot xoay vòng AI từ Database |
+| 96 | | `DELETE` | `/api/admin/ai/jobs/{jobId}` | `ADMIN` | Hủy khẩn cấp 1 tác vụ chấm thi / soạn đề ngầm bị kẹt |
+| 97 | | `DELETE` | `/api/admin/ai/jobs` | `ADMIN` | Dọn dẹp toàn bộ tác vụ AI đang chạy và giải phóng toàn bộ khóa thi |
+| 98 | **Admin Moderation** | `GET` | `/api/admin/moderation/questions` | `ADMIN` | Danh sách câu hỏi kiểm duyệt nội dung (lọc an toàn, ảnh, loại câu, FTS) |
+| 99 | | `GET` | `/api/admin/moderation/stats` | `ADMIN` | Thống kê số lượng câu hỏi an toàn, vi phạm, chờ duyệt |
+| 100 | | `PATCH` | `/api/admin/moderation/questions/{id}/safety` | `ADMIN` | Cập nhật nhãn an toàn (đánh dấu an toàn / thu hồi cờ) |
+| 101 | | `DELETE` | `/api/admin/moderation/questions/{id}` | `ADMIN` | Xóa câu hỏi vi phạm tiêu chuẩn cộng đồng |
+| 102 | | `POST` | `/api/admin/moderation/ai-run` | `ADMIN` | Kích hoạt tác vụ AI quét kiểm duyệt hàng loạt ngầm (202 Accepted) |
+| 103 | | `GET` | `/api/admin/moderation/ai-status` | `ADMIN` | Kiểm tra tiến độ tác vụ AI kiểm duyệt nội dung |
+| 104 | | `DELETE` | `/api/admin/moderation/ai-cursor` | `ADMIN` | Đặt lại con trỏ duyệt AI trên Redis để quét lại từ đầu |
+| 105 | **Admin Health** | `GET` | `/api/admin/system/health` | `ADMIN` | Kiểm tra trạng thái sức khỏe hệ thống (Database, Redis, Disk, RAM, Uptime) |
+| 106 | **Public Ping Probe** | `GET` | `/api/ping` (hoặc `/`, `/ping`) | `PUBLIC` | Kiểm tra kết nối, trạng thái máy chủ, trả về JSON hoặc HTML Dashboard |
+| 107 | **Proctoring Media Governance** | `GET` | `/api/admin/proctoring-media` | `ADMIN` | Tìm kiếm & phân trang ảnh bằng chứng vi phạm (alias `/api/v1/...`) |
+| 108 | | `GET` | `/api/admin/proctoring-media/stats` | `ADMIN` | Thống kê số lượng & phân tích dung lượng ảnh viễn trắc |
+| 109 | | `GET` | `/api/admin/proctoring-media/cleanup/preview` | `ADMIN` | Xem trước số lượng ảnh sẽ dọn dẹp theo thời gian lưu trữ |
+| 110 | | `POST` | `/api/admin/proctoring-media/cleanup` | `ADMIN` | Kích hoạt tác vụ dọn dẹp hàng loạt ảnh ngầm (RabbitMQ Batch) |
+| 111 | | `GET` | `/api/admin/proctoring-media/cleanup/status` | `ADMIN` | Kiểm tra tiến độ tác vụ dọn dẹp ảnh ngầm |
+| 112 | | `DELETE` | `/api/admin/proctoring-media/batch` | `ADMIN` | Xóa hàng loạt ảnh bằng chứng theo danh sách ID |
+| 113 | | `DELETE` | `/api/admin/proctoring-media/{id}` | `ADMIN` | Xóa một ảnh bằng chứng đơn lẻ |
+| 114 | **Realtime Protocols** | `WS` | `/ws/proctoring` | All (Student/Guest) | Kết nối và bắt tay STOMP WebSocket thời gian thực |
+| 115 | | `SEND` | `/app/proctoring/violation` | All (Student/Guest) | Gửi sự kiện vi phạm viễn trắc qua WebSocket |
+| 116 | | `SEND` | `/app/proctoring/heartbeat` | All (Student/Guest) | Gửi tín hiệu nhịp tim định kỳ giữ phiên làm bài |
+| 117 | | `SUB` | `/topic/exam/{examId}/proctoring` | `TEACHER` | Đăng ký nhận thông báo vi phạm trực tiếp của phòng thi |
+| 118 | | `SUB` | `/topic/exam/{examId}/attempt/{attemptId}` | `STUDENT/GUEST` | Đăng ký nhận thông điệp khóa phòng thi / đình chỉ thi cá nhân |
 
 ---
 
@@ -231,6 +263,164 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
     "timestamp": "2026-09-12T12:00:00"
   }
   ```
+
+#### 1.4. Làm mới Token truy cập (`POST /api/auth/refresh`)
+- **Mô tả:** Cấp mới JWT Access Token và Refresh Token khi Access Token hiện tại sắp hoặc đã hết hạn, giúp duy trì phiên đăng nhập mà không yêu cầu người dùng nhập lại thông tin xác thực.
+- **Quyền hạn:** `PUBLIC`
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "refreshToken": "7c189b88-51ec-4364-a690-3490b8f05e32"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Token refreshed successfully",
+    "data": {
+      "accessToken": "eyJhbGciOiJIUzUxMiJ9...",
+      "tokenType": "Bearer",
+      "expiresIn": 86400,
+      "refreshToken": "9a38f322-11bc-4dc2-8239-2819cd481021",
+      "refreshExpiresIn": 604800,
+      "userInfo": {
+        "id": "c1f7b032-1598-4b77-8025-a74581f33230",
+        "username": "teacher_alice",
+        "email": "alice@quicktest.com",
+        "fullName": "Alice Johnson",
+        "roles": ["ROLE_TEACHER"],
+        "authProvider": "LOCAL",
+        "isActive": true,
+        "createdAt": "2026-09-12T12:00:00",
+        "lastLoginAt": "2026-11-13T11:00:00"
+      }
+    },
+    "timestamp": "2026-11-13T11:00:05.120"
+  }
+  ```
+- **Error Responses:**
+  - `400 Bad Request`: Refresh token bị để trống hoặc sai định dạng.
+  - `401 Unauthorized`: Refresh token không hợp lệ, đã hết hạn (expired) hoặc đã bị thu hồi trong Redis/Database.
+
+#### 1.5. Đăng nhập Single Sign-On qua QuickBite Access Token (`POST /api/auth/sso/quickbite`)
+- **Mô tả:** Xác thực hoặc tự động cấp tài khoản QuickTest cho người dùng đã đăng nhập từ hệ sinh thái QuickBite bằng việc truyền trực tiếp QuickBite Bearer Token.
+- **Quyền hạn:** `PUBLIC`
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "accessToken": "qb_eyJh..."
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "QuickBite SSO authentication successful",
+    "data": {
+      "accessToken": "eyJhbGciOiJIUzUxMiJ9...",
+      "tokenType": "Bearer",
+      "expiresIn": 86400,
+      "refreshToken": "b3e098df-8fa2-4be1-8b29-e85df6a94b41",
+      "refreshExpiresIn": 604800,
+      "userInfo": {
+        "id": "78fa2c30-4e56-42bb-a320-c8f7d983412e",
+        "username": "qb_john_doe",
+        "email": "johndoe@quickbite.io",
+        "fullName": "John Doe",
+        "roles": ["ROLE_STUDENT"],
+        "authProvider": "QUICKBITE",
+        "isActive": true,
+        "createdAt": "2026-10-27T12:00:00",
+        "lastLoginAt": "2026-11-13T11:15:20"
+      }
+    },
+    "timestamp": "2026-11-13T11:15:20.450"
+  }
+  ```
+
+#### 1.6. Đăng nhập trực tiếp bằng tài khoản QuickBite (`POST /api/auth/sso/quickbite/login`)
+- **Mô tả:** Xác thực người dùng bằng thông tin đăng nhập trực tiếp (Username/Password của QuickBite) theo cơ chế Resource Owner Password Credentials Grant flow.
+- **Quyền hạn:** `PUBLIC`
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "username": "john_quickbite",
+    "password": "SecurePassword@2026"
+  }
+  ```
+- **Response (200 OK):** Cấu trúc tương tự mục 1.5, trả về JWT QuickTest kèm hồ sơ tài khoản liên kết với `authProvider: "QUICKBITE"`.
+
+#### 1.7. Trao đổi OAuth2 Authorization Code QuickBite (`POST /api/auth/sso/quickbite/code`)
+- **Mô tả:** Xử lý callback chuyển hướng OAuth2/OIDC. Frontend gửi `code` và `redirectUri` nhận từ QuickBite Identity Service để Backend QuickTest trao đổi Token an toàn ở tầng Server-to-Server.
+- **Quyền hạn:** `PUBLIC`
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "code": "auth_code_78ab6210f92b45ca9",
+    "redirectUri": "https://quicktest.app/signin-oidc"
+  }
+  ```
+- **Response (200 OK):** Trả về `AuthResponse` đầy đủ chứa Token và thông tin tài khoản QuickTest.
+
+#### 1.8. Cập nhật hồ sơ cá nhân (`PUT /api/auth/profile`)
+- **Mô tả:** Người dùng đang đăng nhập tự cập nhật thông tin hiển thị của bản thân (họ và tên).
+- **Quyền hạn:** `Authenticated` (Yêu cầu JWT Token bất kỳ vai trò nào)
+- **Headers:** `Authorization: Bearer <access_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "fullName": "Alice Johnson Ph.D"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Profile updated successfully",
+    "data": {
+      "id": "c1f7b032-1598-4b77-8025-a74581f33230",
+      "username": "teacher_alice",
+      "email": "alice@quicktest.com",
+      "fullName": "Alice Johnson Ph.D",
+      "roles": ["ROLE_TEACHER"],
+      "authProvider": "LOCAL",
+      "isActive": true,
+      "createdAt": "2026-09-12T12:00:00",
+      "lastLoginAt": "2026-11-13T11:00:00"
+    },
+    "timestamp": "2026-11-13T11:18:00.000"
+  }
+  ```
+
+#### 1.9. Đổi mật khẩu tài khoản (`PUT /api/auth/password`)
+- **Mô tả:** Người dùng đang đăng nhập đổi mật khẩu tài khoản bằng cách xác minh mật khẩu hiện tại và nhập mật khẩu mới.
+- **Quyền hạn:** `Authenticated` (Yêu cầu JWT Token)
+- **Headers:** `Authorization: Bearer <access_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "oldPassword": "Password@123",
+    "newPassword": "NewStrongPassword@2026",
+    "confirmPassword": "NewStrongPassword@2026"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Password updated successfully",
+    "data": null,
+    "timestamp": "2026-11-13T11:20:00.000"
+  }
+  ```
+- **Error Responses:**
+  - `400 Bad Request`: `newPassword` và `confirmPassword` không trùng khớp, hoặc mật khẩu mới quá ngắn (< 6 ký tự).
+  - `400 Bad Request`: Mật khẩu hiện tại (`oldPassword`) không chính xác.
 
 ---
 
@@ -361,6 +551,82 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
     "message": "Exam deleted successfully",
     "data": null,
     "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 2.10. Dashboard tổng quan giáo viên (`GET /api/teacher/dashboard`)
+- **Mô tả:** Cung cấp số liệu thống kê toàn diện phục vụ giảng dạy của giáo viên: tổng số đề thi theo vòng đời (Draft, Published, Closed), phân loại câu hỏi (Single, Multi, Numeric, Essay), khối lượng bài nộp cần chấm tay, điểm trung bình toàn bộ học sinh, danh sách việc cần xử lý gấp (priority exams), biểu đồ chuỗi thời gian 7 ngày và danh sách cảnh báo vi phạm viễn trắc gần nhất.
+- **Quyền hạn:** `TEACHER` hoặc `ADMIN`
+- **Query Parameters:**
+  - `refresh` (boolean, tùy chọn, mặc định `false`): Nếu đặt `true`, hệ thống sẽ bỏ qua cache Redis tạm thời để tính toán lại số liệu tươi mới nhất từ Database.
+- **Headers:** `Authorization: Bearer <teacher_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Teacher dashboard statistics retrieved successfully",
+    "data": {
+      "totalExams": 12,
+      "draftExams": 3,
+      "publishedExams": 6,
+      "closedExams": 3,
+      "totalQuestions": 240,
+      "singleChoiceQuestions": 160,
+      "multipleChoiceQuestions": 40,
+      "numericQuestions": 25,
+      "essayQuestions": 15,
+      "totalAttempts": 580,
+      "inProgressAttempts": 24,
+      "submittedAttempts": 520,
+      "awaitingGradingAttempts": 36,
+      "disqualifiedAttempts": 4,
+      "pendingManualAnswers": 48,
+      "averageScore": 7.82,
+      "totalViolations": 14,
+      "dailyActivities": [
+        {
+          "date": "2026-11-07",
+          "label": "T7",
+          "attemptsCount": 85,
+          "submittedCount": 80,
+          "violationsCount": 2
+        },
+        {
+          "date": "2026-11-13",
+          "label": "T6",
+          "attemptsCount": 120,
+          "submittedCount": 115,
+          "violationsCount": 1
+        }
+      ],
+      "priorityExams": [
+        {
+          "id": "b3e098df-8fa2-4be1-8b29-e85df6a94b41",
+          "title": "Kiểm tra Giữa kỳ Sinh học 12",
+          "accessCode": "BIO12GK",
+          "status": "PUBLISHED",
+          "durationMinutes": 45,
+          "createdAt": "2026-11-01T08:00:00",
+          "totalAttempts": 150,
+          "inProgressCount": 12,
+          "submittedCount": 138,
+          "pendingGradingCount": 15,
+          "averageScore": 8.15
+        }
+      ],
+      "recentViolations": [
+        {
+          "id": "e9b2a750-f81d-4048-b4b6-79177a64ce12",
+          "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+          "studentName": "Nguyễn Văn An",
+          "examTitle": "Kiểm tra Giữa kỳ Sinh học 12",
+          "violationType": "TAB_SWITCH",
+          "description": "Chuyển tab trình duyệt trong khi thi",
+          "timestamp": "2026-11-13T10:45:22"
+        }
+      ]
+    },
+    "timestamp": "2026-11-13T11:21:00.000"
   }
   ```
 
@@ -528,6 +794,47 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
   }
   ```
 
+#### 3.7. Thêm câu hỏi kèm tải lên ảnh trực tiếp (`POST /api/teacher/exams/{examId}/questions/with-media`)
+- **Mô tả:** Tạo câu hỏi mới trong đề thi đồng thời tải trực tiếp tệp hình ảnh của câu hỏi và hình ảnh của từng phương án lựa chọn trong cùng 1 request dạng `multipart/form-data`. Hệ thống tải ảnh bất đồng bộ lên Cloudinary qua RabbitMQ giúp phản hồi ngay lập tức.
+- **Endpoint alias:** Hỗ trợ cả `POST /api/teacher/exams/{examId}/questions` (khi gửi header `Content-Type: multipart/form-data`).
+- **Quyền hạn:** `TEACHER`
+- **Headers:** `Authorization: Bearer <teacher_token>`, `Content-Type: multipart/form-data`
+- **Form Data Parts:**
+  - `question` (application/json, Bắt buộc): Dữ liệu câu hỏi chuẩn (`QuestionCreateRequest`).
+  - `questionImage` (file binary, Tùy chọn): Tệp ảnh của câu hỏi (PNG, JPEG, WebP, dung lượng tối đa 10MB).
+  - `optionImages` (danh sách file binary, Tùy chọn): Danh sách tệp ảnh cho các đáp án lựa chọn.
+  - `optionIndices` (danh sách số nguyên, Tùy chọn): Thứ tự index tương ứng của các lựa chọn gắn với `optionImages` (Ví dụ: `0`, `2`).
+- **Response (201 Created):**
+  ```json
+  {
+    "status": 201,
+    "message": "Question added to exam successfully. Media is processing in background.",
+    "data": {
+      "id": "5f3a8b29-192a-4ce2-b281-229184baef10",
+      "examId": "b3e098df-8fa2-4be1-8b29-e85df6a94b41",
+      "content": "Quan sát đồ thị cấu trúc ADN dưới đây và xác định liên kết X:",
+      "type": "SINGLE_CHOICE",
+      "score": 1.0,
+      "orderIndex": 5,
+      "imageUrl": null,
+      "imagePending": true,
+      "options": [
+        { "id": "opt-1", "content": "Liên kết Hydro", "isCorrect": true, "imageUrl": null },
+        { "id": "opt-2", "content": "Liên kết Photphodiester", "isCorrect": false, "imageUrl": null }
+      ]
+    },
+    "timestamp": "2026-11-13T11:22:15.000"
+  }
+  ```
+
+#### 3.8. Cập nhật câu hỏi kèm tải lên ảnh trực tiếp (`PUT /api/teacher/questions/{questionId}/with-media`)
+- **Mô tả:** Cập nhật nội dung câu hỏi, danh sách đáp án, đồng thời thay thế hoặc bổ sung ảnh minh họa câu hỏi / lựa chọn bằng tệp nhị phân tải lên trực tiếp (`multipart/form-data`).
+- **Endpoint alias:** Hỗ trợ cả `PUT /api/teacher/questions/{questionId}` (khi gửi header `Content-Type: multipart/form-data`).
+- **Quyền hạn:** `TEACHER`
+- **Headers:** `Authorization: Bearer <teacher_token>`, `Content-Type: multipart/form-data`
+- **Form Data Parts:** Tương tự mục 3.7 (`question`, `questionImage`, `optionImages`, `optionIndices`).
+- **Response (200 OK):** Trả về `QuestionResponse` sau khi cập nhật thành công.
+
 ---
 
 ### Module 4: Quản Lý Media & Upload Cloudinary (Media Upload)
@@ -683,6 +990,38 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 - **Mô tả:** Thí sinh xem kết quả bài thi. Tự động kiểm tra Redis Cache trước, nếu bài thi đã hoàn tất chấm điểm sẽ trả về `totalScore`. Nếu còn câu tự luận chờ chấm, status sẽ là `AWAITING_MANUAL_GRADING`.
 - **Response (200 OK):** `SubmitResultResponse`
 
+#### 5.6. Khám phá danh sách đề thi mở tự do (`GET /api/public/exams`)
+- **Mô tả:** Endpoint mở hoàn toàn cho khách vãng lai và thí sinh tự do duyệt xem tối đa 10 đề thi công khai (`status = PUBLISHED`, `isPublic = true`) ngẫu nhiên trên trang chủ, có cơ chế quay vòng và lưu bộ đệm Redis TTL 60 giây.
+- **Quyền hạn:** `PUBLIC` (Không yêu cầu Token)
+- **Headers:** `Content-Type: application/json`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Random public exams retrieved successfully",
+    "data": [
+      {
+        "id": "b3e098df-8fa2-4be1-8b29-e85df6a94b41",
+        "title": "Khảo sát kiến thức Trí Tuệ Nhân Tạo căn bản",
+        "accessCode": "AI101_OPEN",
+        "description": "Đề thi mở tự do cho mọi thành viên trải nghiệm",
+        "status": "PUBLISHED",
+        "durationMinutes": 30,
+        "maxAttempts": 5,
+        "questionCount": 20,
+        "totalPoints": 10.0,
+        "teacherName": "ThS. Trần Minh Đức",
+        "startTime": "2026-10-01T00:00:00",
+        "endTime": "2026-12-31T23:59:59",
+        "examTimeStatus": "OPEN",
+        "isOpen": true,
+        "createdAt": "2026-09-30T10:15:00"
+      }
+    ],
+    "timestamp": "2026-11-13T11:23:00.000"
+  }
+  ```
+
 ---
 
 ### Module 6 & 7: Giám Sát Phòng Thi Trực Tuyến & Viễn Trắc (Proctoring)
@@ -706,6 +1045,65 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 - **Request Body:** `{ "attemptId": "a93e3d64-e5e3-4d64-8ee1-d309be0d23aa" }`
 - **Response (200 OK):** `"Heartbeat received"`
 
+#### 6.3. Lấy chữ ký ủy quyền tải ảnh vi phạm trực tiếp lên Cloudinary (`GET /api/session/{attemptId}/proctoring/upload-signature`)
+- **Mô tả:** Tạo chữ ký số (Signed Upload Signature) để trình duyệt client của thí sinh có thể tải thẳng ảnh bằng chứng (Webcam snapshot / Screenshot) lên dịch vụ Cloudinary. Giải pháp này giúp máy chủ Backend không phải hứng chịu tải xử lý luồng nhị phân lớn, đồng thời tuyệt đối không làm lộ khóa bí mật `apiSecret` cho phía Client.
+- **Quyền hạn:** `All (Student/Guest)` (Sở hữu phiên thi tương ứng)
+- **Headers:** `Authorization: Bearer <token>` (đối với sinh viên) hoặc Header phiên định danh.
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Upload signature generated successfully",
+    "data": {
+      "signature": "1a2b3c4d5e6f7890abcdef1234567890abcdef12",
+      "timestamp": 1794567890,
+      "apiKey": "748927163916294",
+      "cloudName": "quicktest-cloud",
+      "folder": "quick-test/proctoring/f78d10b4-374e-4b68-b789-98246e72b4f9"
+    },
+    "timestamp": "2026-11-13T11:24:00.000"
+  }
+  ```
+- **Error Responses:**
+  - `400 Bad Request`: Phiên thi không còn ở trạng thái `IN_PROGRESS` (đã nộp bài hoặc bị đình chỉ).
+  - `403 Forbidden`: Người dùng không có quyền đối với phiên thi được chỉ định.
+
+#### 6.4. Ingestion vi phạm viễn trắc thông lượng cao (`POST /api/session/{attemptId}/proctoring/violation`)
+- **Mô tả:** Endpoint chuyên dụng tiếp nhận dữ liệu vi phạm viễn trắc (telemetry ingestion) với thông lượng cực cao. Dữ liệu được ghi thẳng vào Redis bộ nhớ tạm với độ trễ phản hồi dưới 1ms, không ghi Database đồng bộ. Hệ thống tự động kích hoạt điều phối thông báo vi phạm sang Go WebSocket Hub (QuickNotify), kiểm tra giới hạn vi phạm (`maxViolations`) và tự động khóa bài/đình chỉ thi cưỡng chế (`DISQUALIFIED`) nếu vượt ngưỡng.
+- **Quyền hạn:** `All (Student/Guest)` (Sở hữu phiên thi tương ứng)
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+    "violationType": "DEVTOOLS_OPEN",
+    "description": "Thí sinh mở công cụ kiểm tra DevTools F12",
+    "evidenceUrl": "https://res.cloudinary.com/quicktest-cloud/image/upload/v1/quick-test/proctoring/f78d10b4/ev1.jpg",
+    "snapshotBase64": null,
+    "timestamp": "2026-11-13T11:24:10"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Vi phạm đã được ghi nhận vào hệ thống giám sát.",
+    "data": {
+      "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+      "violationType": "DEVTOOLS_OPEN",
+      "violationCount": 3,
+      "maxAllowed": 5,
+      "remainingAllowed": 2,
+      "disqualified": false,
+      "message": "Cảnh báo: Bạn đã vi phạm 3/5 lần quy chế thi!",
+      "timestamp": "2026-11-13T11:24:10"
+    },
+    "timestamp": "2026-11-13T11:24:10.025"
+  }
+  ```
+- **Tự động đình chỉ (Auto-Disqualification):**
+  - Khi `violationCount >= maxAllowed`, cờ `disqualified` trả về `true`. Trạng thái phiên thi chuyển thành `DISQUALIFIED`, toàn bộ bài làm nháp trong Redis được đóng gói gửi sang RabbitMQ để chấm dứt phiên thi ngay lập tức.
+
 #### 7.1. Giáo viên giám sát phòng thi realtime (`GET /api/teacher/proctoring/exams/{examId}/attempts`)
 - **Mô tả:** Xem danh sách thí sinh đang thi, tình trạng kết nối (ONLINE / OFFLINE), số lần vi phạm (`violationCount`), tiến độ nộp bài.
 - **Quyền hạn:** `TEACHER`
@@ -727,6 +1125,59 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
 - **Quyền hạn:** `TEACHER`
 - **Request Body:** `{ "reason": "Phát hiện tra cứu tài liệu nhiều lần" }`
 - **Response (200 OK):** `"Candidate has been successfully disqualified"`
+
+#### 7.5. Lấy vé giám sát thời gian thực & địa chỉ QuickNotify Go Hub (`GET /api/teacher/proctoring/exams/{examId}/realtime-token`)
+- **Mô tả:** Cấp vé bảo mật JWT thời gian thực (Realtime Entry Ticket) kèm đường dẫn kết nối WebSocket đến trung tâm điều phối sự kiện QuickNotify (Go Hub). Giúp màn hình giám sát của giáo viên tiếp nhận thông báo vi phạm viễn trắc ngay tức thì (Push model) với độ trễ cực thấp.
+- **Quyền hạn:** `TEACHER` (Chủ sở hữu đề thi)
+- **Headers:** `Authorization: Bearer <teacher_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Realtime token generated successfully",
+    "data": {
+      "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZWFjaGVyX2FsaWNlIi...",
+      "realtimeToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZWFjaGVyX2FsaWNlIi...",
+      "wsUrl": "wss://notify.quicktest.app/ws/events",
+      "realtimeWsUrl": "wss://notify.quicktest.app/ws/events",
+      "topic": "exam_monitor_b3e098df-8fa2-4be1-8b29-e85df6a94b41"
+    },
+    "timestamp": "2026-11-13T11:25:00.000"
+  }
+  ```
+
+#### 7.6. Lấy chi tiết lịch sử vi phạm kèm phân tích nguồn dữ liệu (`GET /api/teacher/proctoring/attempts/{attemptId}/violations/detailed`)
+- **Mô tả:** Lấy toàn bộ nhật ký vi phạm viễn trắc của một lượt thi kèm chỉ thị nguồn gốc dữ liệu: `REDIS_LIVE` (lấy dữ liệu tươi từ bộ nhớ đệm RAM nếu thí sinh đang làm bài) hoặc `POSTGRESQL_FINAL` (truy vấn dữ liệu đã chốt lưu trữ vĩnh viễn trong CSDL sau khi nộp bài).
+- **Quyền hạn:** `TEACHER` (Chủ sở hữu đề thi)
+- **Headers:** `Authorization: Bearer <teacher_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Detailed violations retrieved successfully",
+    "data": {
+      "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+      "source": "REDIS_LIVE",
+      "violationCount": 2,
+      "status": "IN_PROGRESS",
+      "violations": [
+        {
+          "violationType": "TAB_SWITCH",
+          "description": "Thí sinh chuyển sang tab khác",
+          "evidenceUrl": "https://res.cloudinary.com/.../ev1.jpg",
+          "timestamp": "2026-11-13T10:30:15"
+        },
+        {
+          "violationType": "MULTIPLE_FACES",
+          "description": "Phát hiện có nhiều hơn một khuôn mặt trước màn hình",
+          "evidenceUrl": "https://res.cloudinary.com/.../ev2.jpg",
+          "timestamp": "2026-11-13T10:32:40"
+        }
+      ]
+    },
+    "timestamp": "2026-11-13T11:25:30.000"
+  }
+  ```
 
 ---
 
@@ -970,6 +1421,27 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
   }
   ```
 
+#### 8.11. Chấm điểm tự động 1 câu trả lời tự luận bằng AI (`POST /api/teacher/grading/answers/{candidateAnswerId}/ai`)
+- **Mô tả:** Giáo viên yêu cầu Google Gemini AI đánh giá và chấm điểm tự động cho một câu trả lời tự luận đơn lẻ (`CandidateAnswer`). AI phân tích câu trả lời của thí sinh đối chiếu với đáp án mẫu và tiêu chí chấm (rubric), trả về điểm số đề xuất và nhận xét chi tiết.
+- **Quyền hạn:** `TEACHER` (Chủ sở hữu đề thi)
+- **Headers:** `Authorization: Bearer <teacher_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Candidate answer evaluated by AI successfully",
+    "data": {
+      "candidateAnswerId": "d982b17a-2110-4fa8-b648-912a74cbe112",
+      "awardedScore": 1.75,
+      "feedback": "Thí sinh trình bày đầy đủ bản chất của cơ chế phiên mã và dịch mã. Tuy nhiên còn thiếu một số bước chi tiết về giai đoạn kết thúc dịch mã (Stop Codon)."
+    },
+    "timestamp": "2026-11-13T11:26:00.000"
+  }
+  ```
+- **Error Responses:**
+  - `404 Not Found`: Không tìm thấy câu trả lời với ID đã cho.
+  - `400 Bad Request`: Câu trả lời không thuộc dạng tự luận (`ESSAY_TEXT`).
+
 ---
 
 ### Module 10: Quản Trị Hệ Thống (Admin Management & System Analytics)
@@ -1113,6 +1585,92 @@ Tất cả các API đều bọc dữ liệu trả về trong cấu trúc chuẩ
       "role": "TEACHER"
     },
     "timestamp": "2026-09-12T12:00:00"
+  }
+  ```
+
+#### 10.5. Tạo tài khoản người dùng mới trực tiếp (`POST /api/admin/users`)
+- **Mô tả:** Quản trị viên khởi tạo tài khoản người dùng mới trực tiếp trong hệ thống với bất kỳ vai trò nào (`ADMIN`, `TEACHER`, `STUDENT`).
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "username": "teacher_david",
+    "email": "david.teacher@quicktest.edu",
+    "fullName": "David Tran",
+    "password": "InitialSecurePassword@2026",
+    "role": "TEACHER"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "User created successfully",
+    "data": {
+      "id": "e43b1790-21a4-4df8-bfa3-0192a74be110",
+      "username": "teacher_david",
+      "email": "david.teacher@quicktest.edu",
+      "fullName": "David Tran",
+      "role": "TEACHER",
+      "isActive": true,
+      "authProvider": "LOCAL",
+      "createdAt": "2026-11-13T11:27:00",
+      "lastLoginAt": null
+    },
+    "timestamp": "2026-11-13T11:27:00.000"
+  }
+  ```
+
+#### 10.6. Cập nhật hồ sơ tài khoản người dùng (`PUT /api/admin/users/{id}/profile`)
+- **Mô tả:** Quản trị viên cập nhật thông tin hiển thị (họ tên, email, tên đăng nhập) của một tài khoản người dùng bất kỳ.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "fullName": "David Tran M.Sc",
+    "email": "david.tran.new@quicktest.edu",
+    "username": "teacher_david"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "User profile updated successfully",
+    "data": {
+      "id": "e43b1790-21a4-4df8-bfa3-0192a74be110",
+      "username": "teacher_david",
+      "email": "david.tran.new@quicktest.edu",
+      "fullName": "David Tran M.Sc",
+      "role": "TEACHER",
+      "isActive": true,
+      "authProvider": "LOCAL",
+      "createdAt": "2026-11-13T11:27:00",
+      "lastLoginAt": null
+    },
+    "timestamp": "2026-11-13T11:27:30.000"
+  }
+  ```
+
+#### 10.7. Đặt lại mật khẩu tài khoản người dùng (`PUT /api/admin/users/{id}/password`)
+- **Mô tả:** Quản trị viên thực hiện đặt lại mật khẩu trực tiếp cho một tài khoản người dùng khi được yêu cầu hỗ trợ khôi phục tài khoản.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "newPassword": "NewAdminAssignedPassword@2026"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Password reset successfully",
+    "data": null,
+    "timestamp": "2026-11-13T11:28:00.000"
   }
   ```
 
@@ -1329,6 +1887,93 @@ Cung cấp cho thí sinh (học sinh / sinh viên đã đăng ký) khả năng t
   }
   ```
 
+#### 12.3. Dashboard tổng quan học tập sinh viên (`GET /api/student/dashboard`)
+- **Mô tả:** Cung cấp số liệu thống kê cá nhân hóa cho sinh viên: tổng số bài thi đã tham gia, điểm trung bình toàn diện, điểm cao nhất, số bài thi đang chờ chấm tự luận, lịch sử và phân bố các lỗi vi phạm quy chế (tab switch, đa khuôn mặt, v.v.), biểu đồ hoạt động 7 ngày, danh sách đề thi của tôi (`myExams`) và đề thi công khai gợi ý (`exploreExams`).
+- **Quyền hạn:** `STUDENT` (hoặc `TEACHER`, `ADMIN`)
+- **Query Parameters:**
+  - `refresh` (boolean, tùy chọn, mặc định `false`): Bỏ qua bộ đệm Redis để tính toán lại số liệu tươi mới nhất.
+- **Headers:** `Authorization: Bearer <student_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Student dashboard retrieved successfully",
+    "data": {
+      "totalExamsAttempted": 8,
+      "openExamsCount": 4,
+      "activeSessionsCount": 0,
+      "completedAttemptsCount": 12,
+      "totalAttemptsCount": 12,
+      "submittedAttemptsCount": 12,
+      "inProgressAttemptsCount": 0,
+      "awaitingGradingCount": 1,
+      "disqualifiedAttemptsCount": 0,
+      "averageScore": 8.45,
+      "bestScore": 10.0,
+      "totalViolations": 3,
+      "attemptsWithViolations": 2,
+      "violationByTypes": {
+        "TAB_SWITCH": 2,
+        "EXIT_FULLSCREEN": 1
+      },
+      "recentViolations": [
+        {
+          "id": "a1b2c3d4-0001-4444-8888-abcdef123456",
+          "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+          "studentName": "Nguyễn Văn An",
+          "examTitle": "Kiểm tra Giữa kỳ Sinh học 12",
+          "violationType": "TAB_SWITCH",
+          "description": "Chuyển tab trình duyệt trong khi thi",
+          "timestamp": "2026-11-13T10:45:22"
+        }
+      ],
+      "dailyActivities": [
+        {
+          "date": "2026-11-12",
+          "label": "T5",
+          "attemptsCount": 2,
+          "submittedCount": 2,
+          "violationsCount": 0
+        },
+        {
+          "date": "2026-11-13",
+          "label": "T6",
+          "attemptsCount": 1,
+          "submittedCount": 1,
+          "violationsCount": 1
+        }
+      ],
+      "myExams": [
+        {
+          "id": "b3e098df-8fa2-4be1-8b29-e85df6a94b41",
+          "title": "Kiểm tra Giữa kỳ Sinh học 12",
+          "accessCode": "BIO12GK",
+          "status": "PUBLISHED",
+          "durationMinutes": 45,
+          "attemptsCount": 1,
+          "maxAttempts": 1,
+          "highestScore": 9.25,
+          "lastAttemptStatus": "SUBMITTED"
+        }
+      ],
+      "exploreExams": [
+        {
+          "id": "a98dfb01-1122-4433-8899-001122334455",
+          "title": "Khảo sát kiến thức Trí Tuệ Nhân Tạo căn bản",
+          "accessCode": "AI101_OPEN",
+          "status": "PUBLISHED",
+          "durationMinutes": 30,
+          "attemptsCount": 0,
+          "maxAttempts": 5,
+          "highestScore": null,
+          "lastAttemptStatus": null
+        }
+      ]
+    },
+    "timestamp": "2026-11-13T11:29:00.000"
+  }
+  ```
+
 ---
 
 ### Module 11: Quản Trị Hệ Thống - Quản Lý Nhật Ký Tập Trung (System Logs Management)
@@ -1536,6 +2181,32 @@ Toàn bộ hoạt động quan trọng trong hệ thống (tạo/sửa/xóa bài
       "retentionDaysKept": 30
     },
     "timestamp": "2026-09-26T18:40:01"
+  }
+  ```
+
+#### 13.6. Kiểm tra tiến độ tác vụ dọn dẹp nhật ký kiểm toán (`GET /api/admin/logs/cleanup/status`)
+- **Mô tả:** Lấy thông tin trạng thái, tiến độ và khối lượng bản ghi đã được dọn dẹp của tiến trình background worker dọn dẹp nhật ký cũ.
+- **Endpoint alias:** Hỗ trợ cả `GET /api/v1/admin/logs/cleanup/status`.
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Log cleanup status retrieved successfully",
+    "data": {
+      "isRunning": false,
+      "totalDeleted": 14500,
+      "estimatedRemaining": 0,
+      "retentionDaysKept": 30,
+      "batchSize": 500,
+      "cutoff": "2026-10-14T00:00:00",
+      "startedAt": "2026-11-13T02:00:00",
+      "finishedAt": "2026-11-13T02:03:15",
+      "status": "COMPLETED",
+      "message": "Cleanup completed successfully. 14,500 logs purged."
+    },
+    "timestamp": "2026-11-13T11:30:00.000"
   }
   ```
 
@@ -2223,6 +2894,287 @@ Toàn bộ hoạt động quan trọng trong hệ thống (tạo/sửa/xóa bài
     "timestamp": "2026-10-16T14:15:00.000Z"
   }
   ```
+
+---
+
+### Module 17: Quản Trị Bằng Chứng Media Viễn Trắc (Admin Proctoring Media Governance)
+
+Hệ thống quản lý, giám sát và dọn dẹp bằng chứng hình ảnh (Webcam Snapshots, Animation Bursts) ghi nhận trong quá trình thi. Hỗ trợ cả 2 tiền tố đường dẫn `/api/admin/proctoring-media` và `/api/v1/admin/proctoring-media`.
+
+#### 17.1. Tìm kiếm và phân trang danh sách ảnh bằng chứng (`GET /api/admin/proctoring-media`)
+- **Mô tả:** Truy vấn danh sách hình ảnh bằng chứng vi phạm có phân trang, hỗ trợ lọc theo loại vi phạm, mã đề thi, khoảng thời gian chụp ảnh và tìm kiếm Full-Text Search theo tên/email thí sinh.
+- **Endpoint alias:** `GET /api/v1/admin/proctoring-media`
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`
+- **Query Parameters:**
+  - `violationType` (string, tùy chọn): Lọc theo loại vi phạm (`TAB_SWITCH`, `MULTIPLE_FACES`, `NO_FACE_DETECTED`, `SUSPICIOUS_OBJECT`, v.v.).
+  - `examId` (UUID, tùy chọn): Lọc theo mã định danh đề thi.
+  - `startDate` (ISO-8601 string, tùy chọn): Thời điểm bắt đầu lọc.
+  - `endDate` (ISO-8601 string, tùy chọn): Thời điểm kết thúc lọc.
+  - `search` (string, tùy chọn): Từ khóa tìm kiếm họ tên hoặc email thí sinh.
+  - `page` (int, mặc định `0`): Chỉ số trang.
+  - `size` (int, mặc định `24`): Số lượng phần tử mỗi trang (tối ưu hiển thị dạng lưới Media Grid).
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Proctoring media retrieved successfully",
+    "data": {
+      "content": [
+        {
+          "id": "78da21bc-9988-4e12-8877-665544332211",
+          "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+          "examId": "b3e098df-8fa2-4be1-8b29-e85df6a94b41",
+          "examTitle": "Kiểm tra Giữa kỳ Sinh học 12",
+          "attemptStatus": "SUBMITTED",
+          "studentId": "c1f7b032-1598-4b77-8025-a74581f33230",
+          "studentName": "Nguyễn Văn An",
+          "studentEmail": "an.nguyen@quicktest.edu",
+          "violationType": "MULTIPLE_FACES",
+          "description": "Phát hiện 2 khuôn mặt trước camera",
+          "evidenceUrl": "https://res.cloudinary.com/quicktest-cloud/image/upload/v1794567890/quick-test/proctoring/f78d10b4/ev1.jpg",
+          "timestamp": "2026-11-13T10:35:12",
+          "isAnimatedBurst": false,
+          "storageType": "CLOUDINARY"
+        }
+      ],
+      "pageNumber": 0,
+      "pageSize": 24,
+      "totalElements": 1,
+      "totalPages": 1,
+      "last": true
+    },
+    "timestamp": "2026-11-13T11:31:00.000"
+  }
+  ```
+
+#### 17.2. Thống kê KPI & Phân tích dung lượng ảnh viễn trắc (`GET /api/admin/proctoring-media/stats`)
+- **Mô tả:** Lấy số liệu thống kê tổng hợp phục vụ các KPI card: tổng số ảnh, ảnh tĩnh đơn lẻ, ảnh động liên hoàn (burst animation), số ảnh chụp trong 7 ngày gần nhất, số ảnh cũ hơn 30 ngày (sẵn sàng dọn dẹp) và số lượng đề thi có lưu trữ bằng chứng.
+- **Endpoint alias:** `GET /api/v1/admin/proctoring-media/stats`
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Proctoring media stats retrieved successfully",
+    "data": {
+      "totalMediaCount": 4580,
+      "singleSnapshotCount": 4210,
+      "burstAnimationCount": 370,
+      "recent7DaysCount": 1120,
+      "olderThan30DaysCount": 2350,
+      "examsWithMediaCount": 48
+    },
+    "timestamp": "2026-11-13T11:31:30.000"
+  }
+  ```
+
+#### 17.3. Xem trước khối lượng ảnh sẽ dọn dẹp (`GET /api/admin/proctoring-media/cleanup/preview`)
+- **Mô tả:** Ước tính trước số lượng ảnh và bản ghi sẽ bị loại bỏ theo tiêu chí lưu trữ (retention window) trước khi quản trị viên thực sự kích hoạt tác vụ xóa.
+- **Endpoint alias:** `GET /api/v1/admin/proctoring-media/cleanup/preview`
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`
+- **Query Parameters:**
+  - `days` (int, mặc định `30`): Số ngày lưu trữ tối thiểu cần giữ lại.
+  - `violationType` (string, tùy chọn): Chỉ lọc loại vi phạm cụ thể nếu muốn dọn dẹp cục bộ.
+  - `examId` (UUID, tùy chọn): Chỉ dọn dẹp ảnh thuộc 1 đề thi cụ thể.
+  - `onlyFinishedExams` (boolean, mặc định `true`): Chỉ dọn dẹp ảnh thuộc các kỳ thi đã kết thúc / đóng hoàn toàn.
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Cleanup preview count calculated",
+    "data": {
+      "matchingCount": 2350,
+      "days": 30
+    },
+    "timestamp": "2026-11-13T11:32:00.000"
+  }
+  ```
+
+#### 17.4. Kích hoạt tác vụ dọn dẹp hàng loạt ảnh ngầm (`POST /api/admin/proctoring-media/cleanup`)
+- **Mô tả:** Khởi động tiến trình dọn dẹp hàng loạt (asynchronous background cleanup) các ảnh bằng chứng cũ theo điều kiện chỉ định. Tiến trình chia nhỏ theo batch (mặc định 100 ảnh), gửi thông điệp xóa ảnh Cloudinary qua RabbitMQ Producer và cập nhật trạng thái trong PostgreSQL mà không làm nghẽn luồng xử lý chính.
+- **Endpoint alias:** `POST /api/v1/admin/proctoring-media/cleanup`
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`, `Content-Type: application/json`
+- **Request Body (Tùy chọn):**
+  ```json
+  {
+    "days": 30,
+    "violationType": null,
+    "examId": null,
+    "onlyFinishedExams": true,
+    "batchSize": 100
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Proctoring media cleanup initiated in background",
+    "data": {
+      "isRunning": true,
+      "totalDeleted": 0,
+      "estimatedRemaining": 2350,
+      "retentionDaysKept": 30,
+      "batchSize": 100,
+      "cutoff": "2026-10-14T00:00:00",
+      "startedAt": "2026-11-13T11:32:15",
+      "finishedAt": null,
+      "status": "RUNNING",
+      "message": "Cleanup started for media older than 30 days"
+    },
+    "timestamp": "2026-11-13T11:32:15.000"
+  }
+  ```
+
+#### 17.5. Kiểm tra tiến độ tác vụ dọn dẹp ảnh ngầm (`GET /api/admin/proctoring-media/cleanup/status`)
+- **Mô tả:** Kiểm tra trạng thái và tiến độ xử lý hiện tại của tiến trình background worker dọn dẹp hình ảnh.
+- **Endpoint alias:** `GET /api/v1/admin/proctoring-media/cleanup/status`
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Cleanup status retrieved successfully",
+    "data": {
+      "isRunning": false,
+      "totalDeleted": 2350,
+      "estimatedRemaining": 0,
+      "retentionDaysKept": 30,
+      "batchSize": 100,
+      "cutoff": "2026-10-14T00:00:00",
+      "startedAt": "2026-11-13T11:32:15",
+      "finishedAt": "2026-11-13T11:33:45",
+      "status": "COMPLETED",
+      "message": "Proctoring media cleanup completed successfully"
+    },
+    "timestamp": "2026-11-13T11:34:00.000"
+  }
+  ```
+
+#### 17.6. Xóa hàng loạt ảnh bằng chứng theo danh sách ID (`DELETE /api/admin/proctoring-media/batch`)
+- **Mô tả:** Quản trị viên chọn thủ công danh sách các ảnh bằng chứng trên giao diện quản trị để xóa vĩnh viễn. Hệ thống xóa bản ghi trong Database và gửi yêu cầu xóa tệp tài nguyên tương ứng trên Cloudinary.
+- **Endpoint alias:** `DELETE /api/v1/admin/proctoring-media/batch`
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "ids": [
+      "78da21bc-9988-4e12-8877-665544332211",
+      "91ca34de-1234-4567-89ab-cdef01234567"
+    ]
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Đã xóa thành công 2 ảnh giám sát",
+    "data": {
+      "deletedCount": 2
+    },
+    "timestamp": "2026-11-13T11:34:30.000"
+  }
+  ```
+
+#### 17.7. Xóa một ảnh bằng chứng đơn lẻ (`DELETE /api/admin/proctoring-media/{id}`)
+- **Mô tả:** Xóa một hình ảnh bằng chứng cụ thể theo ID và loại bỏ tệp khỏi Cloudinary.
+- **Endpoint alias:** `DELETE /api/v1/admin/proctoring-media/{id}`
+- **Quyền hạn:** `ADMIN`
+- **Headers:** `Authorization: Bearer <admin_token>`
+- **Response (200 OK):**
+  ```json
+  {
+    "status": 200,
+    "message": "Ảnh giám sát đã được xóa thành công",
+    "data": {
+      "deletedCount": 1
+    },
+    "timestamp": "2026-11-13T11:35:00.000"
+  }
+  ```
+
+---
+
+### Module 18: Giao Thức Viễn Trắc Thời Gian Thực & WebSocket STOMP (Realtime Telemetry Protocols)
+
+QuickTest trang bị hệ thống giao tiếp 2 chiều (Bidirectional Realtime Communication) kết hợp giữa Spring WebSocket STOMP (Spring Boot) và trung tâm điều phối sự kiện thông lượng cao QuickNotify (Go WebSocket Hub).
+
+#### 18.1. Kết nối và Bắt tay STOMP WebSocket (`/ws/proctoring`)
+- **Endpoint kết nối:**
+  - Native WebSocket URL: `ws://localhost:8080/ws/proctoring`
+  - SockJS Fallback URL: `http://localhost:8080/ws/proctoring`
+- **Cơ chế xác thực (STOMP Connect Header):**
+  - Thí sinh đã đăng nhập:
+    ```http
+    CONNECT
+    Authorization:Bearer <access_token>
+    accept-version:1.1,1.2
+    heart-beat:10000,10000
+    ```
+  - Thí sinh tự do (Guest):
+    ```http
+    CONNECT
+    X-Guest-Identifier:<guest_uuid>
+    accept-version:1.1,1.2
+    heart-beat:10000,10000
+    ```
+
+#### 18.2. Gửi thông điệp báo cáo vi phạm qua STOMP (`/app/proctoring/violation`)
+- **Mục đích:** Gửi sự kiện vi phạm viễn trắc (tab switch, camera mất tín hiệu, mở cửa sổ khác) qua kết nối socket liên tục.
+- **Destination:** `/app/proctoring/violation`
+- **STOMP Frame Message Payload:**
+  ```json
+  {
+    "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+    "violationType": "TAB_SWITCH",
+    "description": "Thí sinh chuyển tab hoặc mất focus cửa sổ làm bài",
+    "evidenceUrl": "https://res.cloudinary.com/.../ev1.jpg",
+    "snapshotBase64": null,
+    "timestamp": "2026-11-13T11:36:00"
+  }
+  ```
+- **Hệ thống xử lý:** Server ghi nhận vi phạm, cập nhật Redis Hash, và phát cảnh báo đến topic giám sát phòng thi tương ứng.
+
+#### 18.3. Gửi nhịp tim giữ phiên (Heartbeat Ping) (`/app/proctoring/heartbeat`)
+- **Mục đích:** Giữ nhịp sinh tồn (Candidate Liveness Check) của phiên thi, cập nhật thời điểm hoạt động cuối cùng của thí sinh trong Redis để phát hiện kịp thời các sự cố mất mạng hoặc treo ứng dụng.
+- **Destination:** `/app/proctoring/heartbeat`
+- **STOMP Frame Message Payload:**
+  ```json
+  {
+    "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+    "timestamp": 1794567890123
+  }
+  ```
+
+#### 18.4. Nhận sự kiện vi phạm phòng thi theo thời gian thực (`/topic/exam/{examId}/proctoring`)
+- **Mục đích:** Kênh phân phối sự kiện (Publish/Subscribe) dành cho màn hình giám sát của Giảng viên. Bất kỳ khi nào có thí sinh trong phòng thi phát sinh vi phạm, server sẽ phát quảng bá ngay lập tức vào topic này.
+- **Destination Subscribe:** `/topic/exam/{examId}/proctoring`
+- **Thông điệp broadcast nhận được (`ViolationAlertMessage`):**
+  ```json
+  {
+    "attemptId": "f78d10b4-374e-4b68-b789-98246e72b4f9",
+    "studentName": "Nguyễn Văn An",
+    "studentEmail": "an.nguyen@quicktest.edu",
+    "violationType": "TAB_SWITCH",
+    "violationCount": 2,
+    "maxAllowed": 5,
+    "remainingAllowed": 3,
+    "disqualified": false,
+    "message": "Cảnh báo vi phạm: Chuyển tab lần 2",
+    "evidenceUrl": "https://res.cloudinary.com/.../ev1.jpg",
+    "timestamp": "2026-11-13T11:36:05"
+  }
+  ```
+
+#### 18.5. Kênh cảnh báo cá nhân của thí sinh (`/topic/exam/{examId}/attempt/{attemptId}`)
+- **Mục đích:** Kênh thông báo riêng biệt cho từng thí sinh. Khi giám khảo thực hiện đình chỉ thi thủ công (`disqualifyAttempt`) hoặc hệ thống tự động khóa bài do vượt quá vi phạm cho phép, thông điệp khóa phòng thi sẽ được phát trực tiếp vào topic này để client lập tức hiển thị màn hình khóa.
+- **Destination Subscribe:** `/topic/exam/{examId}/attempt/{attemptId}`
+- **Nội dung thông điệp:** Chứa trạng thái `disqualified: true` kèm thông điệp giải thích lý do đình chỉ thi.
 
 ---
 

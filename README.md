@@ -13,7 +13,7 @@ QuickTest Workspace
 ├── quick-test/                  # Backend Service (Spring Boot, Java)
 ├── quick-test-frontend/         # Frontend Client (Next.js 16, Tailwind v4)
 ├── bruno/                       # Bruno API Test Suite
-├── API_ENDPOINTS.md             # Đặc tả chi tiết 70+ RESTful Endpoints
+├── API_ENDPOINTS.md             # Đặc tả chi tiết 100+ RESTful Endpoints & WebSocket Protocols
 ├── quick-test-architecture.md   # Tài liệu Kiến trúc Hệ thống & AI Rotation Engine
 └── quick-test-system-flows.md   # Biểu đồ Luồng Nghiệp vụ
 ```
@@ -114,7 +114,7 @@ npm run dev
 
 - 📖 [Frontend Client Documentation](file:///d:/Workspace/QuickTest/quick-test-frontend/README.md)
 - ⚙️ [Backend Service Documentation](file:///d:/Workspace/QuickTest/quick-test/README.md)
-- 🔌 [REST API Specification (78+ Endpoints)](file:///d:/Workspace/QuickTest/API_ENDPOINTS.md)
+- 🔌 [REST API Specification (100+ Endpoints & WebSocket Protocols)](file:///d:/Workspace/QuickTest/API_ENDPOINTS.md)
 - 🏗️ [Hệ thống Kiến trúc & Cơ chế AI Gemini Pool](file:///d:/Workspace/QuickTest/quick-test-architecture.md)
 - 🔄 [Biểu đồ Luồng nghiệp vụ & Viễn trắc thời gian thực](file:///d:/Workspace/QuickTest/quick-test-system-flows.md)
 - 🧪 [Bộ kiểm thử tự động Bruno](file:///d:/Workspace/QuickTest/bruno)

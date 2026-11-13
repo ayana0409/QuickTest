@@ -234,7 +234,7 @@ Hệ thống hỗ trợ ghi đè cấu hình linh hoạt thông qua các biến 
 ## 8. Tài liệu API & Kiểm thử (API Documentation & Bruno Testing)
 
 ### 📖 1. Tài liệu đặc tả API chuẩn
-- Xem tài liệu đặc tả chi tiết toàn bộ **78+ Endpoints** tại: [API_ENDPOINTS.md](../API_ENDPOINTS.md).
+- Xem tài liệu đặc tả chi tiết toàn bộ **118+ Endpoints & WebSocket Protocols** tại: [API_ENDPOINTS.md](../API_ENDPOINTS.md).
 - Xem sơ đồ luồng nghiệp vụ hệ thống (Mermaid Sequence Diagrams) tại: [quick-test-system-flows.md](../quick-test-system-flows.md).
 - Xem tài liệu thiết kế kỹ thuật kiến trúc toàn diện tại: [quick-test-architecture.md](../quick-test-architecture.md).
 
