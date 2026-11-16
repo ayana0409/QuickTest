@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Configuration;
  * Defines exchange, primary submission queue, and dead-letter queue (DLQ).
  */
 @Configuration
-@SuppressWarnings("null")
 public class RabbitMQConfig {
 
     public static final String SUBMISSION_EXCHANGE = "exam.submission.exchange";

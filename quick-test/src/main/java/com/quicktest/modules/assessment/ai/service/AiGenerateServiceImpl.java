@@ -34,7 +34,6 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class AiGenerateServiceImpl implements AiGenerateService {
 
     private final DocumentParserService documentParserService;

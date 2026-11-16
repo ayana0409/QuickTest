@@ -38,7 +38,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Controller tests for {@link TeacherDashboardController}.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class TeacherDashboardControllerTest {
 
     @Mock

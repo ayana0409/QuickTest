@@ -63,14 +63,14 @@ class QuickNotifyDispatcherServiceTest {
 
         dispatcher.dispatchViolationAlert(attemptId, examId, alert);
 
-        ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate, times(2)).postForEntity(
                 eq("http://localhost:8085/api/v1/notify"),
                 captor.capture(),
                 eq(String.class)
         );
 
-        HttpEntity firstRequest = captor.getAllValues().get(0);
+        HttpEntity<?> firstRequest = captor.getAllValues().get(0);
         HttpHeaders headers = firstRequest.getHeaders();
         assertThat(headers.getFirst("X-API-Key")).isEqualTo("test-api-key-12345");
         assertThat(headers.getContentType().toString()).contains("application/json");

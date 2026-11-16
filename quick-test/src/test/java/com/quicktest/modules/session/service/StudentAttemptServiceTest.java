@@ -18,7 +18,6 @@ import com.quicktest.modules.session.entity.ExamAttempt;
 import com.quicktest.modules.session.entity.GradingStatus;
 import com.quicktest.modules.session.repository.CandidateAnswerRepository;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
-import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.assessment.repository.ExamRepository;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
 import com.quicktest.modules.session.dto.StudentDashboardResponse;
@@ -48,7 +47,6 @@ import static org.mockito.Mockito.*;
  * ownership authorization security checks, and calculation of scores and duration.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class StudentAttemptServiceTest {
 
     @Mock
@@ -70,7 +68,6 @@ class StudentAttemptServiceTest {
     private StudentAttemptServiceImpl studentAttemptService;
 
     private User studentUser;
-    private User otherUser;
     private Exam exam;
     private ExamAttempt attempt;
     private UUID studentId;
@@ -88,13 +85,6 @@ class StudentAttemptServiceTest {
                 .username("student_john")
                 .email("john@quicktest.com")
                 .fullName("John Doe")
-                .build();
-
-        otherUser = User.builder()
-                .id(otherId)
-                .username("student_alice")
-                .email("alice@quicktest.com")
-                .fullName("Alice Wonder")
                 .build();
 
         exam = Exam.builder()

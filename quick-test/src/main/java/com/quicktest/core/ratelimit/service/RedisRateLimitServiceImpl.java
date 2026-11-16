@@ -18,14 +18,14 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
+@SuppressWarnings("rawtypes")
 public class RedisRateLimitServiceImpl implements RateLimitService {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final RateLimitProperties properties;
     private final RedisScript<List> rateLimitScript;
 
-    private static final String LUA_SLIDING_WINDOW_SCRIPT =
-            "local key = KEYS[1]\n" +
+    private static final String LUA_SLIDING_WINDOW_SCRIPT = "local key = KEYS[1]\n" +
             "local now = tonumber(ARGV[1])\n" +
             "local windowSeconds = tonumber(ARGV[2])\n" +
             "local limit = tonumber(ARGV[3])\n" +
@@ -90,8 +90,7 @@ public class RedisRateLimitServiceImpl implements RateLimitService {
                     String.valueOf(now),
                     String.valueOf(windowSeconds),
                     String.valueOf(limit),
-                    member
-            );
+                    member);
 
             if (results != null && results.size() >= 5) {
                 boolean allowed = toLong(results.get(0)) == 1L;
@@ -119,8 +118,10 @@ public class RedisRateLimitServiceImpl implements RateLimitService {
                     .build();
 
         } catch (Exception ex) {
-            // Fail-open: log warning but do not interrupt users (e.g. students in active exam)
-            log.error("Redis rate limit check failed for key '{}'. Failing open. Reason: {}", redisKey, ex.getMessage());
+            // Fail-open: log warning but do not interrupt users (e.g. students in active
+            // exam)
+            log.error("Redis rate limit check failed for key '{}'. Failing open. Reason: {}", redisKey,
+                    ex.getMessage());
             return RateLimitResult.builder()
                     .allowed(true)
                     .limit(limit)

@@ -27,7 +27,6 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class MediaBatchUploadServiceImpl implements MediaBatchUploadService {
 
     public static final String BATCH_KEY_PREFIX = "media:batch:";

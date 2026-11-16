@@ -40,7 +40,6 @@ import static org.mockito.Mockito.*;
  * score boundaries, and status transitions to SUBMITTED upon completion.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class TeacherGradingServiceTest {
 
         @Mock

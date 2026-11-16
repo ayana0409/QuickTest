@@ -26,7 +26,6 @@ import java.util.Map;
 @Service
 @org.springframework.context.annotation.Lazy(false)
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class ExamCloneConsumer {
 
     private final CloudinaryStorageService cloudinaryStorageService;

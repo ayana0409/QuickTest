@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class AiMetricsRedisServiceImpl implements AiMetricsRedisService {
 
     private static final String REDIS_KEY_SLOT_PREFIX = "ai:metrics:slot:";

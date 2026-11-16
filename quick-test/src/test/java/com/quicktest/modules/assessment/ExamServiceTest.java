@@ -37,7 +37,6 @@ import static org.mockito.Mockito.*;
  * and state transitions.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class ExamServiceTest {
 
     @Mock

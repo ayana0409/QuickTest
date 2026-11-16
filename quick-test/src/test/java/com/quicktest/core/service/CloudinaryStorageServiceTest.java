@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class CloudinaryStorageServiceTest {
 
     @Mock

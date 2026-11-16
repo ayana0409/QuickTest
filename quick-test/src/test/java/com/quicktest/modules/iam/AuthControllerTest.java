@@ -39,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * and refresh token exchange.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class AuthControllerTest {
 
     @Mock

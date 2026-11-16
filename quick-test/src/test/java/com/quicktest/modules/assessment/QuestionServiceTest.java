@@ -36,7 +36,6 @@ import static org.mockito.Mockito.*;
  * ownership checks, and status restrictions.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class QuestionServiceTest {
 
     @Mock

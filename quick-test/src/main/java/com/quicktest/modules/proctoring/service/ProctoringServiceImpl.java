@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class ProctoringServiceImpl implements ProctoringService {
 
     private static final int DEFAULT_MAX_VIOLATIONS = 5;

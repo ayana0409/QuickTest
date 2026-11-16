@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class AiQuizGeneratorService {
 
     private static final int MAX_BATCH_SIZE_PER_PASS = 15;

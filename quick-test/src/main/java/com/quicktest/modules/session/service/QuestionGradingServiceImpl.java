@@ -62,7 +62,6 @@ import com.quicktest.modules.session.dto.AiSingleGradeDto;
  */
 @Slf4j
 @Service
-@SuppressWarnings("null")
 public class QuestionGradingServiceImpl implements QuestionGradingService {
 
     private final ExamRepository examRepository;

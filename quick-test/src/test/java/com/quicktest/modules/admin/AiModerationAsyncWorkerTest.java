@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
  * Unit tests for AiModerationAsyncWorker.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
+@SuppressWarnings("deprecation")
 class AiModerationAsyncWorkerTest {
 
     @Mock
@@ -73,9 +73,10 @@ class AiModerationAsyncWorkerTest {
 
         AiModerationResultDto resultDto = AiModerationResultDto.builder()
                 .results(List.of(
-                        AiModerationResultDto.AiQuestionVerdict.builder().questionId(qId1.toString()).safe(true).build(),
-                        AiModerationResultDto.AiQuestionVerdict.builder().questionId(qId2.toString()).safe(false).build()
-                ))
+                        AiModerationResultDto.AiQuestionVerdict.builder().questionId(qId1.toString()).safe(true)
+                                .build(),
+                        AiModerationResultDto.AiQuestionVerdict.builder().questionId(qId2.toString()).safe(false)
+                                .build()))
                 .build();
 
         when(aiModerationService.moderateBatch(anyList())).thenReturn(resultDto);

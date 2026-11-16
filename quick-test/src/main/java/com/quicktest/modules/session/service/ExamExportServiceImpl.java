@@ -200,13 +200,11 @@ public class ExamExportServiceImpl implements ExamExportService {
 
             XSSFCellStyle dataLeft = createDataStyle(workbook, HorizontalAlignment.LEFT, null, borderGray, colorMap);
             XSSFCellStyle dataCenter = createDataStyle(workbook, HorizontalAlignment.CENTER, null, borderGray, colorMap);
-            XSSFCellStyle dataRight = createDataStyle(workbook, HorizontalAlignment.RIGHT, null, borderGray, colorMap);
             XSSFCellStyle dataNumber = createDataStyle(workbook, HorizontalAlignment.RIGHT, null, borderGray, colorMap);
             dataNumber.setDataFormat(dataFormat.getFormat("#,##0.00"));
 
             XSSFCellStyle dataZebraLeft = createDataStyle(workbook, HorizontalAlignment.LEFT, zebraStripe, borderGray, colorMap);
             XSSFCellStyle dataZebraCenter = createDataStyle(workbook, HorizontalAlignment.CENTER, zebraStripe, borderGray, colorMap);
-            XSSFCellStyle dataZebraRight = createDataStyle(workbook, HorizontalAlignment.RIGHT, zebraStripe, borderGray, colorMap);
             XSSFCellStyle dataZebraNumber = createDataStyle(workbook, HorizontalAlignment.RIGHT, zebraStripe, borderGray, colorMap);
             dataZebraNumber.setDataFormat(dataFormat.getFormat("#,##0.00"));
 
@@ -306,7 +304,6 @@ public class ExamExportServiceImpl implements ExamExportService {
 
                 XSSFCellStyle currentLeft = isZebra ? dataZebraLeft : dataLeft;
                 XSSFCellStyle currentCenter = isZebra ? dataZebraCenter : dataCenter;
-                XSSFCellStyle currentRight = isZebra ? dataZebraRight : dataRight;
                 XSSFCellStyle currentNumber = isZebra ? dataZebraNumber : dataNumber;
 
                 // 0. STT

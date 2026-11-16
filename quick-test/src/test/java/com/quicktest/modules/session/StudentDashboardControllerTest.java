@@ -30,7 +30,6 @@ import static org.mockito.Mockito.*;
  * Unit tests for StudentDashboardController.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class StudentDashboardControllerTest {
 
     @Mock

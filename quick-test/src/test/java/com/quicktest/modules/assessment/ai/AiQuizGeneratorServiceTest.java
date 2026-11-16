@@ -1,7 +1,6 @@
 package com.quicktest.modules.assessment.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quicktest.config.GeminiPoolProperties;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.service.GeminiRotationService;
 import com.quicktest.modules.assessment.ai.dto.AiGenerateQuizRequest;
@@ -30,14 +29,11 @@ class AiQuizGeneratorServiceTest {
   @Mock
   private GeminiRotationService geminiRotationService;
 
-  private GeminiPoolProperties geminiPoolProperties;
   private ObjectMapper objectMapper;
   private AiQuizGeneratorService aiQuizGeneratorService;
 
   @BeforeEach
   void setUp() {
-    geminiPoolProperties = new GeminiPoolProperties();
-    geminiPoolProperties.setMaxTokens(4000);
     objectMapper = new ObjectMapper();
     aiQuizGeneratorService = new AiQuizGeneratorService(geminiRotationService, objectMapper);
   }

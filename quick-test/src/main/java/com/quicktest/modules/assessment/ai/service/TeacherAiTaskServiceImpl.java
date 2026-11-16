@@ -27,7 +27,6 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class TeacherAiTaskServiceImpl implements TeacherAiTaskService {
 
     public static final String REDIS_TEACHER_TASKS_PREFIX = "ai:teacher:tasks:";

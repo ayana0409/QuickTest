@@ -26,7 +26,6 @@ import java.util.UUID;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class AiQuizGeneratorAsyncWorker {
 
     public static final String REDIS_QUIZ_JOB_PREFIX = "ai:quiz_gen:job:";
@@ -59,9 +58,6 @@ public class AiQuizGeneratorAsyncWorker {
 
         log.info("[AI QUIZ WORKER] Started job [{}] on thread [{}] for user [{}] (file: {})",
                 jobId, Thread.currentThread().getName(), userId, fileName);
-
-        String userLockKey = REDIS_USER_LOCK_PREFIX + userId;
-        String jobRedisKey = REDIS_QUIZ_JOB_PREFIX + jobId;
 
         int targetCount = request.getTotalQuestions() != null ? request.getTotalQuestions() : 10;
 

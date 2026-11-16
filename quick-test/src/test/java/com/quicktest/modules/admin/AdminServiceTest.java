@@ -43,7 +43,6 @@ import static org.mockito.Mockito.*;
  * and dashboard statistics generation.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class AdminServiceTest {
 
     @Mock

@@ -1,8 +1,5 @@
 package com.quicktest.config;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quicktest.modules.assessment.dto.ExamSummaryResponse;
 import com.quicktest.modules.assessment.entity.ExamStatus;

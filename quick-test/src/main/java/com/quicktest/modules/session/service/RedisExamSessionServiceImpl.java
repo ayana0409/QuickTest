@@ -19,7 +19,6 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class RedisExamSessionServiceImpl implements RedisExamSessionService {
 
     private static final String KEY_PREFIX = "exam:attempt:";

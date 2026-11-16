@@ -18,7 +18,6 @@ import com.quicktest.modules.iam.entity.User;
 import com.quicktest.modules.iam.repository.UserRepository;
 import com.quicktest.modules.proctoring.entity.ViolationLog;
 import com.quicktest.modules.proctoring.repository.ViolationLogRepository;
-import com.quicktest.modules.session.entity.AttemptStatus;
 import com.quicktest.modules.session.repository.ExamAttemptRepository;
 import com.quicktest.modules.session.service.ExamSessionService;
 import lombok.RequiredArgsConstructor;

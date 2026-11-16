@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 @Service
 @org.springframework.context.annotation.Lazy(false)
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class ExamSubmissionConsumer {
 
     private final RedisExamSessionService redisExamSessionService;

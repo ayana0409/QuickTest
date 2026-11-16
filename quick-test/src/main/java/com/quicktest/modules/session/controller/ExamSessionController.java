@@ -24,7 +24,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/session")
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class ExamSessionController {
 
     private final ExamSessionService examSessionService;

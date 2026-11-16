@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
+@SuppressWarnings("deprecation")
 public class GeminiRotationServiceImpl implements GeminiRotationService {
 
     private final GeminiPoolProperties poolProperties;

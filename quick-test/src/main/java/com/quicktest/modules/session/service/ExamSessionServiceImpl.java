@@ -38,7 +38,6 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class ExamSessionServiceImpl implements ExamSessionService {
 
     private static final int GRACE_PERIOD_SECONDS = 15;

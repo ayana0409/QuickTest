@@ -22,7 +22,6 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class GeminiGradingServiceImpl implements GeminiGradingService {
 
     private final GeminiRotationService geminiRotationService;

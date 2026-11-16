@@ -26,7 +26,6 @@ import java.util.Map;
  */
 @Slf4j
 @RestControllerAdvice
-@SuppressWarnings("null")
 public class GlobalExceptionHandler {
 
     @Autowired(required = false)

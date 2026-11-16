@@ -8,7 +8,6 @@ import com.quicktest.modules.admin.controller.AdminExamController;
 import com.quicktest.modules.admin.controller.AdminUserController;
 import com.quicktest.modules.admin.dto.*;
 import com.quicktest.modules.admin.service.AdminService;
-import com.quicktest.modules.assessment.dto.ExamDetailResponse;
 import com.quicktest.modules.assessment.entity.ExamStatus;
 import com.quicktest.modules.iam.entity.Role;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +31,6 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -46,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Controller tests for Admin endpoints.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class AdminControllerTest {
 
     @Mock

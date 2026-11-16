@@ -40,7 +40,6 @@ import static org.mockito.Mockito.*;
  * and security authentication checks for student attempt endpoints.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class StudentAttemptControllerTest {
 
     @Mock

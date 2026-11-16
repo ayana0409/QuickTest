@@ -41,7 +41,6 @@ import static org.mockito.Mockito.*;
  * teacher authorization, and telemetry status queries.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class ProctoringServiceTest {
 
         @Mock

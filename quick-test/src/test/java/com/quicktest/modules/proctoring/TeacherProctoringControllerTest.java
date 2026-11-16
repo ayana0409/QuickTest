@@ -36,7 +36,6 @@ import static org.mockito.Mockito.*;
  * Validates endpoint delegation, parameters, and response structures.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class TeacherProctoringControllerTest {
 
         @Mock

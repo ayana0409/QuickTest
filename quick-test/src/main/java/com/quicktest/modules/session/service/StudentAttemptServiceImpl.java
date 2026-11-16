@@ -50,7 +50,6 @@ import static com.quicktest.core.util.NativeQueryResultUtils.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class StudentAttemptServiceImpl implements StudentAttemptService {
 
         private static final int DASHBOARD_SERIES_DAYS = 7;

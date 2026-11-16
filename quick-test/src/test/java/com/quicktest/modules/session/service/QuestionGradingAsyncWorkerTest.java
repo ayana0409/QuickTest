@@ -4,6 +4,7 @@ import com.quicktest.core.service.AiMetricsRedisService;
 import com.quicktest.core.service.GeminiGradingService;
 import com.quicktest.core.service.GeminiRotationService;
 import com.quicktest.core.service.UserAiTaskConcurrencyLimiter;
+import com.quicktest.modules.assessment.ai.service.TeacherAiTaskService;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
@@ -36,7 +37,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class QuestionGradingAsyncWorkerTest {
 
     @Mock
@@ -64,7 +64,7 @@ class QuestionGradingAsyncWorkerTest {
     private StringRedisTemplate stringRedisTemplate;
 
     @Mock
-    private com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService;
+    private TeacherAiTaskService teacherAiTaskService;
 
     @Mock
     private UserAiTaskConcurrencyLimiter concurrencyLimiter;

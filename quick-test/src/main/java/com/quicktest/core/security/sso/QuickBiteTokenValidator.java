@@ -58,8 +58,8 @@ public class QuickBiteTokenValidator {
         this.clientId = clientId != null ? clientId.trim() : "";
         this.scope = scope != null && !scope.isBlank() ? scope.trim() : "openid profile email roles offline_access Identity";
         this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(Duration.ofSeconds(15))
-                .setReadTimeout(Duration.ofSeconds(20))
+                .connectTimeout(Duration.ofSeconds(15))
+                .readTimeout(Duration.ofSeconds(20))
                 .build();
         this.objectMapper = objectMapper;
     }

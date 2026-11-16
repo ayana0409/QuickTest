@@ -36,7 +36,6 @@ import static org.mockito.Mockito.*;
  * Unit tests for {@link TeacherDashboardServiceImpl}.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class TeacherDashboardServiceTest {
 
     @Mock

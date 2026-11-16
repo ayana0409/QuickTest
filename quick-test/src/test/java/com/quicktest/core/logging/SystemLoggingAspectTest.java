@@ -15,7 +15,6 @@ import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import java.lang.reflect.Method;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,7 +22,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@SuppressWarnings("null")
 class SystemLoggingAspectTest {
 
     @Mock

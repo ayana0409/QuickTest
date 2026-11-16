@@ -23,7 +23,6 @@ import java.util.Map;
 @Service
 @org.springframework.context.annotation.Lazy(false)
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class CloudinaryUploadConsumer {
 
     private static final Duration TTL = Duration.ofHours(24);

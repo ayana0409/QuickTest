@@ -47,7 +47,6 @@ import static org.mockito.Mockito.*;
  * Unit tests for AdminQuestionModerationServiceImpl.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class AdminQuestionModerationServiceTest {
 
     @Mock

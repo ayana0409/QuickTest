@@ -42,7 +42,6 @@ import static org.mockito.Mockito.*;
  * Verifies ownership validation, Excel generation structure, metadata block, and data rows.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class ExamExportServiceTest {
 
     @Mock

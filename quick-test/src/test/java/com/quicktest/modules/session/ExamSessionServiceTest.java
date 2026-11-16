@@ -41,7 +41,6 @@ import static org.mockito.Mockito.*;
  * submission with auto-grading.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class ExamSessionServiceTest {
 
         @Mock

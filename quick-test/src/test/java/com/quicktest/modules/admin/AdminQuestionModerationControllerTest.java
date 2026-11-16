@@ -50,7 +50,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Unit tests for AdminQuestionModerationController REST endpoints.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class AdminQuestionModerationControllerTest {
 
         @Mock

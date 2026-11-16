@@ -41,7 +41,6 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@SuppressWarnings("null")
 public class QuestionGradingAsyncWorker {
 
     private final QuestionRepository questionRepository;
@@ -102,7 +101,6 @@ public class QuestionGradingAsyncWorker {
         log.info("[BACKGROUND WORKER] Started processing AI grading job [{}] for exam [{}] on thread [{}] (teacher: {})",
                 jobId, examId, Thread.currentThread().getName(), teacherId);
 
-        int totalQuestions = questionToAnswerIdsMap.size();
         int totalAnswers = questionToAnswerIdsMap.values().stream().mapToInt(List::size).sum();
 
         try {

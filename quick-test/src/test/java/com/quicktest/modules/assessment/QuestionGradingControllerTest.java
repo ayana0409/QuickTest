@@ -48,7 +48,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * candidate submissions, manual grading, batch AI trigger, and single answer AI evaluation.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class QuestionGradingControllerTest {
 
     @Mock

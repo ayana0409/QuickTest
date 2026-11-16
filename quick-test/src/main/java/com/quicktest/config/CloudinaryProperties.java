@@ -16,7 +16,6 @@ import java.util.List;
 @Setter
 @Configuration
 @ConfigurationProperties(prefix = "cloudinary")
-@SuppressWarnings("null")
 public class CloudinaryProperties {
 
     /**

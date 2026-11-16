@@ -58,7 +58,6 @@ import com.quicktest.modules.assessment.dto.PublicExamCardResponse;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("null")
 public class ExamServiceImpl implements ExamService {
 
     private static final String ALPHANUMERIC_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

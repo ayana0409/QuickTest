@@ -111,11 +111,11 @@ public class AdminSystemHealthServiceImpl implements AdminSystemHealthService {
             Long[] keysHolder = new Long[1];
             
             String ping = redisTemplate.execute((RedisConnection connection) -> {
-                Properties info = connection.info("memory");
+                Properties info = connection.serverCommands().info("memory");
                 if (info != null && info.getProperty("used_memory_human") != null) {
                     memoryHolder[0] = info.getProperty("used_memory_human");
                 }
-                keysHolder[0] = connection.dbSize();
+                keysHolder[0] = connection.serverCommands().dbSize();
                 return connection.ping();
             });
 
