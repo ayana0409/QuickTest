@@ -1,0 +1,31 @@
+meta {
+  name: 15.02 Search Proctoring Media - Filter By ViolationType
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/admin/proctoring-media?violationType=TAB_SWITCH&page=0&size=10
+  body: none
+  auth: bearer
+}
+
+params:query {
+  violationType: TAB_SWITCH
+  page: 0
+  size: 10
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.pageNumber: eq 0
+}

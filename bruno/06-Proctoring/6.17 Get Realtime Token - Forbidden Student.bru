@@ -1,0 +1,23 @@
+meta {
+  name: 6.17 Get Realtime Token - Forbidden Student
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/proctoring/exams/{{examId}}/realtime-token
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 403
+}

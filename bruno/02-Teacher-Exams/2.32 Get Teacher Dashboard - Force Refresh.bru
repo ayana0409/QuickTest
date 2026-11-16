@@ -1,0 +1,29 @@
+meta {
+  name: 2.32 Get Teacher Dashboard - Force Refresh
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/dashboard?refresh=true
+  body: none
+  auth: bearer
+}
+
+params:query {
+  refresh: true
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

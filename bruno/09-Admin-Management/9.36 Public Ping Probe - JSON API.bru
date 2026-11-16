@@ -1,0 +1,21 @@
+meta {
+  name: 9.36 Public Ping Probe - JSON API
+  type: http
+  seq: 46
+}
+
+get {
+  url: {{baseUrl}}/api/ping
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq "UP"
+  res.body.service: isDefined
+}

@@ -1,0 +1,29 @@
+meta {
+  name: 10.08 Get Student Dashboard - Force Refresh
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/student/dashboard?refresh=true
+  body: none
+  auth: bearer
+}
+
+params:query {
+  refresh: true
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

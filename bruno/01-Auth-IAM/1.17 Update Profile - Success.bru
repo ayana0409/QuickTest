@@ -1,0 +1,32 @@
+meta {
+  name: 1.17 Update Profile - Success
+  type: http
+  seq: 18
+}
+
+put {
+  url: {{baseUrl}}/api/auth/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fullName": "Bruno Teacher Updated"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.fullName: eq "Bruno Teacher Updated"
+}

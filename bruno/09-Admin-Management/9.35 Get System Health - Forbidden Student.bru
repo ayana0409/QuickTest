@@ -1,0 +1,23 @@
+meta {
+  name: 9.35 Get System Health - Forbidden Student
+  type: http
+  seq: 45
+}
+
+get {
+  url: {{baseUrl}}/api/admin/system/health
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 403
+}

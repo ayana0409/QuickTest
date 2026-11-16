@@ -1,0 +1,32 @@
+meta {
+  name: 15.07 Delete Selected Media - Batch Empty Or Valid
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/proctoring-media/batch
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "ids": []
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.deletedCount: isDefined
+}

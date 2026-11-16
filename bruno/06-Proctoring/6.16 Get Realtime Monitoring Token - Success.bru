@@ -1,0 +1,25 @@
+meta {
+  name: 6.16 Get Realtime Monitoring Token - Success
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/proctoring/exams/{{examId}}/realtime-token
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.realtimeToken: isDefined
+}

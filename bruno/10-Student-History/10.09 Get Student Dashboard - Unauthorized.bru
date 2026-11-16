@@ -1,0 +1,19 @@
+meta {
+  name: 10.09 Get Student Dashboard - Unauthorized
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/student/dashboard
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 401
+}

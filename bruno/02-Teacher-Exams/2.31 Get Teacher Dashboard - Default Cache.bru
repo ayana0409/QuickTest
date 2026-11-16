@@ -1,0 +1,25 @@
+meta {
+  name: 2.31 Get Teacher Dashboard - Default Cache
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/dashboard
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

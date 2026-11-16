@@ -1,0 +1,23 @@
+meta {
+  name: 6.13 Get Upload Signature - Unauthorized Access
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/session/00000000-0000-0000-0000-000000000000/proctoring/upload-signature
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: in [404, 403, 400]
+}

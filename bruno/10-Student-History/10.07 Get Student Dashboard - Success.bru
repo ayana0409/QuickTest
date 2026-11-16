@@ -1,0 +1,25 @@
+meta {
+  name: 10.07 Get Student Dashboard - Success
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/student/dashboard
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

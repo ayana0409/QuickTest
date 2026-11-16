@@ -1,0 +1,30 @@
+meta {
+  name: 1.18 Update Profile - Validation Error
+  type: http
+  seq: 19
+}
+
+put {
+  url: {{baseUrl}}/api/auth/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fullName": ""
+  }
+}
+
+assert {
+  res.status: eq 400
+}

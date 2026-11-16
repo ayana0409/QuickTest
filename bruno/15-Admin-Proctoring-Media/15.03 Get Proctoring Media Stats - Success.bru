@@ -1,0 +1,25 @@
+meta {
+  name: 15.03 Get Proctoring Media Stats - Success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/admin/proctoring-media/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.totalImages: isDefined
+}

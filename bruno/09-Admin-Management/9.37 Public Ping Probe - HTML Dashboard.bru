@@ -1,0 +1,19 @@
+meta {
+  name: 9.37 Public Ping Probe - HTML Dashboard
+  type: http
+  seq: 47
+}
+
+get {
+  url: {{baseUrl}}/api/ping
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: text/html
+}
+
+assert {
+  res.status: eq 200
+}

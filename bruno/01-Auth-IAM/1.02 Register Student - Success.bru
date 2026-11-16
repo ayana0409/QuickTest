@@ -1,7 +1,7 @@
 meta {
   name: 1.02 Register Student - Success
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
@@ -15,12 +15,19 @@ headers {
   Content-Type: application/json
 }
 
+script:pre-request {
+  // Use timestamp to guarantee unique credentials on repeatable collection runs
+  const rand = Date.now();
+  bru.setVar("regStudentUser", "student_" + rand);
+  bru.setVar("regStudentEmail", "student_" + rand + "@quicktest.com");
+}
+
 body:json {
   {
-    "username": "student_bruno",
-    "email": "student_bruno@quicktest.com",
+    "username": "{{regStudentUser}}",
+    "email": "{{regStudentEmail}}",
     "password": "Student@123",
-    "fullName": "Bruno Student",
+    "fullName": "Bruno Dynamic Student",
     "role": "STUDENT"
   }
 }

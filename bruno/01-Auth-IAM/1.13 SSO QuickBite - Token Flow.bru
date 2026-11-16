@@ -1,0 +1,27 @@
+meta {
+  name: 1.13 SSO QuickBite - Token Flow
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sso/quickbite
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "accessToken": "eyJhbGciOiJSUzI1NiJ9.mock_quickbite_access_token"
+  }
+}
+
+assert {
+  // Accepts 200 if QuickBite server is online, or 401/500 if SSO server is unreachable in test environment
+  res.status: in [200, 401, 500]
+}

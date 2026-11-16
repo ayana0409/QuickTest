@@ -1,0 +1,30 @@
+meta {
+  name: 3.17 Update Question With Media - Multipart Success
+  type: http
+  seq: 17
+}
+
+put {
+  url: {{baseUrl}}/api/teacher/questions/{{mediaQuestionId}}/with-media
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+body:multipart-form {
+  question: {"content": "Updated geographical feature question content", "points": 2.5, "options": [{"orderIndex": 1, "content": "Alps Mountain Peak", "isCorrect": true}, {"orderIndex": 2, "content": "Gobi Desert", "isCorrect": false}]}
+  questionImage: @file(fixtures/sample2.png)
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.id: isDefined
+}

@@ -1,0 +1,21 @@
+meta {
+  name: 4.00 Get Random Public Exams - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/public/exams
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

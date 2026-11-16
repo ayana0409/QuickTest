@@ -1,0 +1,25 @@
+meta {
+  name: 15.08 Delete Single Media - Random UUID Safe
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/proctoring-media/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.deletedCount: isDefined
+}

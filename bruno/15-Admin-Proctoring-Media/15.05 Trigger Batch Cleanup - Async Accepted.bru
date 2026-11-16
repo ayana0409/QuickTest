@@ -1,0 +1,33 @@
+meta {
+  name: 15.05 Trigger Batch Cleanup - Async Accepted
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/admin/proctoring-media/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "days": 30,
+    "onlyFinishedExams": true
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

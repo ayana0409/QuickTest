@@ -1,0 +1,23 @@
+meta {
+  name: 15.09 Proctoring Media - Forbidden Teacher
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/admin/proctoring-media
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 403
+}

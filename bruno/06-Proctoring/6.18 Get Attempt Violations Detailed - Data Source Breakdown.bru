@@ -1,0 +1,23 @@
+meta {
+  name: 6.18 Get Attempt Violations Detailed - Data Source Breakdown
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/proctoring/attempts/{{attemptId}}/violations/detailed
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: in [200, 404]
+}

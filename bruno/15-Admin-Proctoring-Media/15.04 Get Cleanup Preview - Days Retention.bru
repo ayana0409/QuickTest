@@ -1,0 +1,29 @@
+meta {
+  name: 15.04 Get Cleanup Preview - Days Retention
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/admin/proctoring-media/cleanup/preview?days=30
+  body: none
+  auth: bearer
+}
+
+params:query {
+  days: 30
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.matchingCount: isDefined
+}

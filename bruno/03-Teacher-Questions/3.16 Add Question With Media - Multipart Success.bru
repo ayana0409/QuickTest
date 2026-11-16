@@ -1,0 +1,72 @@
+meta {
+  name: 3.16 Add Question With Media - Multipart Success
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/api/teacher/exams/{{mediaExamId}}/questions/with-media
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{teacherToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+body:multipart-form {
+  question: {"orderIndex": 1, "content": "Identify the geographical feature shown in the image", "questionType": "SINGLE_CHOICE", "points": 2.0, "options": [{"orderIndex": 1, "content": "Alps Mountain", "isCorrect": true}, {"orderIndex": 2, "content": "Sahara Desert", "isCorrect": false}]}
+  questionImage: @file(fixtures/sample.png)
+}
+
+assert {
+  res.status: in [201, 200]
+  res.body.status: eq 200
+  res.body.data.id: isDefined
+}
+
+script:pre-request {
+  const axios = require('axios');
+  const baseUrl = bru.getEnvVar('baseUrl') || 'http://localhost:8080';
+  let token = bru.getEnvVar('teacherToken') || bru.getVar('teacherToken');
+
+  if (!token) {
+    try {
+      const loginRes = await axios.post(`${baseUrl}/api/auth/login`, {
+        usernameOrEmail: 'teacher@quicktest.com',
+        password: 'Teacher@123'
+      });
+      token = loginRes.data?.data?.accessToken || loginRes.data?.data?.token;
+      if (token) {
+        bru.setVar('teacherToken', token);
+        bru.setEnvVar('teacherToken', token);
+      }
+    } catch (e) {}
+  }
+
+  // Create dedicated draft exam for media question tests to preserve main examId
+  try {
+    const examRes = await axios.post(`${baseUrl}/api/teacher/exams`, {
+      title: 'Kỳ thi kiểm thử câu hỏi đính kèm Media',
+      durationMinutes: 45
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const examId = examRes.data?.data?.id;
+    if (examId) {
+      bru.setVar('mediaExamId', examId);
+      bru.setEnvVar('mediaExamId', examId);
+    }
+  } catch (e) {}
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.id) {
+    bru.setVar("mediaQuestionId", res.body.data.id);
+    bru.setEnvVar("mediaQuestionId", res.body.data.id);
+  }
+}

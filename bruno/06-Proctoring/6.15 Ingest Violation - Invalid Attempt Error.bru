@@ -1,0 +1,32 @@
+meta {
+  name: 6.15 Ingest Violation - Invalid Attempt Error
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/session/00000000-0000-0000-0000-000000000000/proctoring/violation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptId": "00000000-0000-0000-0000-000000000000",
+    "violationType": "DEVTOOLS_OPEN",
+    "description": "Candidate opened developer tools"
+  }
+}
+
+assert {
+  res.status: eq 404
+}

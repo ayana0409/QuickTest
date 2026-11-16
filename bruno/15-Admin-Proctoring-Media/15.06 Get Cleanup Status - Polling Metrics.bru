@@ -1,0 +1,25 @@
+meta {
+  name: 15.06 Get Cleanup Status - Polling Metrics
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/admin/proctoring-media/cleanup/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data: isDefined
+}

@@ -1,0 +1,34 @@
+meta {
+  name: 6.14 Ingest High-Throughput Violation - Redis Buffer
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/session/{{liveAttemptId}}/proctoring/violation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "attemptId": "{{liveAttemptId}}",
+    "violationType": "TAB_SWITCH",
+    "description": "Candidate switched active browser tab during assessment",
+    "evidenceUrl": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+  }
+}
+
+assert {
+  // Returns 200 with violation alert message if in progress, or 400 if already submitted
+  res.status: in [200, 400]
+}

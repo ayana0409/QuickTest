@@ -1,0 +1,23 @@
+meta {
+  name: 2.33 Get Teacher Dashboard - Forbidden Student
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{baseUrl}}/api/teacher/dashboard
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{studentToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 403
+}
