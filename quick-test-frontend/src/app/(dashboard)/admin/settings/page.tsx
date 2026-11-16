@@ -87,6 +87,15 @@ const CONFIG_DISPLAY_MAP: Record<string, ConfigDisplayMeta> = {
     max: 300,
     step: 5,
   },
+  'gemini.max-concurrent-tasks-per-user': {
+    title: 'Số hàng đợi AI tối đa mỗi tài khoản',
+    categoryLabel: 'Trí tuệ nhân tạo (AI)',
+    description: 'Số lượng tác vụ chạy ngầm (chấm điểm hoặc tạo đề AI) tối đa mà mỗi tài khoản được phép chạy cùng lúc.',
+    unit: 'hàng đợi',
+    min: 1,
+    max: 10,
+    step: 1,
+  },
 };
 
 export default function AdminSettingsPage() {

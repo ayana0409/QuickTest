@@ -27,10 +27,10 @@ public class AiGenerateQuizRequest {
     private UUID examId;
 
     /**
-     * Desired number of questions to generate (1 - 40).
+     * Desired number of questions to generate (1 - 60).
      */
     @Min(value = 1, message = "Total questions must be at least 1")
-    @Max(value = 40, message = "Total questions cannot exceed 40 per batch")
+    @Max(value = 60, message = "Total questions cannot exceed 60 per batch")
     @Builder.Default
     private Integer totalQuestions = 10;
 

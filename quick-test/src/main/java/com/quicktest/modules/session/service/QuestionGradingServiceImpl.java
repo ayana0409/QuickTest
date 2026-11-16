@@ -2,6 +2,7 @@ package com.quicktest.modules.session.service;
 
 import com.quicktest.config.CacheConfig;
 import com.quicktest.core.service.GeminiRotationService;
+import com.quicktest.core.service.UserAiTaskConcurrencyLimiter;
 import com.quicktest.core.common.PageResponse;
 import com.quicktest.core.config.service.SystemConfigService;
 import com.quicktest.core.exception.AppException;
@@ -74,6 +75,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     private final AiMetricsRedisService aiMetricsRedisService;
     private final TeacherAiTaskService teacherAiTaskService;
     private final SystemConfigService systemConfigService;
+    private final UserAiTaskConcurrencyLimiter concurrencyLimiter;
 
     public QuestionGradingServiceImpl(
             ExamRepository examRepository,
@@ -85,7 +87,8 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             StringRedisTemplate stringRedisTemplate,
             AiMetricsRedisService aiMetricsRedisService,
             TeacherAiTaskService teacherAiTaskService,
-            SystemConfigService systemConfigService) {
+            SystemConfigService systemConfigService,
+            UserAiTaskConcurrencyLimiter concurrencyLimiter) {
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.candidateAnswerRepository = candidateAnswerRepository;
@@ -96,6 +99,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         this.aiMetricsRedisService = aiMetricsRedisService;
         this.teacherAiTaskService = teacherAiTaskService;
         this.systemConfigService = systemConfigService;
+        this.concurrencyLimiter = concurrencyLimiter;
     }
 
 
@@ -334,14 +338,16 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", "id", targetExamId));
         verifyExamOwnership(exam, teacher);
 
-        // Enforce: exactly ONE active AI task per user account at any time (shared between grading & quiz generation)
-        String userLockKey = "ai:lock:user:" + teacher.getId();
-        Boolean userAcquired = stringRedisTemplate.opsForValue().setIfAbsent(userLockKey, "LOCKED", Duration.ofHours(8));
-        if (!Boolean.TRUE.equals(userAcquired)) {
-            log.warn("[AI Grading] User {} attempted to spawn concurrent AI task while another AI job is active/queued.", teacher.getId());
+        String jobId = UUID.randomUUID().toString();
+
+        // Enforce: max concurrent AI tasks per user account (shared between grading & quiz generation)
+        boolean userAcquired = concurrencyLimiter.tryAcquireSlot(teacher.getId(), jobId);
+        if (!userAcquired) {
+            int maxLimit = concurrencyLimiter.getMaxConcurrentTasksPerUser();
+            log.warn("[AI Grading] User {} attempted to spawn concurrent AI task exceeding limit of {}.", teacher.getId(), maxLimit);
             throw new AppException(
-                    "Tài khoản của bạn hiện đang có một tác vụ AI (chấm bài hoặc soạn đề) đang được xử lý hoặc xếp hàng. " +
-                    "Vui lòng chờ tác vụ hiện tại hoàn tất trước khi tạo thêm!",
+                    String.format("Tài khoản của bạn hiện đã đạt giới hạn tối đa %d tác vụ AI đang xử lý hoặc xếp hàng. " +
+                            "Vui lòng chờ các tác vụ hiện tại hoàn tất trước khi tạo thêm!", maxLimit),
                     HttpStatus.CONFLICT);
         }
 
@@ -351,7 +357,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                 ? teacher.getUsername() : teacher.getId().toString();
         Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, lockOwner, Duration.ofHours(8));
         if (!Boolean.TRUE.equals(acquired)) {
-            stringRedisTemplate.delete(userLockKey);
+            concurrencyLimiter.releaseSlot(teacher.getId(), jobId);
             log.warn("Duplicate AI grading rejected for exam ID: {} by teacher: {}", targetExamId, lockOwner);
             throw new AppException(
                     "Đề thi này đã có một tác vụ chấm AI đang xử lý hoặc đang xếp hàng. Vui lòng chờ hoàn tất!",
@@ -397,7 +403,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             if (totalSubmissions == 0) {
                 // Release locks immediately if there are no pending submissions
                 stringRedisTemplate.delete(lockKey);
-                stringRedisTemplate.delete(userLockKey);
+                concurrencyLimiter.releaseSlot(teacher.getId(), jobId);
                 return TriggerAiGradingResponse.builder()
                         .status("ACCEPTED")
                         .message("No pending essay submissions found to grade for this exam.")
@@ -406,7 +412,6 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
                         .build();
             }
 
-            String jobId = UUID.randomUUID().toString();
             // Register as QUEUED in Redis metrics dashboard
             aiMetricsRedisService.registerActiveJob(
                     jobId, "AI_GRADING", targetExamId, exam.getTitle(), totalQuestions, totalSubmissions, "QUEUED");
@@ -441,7 +446,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         } catch (Exception e) {
             // Guarantee lock release if error occurs before background worker starts
             stringRedisTemplate.delete(lockKey);
-            stringRedisTemplate.delete(userLockKey);
+            concurrencyLimiter.releaseSlot(teacher.getId(), jobId);
             throw e;
         }
     }

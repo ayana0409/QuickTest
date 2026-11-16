@@ -3,6 +3,7 @@ package com.quicktest.modules.session.service;
 import com.quicktest.core.service.AiMetricsRedisService;
 import com.quicktest.core.service.GeminiGradingService;
 import com.quicktest.core.service.GeminiRotationService;
+import com.quicktest.core.service.UserAiTaskConcurrencyLimiter;
 import com.quicktest.modules.assessment.entity.Exam;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.entity.QuestionType;
@@ -65,6 +66,9 @@ class QuestionGradingAsyncWorkerTest {
     @Mock
     private com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService;
 
+    @Mock
+    private UserAiTaskConcurrencyLimiter concurrencyLimiter;
+
     private QuestionGradingAsyncWorker asyncWorker;
 
     private Question question;
@@ -100,7 +104,8 @@ class QuestionGradingAsyncWorkerTest {
                 aiMetricsRedisService,
                 directTxManager,
                 stringRedisTemplate,
-                teacherAiTaskService
+                teacherAiTaskService,
+                concurrencyLimiter
         );
 
         exam = Exam.builder().id(UUID.randomUUID()).title("Science Exam").build();

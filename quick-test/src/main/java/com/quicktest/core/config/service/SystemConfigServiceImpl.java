@@ -16,10 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Implementation of SystemConfigService providing 3-tier hierarchical resolution:
+ * Implementation of SystemConfigService providing 3-tier hierarchical
+ * resolution:
  * Redis Cache -> PostgreSQL Database -> Spring Environment.
  */
 @Slf4j
@@ -35,7 +35,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private static final Duration CACHE_TTL = Duration.ofHours(24);
 
     /**
-     * Definition record for predefined system configs registered in application.properties.
+     * Definition record for predefined system configs registered in
+     * application.properties.
      */
     public record ConfigMetadata(
             String key,
@@ -43,8 +44,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             SystemConfigValueType valueType,
             SystemConfigCategory category,
             String label,
-            String description
-    ) {}
+            String description) {
+    }
 
     private static final Map<String, ConfigMetadata> KNOWN_CONFIGS = new LinkedHashMap<>();
 
@@ -83,10 +84,15 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 SystemConfigValueType.INTEGER, SystemConfigCategory.GEMINI_AI,
                 "Thời gian chờ phản hồi AI (giây)",
                 "Số giây tối đa hệ thống chờ AI trả lời trước khi thử lại.");
+
+        registerConfig("gemini.max-concurrent-tasks-per-user", "1",
+                SystemConfigValueType.INTEGER, SystemConfigCategory.GEMINI_AI,
+                "Số tác vụ AI tối đa mỗi tài khoản",
+                "Số lượng hàng đợi xử lý ngầm (chấm điểm hoặc tạo đề AI) tối đa mà mỗi tài khoản được phép chạy cùng lúc.");
     }
 
     private static void registerConfig(String key, String fallbackDefault, SystemConfigValueType valueType,
-                                       SystemConfigCategory category, String label, String description) {
+            SystemConfigCategory category, String label, String description) {
         KNOWN_CONFIGS.put(key, new ConfigMetadata(key, fallbackDefault, valueType, category, label, description));
     }
 
@@ -132,7 +138,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         try {
             return Integer.parseInt(val.trim());
         } catch (Exception e) {
-            log.warn("[SystemConfig] Invalid integer format for key '{}': '{}'. Falling back to default: {}", key, val, defaultValue);
+            log.warn("[SystemConfig] Invalid integer format for key '{}': '{}'. Falling back to default: {}", key, val,
+                    defaultValue);
             return defaultValue;
         }
     }
@@ -152,7 +159,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         try {
             return Long.parseLong(val.trim());
         } catch (Exception e) {
-            log.warn("[SystemConfig] Invalid long format for key '{}': '{}'. Falling back to default: {}", key, val, defaultValue);
+            log.warn("[SystemConfig] Invalid long format for key '{}': '{}'. Falling back to default: {}", key, val,
+                    defaultValue);
             return defaultValue;
         }
     }
@@ -163,7 +171,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         try {
             return Double.parseDouble(val.trim());
         } catch (Exception e) {
-            log.warn("[SystemConfig] Invalid double format for key '{}': '{}'. Falling back to default: {}", key, val, defaultValue);
+            log.warn("[SystemConfig] Invalid double format for key '{}': '{}'. Falling back to default: {}", key, val,
+                    defaultValue);
             return defaultValue;
         }
     }
@@ -218,7 +227,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             }
         }
 
-        // 2. Add any additional dynamic configs present in Database but not in KNOWN_CONFIGS
+        // 2. Add any additional dynamic configs present in Database but not in
+        // KNOWN_CONFIGS
         for (SystemConfig cfg : dbConfigs) {
             if (!processedKeys.contains(cfg.getConfigKey())) {
                 String envDefault = environment.getProperty(cfg.getConfigKey(), "");

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.AiMetricsRedisService;
+import com.quicktest.core.service.UserAiTaskConcurrencyLimiter;
 import com.quicktest.modules.assessment.ai.dto.AiGeneratedQuestionDto;
 import com.quicktest.modules.assessment.ai.dto.TeacherAiTaskDto;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class TeacherAiTaskServiceImpl implements TeacherAiTaskService {
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
     private final AiMetricsRedisService aiMetricsRedisService;
+    private final UserAiTaskConcurrencyLimiter concurrencyLimiter;
 
     @Override
     public void createTask(TeacherAiTaskDto task) {
@@ -226,9 +228,8 @@ public class TeacherAiTaskServiceImpl implements TeacherAiTaskService {
             task.setCurrentStep("Tiến trình đã bị hủy bởi giáo viên.");
             saveTaskRaw(task);
 
-            // Release per-user concurrency lock
-            String userLockKey = REDIS_USER_LOCK_PREFIX + teacherId;
-            stringRedisTemplate.delete(userLockKey);
+            // Release per-user concurrency slot
+            concurrencyLimiter.releaseSlot(teacherId, taskId);
 
             // If it was a grading task, release exam lock
             if (task.getTargetExamId() != null) {

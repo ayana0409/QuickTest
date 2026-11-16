@@ -4,6 +4,7 @@ import com.quicktest.core.exception.GeminiAllSlotsExhaustedException;
 import com.quicktest.core.service.AiMetricsRedisService;
 import com.quicktest.core.service.GeminiGradingService;
 import com.quicktest.core.service.GeminiRotationService;
+import com.quicktest.core.service.UserAiTaskConcurrencyLimiter;
 import com.quicktest.core.util.GeminiTokenEstimator;
 import com.quicktest.modules.assessment.entity.Question;
 import com.quicktest.modules.assessment.repository.QuestionRepository;
@@ -53,6 +54,7 @@ public class QuestionGradingAsyncWorker {
     private final TransactionTemplate transactionTemplate;
     private final StringRedisTemplate stringRedisTemplate;
     private final com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService;
+    private final UserAiTaskConcurrencyLimiter concurrencyLimiter;
 
     public QuestionGradingAsyncWorker(
             QuestionRepository questionRepository,
@@ -64,7 +66,8 @@ public class QuestionGradingAsyncWorker {
             AiMetricsRedisService aiMetricsRedisService,
             PlatformTransactionManager transactionManager,
             StringRedisTemplate stringRedisTemplate,
-            com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService) {
+            com.quicktest.modules.assessment.ai.service.TeacherAiTaskService teacherAiTaskService,
+            UserAiTaskConcurrencyLimiter concurrencyLimiter) {
         this.questionRepository = questionRepository;
         this.candidateAnswerRepository = candidateAnswerRepository;
         this.examAttemptRepository = examAttemptRepository;
@@ -75,6 +78,7 @@ public class QuestionGradingAsyncWorker {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.stringRedisTemplate = stringRedisTemplate;
         this.teacherAiTaskService = teacherAiTaskService;
+        this.concurrencyLimiter = concurrencyLimiter;
     }
 
     /**
@@ -237,8 +241,8 @@ public class QuestionGradingAsyncWorker {
                 log.info("[BACKGROUND WORKER] AI grading job [{}] completed. Released Redis lock for exam ID {}", jobId, examId);
             }
             if (teacherId != null) {
-                stringRedisTemplate.delete("ai:lock:user:" + teacherId);
-                log.info("[BACKGROUND WORKER] AI grading job [{}] completed. Released Redis lock for teacher ID {}", jobId, teacherId);
+                concurrencyLimiter.releaseSlot(teacherId, jobId);
+                log.info("[BACKGROUND WORKER] AI grading job [{}] completed. Released Redis slot for teacher ID {}", jobId, teacherId);
             }
         }
     }

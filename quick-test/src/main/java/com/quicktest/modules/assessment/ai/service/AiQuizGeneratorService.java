@@ -3,7 +3,6 @@ package com.quicktest.modules.assessment.ai.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quicktest.config.GeminiPoolProperties;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.service.GeminiRotationService;
 import com.quicktest.modules.assessment.ai.dto.AiGenerateQuizRequest;
@@ -34,11 +33,10 @@ import java.util.stream.Collectors;
 public class AiQuizGeneratorService {
 
     private static final int MAX_BATCH_SIZE_PER_PASS = 15;
-    private static final int MAX_CONTINUATION_PASSES = 4;
+    private static final int MAX_CONTINUATION_PASSES = 6;
     private static final int MAX_SAFE_OUTPUT_TOKENS = 8192;
 
     private final GeminiRotationService geminiRotationService;
-    private final GeminiPoolProperties geminiPoolProperties;
     private final ObjectMapper objectMapper;
 
     /**
@@ -50,10 +48,14 @@ public class AiQuizGeneratorService {
     }
 
     /**
-     * Generates quiz questions using an adaptive multi-pass continuation and rotation loop.
-     * When a large question count (e.g. 30 questions) exceeds Gemini's hard 8,192 token output limit,
-     * this method automatically rotates slots and invokes continuation passes to retrieve remaining questions,
-     * while gracefully falling back to returning all valid accumulated questions if no further questions can be generated.
+     * Generates quiz questions using an adaptive multi-pass continuation and
+     * rotation loop.
+     * When a large question count (e.g. 30 questions) exceeds Gemini's hard 8,192
+     * token output limit,
+     * this method automatically rotates slots and invokes continuation passes to
+     * retrieve remaining questions,
+     * while gracefully falling back to returning all valid accumulated questions if
+     * no further questions can be generated.
      */
     public List<AiGeneratedQuestionDto> generateQuestions(
             String documentText,
@@ -68,7 +70,8 @@ public class AiQuizGeneratorService {
         List<AiGeneratedQuestionDto> accumulatedQuestions = new ArrayList<>();
         Set<String> seenNormalizedContents = new HashSet<>();
 
-        log.info("[AiQuizGenerator] Initiating adaptive generation for {} questions (targetTypes: {}, difficulty: {})...",
+        log.info(
+                "[AiQuizGenerator] Initiating adaptive generation for {} questions (targetTypes: {}, difficulty: {})...",
                 totalRequested, request.getTargetQuestionTypes(), request.getDifficulty());
 
         int pass = 1;
@@ -95,7 +98,8 @@ public class AiQuizGeneratorService {
 
                 String responseJson = geminiRotationService.executeWithRotation(prompt, 0.3, maxTokens);
 
-                // Rotate sticky slot pointer so subsequent passes utilize other available keys/models
+                // Rotate sticky slot pointer so subsequent passes utilize other available
+                // keys/models
                 geminiRotationService.advanceToNextSlot();
 
                 if (responseJson == null || responseJson.isBlank()) {
@@ -127,17 +131,21 @@ public class AiQuizGeneratorService {
                 log.info("[AiQuizGenerator] Pass {} completed: added {} new questions. Progress: {}/{}",
                         pass, addedInThisPass, accumulatedQuestions.size(), totalRequested);
 
-                // If no new unique questions could be generated, break early to prevent redundant API calls
+                // If no new unique questions could be generated, break early to prevent
+                // redundant API calls
                 if (addedInThisPass == 0) {
-                    log.warn("[AiQuizGenerator] Pass {} produced no new unique questions. Ending continuation loop.", pass);
+                    log.warn("[AiQuizGenerator] Pass {} produced no new unique questions. Ending continuation loop.",
+                            pass);
                     break;
                 }
 
             } catch (Exception ex) {
                 log.warn("[AiQuizGenerator] Exception in generation pass {}: {}", pass, ex.getMessage());
                 if (!accumulatedQuestions.isEmpty()) {
-                    // Graceful fallback: preserve valid questions collected so far instead of crashing the job!
-                    log.warn("[AiQuizGenerator] Graceful fallback: returning {} valid questions collected before failure.",
+                    // Graceful fallback: preserve valid questions collected so far instead of
+                    // crashing the job!
+                    log.warn(
+                            "[AiQuizGenerator] Graceful fallback: returning {} valid questions collected before failure.",
                             accumulatedQuestions.size());
                     break;
                 } else {
@@ -238,9 +246,11 @@ public class AiQuizGeneratorService {
     }
 
     /**
-     * Builds a comprehensive prompt instructing Gemini to produce valid JSON questions.
+     * Builds a comprehensive prompt instructing Gemini to produce valid JSON
+     * questions.
      */
-    private String buildPrompt(String documentText, AiGenerateQuizRequest request, int count, List<AiGeneratedQuestionDto> accumulatedQuestions) {
+    private String buildPrompt(String documentText, AiGenerateQuizRequest request, int count,
+            List<AiGeneratedQuestionDto> accumulatedQuestions) {
         String language = "en".equalsIgnoreCase(request.getLanguage()) ? "English" : "Vietnamese";
 
         // Explicit cognitive difficulty distribution
@@ -317,18 +327,25 @@ public class AiQuizGeneratorService {
 
         StringBuilder antiDuplicationContext = new StringBuilder();
         if (accumulatedQuestions != null && !accumulatedQuestions.isEmpty()) {
-            antiDuplicationContext.append("\n=== MANDATORY ANTI-DUPLICATION / CONTINUATION CONSTRAINTS ===\n");
-            antiDuplicationContext.append("The following questions have ALREADY been generated from this document in previous passes.\n");
-            antiDuplicationContext.append("DO NOT repeat, re-phrase, or test the exact same facts as any of these questions:\n");
+            antiDuplicationContext.append("\n=== MANDATORY ANTI-DUPLICATION & CROSS-PASS SPOILER SHIELD ===\n");
+            antiDuplicationContext.append(
+                    "The following questions have ALREADY been generated from this document in previous passes.\n");
+            antiDuplicationContext
+                    .append("DO NOT repeat, re-phrase, or test the exact same facts as any of these questions:\n");
             int qIndex = 1;
             for (AiGeneratedQuestionDto existingQ : accumulatedQuestions) {
-                String snippet = existingQ.getContent() != null ? existingQ.getContent().replaceAll("\\s+", " ").trim() : "";
+                String snippet = existingQ.getContent() != null ? existingQ.getContent().replaceAll("\\s+", " ").trim()
+                        : "";
                 if (snippet.length() > 100) {
                     snippet = snippet.substring(0, 97) + "...";
                 }
-                antiDuplicationContext.append(String.format("  %d. [%s] %s\n", qIndex++, existingQ.getQuestionType(), snippet));
+                antiDuplicationContext
+                        .append(String.format("  %d. [%s] %s\n", qIndex++, existingQ.getQuestionType(), snippet));
             }
-            antiDuplicationContext.append("You MUST focus strictly on other concepts, sections, definitions, or details in the document to produce completely NEW questions.\n");
+            antiDuplicationContext.append(
+                    "CRITICAL: Do NOT create any questions whose stem or answer options inadvertently reveal the answers to any of the previously generated questions above, and do NOT test facts that can be deduced from the previous questions.\n");
+            antiDuplicationContext.append(
+                    "You MUST focus strictly on other concepts, sections, definitions, or details in the document to produce completely NEW and INDEPENDENT questions.\n");
         }
 
         return String.format(
@@ -336,7 +353,24 @@ public class AiQuizGeneratorService {
                         You are an expert pedagogical exam creator and educational assessment specialist.
                         Your task is to analyze the provided source document text and generate EXACTLY %d high-quality %squestions for an exam.
                         %s
-                        === REQUIREMENTS ===
+                        === MANDATORY ANTI-LEAKAGE & INFORMATION INDEPENDENCE REQUIREMENTS ===
+                        1. ZERO SELF-LEAKAGE (DO NOT LEAK ANSWERS IN THE QUESTION STEM):
+                           - The question text ("content") MUST NEVER quote, state, or hint at the key answer or definition being tested.
+                           - FORBIDDEN: Questions that mention the fact and then immediately ask for it (e.g. "In 1945, Event X occurred. When did Event X occur?" or "Lập trình hướng đối tượng gồm đóng gói, kế thừa... Trụ cột nào có tính đóng gói?").
+                           - The question must pose a genuine problem, conceptual scenario, or analytical prompt requiring actual student knowledge, without giving away the answer in the question itself.
+
+                        2. ZERO CROSS-QUESTION LEAKAGE (INFORMATION ISOLATION BETWEEN QUESTIONS):
+                           - Every question in the generated batch MUST be completely independent of all other questions.
+                           - FORBIDDEN: Using the solution or core fact of Question A as context, premise, or distractor details in Question B.
+                             (e.g., If Question 1 tests "Who formulated Newton's Laws?", Question 5 must NOT state "Based on Newton's formulation of the law of universal gravitation in 1687...").
+                           - A student reading through the entire exam paper MUST NOT be able to find the answer to any question by reading another question!
+
+                        3. DISTRACTOR INTEGRITY & HOMOGENEITY:
+                           - All 4 options in multiple-choice questions must be grammatically consistent, plausible, and of similar length and syntactic structure.
+                           - Do NOT make the correct option noticeably longer, more formal, or uniquely detailed compared to the incorrect options.
+                           - Distractors must represent plausible student misconceptions rather than absurd or obviously wrong statements.
+
+                        === GENERAL REQUIREMENTS ===
                         1. Language: All questions, answers, and explanations MUST be written in %s.
                         2. Cognitive Difficulty Distribution: %s
                         3. %s
@@ -345,8 +379,7 @@ public class AiQuizGeneratorService {
                         %s
                         6. Educational Quality:
                            - Questions must directly test understanding of key concepts, definitions, formulas, and arguments presented in the document.
-                           - Distractors (incorrect options) must be plausible and reflect common misconceptions, not trivial or nonsensical.
-                           - Provide a clear, educational "explanation" for why the correct answer is right.
+                           - Provide a clear, educational "explanation" for why the correct answer is right and why other options are incorrect.
 
                         === OUTPUT FORMAT PROTOCOL ===
                         Respond with ONLY a valid JSON object. No Markdown code fences, no conversational prose before or after.

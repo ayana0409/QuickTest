@@ -2,6 +2,7 @@ package com.quicktest.modules.assessment.ai.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quicktest.core.service.AiMetricsRedisService;
+import com.quicktest.core.service.UserAiTaskConcurrencyLimiter;
 import com.quicktest.modules.assessment.ai.dto.AiGenerateJobResponse;
 import com.quicktest.modules.assessment.ai.dto.AiGenerateQuizRequest;
 import com.quicktest.modules.assessment.ai.dto.AiGeneratedQuestionDto;
@@ -37,6 +38,7 @@ public class AiQuizGeneratorAsyncWorker {
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
     private final TeacherAiTaskService teacherAiTaskService;
+    private final UserAiTaskConcurrencyLimiter concurrencyLimiter;
 
     /**
      * Executes the quiz generation asynchronously in the single-thread queue.
@@ -99,10 +101,9 @@ public class AiQuizGeneratorAsyncWorker {
             teacherAiTaskService.failTask(jobId, e.getMessage());
 
         } finally {
-            // Guarantee release of the per-user concurrency lock so the teacher can trigger another AI task
-            Boolean deleted = stringRedisTemplate.delete(userLockKey);
-            log.info("[AI QUIZ WORKER] Released per-user AI lock [{}] (result: {}) for job [{}]",
-                    userLockKey, deleted, jobId);
+            // Guarantee release of the per-user concurrency slot so the teacher can trigger another AI task
+            concurrencyLimiter.releaseSlot(userId, jobId);
+            log.info("[AI QUIZ WORKER] Released per-user AI slot for user [{}] and job [{}]", userId, jobId);
 
             // Remove from global active jobs tracking
             aiMetricsRedisService.removeActiveJob(jobId);

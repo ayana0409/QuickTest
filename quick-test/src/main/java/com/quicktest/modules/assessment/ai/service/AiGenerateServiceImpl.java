@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.service.AiMetricsRedisService;
+import com.quicktest.core.service.UserAiTaskConcurrencyLimiter;
 import com.quicktest.modules.assessment.ai.dto.*;
 import com.quicktest.modules.assessment.dto.AnswerOptionDto;
 import com.quicktest.modules.assessment.dto.QuestionCreateRequest;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +26,10 @@ import java.util.UUID;
 
 /**
  * Implementation of {@link AiGenerateService}.
- * Manages document text parsing, enqueues background generation to the shared single-thread queue,
- * checks and enforces per-user concurrency lock with 8-hour safety TTL, and coordinates bulk exam imports.
+ * Manages document text parsing, enqueues background generation to the shared
+ * single-thread queue,
+ * checks and enforces per-user concurrency lock with 8-hour safety TTL, and
+ * coordinates bulk exam imports.
  */
 @Slf4j
 @Service
@@ -42,6 +44,7 @@ public class AiGenerateServiceImpl implements AiGenerateService {
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
     private final TeacherAiTaskService teacherAiTaskService;
+    private final UserAiTaskConcurrencyLimiter concurrencyLimiter;
 
     @Override
     public AiGenerateJobResponse submitQuizGenerationJob(
@@ -53,15 +56,19 @@ public class AiGenerateServiceImpl implements AiGenerateService {
             throw new AppException("User authentication required", HttpStatus.UNAUTHORIZED);
         }
 
-        // Enforce: exactly ONE active AI task per user account at any time
-        String userLockKey = AiQuizGeneratorAsyncWorker.REDIS_USER_LOCK_PREFIX + teacher.getId();
-        Boolean acquired = stringRedisTemplate.opsForValue().setIfAbsent(userLockKey, "LOCKED", Duration.ofHours(8));
+        String jobId = UUID.randomUUID().toString();
 
-        if (!Boolean.TRUE.equals(acquired)) {
-            log.warn("[AiGenerate] User {} attempted to spawn concurrent AI task while another AI job is active/queued.", teacher.getId());
+        // Enforce: max concurrent AI tasks per user account
+        boolean acquired = concurrencyLimiter.tryAcquireSlot(teacher.getId(), jobId);
+        if (!acquired) {
+            int maxLimit = concurrencyLimiter.getMaxConcurrentTasksPerUser();
+            log.warn("[AiGenerate] User {} attempted to spawn concurrent AI task exceeding limit of {}.",
+                    teacher.getId(), maxLimit);
             throw new AppException(
-                    "Tài khoản của bạn hiện đang có một tác vụ AI (chấm bài hoặc soạn đề) đang được xử lý hoặc xếp hàng. " +
-                    "Vui lòng chờ tác vụ hiện tại hoàn tất trước khi tạo thêm!",
+                    String.format(
+                            "Tài khoản của bạn hiện đã đạt giới hạn tối đa %d tác vụ AI đang xử lý hoặc xếp hàng. " +
+                                    "Vui lòng chờ các tác vụ hiện tại hoàn tất trước khi tạo thêm!",
+                            maxLimit),
                     HttpStatus.CONFLICT);
         }
 
@@ -76,17 +83,17 @@ public class AiGenerateServiceImpl implements AiGenerateService {
                 documentText = documentParserService.sanitizeText(request.getRawText());
                 fileName = "van_ban_truc_tiep.txt";
             } else {
-                stringRedisTemplate.delete(userLockKey);
-                throw new AppException("Vui lòng tải lên file tài liệu (PDF, Word, TXT) hoặc nhập nội dung văn bản để AI soạn đề.",
+                concurrencyLimiter.releaseSlot(teacher.getId(), jobId);
+                throw new AppException(
+                        "Vui lòng tải lên file tài liệu (PDF, Word, TXT) hoặc nhập nội dung văn bản để AI soạn đề.",
                         HttpStatus.BAD_REQUEST);
             }
         } catch (Exception ex) {
-            // Guarantee lock release if parsing fails synchronously before worker begins
-            stringRedisTemplate.delete(userLockKey);
+            // Guarantee slot release if parsing fails synchronously before worker begins
+            concurrencyLimiter.releaseSlot(teacher.getId(), jobId);
             throw ex;
         }
 
-        String jobId = UUID.randomUUID().toString();
         int questionCount = request.getTotalQuestions() != null ? request.getTotalQuestions() : 10;
 
         // Save QUEUED state in Redis immediately
@@ -103,7 +110,8 @@ public class AiGenerateServiceImpl implements AiGenerateService {
                 questionCount,
                 "QUEUED");
 
-        // Register task in Teacher Tasks monitoring index (accessible from /teacher/ai-tasks)
+        // Register task in Teacher Tasks monitoring index (accessible from
+        // /teacher/ai-tasks)
         teacherAiTaskService.createTask(TeacherAiTaskDto.builder()
                 .taskId(jobId)
                 .type("AI_QUIZ_GEN")
@@ -156,11 +164,11 @@ public class AiGenerateServiceImpl implements AiGenerateService {
 
     @Override
     public void cancelQuizGenerationJob(String jobId, User teacher) {
-        if (jobId == null || jobId.isBlank()) return;
+        if (jobId == null || jobId.isBlank())
+            return;
 
-        // Release user concurrency lock
-        String userLockKey = AiQuizGeneratorAsyncWorker.REDIS_USER_LOCK_PREFIX + teacher.getId();
-        stringRedisTemplate.delete(userLockKey);
+        // Release user concurrency slot
+        concurrencyLimiter.releaseSlot(teacher.getId(), jobId);
 
         // Mark as FAILED / CANCELLED in Redis
         asyncWorker.updateJobStatus(jobId, "Cancelled", "FAILED", 0,
@@ -193,7 +201,8 @@ public class AiGenerateServiceImpl implements AiGenerateService {
         List<QuestionResponse> createdList = new ArrayList<>();
 
         for (AiGeneratedQuestionDto dto : request.getQuestions()) {
-            if (dto.getContent() == null || dto.getContent().isBlank()) continue;
+            if (dto.getContent() == null || dto.getContent().isBlank())
+                continue;
 
             List<AnswerOptionDto> options = new ArrayList<>();
             if (dto.getOptions() != null) {
@@ -217,7 +226,8 @@ public class AiGenerateServiceImpl implements AiGenerateService {
                     .options(options)
                     .build();
 
-            // Re-use standard QuestionService: checks teacher exam ownership, draft status, and executes moderation
+            // Re-use standard QuestionService: checks teacher exam ownership, draft status,
+            // and executes moderation
             QuestionResponse created = questionService.addQuestionToExam(examId, createReq, teacher);
             createdList.add(created);
         }
