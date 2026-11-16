@@ -1,0 +1,29 @@
+meta {
+  name: 9.39 Get Single System Config - Success
+  type: http
+  seq: 39
+}
+
+get {
+  url: {{baseUrl}}/api/admin/configs/app.rate-limit.global.limit
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+vars:pre-request {
+  adminToken: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6ImI1OWI0OTQzLTIwODEtNDFiOS05MjJiLWRmNThlZWY1NjdiOSIsImVtYWlsIjoiYWRtaW5AcXVpY2t0ZXN0LmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4OTIxNzYwMCwiZXhwIjoxNzg5MzA0MDAwfQ.Qkb6BUcSPU6ZpInlUP6HSm7UI6mpzjNZG755u2Q-_a4
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.key: eq app.rate-limit.global.limit
+}

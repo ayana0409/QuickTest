@@ -1,6 +1,7 @@
 package com.quicktest.modules.admin.service;
 
 import com.quicktest.config.GeminiProperties;
+import com.quicktest.core.config.service.SystemConfigService;
 import com.quicktest.core.service.AiModerationService;
 import com.quicktest.modules.admin.dto.AiModerationResultDto;
 import com.quicktest.modules.assessment.entity.Question;
@@ -55,6 +56,7 @@ public class AiModerationAsyncWorker {
     private final QuestionRepository questionRepository;
     private final StringRedisTemplate redisTemplate;
     private final GeminiProperties geminiProperties;
+    private final SystemConfigService systemConfigService;
 
     /**
      * Main worker method executed by RabbitMQ consumer to run AI moderation.
@@ -74,7 +76,8 @@ public class AiModerationAsyncWorker {
         redisTemplate.opsForValue().set(REDIS_KEY_SAFE_COUNT, "0");
         redisTemplate.opsForValue().set(REDIS_KEY_UNSAFE_COUNT, "0");
 
-        int batchSize = geminiProperties.getModerationBatchSize();
+        int defaultBatchSize = geminiProperties.getModerationBatchSize() > 0 ? geminiProperties.getModerationBatchSize() : 30;
+        int batchSize = systemConfigService.getInteger("gemini.moderation-batch-size", defaultBatchSize);
         int maxTokensPerMinute = geminiProperties.getMaxInputTokensPerMinute();
         int totalProcessed = 0;
         int totalSafe = 0;

@@ -3,6 +3,7 @@ package com.quicktest.modules.session.service;
 import com.quicktest.config.CacheConfig;
 import com.quicktest.core.service.GeminiRotationService;
 import com.quicktest.core.common.PageResponse;
+import com.quicktest.core.config.service.SystemConfigService;
 import com.quicktest.core.exception.AppException;
 import com.quicktest.core.exception.ResourceNotFoundException;
 import com.quicktest.core.logging.AuditLog;
@@ -72,6 +73,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
     private final StringRedisTemplate stringRedisTemplate;
     private final AiMetricsRedisService aiMetricsRedisService;
     private final TeacherAiTaskService teacherAiTaskService;
+    private final SystemConfigService systemConfigService;
 
     public QuestionGradingServiceImpl(
             ExamRepository examRepository,
@@ -82,7 +84,8 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
             GeminiGradingService geminiGradingService,
             StringRedisTemplate stringRedisTemplate,
             AiMetricsRedisService aiMetricsRedisService,
-            TeacherAiTaskService teacherAiTaskService) {
+            TeacherAiTaskService teacherAiTaskService,
+            SystemConfigService systemConfigService) {
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.candidateAnswerRepository = candidateAnswerRepository;
@@ -92,6 +95,7 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         this.stringRedisTemplate = stringRedisTemplate;
         this.aiMetricsRedisService = aiMetricsRedisService;
         this.teacherAiTaskService = teacherAiTaskService;
+        this.systemConfigService = systemConfigService;
     }
 
 
@@ -355,8 +359,9 @@ public class QuestionGradingServiceImpl implements QuestionGradingService {
         }
 
         try {
+            int defaultBatchSize = systemConfigService.getInteger("gemini.batch-size", 5);
             int batchSize = (request.getBatchSize() != null && request.getBatchSize() >= 1 && request.getBatchSize() <= 50)
-                    ? request.getBatchSize() : 25;
+                    ? request.getBatchSize() : defaultBatchSize;
 
             Map<UUID, List<UUID>> questionToAnswerIdsMap = new LinkedHashMap<>();
 

@@ -2,6 +2,7 @@ package com.quicktest.core.ratelimit.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.quicktest.core.config.service.SystemConfigService;
 import com.quicktest.core.ratelimit.config.RateLimitProperties;
 import com.quicktest.core.ratelimit.config.RateLimitProperties.EndpointRule;
 import com.quicktest.core.ratelimit.exception.RateLimitExceededException;
@@ -39,6 +40,9 @@ class GlobalRateLimitFilterTest {
     @Mock
     private HandlerExceptionResolver handlerExceptionResolver;
 
+    @Mock
+    private SystemConfigService systemConfigService;
+
     private RateLimitProperties properties;
     private ObjectMapper objectMapper;
     private GlobalRateLimitFilter filter;
@@ -50,6 +54,15 @@ class GlobalRateLimitFilterTest {
         properties.getGlobal().setEnabled(true);
         properties.getGlobal().setLimit(120);
         properties.getGlobal().setPeriodSeconds(60);
+
+        lenient().when(systemConfigService.getBoolean(eq("app.rate-limit.enabled"), anyBoolean()))
+                .thenAnswer(inv -> inv.getArgument(1));
+        lenient().when(systemConfigService.getBoolean(eq("app.rate-limit.global.enabled"), anyBoolean()))
+                .thenAnswer(inv -> inv.getArgument(1));
+        lenient().when(systemConfigService.getInteger(eq("app.rate-limit.global.limit"), anyInt()))
+                .thenAnswer(inv -> inv.getArgument(1));
+        lenient().when(systemConfigService.getInteger(eq("app.rate-limit.global.period-seconds"), anyInt()))
+                .thenAnswer(inv -> inv.getArgument(1));
 
         // Configure a specific endpoint rule
         EndpointRule loginRule = new EndpointRule();
@@ -64,7 +77,7 @@ class GlobalRateLimitFilterTest {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
-        filter = new GlobalRateLimitFilter(rateLimitService, properties, objectMapper);
+        filter = new GlobalRateLimitFilter(rateLimitService, properties, systemConfigService, objectMapper);
         filter.setHandlerExceptionResolver(handlerExceptionResolver);
     }
 

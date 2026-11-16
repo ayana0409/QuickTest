@@ -2,6 +2,7 @@ package com.quicktest.core.ratelimit.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quicktest.core.common.ApiResponse;
+import com.quicktest.core.config.service.SystemConfigService;
 import com.quicktest.core.ratelimit.config.RateLimitProperties;
 import com.quicktest.core.ratelimit.config.RateLimitProperties.EndpointRule;
 import com.quicktest.core.ratelimit.exception.RateLimitExceededException;
@@ -42,6 +43,7 @@ public class GlobalRateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitService rateLimitService;
     private final RateLimitProperties properties;
+    private final SystemConfigService systemConfigService;
     private final ObjectMapper objectMapper;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -62,9 +64,11 @@ public class GlobalRateLimitFilter extends OncePerRequestFilter {
 
     public GlobalRateLimitFilter(RateLimitService rateLimitService,
                                   RateLimitProperties properties,
+                                  SystemConfigService systemConfigService,
                                   ObjectMapper objectMapper) {
         this.rateLimitService = rateLimitService;
         this.properties = properties;
+        this.systemConfigService = systemConfigService;
         this.objectMapper = objectMapper;
     }
 
@@ -89,8 +93,9 @@ public class GlobalRateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 3. Skip if rate limiting is globally disabled
-        if (!properties.isEnabled()) {
+        // 3. Skip if rate limiting is globally disabled (dynamic check)
+        boolean isRateLimitEnabled = systemConfigService.getBoolean("app.rate-limit.enabled", properties.isEnabled());
+        if (!isRateLimitEnabled) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -98,7 +103,7 @@ public class GlobalRateLimitFilter extends OncePerRequestFilter {
         String clientIp = ClientIpResolver.getClientIp(request);
         String httpMethod = request.getMethod();
 
-        // 4. Match against configured endpoint rules, fallback to global rule
+        // 4. Match against configured endpoint rules, fallback to dynamic global rule
         EndpointRule matchedRule = findMatchingRule(requestPath, httpMethod);
         String rateLimitKey;
         int limit;
@@ -111,13 +116,16 @@ public class GlobalRateLimitFilter extends OncePerRequestFilter {
             String prefix = (matchedRule.getPrefix() != null && !matchedRule.getPrefix().isBlank())
                     ? matchedRule.getPrefix() : "custom";
             rateLimitKey = prefix + ":" + identifier;
-        } else if (properties.getGlobal().isEnabled()) {
-            limit = properties.getGlobal().getLimit();
-            periodSeconds = properties.getGlobal().getPeriodSeconds();
-            rateLimitKey = "global:" + clientIp;
         } else {
-            filterChain.doFilter(request, response);
-            return;
+            boolean isGlobalEnabled = systemConfigService.getBoolean("app.rate-limit.global.enabled", properties.getGlobal().isEnabled());
+            if (isGlobalEnabled) {
+                limit = systemConfigService.getInteger("app.rate-limit.global.limit", properties.getGlobal().getLimit());
+                periodSeconds = systemConfigService.getInteger("app.rate-limit.global.period-seconds", properties.getGlobal().getPeriodSeconds());
+                rateLimitKey = "global:" + clientIp;
+            } else {
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
 
         // 5. Evaluate rate limit in Redis

@@ -1,0 +1,37 @@
+meta {
+  name: 9.40 Update System Config - Success
+  type: http
+  seq: 40
+}
+
+put {
+  url: {{baseUrl}}/api/admin/configs/app.rate-limit.global.limit
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+vars:pre-request {
+  adminToken: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6ImI1OWI0OTQzLTIwODEtNDFiOS05MjJiLWRmNThlZWY1NjdiOSIsImVtYWlsIjoiYWRtaW5AcXVpY2t0ZXN0LmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4OTIxNzYwMCwiZXhwIjoxNzg5MzA0MDAwfQ.Qkb6BUcSPU6ZpInlUP6HSm7UI6mpzjNZG755u2Q-_a4
+}
+
+body:json {
+  {
+    "value": "150"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq 200
+  res.body.data.value: eq 150
+  res.body.data.source: eq DATABASE
+}
