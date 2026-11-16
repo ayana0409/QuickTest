@@ -1,0 +1,37 @@
+services:
+  quick-test-be:
+    build: .
+    container_name: quick-test-be
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal-net
+      - proxy-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 320M
+    env_file:
+      - .env
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy-net
+      - traefik.http.routers.quicktest.rule=PathPrefix(`/quick-test-be`)
+      - traefik.http.routers.quicktest.entrypoints=web
+      - traefik.http.services.quicktest.loadbalancer.server.port=8080
+      - traefik.http.routers.quicktest.middlewares=quicktest-strip
+      - traefik.http.middlewares.quicktest-strip.stripprefix.prefixes=/quick-test-be
+
+networks:
+  proxy-net:
+    external: true
+  internal-net:
+    external: true
