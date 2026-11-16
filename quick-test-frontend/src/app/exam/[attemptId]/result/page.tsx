@@ -66,7 +66,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
             attemptId,
             status: 'SUBMITTED',
             submittedAt: new Date().toISOString(),
-            message: 'Bài thi của bạn đã được ghi nhận trên hệ thống.',
+            message: 'Bài làm của bạn đã được ghi nhận trên hệ thống.',
             gradingStatus: 'PENDING_MANUAL',
           });
         }
@@ -90,7 +90,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
         <div className="flex flex-col items-center gap-3">
           <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin" />
           <div className="text-sm font-medium text-zinc-400">
-            Đang tải kết quả và tổng kết bài thi...
+            Đang tải kết quả và tổng kết bài làm...
           </div>
         </div>
       </div>
@@ -127,18 +127,18 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
     const lower = rawMsg.toLowerCase();
 
     if (result?.showResultsToStudents === false || lower.includes('withheld') || lower.includes('bảo mật')) {
-      return 'Bài thi đã được ghi nhận. Điểm số và đáp án chi tiết được bảo mật theo quy định của kỳ thi.';
+      return 'Bài làm đã được ghi nhận. Điểm số và đáp án chi tiết được bảo mật theo quy định.';
     }
     if (result?.status === 'AWAITING_MANUAL_GRADING' || lower.includes('essay') || lower.includes('tự luận')) {
-      return 'Bài thi đã nộp thành công và đang chờ giáo viên chấm điểm phần câu hỏi tự luận.';
+      return 'Bài làm đã nộp thành công và đang chờ chấm điểm phần câu hỏi tự luận.';
     }
     if (isAutoGraded || lower.includes('graded') || lower.includes('chấm điểm')) {
-      return 'Bài thi của bạn đã được nộp và hoàn tất chấm điểm tự động.';
+      return 'Bài làm của bạn đã được nộp và hoàn tất chấm điểm tự động.';
     }
     if (rawMsg && !lower.includes('exam') && !lower.includes('successfully')) {
       return rawMsg;
     }
-    return 'Bài thi của bạn đã được ghi nhận và lưu trữ an toàn trên hệ thống.';
+    return 'Bài làm của bạn đã được ghi nhận và lưu trữ an toàn trên hệ thống.';
   };
 
   return (
@@ -154,7 +154,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
 
         {/* Title */}
         <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E6EDF3] tracking-tight mb-2">
-          Nộp bài thi thành công!
+          Nộp bài thành công!
         </h1>
 
         <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed mb-6 max-w-sm mx-auto">
@@ -168,13 +168,13 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
             <div className="flex items-center justify-between pb-3 border-b border-[#30363D]/60 text-xs sm:text-sm">
               <div className="flex items-center gap-2 font-medium text-zinc-400">
                 <User className="w-4 h-4 text-zinc-400 shrink-0" />
-                <span>Thí sinh</span>
+                <span>Người làm bài</span>
               </div>
               <span className="font-semibold text-zinc-200 flex items-center gap-2">
                 {result.candidateName}
                 {isGuestCandidate && (
                   <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                    Khách dự thi
+                    Khách tham gia
                   </span>
                 )}
               </span>
@@ -185,7 +185,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
           <div className="flex items-center justify-between pb-3 border-b border-[#30363D]/60 text-xs sm:text-sm">
             <div className="flex items-center gap-2 font-medium text-zinc-400">
               <FileCheck2 className="w-4 h-4 text-indigo-400 shrink-0" />
-              <span>Trạng thái bài thi</span>
+              <span>Trạng thái bài làm</span>
             </div>
             <span
               className={cn(
@@ -221,7 +221,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
             <div className="flex items-start gap-2.5 pt-1 text-xs text-zinc-300 bg-indigo-950/30 p-3.5 rounded-xl border border-indigo-800/40">
               <Lock className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
               <span>
-                Giáo viên không công bố kết quả cho kỳ thi này. Điểm số và đáp án chi tiết sẽ được công bố sau.
+                Người tạo đề không công bố kết quả ngay. Điểm số và đáp án chi tiết sẽ được công bố sau.
               </span>
             </div>
           ) : isAutoGraded && result?.totalScore !== undefined && result?.totalScore !== null ? (
@@ -243,7 +243,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
             <div className="flex items-start gap-2.5 pt-1 text-xs text-zinc-400 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800">
               <HelpCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <span>
-                Đề thi có câu hỏi tự luận đang chờ giáo viên chấm điểm. Kết quả điểm chính thức sẽ được cập nhật sau.
+                Bộ câu hỏi có câu hỏi tự luận đang chờ chấm điểm. Kết quả điểm chính thức sẽ được cập nhật sau.
               </span>
             </div>
           )}
@@ -263,7 +263,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
                   <ArrowRight className="w-4 h-4 ml-0.5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <p className="text-xs text-zinc-400 text-center">
-                  Cảm ơn bạn đã tham gia bài thi. Kết quả làm bài đã được ghi nhận trên hệ thống.
+                  Cảm ơn bạn đã tham gia làm bài. Kết quả làm bài đã được ghi nhận trên hệ thống.
                 </p>
               </div>
             ) : (
@@ -290,7 +290,7 @@ export default function ExamResultPage({ params }: ExamResultPageProps) {
                       className="py-3 px-4 rounded-xl bg-[#21262D] hover:bg-[#30363D] active:scale-[0.99] text-zinc-300 hover:text-white font-medium text-xs sm:text-sm border border-[#30363D] transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Clock className="w-4 h-4 text-zinc-400" />
-                      <span>Lịch sử bài thi</span>
+                      <span>Lịch sử làm bài</span>
                     </Link>
 
                   <Link

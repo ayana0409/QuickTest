@@ -349,19 +349,19 @@ export default function AdminProctoringMediaPage() {
   const getViolationFriendlyName = (type: ProctoringViolationType) => {
     switch (type) {
       case 'NO_FACE_DETECTED':
-        return 'Không thấy mặt thí sinh';
+        return 'Không thấy mặt người làm bài';
       case 'MULTIPLE_FACES':
         return 'Nhiều người trong khung hình';
       case 'TAB_SWITCH':
         return 'Chuyển tab trình duyệt';
       case 'WINDOW_BLUR':
-        return 'Rời cửa sổ bài thi';
+        return 'Rời cửa sổ làm bài';
       case 'EXIT_FULLSCREEN':
         return 'Thoát toàn màn hình';
       case 'MULTI_SCREEN':
         return 'Dùng nhiều màn hình';
       default:
-        return 'Vi phạm quy chế thi';
+        return 'Nhắc nhở làm bài';
     }
   };
 
@@ -538,7 +538,7 @@ export default function AdminProctoringMediaPage() {
         <div className="p-3.5 sm:p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between w-full">
             <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 truncate">
-              Kỳ thi có vi phạm
+              Bộ câu hỏi có vi phạm
             </span>
             <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
               <Layers className="w-3.5 h-3.5" />
@@ -549,7 +549,7 @@ export default function AdminProctoringMediaPage() {
               {isStatsLoading ? '...' : (stats?.examsWithMediaCount ?? 0).toLocaleString('vi-VN')}
             </div>
             <div className="text-[10px] sm:text-[11px] text-zinc-400 truncate mt-0.5">
-              Phòng thi ghi nhận ảnh
+              Phòng làm bài ghi nhận ảnh
             </div>
           </div>
         </div>
@@ -562,7 +562,7 @@ export default function AdminProctoringMediaPage() {
           <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Tìm theo tên thí sinh, email hoặc tên kỳ thi..."
+            placeholder="Tìm theo tên người làm bài, email hoặc tên bộ câu hỏi..."
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm bg-zinc-50/70 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
@@ -590,7 +590,7 @@ export default function AdminProctoringMediaPage() {
             className="w-full sm:w-auto px-2.5 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
           >
             <option value="ALL">Tất cả tình huống</option>
-            <option value="NO_FACE_DETECTED">Không thấy mặt thí sinh</option>
+            <option value="NO_FACE_DETECTED">Không thấy mặt người làm bài</option>
             <option value="MULTIPLE_FACES">Nhiều người trong camera</option>
           </select>
 
@@ -681,7 +681,7 @@ export default function AdminProctoringMediaPage() {
             <p className="text-xs text-zinc-500 max-w-sm text-center mt-1">
               {searchKeyword || selectedViolationType !== 'ALL' || selectedTimePreset !== 'ALL'
                 ? 'Không có ảnh nào khớp với bộ lọc hiện tại. Thử đổi tiêu chí hoặc đặt lại bộ lọc.'
-                : 'Hiện tại hệ thống chưa ghi nhận hình ảnh vi phạm nào từ camera thí sinh.'}
+                : 'Hiện tại hệ thống chưa ghi nhận hình ảnh vi phạm nào từ camera người làm bài.'}
             </p>
           </div>
           {(searchKeyword || selectedViolationType !== 'ALL' || selectedTimePreset !== 'ALL') && (
@@ -1062,7 +1062,7 @@ export default function AdminProctoringMediaPage() {
                   className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-2 focus:ring-rose-500"
                 >
                   <option value="ALL">Tất cả hình ảnh vi phạm</option>
-                  <option value="NO_FACE_DETECTED">Chỉ ảnh Không thấy mặt thí sinh</option>
+                  <option value="NO_FACE_DETECTED">Chỉ ảnh Không thấy mặt người làm bài</option>
                   <option value="MULTIPLE_FACES">Chỉ ảnh Nhiều người trong camera</option>
                 </select>
               </div>
@@ -1072,10 +1072,10 @@ export default function AdminProctoringMediaPage() {
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    Chỉ dọn các kỳ thi đã kết thúc
+                    Chỉ dọn các bộ câu hỏi đã đóng
                   </div>
                   <p className="text-[11px] text-zinc-400">
-                    Bảo đảm không xóa nhầm ảnh của kỳ thi đang diễn ra
+                    Bảo đảm không xóa nhầm ảnh của bộ câu hỏi đang mở
                   </p>
                 </div>
                 <input
@@ -1156,13 +1156,13 @@ export default function AdminProctoringMediaPage() {
                   Xóa ảnh giám sát này?
                 </h4>
                 <p className="text-[11px] text-zinc-400">
-                  Thí sinh: {itemToDelete.studentName}
+                  Người làm bài: {itemToDelete.studentName}
                 </p>
               </div>
             </div>
 
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Tệp hình ảnh sẽ được xóa khỏi lưu trữ. Bản ghi vi phạm trong bài thi vẫn được lưu lại để đảm bảo tính minh bạch.
+              Tệp hình ảnh sẽ được xóa khỏi lưu trữ. Bản ghi trong bài làm vẫn được lưu lại để đảm bảo tính minh bạch.
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
@@ -1211,7 +1211,7 @@ export default function AdminProctoringMediaPage() {
             </div>
 
             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Toàn bộ {selectedIds.size} tệp hình ảnh đã chọn sẽ được xóa vĩnh viễn để giải phóng bộ nhớ. Lịch sử bài thi của thí sinh vẫn được giữ nguyên.
+              Toàn bộ {selectedIds.size} tệp hình ảnh đã chọn sẽ được xóa vĩnh viễn để giải phóng bộ nhớ. Lịch sử bài làm của người tham gia vẫn được giữ nguyên.
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">

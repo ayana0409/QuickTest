@@ -186,7 +186,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
 
-      toast.success(`Xuất file Excel bài làm của ${candidateName || 'thí sinh'} thành công!`);
+      toast.success(`Xuất file Excel bài làm của ${candidateName || 'người làm bài'} thành công!`);
     } catch {
       // Error toast is handled automatically by axios interceptor
     } finally {
@@ -251,7 +251,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo tên, email hoặc mã thí sinh..."
+              placeholder="Tìm theo tên, email hoặc mã người làm bài..."
               className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
             />
           </div>
@@ -344,7 +344,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
               {debouncedSearch || selectedStatus !== 'ALL' || sortOption !== 'submitTime,desc'
                 ? 'Không tìm thấy phiên thi nào khớp với điều kiện lọc hiện tại. Vui lòng thử xóa bộ lọc tìm kiếm.'
-                : 'Thí sinh sau khi tham gia bài thi sẽ được ghi nhận và hiển thị đầy đủ tiến độ tại danh sách này.'}
+                : 'Người học sau khi tham gia làm bài sẽ được ghi nhận và hiển thị đầy đủ tiến độ tại danh sách này.'}
             </p>
             {(debouncedSearch || selectedStatus !== 'ALL' || sortOption !== 'submitTime,desc') && (
               <Button
@@ -384,7 +384,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
                             {attempt.candidateName}
                           </p>
                           <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
-                            {attempt.candidateIdentifier || 'Thí sinh tự do'}
+                            {attempt.candidateIdentifier || 'Người tham gia tự do'}
                           </p>
                         </div>
                       </div>
@@ -491,7 +491,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400 text-[11px] uppercase tracking-wider font-semibold">
-                  <th className="py-3.5 px-4">Thí sinh</th>
+                  <th className="py-3.5 px-4">Người làm bài</th>
                   <th className="py-3.5 px-4">Trạng thái</th>
                   <th
                     onClick={() => handleSortToggle('totalScore')}
@@ -556,7 +556,7 @@ export const ExamAttemptsTab: React.FC<ExamAttemptsTabProps> = ({ examId, totalP
                               {attempt.candidateName}
                             </p>
                             <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono line-clamp-1">
-                              {attempt.candidateIdentifier || 'Thí sinh tự do'}
+                              {attempt.candidateIdentifier || 'Người tham gia tự do'}
                             </p>
                           </div>
                         </div>

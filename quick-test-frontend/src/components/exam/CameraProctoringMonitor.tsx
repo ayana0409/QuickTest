@@ -426,10 +426,10 @@ export const CameraProctoringMonitor: React.FC<CameraProctoringMonitorProps> = (
         if (singleFrame) {
           evidenceBlob = await canvasToBlob(singleFrame, 0.55);
         }
-        description = 'Không phát hiện khuôn mặt thí sinh trong khung hình camera quá 6 giây.';
+        description = 'Không phát hiện khuôn mặt người làm bài trong khung hình camera quá 6 giây.';
       } else {
         evidenceBlob = await captureAndStitch15FrameSprite();
-        description = `Phát hiện có ${count} người xuất hiện trong khu vực làm bài thi.`;
+        description = `Phát hiện có ${count} người xuất hiện trong khu vực làm bài.`;
       }
 
       let evidenceUrl: string | undefined = undefined;
@@ -603,7 +603,7 @@ export const CameraProctoringMonitor: React.FC<CameraProctoringMonitorProps> = (
               <div className="absolute bottom-2 left-2 right-2 px-2.5 py-1 rounded-lg backdrop-blur-md text-xs font-medium text-center">
                 {gateFaceCount === 1 ? (
                   <span className="text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
-                    ✓ Đã nhận diện thí sinh
+                    ✓ Đã nhận diện người làm bài
                   </span>
                 ) : gateFaceCount === 0 ? (
                   <span className="text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
@@ -696,7 +696,7 @@ export const CameraProctoringMonitor: React.FC<CameraProctoringMonitorProps> = (
       return (
         <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-800">
           <UserX className="w-3 h-3" />
-          Không thấy thí sinh
+          Không thấy người làm bài
         </span>
       );
     }

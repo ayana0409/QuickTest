@@ -243,13 +243,13 @@ export default function TeacherAiTasksPage() {
   // Commit questions to exam
   const handleCommitQuestions = async () => {
     if (!selectedExamId) {
-      toast.error('Vui lòng chọn đề thi đích để lưu các câu hỏi!');
+      toast.error('Vui lòng chọn bộ câu hỏi đích để lưu các câu hỏi!');
       return;
     }
 
     const selectedQuestions = reviewQuestions.filter((_, i) => selectedQuestionIndices.has(i));
     if (selectedQuestions.length === 0) {
-      toast.error('Vui lòng chọn ít nhất 1 câu hỏi để thêm vào đề thi!');
+      toast.error('Vui lòng chọn ít nhất 1 câu hỏi để thêm vào bộ câu hỏi!');
       return;
     }
 
@@ -358,7 +358,7 @@ export default function TeacherAiTasksPage() {
               className="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs font-semibold text-xs sm:text-sm h-9 px-3.5"
             >
               <BookOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Quản lý</span> đề thi
+              <span className="hidden sm:inline">Quản lý</span> bộ câu hỏi
             </Button>
           </Link>
         </div>
@@ -521,7 +521,7 @@ export default function TeacherAiTasksPage() {
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Tìm theo tên file, đề thi..."
+              placeholder="Tìm theo tên file, bộ câu hỏi..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-7 py-1.5 text-xs bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
@@ -669,7 +669,7 @@ export default function TeacherAiTasksPage() {
                     {task.targetExamTitle && (
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                         <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
-                        Đề thi đích:{' '}
+                        Bộ câu hỏi đích:{' '}
                         <span className="font-semibold text-zinc-700 dark:text-zinc-300">
                           {task.targetExamTitle}
                         </span>
@@ -681,8 +681,8 @@ export default function TeacherAiTasksPage() {
                   <div className="sm:text-right shrink-0">
                     <span className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100">
                       {isCompleted
-                        ? `${task.totalItems} ${isQuizGen ? 'câu hỏi' : 'bài thi'}`
-                        : `${task.processedItems} / ${task.totalItems} ${isQuizGen ? 'câu hỏi' : 'bài thi'}`}
+                        ? `${task.totalItems} ${isQuizGen ? 'câu hỏi' : 'bài làm'}`
+                        : `${task.processedItems} / ${task.totalItems} ${isQuizGen ? 'câu hỏi' : 'bài làm'}`}
                     </span>
                     <span className="text-[11px] text-zinc-400 font-medium block">
                       {isCompleted ? 'Đã hoàn tất trọn vẹn' : `Tiến độ: ${task.progressPercent}%`}
@@ -879,7 +879,7 @@ export default function TeacherAiTasksPage() {
                 <div className="flex items-center gap-2 min-w-0">
                   <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
                   <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                    Đề thi đích lưu câu hỏi:
+                    Bộ câu hỏi đích lưu câu hỏi:
                   </span>
                 </div>
 
@@ -889,7 +889,7 @@ export default function TeacherAiTasksPage() {
                     onClick={() => setIsExamPickerOpen(!isExamPickerOpen)}
                     className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                   >
-                    {isExamPickerOpen ? 'Thu gọn' : 'Đổi đề thi khác'}
+                    {isExamPickerOpen ? 'Thu gọn' : 'Đổi bộ câu hỏi khác'}
                   </button>
                 )}
               </div>
@@ -931,10 +931,10 @@ export default function TeacherAiTasksPage() {
                 >
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Chưa chọn đề thi đích. Bấm vào đây để chọn!</span>
+                    <span>Chưa chọn bộ câu hỏi đích. Bấm vào đây để chọn!</span>
                   </div>
                   <Button variant="primary" size="sm" className="text-xs h-7 px-2.5">
-                    Chọn đề thi
+                    Chọn bộ câu hỏi
                   </Button>
                 </div>
               )}
@@ -946,7 +946,7 @@ export default function TeacherAiTasksPage() {
                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                     <input
                       type="text"
-                      placeholder="Tìm theo mã đề hoặc tên đề thi bản nháp..."
+                      placeholder="Tìm theo mã hoặc tên bộ câu hỏi bản nháp..."
                       value={examSearchQuery}
                       onChange={(e) => handleExamSearchChange(e.target.value)}
                       className="w-full text-xs rounded-xl pl-9 pr-8 py-1.5 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 outline-none focus:ring-2 focus:ring-indigo-500/30"
@@ -964,16 +964,16 @@ export default function TeacherAiTasksPage() {
 
                   {teacherExams.length === 0 ? (
                     <div className="py-4 text-center space-y-1 text-xs text-amber-700 dark:text-amber-400">
-                      <p className="font-semibold">Không có đề thi nào ở trạng thái Bản nháp</p>
+                      <p className="font-semibold">Không có bộ câu hỏi nào ở trạng thái Bản nháp</p>
                       <Link href="/teacher/exams/create" target="_blank">
                         <Button variant="outline" size="sm" className="mt-1 text-xs h-7 px-3">
-                          + Tạo đề thi mới
+                          + Tạo bộ câu hỏi mới
                         </Button>
                       </Link>
                     </div>
                   ) : filteredTeacherExams.length === 0 ? (
                     <div className="py-4 text-center text-xs text-zinc-400">
-                      Không tìm thấy đề thi bản nháp phù hợp.
+                      Không tìm thấy bộ câu hỏi bản nháp phù hợp.
                     </div>
                   ) : (
                     <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">

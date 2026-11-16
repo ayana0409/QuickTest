@@ -60,13 +60,13 @@ export const ExamDisqualifiedOverlay: React.FC<ExamDisqualifiedOverlayProps> = (
           id="disqualified-title"
           className="text-2xl sm:text-3xl font-extrabold text-red-500 tracking-tight mb-3"
         >
-          Đình Chỉ Thi
+          Đình Chỉ Làm Bài
         </h1>
 
         {/* Reason */}
         <p className="text-sm sm:text-base text-zinc-300 leading-relaxed mb-6 font-normal">
           {reason ||
-            'Bài thi đã bị đình chỉ do vi phạm quy chế phòng thi.'}
+            'Phiên làm bài đã bị đình chỉ do vượt quá số lần gián đoạn cho phép.'}
         </p>
 
         {/* Details card */}
@@ -84,7 +84,7 @@ export const ExamDisqualifiedOverlay: React.FC<ExamDisqualifiedOverlayProps> = (
           className="w-full py-3.5 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm sm:text-base shadow-lg shadow-red-600/30 hover:shadow-red-600/40 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-[#161B22]"
         >
           <LogOut className="w-5 h-5" />
-          Rời khỏi phòng thi
+          Rời phòng làm bài
         </button>
       </div>
     </div>

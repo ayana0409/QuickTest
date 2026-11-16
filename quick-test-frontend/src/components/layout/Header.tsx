@@ -53,16 +53,16 @@ export function Header({ onOpenMobileSidebar }: HeaderProps) {
   // Derive dynamic page title from pathname
   const getPageTitle = (): string => {
     if (pathname.endsWith('/profile')) return 'Thông tin cá nhân';
-    if (pathname.includes('/proctoring')) return 'Phòng thi & Giám sát';
+    if (pathname.includes('/proctoring')) return 'Phòng làm bài & Giám sát';
     if (pathname.startsWith('/admin')) return 'Không gian quản trị';
-    if (pathname === '/teacher') return 'Tổng quan giảng dạy';
-    if (pathname.startsWith('/teacher/exams')) return 'Quản lý đề thi';
-    if (pathname.startsWith('/teacher/grading')) return 'Chấm bài tự luận';
-    if (pathname.startsWith('/teacher/ai-tasks')) return 'Tác vụ Tạo đề & Chấm bài';
-    if (pathname.startsWith('/teacher')) return 'Khu vực giáo viên';
+    if (pathname === '/teacher') return 'Tổng quan quản lý';
+    if (pathname.startsWith('/teacher/exams')) return 'Quản lý bộ câu hỏi';
+    if (pathname.startsWith('/teacher/grading')) return 'Chấm điểm & Đánh giá';
+    if (pathname.startsWith('/teacher/ai-tasks')) return 'Tác vụ AI tạo bộ câu hỏi & Chấm điểm';
+    if (pathname.startsWith('/teacher')) return 'Khu vực người tạo';
     if (pathname.startsWith('/student/history')) return 'Lịch sử làm bài';
     if (pathname.startsWith('/student/results')) return 'Kết quả & Chứng chỉ';
-    if (pathname.startsWith('/student')) return 'Cổng thi trực tuyến';
+    if (pathname.startsWith('/student')) return 'Cổng học tập & làm bài';
     return 'Bảng điều khiển';
   };
 

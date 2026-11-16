@@ -24,7 +24,7 @@ export function formatAttemptStatus(status: AttemptStatus | string): {
     case 'IN_PROGRESS':
       return {
         label: 'Đang làm bài',
-        shortLabel: 'Đang thi',
+        shortLabel: 'Đang làm',
         variant: 'IN_PROGRESS',
       };
     case 'SUBMITTED':
@@ -41,7 +41,7 @@ export function formatAttemptStatus(status: AttemptStatus | string): {
       };
     case 'DISQUALIFIED':
       return {
-        label: 'Bị đình chỉ thi',
+        label: 'Bị đình chỉ làm bài',
         shortLabel: 'Đình chỉ',
         variant: 'DISQUALIFIED',
       };
@@ -113,7 +113,7 @@ export function formatViolationType(type: ViolationType | string) {
   switch (type) {
     case 'TAB_SWITCH':
       return {
-        label: 'Chuyển tab bài thi',
+        label: 'Chuyển tab làm bài',
         shortLabel: 'Chuyển tab',
         icon: MonitorX,
         color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
@@ -170,14 +170,14 @@ export function formatViolationType(type: ViolationType | string) {
       };
     case 'TEACHER_DISQUALIFY':
       return {
-        label: 'Giám thị đình chỉ',
-        shortLabel: 'Giám thị đình chỉ',
+        label: 'Người quản lý đình chỉ',
+        shortLabel: 'Bị đình chỉ',
         icon: UserX,
         color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
       };
     default:
       return {
-        label: 'Vi phạm quy chế thi',
+        label: 'Vi phạm quy định',
         shortLabel: 'Vi phạm',
         icon: AlertTriangle,
         color: 'text-zinc-600 dark:text-zinc-400 bg-zinc-500/10 border-zinc-500/20',

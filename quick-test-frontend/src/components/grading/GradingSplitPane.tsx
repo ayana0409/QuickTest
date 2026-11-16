@@ -36,7 +36,7 @@ export const GradingSplitPane: React.FC<GradingSplitPaneProps> = ({
             )}
           >
             <UserCheck className="w-3.5 h-3.5" />
-            <span>Bài làm thí sinh</span>
+            <span>Bài làm</span>
           </button>
           <button
             type="button"

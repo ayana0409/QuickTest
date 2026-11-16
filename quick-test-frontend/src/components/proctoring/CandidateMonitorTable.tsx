@@ -36,10 +36,10 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
       <div className="text-center py-12 px-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
         <AlertTriangle className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
         <h4 className="font-semibold text-zinc-800 dark:text-zinc-200">
-          Không có thí sinh nào
+          Không có người làm bài nào
         </h4>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-          Không tìm thấy thí sinh phù hợp bộ lọc
+          Không tìm thấy người làm bài phù hợp bộ lọc
         </p>
       </div>
     );
@@ -51,7 +51,7 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">
-              <th className="py-3.5 px-4">Thí sinh</th>
+              <th className="py-3.5 px-4">Người làm bài</th>
               <th className="py-3.5 px-4">Kết nối</th>
               <th className="py-3.5 px-4">Trạng thái</th>
               <th className="py-3.5 px-4">Vi phạm</th>
@@ -94,7 +94,7 @@ export const CandidateMonitorTable: React.FC<CandidateMonitorTableProps> = ({
                       </div>
                       <div className="min-w-0">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[180px]">
-                          {candidate.candidateName || 'Thí sinh tự do'}
+                          {candidate.candidateName || 'Người tham gia tự do'}
                         </div>
                         <div className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate max-w-[180px]">
                           {candidate.candidateIdentifier || 'Chưa có mã'}

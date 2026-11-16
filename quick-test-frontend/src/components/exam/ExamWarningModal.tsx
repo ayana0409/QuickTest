@@ -70,13 +70,13 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
           id="warning-modal-title"
           className="text-xl sm:text-2xl font-bold text-amber-400 tracking-tight mb-2"
         >
-          Cảnh báo vi phạm quy chế
+          Cảnh báo gián đoạn làm bài
         </h2>
 
         {/* Violation Message */}
         <p className="text-sm sm:text-base text-zinc-300 leading-relaxed mb-6 font-normal">
           {message ||
-            'Hệ thống ghi nhận bạn vừa có thao tác vi phạm nội quy phòng thi. Dữ liệu vi phạm đã được chuyển tới giám thị theo dõi.'}
+            'Hệ thống ghi nhận bạn vừa có thao tác gián đoạn quá trình làm bài. Dữ liệu đã được ghi nhận vào nhật ký phiên làm bài.'}
         </p>
 
         {/* Violation Counter Badge */}
@@ -85,7 +85,7 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
               <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">
-                Số lần vi phạm:
+                Số lần nhắc nhở:
               </div>
               <div className="text-sm font-bold text-zinc-100">
                 {violationCount} / {maxAllowed}
@@ -106,7 +106,7 @@ export const ExamWarningModal: React.FC<ExamWarningModalProps> = ({
 
         {/* Strict Caution Note */}
         <div className="text-xs text-zinc-400 bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mb-6 leading-relaxed">
-          <strong className="text-amber-300">Lưu ý:</strong> Nếu tiếp tục vi phạm quá số lần cho phép, bài thi của bạn sẽ bị hệ thống tự động đình chỉ.
+          <strong className="text-amber-300">Lưu ý:</strong> Nếu tiếp tục gián đoạn quá số lần cho phép, bài làm của bạn sẽ bị hệ thống tự động đình chỉ.
         </div>
 
         {/* Acknowledge Button */}

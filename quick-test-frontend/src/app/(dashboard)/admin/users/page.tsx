@@ -929,8 +929,8 @@ export default function AdminUsersPage() {
                   onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as UserRole })}
                   className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 text-xs sm:text-sm text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="STUDENT">Học sinh (Làm bài thi)</option>
-                  <option value="TEACHER">Giáo viên (Soạn đề & chấm bài)</option>
+                  <option value="STUDENT">Người học (Tham gia làm bài)</option>
+                  <option value="TEACHER">Người tạo đề (Soạn bộ câu hỏi & chấm điểm)</option>
                   <option value="ADMIN">Quản trị viên (Toàn quyền)</option>
                 </select>
               </div>
@@ -1113,14 +1113,14 @@ export default function AdminUsersPage() {
                     {
                       role: 'TEACHER' as UserRole,
                       name: 'Giáo viên',
-                      desc: 'Soạn đề thi & chấm điểm',
+                      desc: 'Soạn bộ câu hỏi & chấm điểm',
                       icon: BookOpen,
                       activeColor: 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400',
                     },
                     {
                       role: 'STUDENT' as UserRole,
                       name: 'Học sinh',
-                      desc: 'Tham gia thi & xem điểm',
+                      desc: 'Tham gia làm bài & xem kết quả',
                       icon: GraduationCap,
                       activeColor: 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400',
                     },

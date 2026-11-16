@@ -85,7 +85,7 @@ export const aiGenerateService = {
       `/teacher/ai-generate/jobs/${jobId}/cancel`,
       {},
       {
-        successMessage: 'Đã hủy tác vụ tạo đề thi bằng AI.',
+        successMessage: 'Đã hủy tác vụ tạo bộ câu hỏi bằng AI.',
       }
     );
   },
@@ -101,7 +101,7 @@ export const aiGenerateService = {
       `/teacher/ai-generate/commit-to-exam/${examId}`,
       { questions },
       {
-        successMessage: `Đã thêm thành công ${questions.length} câu hỏi vào đề thi!`,
+        successMessage: `Đã thêm thành công ${questions.length} câu hỏi vào bộ câu hỏi!`,
       }
     );
 

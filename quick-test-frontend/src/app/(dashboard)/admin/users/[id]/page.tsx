@@ -479,14 +479,14 @@ export default function AdminUserDetailPage({ params }: PageProps) {
                     {
                       role: 'TEACHER' as UserRole,
                       name: 'Giáo viên',
-                      desc: 'Soạn đề thi & chấm điểm',
+                      desc: 'Soạn bộ câu hỏi & chấm điểm',
                       icon: BookOpen,
                       activeColor: 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400',
                     },
                     {
                       role: 'STUDENT' as UserRole,
                       name: 'Học sinh',
-                      desc: 'Tham gia thi & xem điểm',
+                      desc: 'Tham gia làm bài & xem kết quả',
                       icon: GraduationCap,
                       activeColor: 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400',
                     },

@@ -114,7 +114,7 @@ const AttemptDistributionBar: React.FC<DistBarProps> = ({ stats }) => {
         <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-wide">
           Phân bổ trạng thái
         </p>
-        <span className="text-xs text-zinc-400">{total} lượt thi</span>
+        <span className="text-xs text-zinc-400">{total} lượt làm bài</span>
       </div>
 
       {/* Stacked bar */}
@@ -200,7 +200,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
   const hasAttempts = stats.totalAttempts > 0;
 
   return (
-    <section aria-label="Thống kê đề thi" className="space-y-4 pt-1">
+    <section aria-label="Thống kê bộ câu hỏi" className="space-y-4 pt-1">
       {/* Top status bar: Last updated & quick refresh */}
       {lastUpdated && (
         <div className="flex items-center justify-end gap-2 text-[11px] text-zinc-400 dark:text-zinc-500">
@@ -227,7 +227,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Total attempts */}
         <StatCard
-          label="Tổng lượt thi"
+          label="Tổng lượt làm bài"
           value={stats.totalAttempts}
           sub={`${stats.completedAttempts} bài đã nộp`}
           icon={<Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
@@ -279,7 +279,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
           value={stats.totalViolations}
           sub={
             stats.attemptsWithViolations > 0
-              ? `${stats.attemptsWithViolations} thí sinh vi phạm`
+              ? `${stats.attemptsWithViolations} người làm bài có lưu ý`
               : 'Không có vi phạm'
           }
           icon={<ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
@@ -333,7 +333,7 @@ export const ExamStatsPanel: React.FC<ExamStatsPanelProps> = ({
       {/* Empty state */}
       {!hasAttempts && (
         <div className="text-center py-8 text-zinc-400 dark:text-zinc-500 text-sm">
-          Chưa có thí sinh nào tham gia đề thi này.
+          Chưa có người nào tham gia làm bộ câu hỏi này.
         </div>
       )}
     </section>

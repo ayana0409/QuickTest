@@ -78,7 +78,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
 
   const [isSessionEvicted, setIsSessionEvicted] = useState(false);
   const [evictionMessage, setEvictionMessage] = useState<string>(
-    'Phiên thi của bạn đã được mở trên một thiết bị hoặc trình duyệt khác. Phiên hiện tại đã bị khóa để đảm bảo tính độc quyền của bài thi.'
+    'Phiên làm bài của bạn đã được mở trên một thiết bị hoặc trình duyệt khác. Cửa sổ này đã bị khóa để đảm bảo an toàn.'
   );
   const [isNetworkOffline, setIsNetworkOffline] = useState(false);
   const [isCheckingNetwork, setIsCheckingNetwork] = useState(false);
@@ -139,7 +139,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       if (prev) return prev;
       const resolvedMsg =
         msg ||
-        'Bài thi của bạn vừa được mở trên một trình duyệt hoặc thiết bị khác. Để đảm bảo tính bảo mật và công bằng, phiên làm bài tại cửa sổ này đã dừng lại.';
+        'Phiên làm bài của bạn vừa được mở trên một trình duyệt hoặc thiết bị khác. Cửa sổ này đã dừng lại để tránh xung đột.';
       setEvictionMessage(resolvedMsg);
       onSessionEvictedRef.current?.(resolvedMsg);
       return true;
@@ -231,7 +231,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       // Intercept exam closure / auto-submit broadcast
       if (event.eventType === 'EXAM_CLOSED' || event.data.action === 'AUTO_SUBMIT') {
         onExamClosedRef.current?.(
-          event.data.message || event.data.reason || 'Bài thi của bạn đã bị kết thúc.'
+          event.data.message || event.data.reason || 'Phiên làm bài của bạn đã kết thúc.'
         );
         return;
       }
@@ -376,7 +376,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       isInBlurEpisodeRef.current = typeof document !== 'undefined' ? !document.hasFocus() : true;
       reportViolation(
         'WINDOW_BLUR',
-        `Rời khỏi cửa sổ bài thi (${nextCount} lần).`
+        `Rời khỏi cửa sổ làm bài (${nextCount} lần).`
       );
     } else {
       // 1/3 or 2/3 reminders: Show focus lost shield to alert candidate
@@ -578,7 +578,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Mở menu chuột phải trong bài thi.'
+        'Mở menu chuột phải khi làm bài.'
       );
     };
 
@@ -590,7 +590,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Sao chép nội dung bài thi.'
+        'Sao chép nội dung khi làm bài.'
       );
     };
 
@@ -598,7 +598,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
       e.preventDefault();
       reportViolation(
         'COPY_PASTE_ATTEMPT',
-        'Cắt nội dung câu hỏi bài thi.'
+        'Cắt nội dung câu hỏi khi làm bài.'
       );
     };
 
@@ -716,7 +716,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
         <div className="sticky top-0 z-[9990] w-full bg-amber-500/95 text-zinc-950 px-4 py-2 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-lg">
           <Monitor className="w-4 h-4 shrink-0" />
           <span>
-            Lưu ý: Thiết bị của bạn đang kết nối từ 2 màn hình trở lên. Vui lòng chỉ thao tác trong cửa sổ bài thi để tránh bị tính vi phạm quy chế.
+            Lưu ý: Thiết bị của bạn đang kết nối từ 2 màn hình trở lên. Vui lòng chỉ thao tác trong cửa sổ làm bài để tránh bị nhắc nhở gián đoạn.
           </span>
         </div>
       )}
@@ -746,11 +746,11 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
 
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-3">
               <AlertTriangle className="w-3.5 h-3.5" />
-              Rời khỏi cửa sổ bài thi
+              Rời khỏi cửa sổ làm bài
             </span>
 
             <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
-              Nội dung bài thi đang tạm ẩn
+              Nội dung bài làm đang tạm ẩn
             </h2>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-5">
@@ -760,7 +760,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             {/* 3-Strike Focus Loss Counter */}
             <div className="rounded-xl bg-[#0D1117] border border-[#30363D] p-3.5 text-left text-xs text-zinc-300 mb-6 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-400 font-medium">Số lần rời màn hình thi:</span>
+                <span className="text-zinc-400 font-medium">Số lần rời màn hình làm bài:</span>
                 <span
                   className={cn(
                     'px-2.5 py-0.5 rounded-full font-bold',
@@ -783,7 +783,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
               className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <MousePointerClick className="w-4 h-4" />
-              Quay lại làm bài thi
+              Quay lại làm bài
             </button>
           </div>
         </div>
@@ -806,7 +806,7 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             </span>
 
             <h2 className="text-xl font-bold text-[#E6EDF3] tracking-tight mb-2">
-              Bài thi đang được mở ở một nơi khác
+              Phiên làm bài đang được mở ở một nơi khác
             </h2>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
@@ -854,13 +854,13 @@ export const ProctoringShield: React.FC<ProctoringShieldProps> = ({
             </h2>
 
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
-              Hệ thống nhận thấy thiết bị của bạn vừa bị ngắt kết nối Internet. Đề thi tạm thời được che lại để đảm bảo dữ liệu làm bài không bị gián đoạn cho đến khi có mạng trở lại.
+              Hệ thống nhận thấy thiết bị của bạn vừa bị ngắt kết nối Internet. Nội dung câu hỏi tạm thời được che lại để đảm bảo dữ liệu làm bài không bị gián đoạn cho đến khi có mạng trở lại.
             </p>
 
             <div className="rounded-xl bg-[#0D1117] border border-[#30363D] p-3.5 text-left text-xs text-zinc-400 mb-6 space-y-1">
               <p className="font-semibold text-zinc-200">Hướng dẫn:</p>
               <p>• Vui lòng kiểm tra lại đường truyền Wi-Fi hoặc dây mạng trên thiết bị.</p>
-              <p>• Bài thi sẽ tự động mở lại ngay khi kết nối Internet được khôi phục.</p>
+              <p>• Bài làm sẽ tự động mở lại ngay khi kết nối Internet được khôi phục.</p>
             </div>
 
             <button

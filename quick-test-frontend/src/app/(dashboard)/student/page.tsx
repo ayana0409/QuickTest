@@ -265,7 +265,7 @@ export default function StudentDashboardPage() {
     const cleanCode = accessCode.trim().toUpperCase();
 
     if (!cleanCode) {
-      toast.error('Vui lòng nhập mã phòng thi để vào làm bài');
+      toast.error('Vui lòng nhập mã tham gia để vào làm bài');
       return;
     }
 
@@ -352,12 +352,12 @@ export default function StudentDashboardPage() {
       const completionRate = total > 0 ? Math.round((submittedAttempts / total) * 100) : 0;
       return {
         total,
-        centerLabel: 'Tổng lượt thi',
+        centerLabel: 'Tổng lượt làm',
         insight:
           total > 0
             ? `${completionRate}% lượt làm bài của bạn đã hoàn tất nộp bài.`
             : 'Bạn chưa có lượt làm bài nào.',
-        emptyMessage: 'Hãy nhập mã phòng thi hoặc chọn đề công khai để bắt đầu lượt thi đầu tiên.',
+        emptyMessage: 'Hãy nhập mã tham gia hoặc chọn bộ câu hỏi mở để bắt đầu lượt làm bài đầu tiên.',
         slices,
       };
     }
@@ -403,8 +403,8 @@ export default function StudentDashboardPage() {
         insight:
           total > 0 && topSlice
             ? `Phổ biến nhất là ${topSlice.label.toLowerCase()} (${topSlice.percent}%).`
-            : 'Bạn chưa ghi nhận lưu ý quy chế nào trong phòng thi.',
-        emptyMessage: 'Tuyệt vời! Bạn chưa có lưu ý phòng thi nào.',
+            : 'Bạn chưa ghi nhận lưu ý gián đoạn nào khi làm bài.',
+        emptyMessage: 'Tuyệt vời! Bạn chưa có lưu ý gián đoạn nào.',
         slices,
       };
     }
@@ -413,17 +413,17 @@ export default function StudentDashboardPage() {
     const openCount = dashboardData.openExamsCount ?? 0;
     const closedCount = Math.max(0, totalExams - openCount);
     const { total, slices } = normalizeBreakdownSlices([
-      { key: 'open', label: 'Đang mở thi', value: openCount, color: '#4f46e5' },
-      { key: 'closed', label: 'Đã đóng phòng', value: closedCount, color: '#94a3b8' },
+      { key: 'open', label: 'Đang mở', value: openCount, color: '#4f46e5' },
+      { key: 'closed', label: 'Đã đóng', value: closedCount, color: '#94a3b8' },
     ]);
     return {
       total,
-      centerLabel: 'Đề đã tham gia',
+      centerLabel: 'Bộ đã tham gia',
       insight:
         total > 0
-          ? `${formatDashboardNumber(openCount)} đề vẫn đang mở để bạn làm tiếp hoặc xem lại.`
-          : 'Bạn chưa tham gia đề thi nào.',
-      emptyMessage: 'Danh sách đề bạn đã tham gia hiện đang trống.',
+          ? `${formatDashboardNumber(openCount)} bộ câu hỏi vẫn đang mở để bạn làm tiếp hoặc xem lại.`
+          : 'Bạn chưa tham gia bộ câu hỏi nào.',
+      emptyMessage: 'Danh sách bộ câu hỏi bạn đã tham gia hiện đang trống.',
       slices,
     };
   }, [dashboardData, breakdownMode, submittedAttempts, inProgressAttempts, awaitingGrading, disqualifiedAttempts]);
@@ -452,15 +452,15 @@ export default function StudentDashboardPage() {
 
   const heroSubtitle = useMemo(() => {
     if (!dashboardData) {
-      return 'Nhập mã phòng thi để vào làm bài ngay hoặc theo dõi tiến độ học tập của bạn tại một nơi.';
+      return 'Nhập mã tham gia để vào làm bài ngay hoặc theo dõi tiến độ học tập của bạn tại một nơi.';
     }
     if (dashboardData.activeSessionsCount > 0) {
       return `Bạn đang có ${formatDashboardNumber(dashboardData.activeSessionsCount)} bài làm dở chưa nộp. Hãy tiếp tục để không mất tiến độ nhé.`;
     }
     if (dashboardData.openExamsCount > 0) {
-      return `Hiện có ${formatDashboardNumber(dashboardData.openExamsCount)} bài thi của bạn vẫn đang mở phòng để thi tiếp hoặc ôn luyện.`;
+      return `Hiện có ${formatDashboardNumber(dashboardData.openExamsCount)} bộ câu hỏi vẫn đang mở để bạn tiếp tục hoặc ôn luyện.`;
     }
-    return 'Sẵn sàng chinh phục bài kiểm tra mới hoặc khám phá các đề luyện tập từ thầy cô.';
+    return 'Sẵn sàng chinh phục bộ câu hỏi mới hoặc khám phá các nội dung ôn tập.';
   }, [dashboardData]);
 
   const averageScoreBadge = useMemo(() => {
@@ -529,8 +529,8 @@ export default function StudentDashboardPage() {
                   type="text"
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value)}
-                  placeholder="Nhập mã phòng (VD: JAVA26)..."
-                  aria-label="Mã phòng thi"
+                  placeholder="Nhập mã tham gia (VD: JAVA26)..."
+                  aria-label="Mã tham gia"
                   className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-xs font-bold uppercase tracking-wider text-zinc-900 placeholder:font-medium placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </div>
@@ -540,7 +540,7 @@ export default function StudentDashboardPage() {
                 disabled={isSubmittingCode}
                 className="group inline-flex shrink-0 items-center gap-2 rounded-full bg-indigo-600 py-1.5 pl-4 pr-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-indigo-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
               >
-                <span>{isSubmittingCode ? 'Đang vào...' : 'Vào thi'}</span>
+                <span>{isSubmittingCode ? 'Đang vào...' : 'Vào làm bài'}</span>
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
@@ -650,15 +650,15 @@ export default function StudentDashboardPage() {
           <RevealSection delayMs={0}>
             <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
               <KpiCard
-                title="Bài thi đã tham gia"
+                title="Bộ câu hỏi đã làm"
                 value={formatDashboardNumber(dashboardData.totalExamsAttempted)}
-                unit="đề thi"
+                unit="bộ"
                 icon={BookOpen}
                 iconWrapClass="bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400"
                 badgeText={
                   dashboardData.openExamsCount > 0
-                    ? `${formatDashboardNumber(dashboardData.openExamsCount)} đề đang mở`
-                    : 'Chưa có đề đang mở'
+                    ? `${formatDashboardNumber(dashboardData.openExamsCount)} bộ đang mở`
+                    : 'Chưa có bộ đang mở'
                 }
                 badgeTone={dashboardData.openExamsCount > 0 ? 'info' : 'neutral'}
                 footerLeft={`${formatDashboardNumber(totalAttempts)} lượt làm bài`}
@@ -666,7 +666,7 @@ export default function StudentDashboardPage() {
               />
 
               <KpiCard
-                title="Lưu ý phòng thi"
+                title="Lưu ý gián đoạn"
                 value={formatDashboardNumber(totalViolations)}
                 unit="lưu ý"
                 icon={totalViolations > 0 ? AlertTriangle : ShieldCheck}
@@ -682,7 +682,7 @@ export default function StudentDashboardPage() {
                     ? 'Tuân thủ tốt quy chế'
                     : disqualifiedAttempts > 0
                       ? `${formatDashboardNumber(disqualifiedAttempts)} bài bị đình chỉ`
-                      : `${formatDashboardNumber(attemptsWithViolations)} lượt thi có lưu ý`
+                      : `${formatDashboardNumber(attemptsWithViolations)} lượt làm bài có lưu ý`
                 }
                 badgeTone={
                   totalViolations === 0
@@ -729,16 +729,16 @@ export default function StudentDashboardPage() {
                 series={activitySeries}
                 hasMounted={hasMounted}
                 gradientPrefix="student"
-                footerNote="Số lượt thi, bài hoàn tất và lưu ý phòng thi trong 7 ngày gần nhất"
+                footerNote="Số lượt làm bài, hoàn tất và lưu ý gián đoạn trong 7 ngày gần nhất"
               />
 
               <BreakdownDonutChartCard
-                title="Phân bổ kết quả & quy chế"
+                title="Phân bổ kết quả & trạng thái"
                 insight={breakdownData.insight}
                 tabs={[
                   { id: 'attempts', label: 'Lượt làm bài' },
-                  { id: 'exams', label: 'Phòng thi' },
-                  { id: 'violations', label: 'Lưu ý thi' },
+                  { id: 'exams', label: 'Bộ câu hỏi' },
+                  { id: 'violations', label: 'Lưu ý' },
                 ]}
                 activeTab={breakdownMode}
                 onTabChange={setBreakdownMode}
@@ -759,10 +759,10 @@ export default function StudentDashboardPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h2 className="text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50">
-                        Lưu ý phòng thi gần đây
+                        Lưu ý gián đoạn gần đây
                       </h2>
                       <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
-                        Theo dõi các nhắc nhở quy chế trong những lượt làm bài vừa qua để giữ tập trung tốt hơn.
+                        Theo dõi các nhắc nhở trong những lượt làm bài vừa qua để giữ tập trung tốt hơn.
                       </p>
                     </div>
 
@@ -777,10 +777,10 @@ export default function StudentDashboardPage() {
                     <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 px-5 py-8 text-center dark:border-emerald-900/50 dark:bg-emerald-950/20">
                       <ShieldCheck className="mb-2.5 h-9 w-9 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                       <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                        Tuyệt vời! Chưa ghi nhận vi phạm nào
+                        Tuyệt vời! Không ghi nhận gián đoạn nào
                       </h3>
                       <p className="mt-1 max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                        Các bài thi gần đây của bạn đều tuân thủ tốt quy chế phòng thi. Hãy tiếp tục phát huy nhé.
+                        Các bài làm gần đây của bạn đều diễn ra thuận lợi, tập trung tốt. Hãy tiếp tục phát huy nhé.
                       </p>
                     </div>
                   ) : (
@@ -807,7 +807,7 @@ export default function StudentDashboardPage() {
 
                               <div className="min-w-0 space-y-0.5">
                                 <p className="truncate text-xs font-semibold text-zinc-900 sm:text-sm dark:text-zinc-50">
-                                  {item.examTitle || 'Bài kiểm tra trực tuyến'}
+                                  {item.examTitle || 'Bộ câu hỏi trực tuyến'}
                                 </p>
                                 <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                                   {item.description?.trim() || 'Phát sinh trong quá trình làm bài trực tuyến'}
@@ -833,7 +833,7 @@ export default function StudentDashboardPage() {
                               {item.attemptId && (
                                 <Link
                                   href={`/student/history/${item.attemptId}`}
-                                  aria-label={`Xem chi tiết bài thi ${item.examTitle}`}
+                                  aria-label={`Xem chi tiết bài làm ${item.examTitle}`}
                                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/60 dark:hover:text-indigo-300"
                                 >
                                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -853,7 +853,7 @@ export default function StudentDashboardPage() {
                     <strong className="font-semibold text-zinc-800 dark:text-zinc-200">
                       {formatDashboardNumber(attemptsWithViolations)}
                     </strong>{' '}
-                    lượt thi ghi nhận lưu ý trên tổng{' '}
+                    lượt ghi nhận lưu ý trên tổng{' '}
                     <strong className="font-semibold text-zinc-800 dark:text-zinc-200">
                       {formatDashboardNumber(totalAttempts)}
                     </strong>{' '}
@@ -875,7 +875,7 @@ export default function StudentDashboardPage() {
                       Tóm tắt tiến độ học tập
                     </h2>
                     <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                      Ảnh nhanh tình hình phòng thi mở và các bài cần theo dõi.
+                      Ảnh nhanh tình hình bộ câu hỏi mở và các bài cần theo dõi.
                     </p>
                   </div>
 
@@ -959,10 +959,10 @@ export default function StudentDashboardPage() {
             <div id="student-exam-list" className="scroll-mt-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl dark:text-zinc-50">
-                  Danh sách bài thi
+                  Danh sách bộ câu hỏi
                 </h2>
                 <p className="text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
-                  Kiểm tra số lượt thi còn lại, tình trạng mở phòng và điểm số từng bài
+                  Kiểm tra số lượt làm bài còn lại, tình trạng mở và kết quả từng bộ
                 </p>
               </div>
             </div>
@@ -1014,8 +1014,8 @@ export default function StudentDashboardPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm tên đề, mã phòng hoặc giáo viên..."
-                    aria-label="Tìm bài thi"
+                    placeholder="Tìm tên bộ câu hỏi, mã tham gia hoặc người tạo..."
+                    aria-label="Tìm bộ câu hỏi"
                     className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-1.5 pl-8 pr-7 text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-zinc-700/80 dark:bg-zinc-800/60 dark:text-zinc-100"
                   />
                   {searchQuery && (
@@ -1033,7 +1033,7 @@ export default function StudentDashboardPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as ExamStatusFilter)}
-                  aria-label="Lọc theo trạng thái bài thi"
+                  aria-label="Lọc theo trạng thái bộ câu hỏi"
                   className="shrink-0 cursor-pointer rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-medium text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-zinc-700/80 dark:bg-zinc-800/60 dark:text-zinc-200"
                 >
                   <option value="ALL">Tất cả</option>
@@ -1049,7 +1049,7 @@ export default function StudentDashboardPage() {
               <div className="flex items-center justify-between gap-3 rounded-2xl border border-indigo-200/70 bg-indigo-50/70 p-3 text-xs text-indigo-900 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-200">
                 <div className="flex min-w-0 items-center gap-2">
                   <Sparkles className="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
-                  <span className="truncate">Đề thi công khai gợi ý ngẫu nhiên để bạn luyện tập thêm.</span>
+                  <span className="truncate">Bộ câu hỏi mở gợi ý ngẫu nhiên để bạn luyện tập thêm.</span>
                 </div>
                 <button
                   type="button"
@@ -1061,7 +1061,7 @@ export default function StudentDashboardPage() {
                     className={cn('h-3 w-3', isRefreshing && 'animate-spin motion-reduce:animate-none')}
                     aria-hidden="true"
                   />
-                  <span>Đổi đề</span>
+                  <span>Đổi gợi ý</span>
                 </button>
               </div>
             )}
@@ -1078,13 +1078,13 @@ export default function StudentDashboardPage() {
                 </div>
                 <h3 className="text-sm font-bold text-zinc-900 sm:text-base dark:text-zinc-100">
                   {activeTab === 'MY_EXAMS'
-                    ? 'Chưa tìm thấy bài thi bạn đã tham gia'
-                    : 'Chưa có đề thi công khai phù hợp'}
+                    ? 'Chưa tìm thấy bộ câu hỏi bạn đã tham gia'
+                    : 'Chưa có bộ câu hỏi mở phù hợp'}
                 </h3>
                 <p className="mx-auto max-w-md text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
                   {activeTab === 'MY_EXAMS'
-                    ? 'Hãy nhập mã phòng thi từ giáo viên ở phía trên hoặc chuyển sang mục Khám phá để luyện đề.'
-                    : 'Bạn hãy thử đổi từ khóa tìm kiếm hoặc bấm Đổi đề để xem gợi ý khác nhé.'}
+                    ? 'Hãy nhập mã tham gia ở phía trên hoặc chuyển sang mục Khám phá để luyện tập.'
+                    : 'Bạn hãy thử đổi từ khóa tìm kiếm hoặc bấm Đổi gợi ý để xem nội dung khác nhé.'}
                 </p>
               </BentoCard>
             ) : (
@@ -1153,7 +1153,7 @@ export default function StudentDashboardPage() {
 
                         <div className="space-y-1.5 rounded-xl border border-zinc-200/70 bg-zinc-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/50">
                           <div className="flex items-center justify-between gap-2 text-xs">
-                            <span className="font-medium text-zinc-500 dark:text-zinc-400">Lượt thi:</span>
+                            <span className="font-medium text-zinc-500 dark:text-zinc-400">Lượt làm bài:</span>
                             <div className="flex items-center gap-2">
                               <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">
                                 {card.attemptsUsed}/{card.maxAttempts}
@@ -1191,7 +1191,7 @@ export default function StudentDashboardPage() {
                           >
                             <span className="inline-flex items-center gap-1.5">
                               <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-                              Tiếp tục thi
+                              Tiếp tục làm bài
                             </span>
                             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-0.5 group-hover/btn:scale-105">
                               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1206,10 +1206,10 @@ export default function StudentDashboardPage() {
                           >
                             <span>
                               {isStartingThis
-                                ? 'Đang mở đề...'
+                                ? 'Đang mở bài làm...'
                                 : card.attemptsUsed > 0
-                                  ? 'Thi tiếp lượt mới'
-                                  : 'Bắt đầu thi'}
+                                  ? 'Làm tiếp lượt mới'
+                                  : 'Bắt đầu làm bài'}
                             </span>
                             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-0.5 group-hover/btn:scale-105">
                               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1233,7 +1233,7 @@ export default function StudentDashboardPage() {
                             className="h-10 w-full rounded-full text-xs font-semibold opacity-60"
                             size="sm"
                           >
-                            {!card.isOpen ? 'Đã đóng' : 'Hết lượt thi'}
+                            {!card.isOpen ? 'Đã đóng' : 'Hết lượt làm bài'}
                           </Button>
                         )}
                       </div>

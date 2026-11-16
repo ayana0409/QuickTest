@@ -533,7 +533,7 @@ export default function AdminContentModerationPage() {
             type="text"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            placeholder="Tìm theo nội dung, mã đề thi, đáp án..."
+            placeholder="Tìm theo nội dung, mã bộ câu hỏi, đáp án..."
             className="w-full pl-9 pr-9 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-800/50 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
           />
           {searchKeyword && (
@@ -986,7 +986,7 @@ export default function AdminContentModerationPage() {
               ) : (
                 <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>Câu hỏi sẽ bị xóa vĩnh viễn khỏi ngân hàng đề thi.</span>
+                  <span>Câu hỏi sẽ bị xóa vĩnh viễn khỏi ngân hàng câu hỏi.</span>
                 </div>
               )}
             </div>

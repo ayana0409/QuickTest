@@ -117,7 +117,7 @@ export default function CreateExamPage() {
         </Link>
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Tạo đề thi mới
+            Tạo bộ câu hỏi mới
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
             Thiết lập thông tin chung, thời gian và cấu hình trước khi soạn câu hỏi
@@ -134,7 +134,7 @@ export default function CreateExamPage() {
                 <div>
                   <CardTitle>Thông tin cơ bản</CardTitle>
                   <CardDescription>
-                    Tên đề thi, mã truy cập và mô tả hướng dẫn cho thí sinh
+                    Tên bộ câu hỏi, mã tham gia và mô tả hướng dẫn
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -142,14 +142,14 @@ export default function CreateExamPage() {
                 {/* Title */}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                    Tên đề thi *
+                    Tên bộ câu hỏi *
                   </label>
                   <input
                     type="text"
-                    placeholder="Nhập tên đề thi"
+                    placeholder="Nhập tên bộ câu hỏi"
                     {...register('title', {
-                      required: 'Vui lòng nhập tên đề thi',
-                      minLength: { value: 5, message: 'Tên đề thi cần tối thiểu 5 ký tự' },
+                      required: 'Vui lòng nhập tên bộ câu hỏi',
+                      minLength: { value: 5, message: 'Tên bộ câu hỏi cần tối thiểu 5 ký tự' },
                     })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
@@ -170,7 +170,7 @@ export default function CreateExamPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                   <p className="text-[11px] text-zinc-400 mt-1">
-                    Thí sinh sẽ dùng mã này để tham gia thi.
+                    Người tham gia sẽ dùng mã này để vào làm bài.
                   </p>
                 </div>
 
@@ -236,7 +236,7 @@ export default function CreateExamPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                     <p className="text-[11px] text-zinc-400 mt-1">
-                      Mặc định 1 lần đối với các kỳ thi chính thức.
+                      Mặc định 1 lần đối với các bộ câu hỏi tính điểm chính thức.
                     </p>
                   </div>
                 </div>
@@ -270,7 +270,7 @@ export default function CreateExamPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                     <p className="text-[11px] text-zinc-400 mt-1">
-                      Sau thời điểm này thí sinh không thể bắt đầu làm bài.
+                      Sau thời điểm này người tham gia không thể bắt đầu làm bài.
                     </p>
                   </div>
                 </div>
@@ -298,7 +298,7 @@ export default function CreateExamPage() {
                       Xáo trộn thứ tự câu hỏi
                     </p>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      Mỗi thí sinh khi nhận bài sẽ có thứ tự câu hỏi hoàn toàn khác nhau.
+                      Mỗi người khi nhận bài sẽ có thứ tự câu hỏi hoàn toàn khác nhau.
                     </p>
                   </div>
                 </label>
@@ -356,7 +356,7 @@ export default function CreateExamPage() {
                         Giám sát qua Camera
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Yêu cầu thí sinh bật camera khi làm bài. Tự động ghi lại hình ảnh nếu phát hiện không có người hoặc có người lạ.
+                        Yêu cầu người làm bài bật camera khi thực hiện. Tự động ghi lại hình ảnh nếu phát hiện không có người hoặc có người lạ.
                         {!isProctoringEnabled && (
                           <span className="block text-amber-600 dark:text-amber-400 font-medium mt-0.5">
                             (Cần bật tính năng Giám sát trực tuyến ở trên trước)
@@ -383,7 +383,7 @@ export default function CreateExamPage() {
                           className="w-28 px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         />
                         <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                          lần cảnh báo. Nếu thí sinh vượt quá số lần này, hệ thống sẽ tự động đình chỉ bài thi.
+                          lần cảnh báo. Nếu vượt quá số lần này, hệ thống sẽ tự động đình chỉ bài làm.
                         </span>
                       </div>
                     </div>
@@ -401,7 +401,7 @@ export default function CreateExamPage() {
                         Công bố điểm và đáp án sau khi nộp bài
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Cho phép thí sinh xem lại điểm từng câu và đáp án đúng sau khi nộp bài. Tắt tùy chọn này nếu muốn bảo mật đề thi và chống lộ đáp án cho người khác.
+                        Cho phép người làm bài xem lại điểm từng câu và đáp án đúng sau khi nộp bài. Tắt tùy chọn này nếu muốn bảo mật bộ câu hỏi và chống lộ đáp án.
                       </p>
                     </div>
                   </label>
@@ -415,10 +415,10 @@ export default function CreateExamPage() {
                     <div>
                       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                         <Lock className="w-4 h-4 text-amber-500" />
-                        Đề thi riêng tư
+                        Bộ câu hỏi riêng tư
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Khi bật, chỉ thí sinh có mã phòng mới có thể vào thi. Khi tắt, đề thi sẽ có thể xuất hiện tại mục Khám phá công khai cho tất cả thí sinh luyện tập.
+                        Khi bật, chỉ người có mã tham gia mới có thể vào làm bài. Khi tắt, bộ câu hỏi sẽ có thể xuất hiện tại mục Khám phá công khai cho tất cả mọi người cùng thử sức.
                       </p>
                     </div>
                   </label>
@@ -433,7 +433,7 @@ export default function CreateExamPage() {
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold text-sm">
                   <Sparkles className="w-4 h-4" />
-                  <span>Quy trình tạo đề thi</span>
+                  <span>Quy trình tạo bộ câu hỏi</span>
                 </div>
                 <div className="space-y-3 text-xs text-zinc-600 dark:text-zinc-400">
                   <div className="flex items-start gap-2.5">
@@ -441,7 +441,7 @@ export default function CreateExamPage() {
                       1
                     </span>
                     <p>
-                      <strong>Bước 1:</strong> Thiết lập thông tin cơ bản và tùy chỉnh các thông số của đề thi.
+                      <strong>Bước 1:</strong> Thiết lập thông tin cơ bản và tùy chỉnh các thông số của bộ câu hỏi.
                     </p>
                   </div>
                   <div className="flex items-start gap-2.5">
@@ -457,7 +457,7 @@ export default function CreateExamPage() {
                       3
                     </span>
                     <p>
-                      <strong>Bước 3:</strong> Xuất bản đề thi để bắt đầu kỳ thi.
+                      <strong>Bước 3:</strong> Xuất bản bộ câu hỏi để bắt đầu mở làm bài.
                     </p>
                   </div>
                 </div>
@@ -487,7 +487,7 @@ export default function CreateExamPage() {
                   <span>Lưu ý</span>
                 </div>
                 <p className="leading-relaxed">
-                  Đề thi vừa tạo sẽ ở trạng thái Bản nháp. Thí sinh sẽ không thể thấy hoặc làm bài cho đến khi bạn bấm <strong>Xuất bản</strong>.
+                  Bộ câu hỏi vừa tạo sẽ ở trạng thái Bản nháp. Người khác sẽ không thể thấy hoặc làm bài cho đến khi bạn bấm <strong>Xuất bản</strong>.
                 </p>
               </CardContent>
             </Card>

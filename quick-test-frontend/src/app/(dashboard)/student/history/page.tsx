@@ -161,7 +161,7 @@ export default function StudentAttemptHistoryPage() {
             Lịch sử làm bài
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Xem lại toàn bộ kết quả bài kiểm tra và nhật ký giám sát của bạn.
+            Xem lại toàn bộ kết quả bài làm và nhật ký giám sát của bạn.
           </p>
         </div>
 
@@ -183,7 +183,7 @@ export default function StudentAttemptHistoryPage() {
               className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-2xs font-semibold text-xs sm:text-sm h-9 px-3.5"
             >
               <BookOpen className="w-4 h-4" />
-              <span>Vào phòng thi</span>
+              <span>Vào làm bài</span>
             </Button>
           </Link>
         </div>
@@ -195,7 +195,7 @@ export default function StudentAttemptHistoryPage() {
         <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 shadow-2xs flex flex-col justify-between min-w-0">
           <div className="flex items-center justify-between gap-1.5 mb-1.5">
             <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 leading-snug">
-              Tổng lượt thi
+              Tổng lượt làm bài
             </span>
             <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
               <BookOpen className="w-4 h-4" />
@@ -206,7 +206,7 @@ export default function StudentAttemptHistoryPage() {
               {stats.total}
             </div>
             <p className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
-              Tất cả bài thi ghi nhận
+              Tất cả bài làm ghi nhận
             </p>
           </div>
         </div>
@@ -295,7 +295,7 @@ export default function StudentAttemptHistoryPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm theo tên bài kiểm tra..."
+              placeholder="Tìm theo tên bộ câu hỏi..."
               className="w-full pl-8 pr-7 py-2 text-xs bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
             />
             {searchQuery && (
@@ -313,14 +313,14 @@ export default function StudentAttemptHistoryPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              aria-label="Lọc theo trạng thái bài thi"
+              aria-label="Lọc theo trạng thái bài làm"
               className="w-full sm:w-auto text-xs rounded-xl border border-zinc-200 dark:border-zinc-700/80 bg-zinc-50 dark:bg-zinc-800/60 py-2 px-3 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium"
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="SUBMITTED">Đã nộp bài</option>
               <option value="AWAITING_MANUAL_GRADING">Chờ chấm tự luận</option>
               <option value="IN_PROGRESS">Đang làm bài</option>
-              <option value="DISQUALIFIED">Bị đình chỉ thi</option>
+              <option value="DISQUALIFIED">Bị đình chỉ</option>
             </select>
           </div>
         </div>
@@ -350,12 +350,12 @@ export default function StudentAttemptHistoryPage() {
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
                 {searchQuery || statusFilter !== 'ALL'
                   ? 'Không tìm thấy kết quả phù hợp với bộ lọc hiện tại.'
-                  : 'Bạn chưa tham gia bài thi nào. Hãy nhập mã phòng thi để bắt đầu làm bài!'}
+                  : 'Bạn chưa tham gia làm bài nào. Hãy nhập mã tham gia để bắt đầu làm bài!'}
               </p>
             </div>
             <Link href="/student">
               <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs mt-2">
-                Xem các đề thi mở
+                Khám phá bộ câu hỏi
               </Button>
             </Link>
           </div>
@@ -373,7 +373,7 @@ export default function StudentAttemptHistoryPage() {
                     <div className="flex items-start justify-between gap-2.5">
                       <div className="min-w-0">
                         <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">
-                          {attempt.examTitle || 'Bài kiểm tra không tên'}
+                          {attempt.examTitle || 'Bộ câu hỏi chưa đặt tên'}
                         </h4>
                         <span className="text-[11px] text-zinc-400 font-mono block mt-0.5">
                           #{attempt.attemptId.slice(0, 8)}
@@ -463,7 +463,7 @@ export default function StudentAttemptHistoryPage() {
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/30 text-[11px] uppercase tracking-wider font-semibold text-zinc-500 dark:text-zinc-400">
-                    <th className="py-3.5 px-5">Bài kiểm tra</th>
+                    <th className="py-3.5 px-5">Bộ câu hỏi</th>
                     <th className="py-3.5 px-5">Thời gian</th>
                     <th className="py-3.5 px-5">Trạng thái</th>
                     <th className="py-3.5 px-5 text-center">Điểm số</th>
@@ -484,7 +484,7 @@ export default function StudentAttemptHistoryPage() {
                         {/* Exam Title */}
                         <td className="py-3.5 px-5">
                           <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            {attempt.examTitle || 'Bài kiểm tra không tên'}
+                            {attempt.examTitle || 'Bộ câu hỏi chưa đặt tên'}
                           </div>
                           <div className="text-[11px] text-zinc-400 font-mono mt-0.5">
                             #{attempt.attemptId.slice(0, 8)}

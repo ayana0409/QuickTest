@@ -42,7 +42,7 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
     {
       id: 'VIOLATION',
       label: 'Vi phạm',
-      sublabel: `${stats.withViolations} thí sinh`,
+      sublabel: `${stats.withViolations} người có lưu ý`,
       value: stats.withViolations,
       icon: AlertTriangle,
       accentBorder: 'hover:border-amber-500/50',
@@ -53,7 +53,7 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
     {
       id: 'DISQUALIFIED',
       label: 'Đình chỉ',
-      sublabel: `${stats.disqualified} thí sinh`,
+      sublabel: `${stats.disqualified} người bị đình chỉ`,
       value: stats.disqualified,
       icon: UserX,
       accentBorder: 'hover:border-rose-500/50',
@@ -64,7 +64,7 @@ export const ProctoringMetricCards: React.FC<ProctoringMetricCardsProps> = ({
     {
       id: 'SUBMITTED',
       label: 'Đã nộp',
-      sublabel: `${stats.submitted} bài thi`,
+      sublabel: `${stats.submitted} bài làm`,
       value: stats.submitted,
       icon: CheckCircle2,
       accentBorder: 'hover:border-emerald-500/50',

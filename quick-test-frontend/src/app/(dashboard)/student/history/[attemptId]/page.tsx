@@ -100,7 +100,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
       } catch (err: unknown) {
         console.error('Failed to load attempt detail:', err);
         if (isMounted) {
-          setError('Không thể tải thông tin bài thi hoặc bạn không có quyền xem bài làm này.');
+          setError('Không thể tải thông tin bài làm hoặc bạn không có quyền xem bài làm này.');
         }
       } finally {
         if (isMounted) {
@@ -173,7 +173,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
             Không tìm thấy bài làm
           </h2>
           <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto">
-            {error || 'Bài thi không tồn tại hoặc phiên làm việc đã hết hạn.'}
+            {error || 'Bài làm không tồn tại hoặc phiên làm việc đã hết hạn.'}
           </p>
         </div>
         <Link href="/student/history">
@@ -195,7 +195,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Quay lại Lịch sử thi</span>
+          <span>Quay lại Lịch sử làm bài</span>
         </Link>
 
         <span className="text-xs text-zinc-400 font-mono">#{data.attemptId.slice(0, 8)}</span>
@@ -207,7 +207,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
           <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <h3 className="text-xs sm:text-sm font-bold text-amber-900 dark:text-amber-200">
-              Chế độ bảo mật đề thi
+              Chế độ bảo mật bộ câu hỏi
             </h3>
             <p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
               Giảng viên đã ẩn điểm số chi tiết và đáp án đúng. Bạn chỉ có thể xem lại câu hỏi và phương án đã chọn.
@@ -382,7 +382,7 @@ export default function StudentAttemptDetailPage({ params }: PageProps) {
           <div className="rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 p-3.5 flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300">
             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
             <p className="text-xs">
-              Bạn đã tuân thủ 100% quy chế phòng thi. Không có bất kỳ cảnh báo vi phạm nào.
+              Bạn đã tập trung làm bài trọn vẹn. Không có bất kỳ cảnh báo gián đoạn nào.
             </p>
           </div>
         ) : (

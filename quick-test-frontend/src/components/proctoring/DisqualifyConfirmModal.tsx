@@ -47,19 +47,19 @@ export const DisqualifyConfirmModal: React.FC<DisqualifyConfirmModalProps> = ({
           <span>Xác nhận đình chỉ</span>
         </div>
       }
-      description="Thu hồi quyền truy cập bài thi của thí sinh"
+      description="Dừng phiên làm bài của người tham gia"
     >
       <div className="space-y-4">
         <div className="rounded-xl p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-200 leading-relaxed">
           <p className="font-semibold mb-1">
             Bạn có chắc muốn đình chỉ {' '}
             <span className="underline decoration-rose-400 font-bold">
-              {candidateName || 'thí sinh này'}
+              {candidateName || 'người làm bài này'}
             </span>
             ?
           </p>
           <p className="text-rose-700 dark:text-rose-300">
-            Hành động này sẽ ngay lập tức kết thúc lượt thi của thí sinh,
+            Hành động này sẽ ngay lập tức kết thúc lượt làm bài của người tham gia,
             chuyển trạng thái thành <strong>Đã đình chỉ</strong> và dừng quyền làm bài.
           </p>
         </div>

@@ -250,7 +250,7 @@ export class ProctoringRealtimeManager {
       resolvedAttemptId = payload.attemptId;
     } else if (eventType === 'EXAM_CLOSED') {
       eventData = {
-        message: payload.message || content.data.message || 'Bài thi đã kết thúc.',
+        message: payload.message || content.data.message || 'Phiên làm bài đã kết thúc.',
         action: 'AUTO_SUBMIT',
       };
     } else if (eventType === 'SESSION_EVICTED') {
@@ -261,7 +261,7 @@ export class ProctoringRealtimeManager {
         message:
           payload.message ||
           content.data.message ||
-          'Phiên thi đã được mở trên một thiết bị hoặc trình duyệt khác.',
+          'Phiên làm bài đã được mở trên một thiết bị hoặc trình duyệt khác.',
       };
     }
 

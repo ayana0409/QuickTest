@@ -376,7 +376,7 @@ export function ServerWakeupProvider({ children }: { children: React.ReactNode }
                 <div className="mt-3 flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 text-left">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
                   <span>
-                    Hệ thống đang tải dữ liệu đề thi. Vui lòng giữ nguyên màn hình hoặc bấm nút bên dưới để thử lại.
+                    Hệ thống đang tải dữ liệu câu hỏi. Vui lòng giữ nguyên màn hình hoặc bấm nút bên dưới để thử lại.
                   </span>
                 </div>
               )}

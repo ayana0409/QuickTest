@@ -165,7 +165,7 @@ export const QuestionNavigator: React.FC<QuestionNavigatorProps> = ({
           ) : (
             <Send className="w-4 h-4" />
           )}
-          <span>Nộp bài thi</span>
+          <span>Nộp bài</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-black/25 text-emerald-100 font-mono font-bold">
             ({answeredCount}/{totalCount})
           </span>

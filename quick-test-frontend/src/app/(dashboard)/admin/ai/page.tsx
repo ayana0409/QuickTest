@@ -567,7 +567,7 @@ export default function AdminAiDashboardPage() {
                       Tiến trình đang chạy ({status.activeBackgroundJobs.length})
                     </h3>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Tác vụ chấm bài tự luận hoặc tạo đề thi tự động
+                      Tác vụ chấm bài tự luận hoặc tạo bộ câu hỏi tự động
                     </p>
                   </div>
                 </div>
@@ -595,7 +595,7 @@ export default function AdminAiDashboardPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                              {job.examTitle || (isQuizGen ? 'Đề thi không tên' : 'Bài thi')}
+                              {job.examTitle || (isQuizGen ? 'Bộ câu hỏi chưa đặt tên' : 'Bài làm')}
                             </span>
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                               isQueued

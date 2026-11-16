@@ -103,10 +103,10 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
                 id="proctor-settings-title"
                 className="text-lg font-bold text-[#E6EDF3] tracking-tight"
               >
-                Cài đặt Giám sát Phòng thi
+                Cài đặt Giám sát Phòng làm bài
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Tùy chỉnh các quy định giám sát và bảo vệ đề thi
+                Tùy chỉnh các quy định giám sát và bảo vệ bộ câu hỏi
               </p>
             </div>
           </div>
@@ -185,7 +185,7 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
                   Phát hiện chuyển Tab & Rời trình duyệt
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Nhắc nhở và ghi nhận khi thí sinh chuyển sang tab hoặc ứng dụng khác
+                  Nhắc nhở và ghi nhận khi người làm bài chuyển sang tab hoặc ứng dụng khác
                 </div>
               </div>
             </div>
@@ -226,7 +226,7 @@ export const ProctoringSettingsModal: React.FC<ProctoringSettingsModalProps> = (
                   Phát hiện thoát Toàn màn hình
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Nhắc nhở và ghi nhận khi thí sinh thoát khỏi chế độ làm bài toàn màn hình
+                  Nhắc nhở và ghi nhận khi người làm bài thoát khỏi chế độ làm bài toàn màn hình
                 </div>
               </div>
             </div>

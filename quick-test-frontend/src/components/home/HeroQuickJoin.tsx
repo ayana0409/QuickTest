@@ -37,8 +37,8 @@ export function HeroQuickJoin() {
             type="text"
             value={accessCode}
             onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-            placeholder="Nhập mã phòng thi (VD: JAVA26)..."
-            aria-label="Mã phòng thi"
+            placeholder="Nhập mã tham gia (VD: JAVA26)..."
+            aria-label="Mã tham gia"
             className="w-full pl-10 pr-2 py-2 sm:py-2.5 rounded-xl bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 placeholder:font-normal placeholder:tracking-normal text-xs sm:text-sm font-bold font-mono tracking-wider uppercase focus:outline-none"
           />
         </div>
@@ -47,7 +47,7 @@ export function HeroQuickJoin() {
           type="submit"
           className="group inline-flex items-center gap-2 pl-3.5 sm:pl-4 pr-1.5 sm:pr-2 py-1.5 sm:py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer shrink-0"
         >
-          <span>Vào phòng thi</span>
+          <span>Vào làm bài</span>
           <span className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center transition-transform group-hover:translate-x-0.5">
             <ArrowRight className="w-3.5 h-3.5" />
           </span>
@@ -65,7 +65,7 @@ export function HeroQuickJoin() {
           className="group inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold shadow-2xs transition-all"
         >
           <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Dành cho Thí sinh</span>
+          <span>Dành cho Người học</span>
           <ChevronRight className="w-3.5 h-3.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
         </Link>
 
@@ -74,7 +74,7 @@ export function HeroQuickJoin() {
           className="group inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold shadow-2xs transition-all"
         >
           <BookOpen className="w-3.5 h-3.5 text-purple-500" />
-          <span>Dành cho Giảng viên</span>
+          <span>Dành cho Người tạo đề</span>
           <ChevronRight className="w-3.5 h-3.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>

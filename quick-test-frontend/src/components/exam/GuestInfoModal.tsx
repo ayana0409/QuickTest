@@ -26,7 +26,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
   accessCode,
   onConfirm,
   isLoading = false,
-  title = 'Thông tin thí sinh',
+  title = 'Thông tin người làm bài',
   description = 'Vui lòng cung cấp họ tên và mã định danh để hệ thống ghi nhận và tự động lưu bài làm của bạn.',
   onCancel,
 }) => {
@@ -95,7 +95,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
             <h3 className="text-base sm:text-lg font-bold tracking-tight">{title}</h3>
             {accessCode && (
               <div className="text-xs text-indigo-600 dark:text-indigo-400 font-mono mt-0.5">
-                Mã phòng: <span className="font-bold tracking-wider">#{accessCode.toUpperCase()}</span>
+                Mã tham gia: <span className="font-bold tracking-wider">#{accessCode.toUpperCase()}</span>
               </div>
             )}
           </div>
@@ -109,7 +109,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
         <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
           <div>
             <Input
-              label="Họ và tên thí sinh *"
+              label="Họ và tên người làm bài *"
               type="text"
               value={guestName}
               onChange={(e) => {
@@ -144,7 +144,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
             />
             <div className="flex items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
               <HelpCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>Dùng để khôi phục phiên thi nếu tải lại trang hoặc mất kết nối.</span>
+              <span>Dùng để khôi phục phiên làm bài nếu tải lại trang hoặc mất kết nối.</span>
             </div>
           </div>
 
@@ -168,7 +168,7 @@ export const GuestInfoModal: React.FC<GuestInfoModalProps> = ({
               className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-9 text-xs shadow-2xs"
               rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
             >
-              Vào phòng thi
+              Vào làm bài
             </Button>
           </div>
         </form>

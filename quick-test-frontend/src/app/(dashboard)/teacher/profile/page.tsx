@@ -237,7 +237,7 @@ export default function TeacherProfilePage() {
       permissions: [
         'Quản trị toàn bộ người dùng, cấp quyền và quản lý trạng thái tài khoản',
         'Cấu hình mô hình AI chấm điểm và kiểm duyệt nội dung câu hỏi toàn hệ thống',
-        'Quản lý toàn bộ đề thi, ngân hàng câu hỏi và kết quả thi',
+        'Quản lý toàn bộ bộ câu hỏi, ngân hàng câu hỏi và kết quả làm bài',
         'Giám sát nhật ký bảo mật, phân quyền và thiết lập giới hạn truy cập an toàn',
       ],
       quickLinksTitle: 'Các khu vực dành cho quản trị viên',
@@ -251,37 +251,37 @@ export default function TeacherProfilePage() {
       code: 'ROLE_TEACHER',
       badgeClass: 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border-indigo-200/80 dark:border-indigo-800/80',
       homeUrl: '/teacher',
-      actionLabel: 'Tổng quan giảng dạy',
+      actionLabel: 'Tổng quan quản lý',
       actionUrl: '/teacher',
       permissions: [
-        'Khởi tạo và quản lý toàn diện đề thi (Soạn thảo, Xuất bản, Đóng, Nhân bản)',
-        'Tái sử dụng câu hỏi và hình ảnh từ Ngân hàng đề thi cá nhân',
+        'Khởi tạo và quản lý toàn diện bộ câu hỏi (Soạn thảo, Xuất bản, Đóng, Nhân bản)',
+        'Tái sử dụng câu hỏi và hình ảnh từ Ngân hàng câu hỏi cá nhân',
         'Chấm điểm câu hỏi tự luận theo barem hoặc kích hoạt AI chấm tự động',
-        'Giám sát phòng thi thời gian thực và xuất báo cáo kết quả ra bảng tính Excel',
+        'Giám sát làm bài thời gian thực và xuất báo cáo kết quả ra bảng tính Excel',
       ],
       quickLinksTitle: 'Các khu vực chính dành cho giáo viên',
       quickLinks: [
-        { title: 'Quản lý đề thi', desc: 'Tạo đề, cấu trúc câu hỏi, giám sát và xuất bản', url: '/teacher/exams', isExam: true },
-        { title: 'Chấm bài tự luận', desc: 'Chấm bài thủ công theo barem hoặc AI tự động', url: '/teacher/grading', isGrading: true },
+        { title: 'Quản lý bộ câu hỏi', desc: 'Tạo bộ câu hỏi, cấu trúc câu hỏi, giám sát và xuất bản', url: '/teacher/exams', isExam: true },
+        { title: 'Chấm điểm & Đánh giá', desc: 'Chấm bài thủ công theo barem hoặc AI tự động', url: '/teacher/grading', isGrading: true },
       ],
     },
     STUDENT: {
-      label: 'Học sinh / Thí sinh',
+      label: 'Người học / Làm bài',
       code: 'ROLE_STUDENT',
       badgeClass: 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-800/80',
       homeUrl: '/student',
-      actionLabel: 'Kỳ thi của tôi',
+      actionLabel: 'Bộ câu hỏi của tôi',
       actionUrl: '/student',
       permissions: [
-        'Tham gia làm bài thi trực tuyến theo mã phòng thi được cung cấp',
+        'Tham gia làm bài trực tuyến theo mã tham gia được cung cấp',
         'Tự động lưu tiến trình làm bài, đếm ngược thời gian và nộp bài an toàn',
-        'Xem lại lịch sử làm bài và tra cứu điểm số chi tiết các lần thi',
+        'Xem lại lịch sử làm bài và tra cứu điểm số chi tiết các lượt làm bài',
         'Nhận kết quả chấm điểm tự luận và nhận xét chi tiết từ giảng viên / AI',
       ],
-      quickLinksTitle: 'Các khu vực dành cho thí sinh',
+      quickLinksTitle: 'Các khu vực dành cho người học',
       quickLinks: [
-        { title: 'Cổng thi trực tuyến', desc: 'Xem danh sách kỳ thi và thông báo mới', url: '/student', isExam: true },
-        { title: 'Lịch sử bài thi', desc: 'Tra cứu bài làm, điểm số và chi tiết nhận xét', url: '/student/history', isHistory: true },
+        { title: 'Cổng học tập & làm bài', desc: 'Xem danh sách bộ câu hỏi và thông báo mới', url: '/student', isExam: true },
+        { title: 'Lịch sử làm bài', desc: 'Tra cứu bài làm, điểm số và chi tiết nhận xét', url: '/student/history', isHistory: true },
       ],
     },
   };
@@ -670,7 +670,7 @@ export default function TeacherProfilePage() {
             autoFocus
             error={profileError || undefined}
             disabled={isUpdatingProfile}
-            helperText="Tên này sẽ hiển thị trên các chứng chỉ, đề thi và báo cáo chấm điểm"
+            helperText="Tên này sẽ hiển thị trên các chứng chỉ, bộ câu hỏi và báo cáo chấm điểm"
           />
 
           <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">

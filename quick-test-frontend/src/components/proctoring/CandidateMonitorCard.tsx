@@ -111,7 +111,7 @@ export const CandidateMonitorCard: React.FC<CandidateMonitorCardProps> = ({
 
             <div className="min-w-0 flex-1">
               <h4 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                {candidate.candidateName || 'Thí sinh tự do'}
+                {candidate.candidateName || 'Người tham gia tự do'}
               </h4>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
                 {candidate.candidateIdentifier || 'Chưa có mã định danh'}

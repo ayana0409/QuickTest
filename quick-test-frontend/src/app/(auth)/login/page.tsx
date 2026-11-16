@@ -319,7 +319,7 @@ function LoginForm() {
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100/60 dark:hover:bg-indigo-950/40 text-xs font-semibold transition-all group"
         >
           <KeyRound className="w-4 h-4 text-indigo-500 group-hover:rotate-12 transition-transform" />
-          <span>Làm bài thi không cần đăng nhập</span>
+          <span>Làm bài không cần đăng nhập</span>
         </Link>
       </div>
 

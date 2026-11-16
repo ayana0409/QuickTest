@@ -64,12 +64,12 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, { label: string; icon: React.Re
   SINGLE_CHOICE: {
     label: 'Trắc nghiệm 1 đáp án',
     icon: <ListChecks className="w-4 h-4 text-indigo-500" />,
-    desc: 'Thí sinh chỉ được chọn một đáp án chính xác duy nhất.',
+    desc: 'Người làm bài chỉ được chọn một đáp án chính xác duy nhất.',
   },
   MULTIPLE_CHOICE: {
     label: 'Trắc nghiệm nhiều đáp án',
     icon: <CheckSquare className="w-4 h-4 text-emerald-500" />,
-    desc: 'Thí sinh chọn một hoặc nhiều đáp án đúng.',
+    desc: 'Người làm bài chọn một hoặc nhiều đáp án đúng.',
   },
   NUMERIC: {
     label: 'Điền số',
@@ -629,10 +629,10 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         <div className="p-12 text-center rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
           <Layers className="w-12 h-12 text-zinc-300 dark:text-zinc-700 mx-auto mb-3" />
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-base mb-1">
-            Đề thi chưa có câu hỏi nào
+            Bộ câu hỏi chưa có câu hỏi nào
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mb-6">
-            Bắt đầu tạo câu hỏi trắc nghiệm, điền số hoặc tự luận để cấu trúc đề kiểm tra của bạn.
+            Bắt đầu tạo câu hỏi trắc nghiệm, điền số hoặc tự luận để cấu trúc bộ câu hỏi của bạn.
           </p>
           {!isLocked && (
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -642,7 +642,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                 leftIcon={<Sparkles className="w-4 h-4 animate-pulse" />}
                 onClick={() => setIsAiModalOpen(true)}
               >
-                Soạn đề bằng AI
+                Soạn câu hỏi bằng AI
               </Button>
               <Button
                 variant="outline"
@@ -1164,7 +1164,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
                   className="w-full px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
                 <p className="text-[11px] text-zinc-400 mt-1">
-                  Nếu sai số = 0.05 và đáp án = 10, thí sinh nhập 9.95 - 10.05 đều được chấp nhận.
+                  Nếu sai số = 0.05 và đáp án = 10, kết quả nhập 9.95 - 10.05 đều được chấp nhận.
                 </p>
               </div>
             </div>
@@ -1224,7 +1224,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
               Hủy
             </Button>
             <Button type="submit" isLoading={isSubmitting}>
-              {editingQuestion ? 'Lưu thay đổi' : 'Thêm vào đề thi'}
+              {editingQuestion ? 'Lưu thay đổi' : 'Thêm vào bộ câu hỏi'}
             </Button>
           </div>
         </form>
@@ -1235,7 +1235,7 @@ export const QuestionBuilder: React.FC<QuestionBuilderProps> = ({
         isOpen={!!deleteConfirmId}
         onClose={() => setDeleteConfirmId(null)}
         title="Xác nhận xóa câu hỏi"
-        description="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa câu hỏi này khỏi đề thi?"
+        description="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa câu hỏi này khỏi bộ câu hỏi?"
         size="sm"
         footer={
           <>

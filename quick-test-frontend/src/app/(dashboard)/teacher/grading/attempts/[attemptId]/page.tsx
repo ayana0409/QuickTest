@@ -148,7 +148,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
     }));
 
     if (gradesPayload.length === 0) {
-      toast('Bài thi không có câu tự luận nào cần lưu điểm.', { icon: 'ℹ️' });
+      toast('Bài làm không có câu tự luận nào cần lưu điểm.', { icon: 'ℹ️' });
       return;
     }
 
@@ -177,7 +177,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      const candidateSlug = (detail?.candidateName || 'Thi_Sinh').replace(/\s+/g, '_');
+      const candidateSlug = (detail?.candidateName || 'Nguoi_Lam_Bai').replace(/\s+/g, '_');
       link.download = `Bai_Lam_${candidateSlug}_${attemptId.slice(0, 8)}.xlsx`;
       document.body.appendChild(link);
       link.click();
@@ -196,7 +196,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
     return (
       <div className="max-w-5xl mx-auto py-16 text-center space-y-4">
         <div className="w-10 h-10 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-sm text-zinc-500">Đang tải chi tiết bài làm của thí sinh...</p>
+        <p className="text-sm text-zinc-500">Đang tải chi tiết bài làm...</p>
       </div>
     );
   }
@@ -209,7 +209,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
           Không tìm thấy bài làm
         </h2>
         <p className="text-sm text-zinc-500">
-          Phiên thi không tồn tại hoặc bạn không có quyền chấm điểm cho đề thi này.
+          Phiên làm bài không tồn tại hoặc bạn không có quyền chấm điểm cho bộ câu hỏi này.
         </p>
         <Button variant="outline" onClick={() => router.back()}>
           Quay lại
@@ -259,7 +259,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
                   </Badge>
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
-                  {detail.candidateIdentifier || 'Thí sinh tự do'}
+                  {detail.candidateIdentifier || 'Người làm bài tự do'}
                 </p>
               </div>
             </div>
@@ -337,7 +337,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
               <div className="space-y-1">
                 <p className="font-bold">Hệ thống giám sát ghi nhận {detail.violationCount} lần vi phạm</p>
                 <p className="text-xs text-rose-700/80 dark:text-rose-400">
-                  Thí sinh có ghi nhận vi phạm quy chế (rời màn hình, phát hiện người lạ, v.v.). Thầy/cô có thể kiểm tra hình ảnh/video bằng chứng bên dưới.
+                  Có ghi nhận cảnh báo trong quá trình làm bài (rời màn hình, phát hiện người lạ, v.v.). Thầy/cô có thể kiểm tra hình ảnh/video bằng chứng bên dưới.
                 </p>
               </div>
             </div>
@@ -419,7 +419,7 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
 
         {detail.essayQuestions?.length === 0 ? (
           <div className="p-8 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 text-zinc-500 text-xs">
-            Bài thi này không có câu hỏi tự luận nào cần chấm thủ công.
+            Bài làm này không có câu hỏi tự luận nào cần chấm thủ công.
           </div>
         ) : (
           <div className="space-y-4">
@@ -493,14 +493,14 @@ export default function AttemptGradingPage({ params }: AttemptGradingPageProps) 
                     {/* Candidate Text Answer Box */}
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                        Bài làm của thí sinh
+                        Bài làm của người tham gia
                       </p>
                       <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 text-sm text-zinc-900 dark:text-zinc-100 font-sans leading-relaxed whitespace-pre-wrap">
                         {q.textAnswer ? (
                           q.textAnswer
                         ) : (
                           <span className="italic text-zinc-400">
-                            (Thí sinh không nhập câu trả lời cho câu này)
+                            (Người làm bài không nhập câu trả lời cho câu này)
                           </span>
                         )}
                       </div>

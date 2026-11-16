@@ -50,8 +50,8 @@ interface QuickDestination {
 
 const TEACHER_QUICK_DESTINATIONS: QuickDestination[] = [
   {
-    title: 'Soạn bài kiểm tra',
-    description: 'Thiết lập câu hỏi & lịch mở phòng',
+    title: 'Soạn bộ câu hỏi',
+    description: 'Thiết lập câu hỏi & mã tham gia',
     href: '/teacher/exams/create',
     icon: Plus,
     accentClass: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
@@ -71,8 +71,8 @@ const TEACHER_QUICK_DESTINATIONS: QuickDestination[] = [
     accentClass: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
   },
   {
-    title: 'Kho đề thi',
-    description: 'Mở phòng thi, đóng & nhân bản',
+    title: 'Kho bộ câu hỏi',
+    description: 'Mở phòng làm bài, đóng & nhân bản',
     href: '/teacher/exams',
     icon: BookOpen,
     accentClass: 'bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400',
@@ -278,13 +278,13 @@ export default function TeacherDashboardPage() {
       emptyMessage = 'Chưa có lượt làm bài nào trên các đề của Thầy/Cô.';
     } else if (breakdownMode === 'exams') {
       rawItems = [
-        { key: 'published', label: 'Đang mở thi', value: stats.publishedExams, color: '#4f46e5' },
+        { key: 'published', label: 'Đang mở', value: stats.publishedExams, color: '#4f46e5' },
         { key: 'draft', label: 'Bản nháp', value: stats.draftExams, color: '#94a3b8' },
         { key: 'closed', label: 'Đã đóng', value: stats.closedExams, color: '#0284c7' },
       ];
-      centerLabel = 'Tổng đề thi';
-      insight = `${formatDashboardNumber(stats.publishedExams)} đề đang mở cho học sinh vào làm.`;
-      emptyMessage = 'Kho đề của Thầy/Cô hiện đang trống.';
+      centerLabel = 'Tổng bộ câu hỏi';
+      insight = `${formatDashboardNumber(stats.publishedExams)} bộ câu hỏi đang mở nhận bài làm.`;
+      emptyMessage = 'Kho bộ câu hỏi hiện đang trống.';
     } else {
       rawItems = [
         { key: 'single', label: 'Một lựa chọn', value: stats.singleChoiceQuestions, color: '#4f46e5' },
@@ -296,7 +296,7 @@ export default function TeacherDashboardPage() {
       insight =
         stats.totalQuestions > 0
           ? `Trong đó có ${formatDashboardNumber(stats.essayQuestions)} câu tự luận.`
-          : 'Chưa có câu hỏi nào trong các đề thi.';
+          : 'Chưa có câu hỏi nào trong các bộ câu hỏi.';
       emptyMessage = 'Chưa có câu hỏi nào được soạn.';
     }
 
@@ -313,15 +313,15 @@ export default function TeacherDashboardPage() {
 
   const heroDescription = useMemo(() => {
     if (!stats) {
-      return 'Theo dõi tình hình lớp học, các bài tự luận cần chấm và đề thi đang mở tại một nơi.';
+      return 'Theo dõi hoạt động làm bài, các bài tự luận cần chấm và bộ câu hỏi đang mở tại một nơi.';
     }
     if (stats.pendingManualAnswers > 0 || stats.inProgressAttempts > 0) {
-      return `Hiện có ${formatDashboardNumber(stats.pendingManualAnswers)} câu tự luận đang chờ cho điểm và ${formatDashboardNumber(stats.inProgressAttempts)} học sinh đang làm bài trực tiếp.`;
+      return `Hiện có ${formatDashboardNumber(stats.pendingManualAnswers)} câu tự luận đang chờ cho điểm và ${formatDashboardNumber(stats.inProgressAttempts)} người học đang làm bài trực tiếp.`;
     }
     if (stats.publishedExams > 0) {
-      return 'Các phòng thi đang diễn ra ổn định, toàn bộ phần bài tự luận đã được chấm hoàn tất.';
+      return 'Các phòng làm bài đang diễn ra ổn định, toàn bộ phần bài tự luận đã được chấm hoàn tất.';
     }
-    return 'Sẵn sàng soạn đề thi mới, mở phòng thi cho lớp hoặc xem lại kết quả đã lưu.';
+    return 'Sẵn sàng soạn bộ câu hỏi mới, mở phòng làm bài hoặc xem lại kết quả đã lưu.';
   }, [stats]);
 
   if (!isInitialized || !canAccessTeacher) {
@@ -423,15 +423,15 @@ export default function TeacherDashboardPage() {
           {/* Row 1: 4 Headline KPIs (2x2 mobile, 4 cols desktop) */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <KpiCard
-              title="Kho đề của tôi"
+              title="Kho bộ câu hỏi"
               value={formatDashboardNumber(stats.totalExams)}
-              unit="đề thi"
+              unit="bộ câu hỏi"
               icon={BookOpen}
               iconWrapClass="bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400"
               badgeText={
                 stats.publishedExams > 0
                   ? `${formatDashboardNumber(stats.publishedExams)} đang mở nhận bài`
-                  : 'Chưa mở phòng thi'
+                  : 'Chưa mở làm bài'
               }
               badgeTone={stats.publishedExams > 0 ? 'info' : 'neutral'}
               footerLeft={`${formatDashboardNumber(stats.draftExams)} bản nháp`}
@@ -463,7 +463,7 @@ export default function TeacherDashboardPage() {
               badgeText={
                 stats.inProgressAttempts > 0
                   ? `${formatDashboardNumber(stats.inProgressAttempts)} đang làm bài`
-                  : 'Chưa có thí sinh làm bài'
+                  : 'Chưa có lượt làm bài'
               }
               badgeTone={stats.inProgressAttempts > 0 ? 'live' : 'neutral'}
               footerLeft={`Điểm TB: ${stats.averageScore > 0 ? stats.averageScore.toFixed(1) : '—'}`}
@@ -486,7 +486,7 @@ export default function TeacherDashboardPage() {
                   : 'Đã chấm xong tự luận'
               }
               badgeTone={stats.pendingManualAnswers > 0 ? 'warning' : 'positive'}
-              footerLeft={`${formatDashboardNumber(stats.totalViolations)} cảnh báo phòng thi`}
+              footerLeft={`${formatDashboardNumber(stats.totalViolations)} cảnh báo làm bài`}
               footerRight={`${formatDashboardNumber(stats.disqualifiedAttempts)} bị đình chỉ`}
             />
           </div>
@@ -505,7 +505,7 @@ export default function TeacherDashboardPage() {
               insight={breakdownData.insight}
               tabs={[
                 { id: 'attempts', label: 'Bài làm' },
-                { id: 'exams', label: 'Đề thi' },
+                { id: 'exams', label: 'Bộ câu hỏi' },
                 { id: 'questions', label: 'Câu hỏi' },
               ]}
               activeTab={breakdownMode}
@@ -526,10 +526,10 @@ export default function TeacherDashboardPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50">
-                      Đề thi cần chú ý
+                      Bộ câu hỏi cần chú ý
                     </h2>
                     <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
-                      Ưu tiên bài còn tự luận chưa chấm điểm hoặc đang có học sinh làm trực tiếp.
+                      Ưu tiên bộ câu hỏi còn tự luận chưa chấm điểm hoặc đang có người làm trực tiếp.
                     </p>
                   </div>
 
@@ -546,17 +546,17 @@ export default function TeacherDashboardPage() {
                   <div className="mt-5 flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-6 py-12 text-center dark:border-zinc-800 dark:bg-zinc-800/30">
                     <BookOpen className="mb-3 h-9 w-9 text-indigo-500" aria-hidden="true" />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Thầy/Cô chưa tạo đề thi nào
+                      Bạn chưa tạo bộ câu hỏi nào
                     </h3>
                     <p className="mt-1 max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                      Hãy bắt đầu bằng việc tạo đề thi đầu tiên hoặc soạn nhanh từ tài liệu sẵn có.
+                      Hãy bắt đầu bằng việc tạo bộ câu hỏi đầu tiên hoặc soạn nhanh từ tài liệu sẵn có.
                     </p>
                     <Link
                       href="/teacher/exams/create"
                       className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     >
                       <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                      Tạo đề đầu tiên
+                      Tạo bộ câu hỏi đầu tiên
                     </Link>
                   </div>
                 ) : (
@@ -593,7 +593,7 @@ export default function TeacherDashboardPage() {
                                   type="button"
                                   onClick={() => void handleCopyAccessCode(exam.id, exam.accessCode)}
                                   className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-medium text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                                  title="Sao chép mã phòng thi"
+                                  title="Sao chép mã tham gia"
                                 >
                                   <span className="font-mono tracking-wide">{exam.accessCode}</span>
                                   {isCopied ? (
@@ -655,7 +655,7 @@ export default function TeacherDashboardPage() {
                   <strong className="font-semibold text-zinc-800 dark:text-zinc-200">
                     {formatDashboardNumber(stats.publishedExams)}
                   </strong>{' '}
-                  đề đang mở và{' '}
+                  bộ câu hỏi đang mở và{' '}
                   <strong className="font-semibold text-zinc-800 dark:text-zinc-200">
                     {formatDashboardNumber(stats.draftExams)}
                   </strong>{' '}
@@ -680,7 +680,7 @@ export default function TeacherDashboardPage() {
                       Cảnh báo mới ghi nhận
                     </h2>
                     <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                      Những lưu ý gần đây trong các ca thi của Thầy/Cô.
+                      Những lưu ý gần đây trong các phiên làm bài.
                     </p>
                   </div>
 
@@ -695,10 +695,10 @@ export default function TeacherDashboardPage() {
                   <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 px-5 py-8 text-center dark:border-emerald-900/50 dark:bg-emerald-950/20">
                     <ShieldCheck className="mb-2.5 h-9 w-9 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Phòng thi diễn ra nghiêm túc
+                      Phiên làm bài diễn ra nghiêm túc
                     </h3>
                     <p className="mt-1 max-w-xs text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                      Chưa phát hiện hành vi bất thường nào trong các bài thi gần đây của lớp.
+                      Chưa phát hiện hành vi bất thường nào trong các bài làm gần đây.
                     </p>
                   </div>
                 ) : (
@@ -720,10 +720,10 @@ export default function TeacherDashboardPage() {
 
                             <div className="min-w-0 space-y-0.5">
                               <p className="truncate text-xs font-semibold text-zinc-900 sm:text-sm dark:text-zinc-50">
-                                {item.candidateName || 'Thí sinh tự do'}
+                                {item.candidateName || 'Người làm bài tự do'}
                               </p>
                               <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                                {item.examTitle || 'Bài thi trực tuyến'}
+                                {item.examTitle || 'Bộ câu hỏi trực tuyến'}
                               </p>
                             </div>
                           </div>

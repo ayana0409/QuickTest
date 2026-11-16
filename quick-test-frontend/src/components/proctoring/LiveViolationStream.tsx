@@ -125,11 +125,11 @@ export const LiveViolationStream: React.FC<LiveViolationStreamProps> = ({
               </div>
 
               <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
-                {evt.candidateName || 'Thí sinh ẩn danh'}
+                {evt.candidateName || 'Người làm bài ẩn danh'}
               </div>
 
               <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                {evt.description || 'Phát hiện vi phạm trong quá trình làm bài thi'}
+                {evt.description || 'Phát hiện gián đoạn trong quá trình làm bài'}
               </div>
 
               <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">

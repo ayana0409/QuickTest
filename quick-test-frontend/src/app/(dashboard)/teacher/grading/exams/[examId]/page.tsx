@@ -90,14 +90,14 @@ function ExamGradingOverviewContent({ examId }: { examId: string }) {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors mb-2.5"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Quay lại danh sách đề thi</span>
+          <span>Quay lại danh sách bộ câu hỏi</span>
         </Link>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {isLoadingQuestions ? 'Đang tải thông tin đề thi...' : currentExamTitle || 'Chấm điểm bài thi'}
+                {isLoadingQuestions ? 'Đang tải thông tin bộ câu hỏi...' : currentExamTitle || 'Chấm điểm & Đánh giá'}
               </h1>
               {currentExamStatus && (
                 <Badge variant={currentExamStatus as any} size="sm" dot>
@@ -125,7 +125,7 @@ function ExamGradingOverviewContent({ examId }: { examId: string }) {
               onClick={handleTriggerEntireExamAi}
               leftIcon={<Sparkles className="w-4 h-4" />}
             >
-              <span>Chấm AI toàn bộ đề thi</span>
+              <span>Chấm AI toàn bộ bài làm</span>
             </Button>
           )}
         </div>
@@ -271,7 +271,7 @@ function ExamGradingOverviewContent({ examId }: { examId: string }) {
                     Không có câu hỏi tự luận cần chấm
                   </h3>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mt-1">
-                    Đề thi này chỉ bao gồm các câu hỏi trắc nghiệm khách quan và đã được hệ thống tự động tính điểm 100% khi thí sinh nộp bài.
+                    Bộ câu hỏi này chỉ bao gồm các câu hỏi trắc nghiệm khách quan và đã được hệ thống tự động tính điểm 100% khi nộp bài.
                   </p>
                 </div>
                 <button

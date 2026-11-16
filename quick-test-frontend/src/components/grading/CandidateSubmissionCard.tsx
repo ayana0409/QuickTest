@@ -191,7 +191,7 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
               <div className="space-y-0.5">
                 <p className="font-medium text-xs sm:text-sm text-zinc-700 dark:text-zinc-300">
-                  Thí sinh không làm câu hỏi này (để trống)
+                  Người làm bài không làm câu hỏi này (để trống)
                 </p>
                 <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
                   Hệ thống đã tự động tính 0 điểm.
@@ -294,7 +294,7 @@ export const CandidateSubmissionCard: React.FC<CandidateSubmissionCardProps> = (
                 isLoading={isAiGrading}
                 disabled={isSaving || isAiGrading || !submission.textAnswer?.trim()}
                 onClick={onAiGrade}
-                title={!submission.textAnswer?.trim() ? 'Thí sinh không nộp câu trả lời' : 'Chấm điểm tự động cho bài này'}
+                title={!submission.textAnswer?.trim() ? 'Người làm bài không nộp câu trả lời' : 'Chấm điểm tự động cho bài này'}
                 leftIcon={<Sparkles className="w-3.5 h-3.5 text-indigo-500" />}
               >
                 Chấm AI

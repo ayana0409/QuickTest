@@ -157,7 +157,7 @@ export const SubmitConfirmModal: React.FC<SubmitConfirmModalProps> = ({
 
         {/* Caution text */}
         <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-          Sau khi bấm <strong>&ldquo;Xác nhận nộp bài&rdquo;</strong>, bài thi sẽ được nộp ngay lập tức và
+          Sau khi bấm <strong>&ldquo;Xác nhận nộp bài&rdquo;</strong>, bài làm sẽ được nộp ngay lập tức và
           bạn sẽ không thể chỉnh sửa đáp án nữa.
         </p>
 

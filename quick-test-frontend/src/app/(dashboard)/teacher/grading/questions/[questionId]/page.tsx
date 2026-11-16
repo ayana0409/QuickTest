@@ -165,7 +165,7 @@ function QuestionGradingDetailContent({ questionId }: { questionId: string }) {
               <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-xs flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    Bài làm của thí sinh
+                    Bài làm của người tham gia
                   </span>
                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold font-mono">
                     {totalElements} bài

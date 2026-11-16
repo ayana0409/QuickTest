@@ -54,8 +54,8 @@ const QUICK_DESTINATIONS: QuickDestination[] = [
     accentClass: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
   },
   {
-    title: 'Kho đề thi',
-    description: 'Theo dõi đề toàn trường',
+    title: 'Kho bộ câu hỏi',
+    description: 'Theo dõi nội dung câu hỏi',
     href: '/admin/exams',
     icon: BookOpen,
     accentClass: 'bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400',
@@ -200,7 +200,7 @@ export default function AdminDashboardPage() {
         { key: 'awaiting', label: 'Chờ chấm tay', value: stats.awaitingGradingAttempts, color: '#f59e0b' },
         { key: 'disqualified', label: 'Bị đình chỉ', value: stats.disqualifiedAttempts, color: '#e11d48' },
       ];
-      centerLabel = 'Tổng lượt thi';
+      centerLabel = 'Tổng lượt làm bài';
       const completionRate =
         stats.totalAttempts > 0
           ? Math.round((stats.submittedAttempts / stats.totalAttempts) * 100)
@@ -208,12 +208,12 @@ export default function AdminDashboardPage() {
       insight = `${completionRate}% bài tham gia đã hoàn tất nộp bài.`;
     } else if (breakdownMode === 'exams') {
       rawItems = [
-        { key: 'published', label: 'Đang mở thi', value: stats.publishedExams, color: '#4f46e5' },
+        { key: 'published', label: 'Đang mở', value: stats.publishedExams, color: '#4f46e5' },
         { key: 'closed', label: 'Đã đóng', value: stats.closedExams, color: '#0284c7' },
         { key: 'draft', label: 'Bản nháp', value: stats.draftExams, color: '#94a3b8' },
       ];
-      centerLabel = 'Tổng đề thi';
-      insight = `${formatNumber(stats.publishedExams)} đề đang mở cho thí sinh vào làm bài.`;
+      centerLabel = 'Tổng bộ câu hỏi';
+      insight = `${formatNumber(stats.publishedExams)} bộ câu hỏi đang mở để làm bài.`;
     } else {
       const entries = Object.entries(stats.violationByTypes ?? {}).sort((a, b) => b[1] - a[1]);
       rawItems = entries.map(([type, count], idx) => ({
@@ -226,7 +226,7 @@ export default function AdminDashboardPage() {
       insight =
         entries.length > 0
           ? `Phổ biến nhất: ${formatViolationType(entries[0][0]).label.toLowerCase()}.`
-          : 'Các phòng thi chưa ghi nhận cảnh báo nào.';
+          : 'Chưa ghi nhận cảnh báo gián đoạn nào.';
     }
 
     const total = rawItems.reduce((sum, item) => sum + item.value, 0);
@@ -275,7 +275,7 @@ export default function AdminDashboardPage() {
             Tổng quan vận hành
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-            Nắm bắt nhanh tình hình thi trực tuyến, mức độ an toàn ngân hàng câu hỏi và các cảnh báo phòng thi cần chú ý.
+            Nắm bắt nhanh tình hình làm bài trực tuyến, chất lượng bộ câu hỏi và các cảnh báo cần chú ý.
           </p>
         </div>
 
@@ -372,12 +372,12 @@ export default function AdminDashboardPage() {
             />
 
             <KpiCard
-              title="Kho đề và câu hỏi"
+              title="Kho bộ câu hỏi"
               value={formatNumber(stats.totalExams)}
-              unit="đề thi"
+              unit="bộ"
               icon={BookOpen}
               iconWrapClass="bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400"
-              badgeText={`${formatNumber(stats.publishedExams)} đang mở thi`}
+              badgeText={`${formatNumber(stats.publishedExams)} đang mở`}
               badgeTone="info"
               footerLeft={`${formatNumber(stats.totalQuestions)} câu hỏi trong kho`}
               footerRight={`${formatNumber(stats.draftExams)} bản nháp`}
@@ -391,8 +391,8 @@ export default function AdminDashboardPage() {
               iconWrapClass="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
               badgeText={
                 stats.inProgressAttempts > 0
-                  ? `${formatNumber(stats.inProgressAttempts)} đang thi trực tiếp`
-                  : 'Chưa có ca thi mở'
+                  ? `${formatNumber(stats.inProgressAttempts)} đang làm bài`
+                  : 'Chưa có lượt làm bài'
               }
               badgeTone={stats.inProgressAttempts > 0 ? 'live' : 'neutral'}
               footerLeft={`Điểm TB: ${stats.averageScore > 0 ? stats.averageScore.toFixed(1) : '—'}`}
@@ -400,7 +400,7 @@ export default function AdminDashboardPage() {
             />
 
             <KpiCard
-              title="An toàn phòng thi"
+              title="An toàn & Giám sát"
               value={formatNumber(stats.totalViolations)}
               unit="cảnh báo"
               icon={AlertTriangle}
@@ -438,7 +438,7 @@ export default function AdminDashboardPage() {
               insight={breakdownData.insight}
               tabs={[
                 { id: 'attempts', label: 'Bài làm' },
-                { id: 'exams', label: 'Đề thi' },
+                { id: 'exams', label: 'Bộ câu hỏi' },
                 { id: 'violations', label: 'Cảnh báo' },
               ]}
               activeTab={breakdownMode}
@@ -448,7 +448,7 @@ export default function AdminDashboardPage() {
               centerLabel={breakdownData.centerLabel}
               emptyMessage={
                 breakdownMode === 'violations'
-                  ? 'Chưa ghi nhận cảnh báo phòng thi nào.'
+                  ? 'Chưa ghi nhận cảnh báo nào.'
                   : 'Chưa có dữ liệu trong mục này.'
               }
               hasMounted={hasMounted}
@@ -463,7 +463,7 @@ export default function AdminDashboardPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50">
-                      Cảnh báo phòng thi mới ghi nhận
+                      Cảnh báo mới ghi nhận
                     </h2>
                     <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
                       Những dấu hiệu cần người coi thi hoặc quản trị viên kiểm tra sớm.
@@ -483,7 +483,7 @@ export default function AdminDashboardPage() {
                   <div className="mt-5 flex flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 px-6 py-12 text-center dark:border-emerald-900/50 dark:bg-emerald-950/20">
                     <ShieldCheck className="mb-3 h-10 w-10 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Các phòng thi đang diễn ra nghiêm túc
+                      Các lượt làm bài diễn ra thuận lợi
                     </h3>
                     <p className="mt-1 max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
                       Hệ thống chưa phát hiện hành vi bất thường nào gần đây. Mọi thông số đang ở ngưỡng an toàn.
@@ -505,14 +505,14 @@ export default function AdminDashboardPage() {
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                  {item.candidateName || item.candidateIdentifier || 'Thí sinh'}
+                                  {item.candidateName || item.candidateIdentifier || 'Người làm bài'}
                                 </span>
                                 <span className="inline-flex max-w-full items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-700 ring-1 ring-rose-500/15 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20">
                                   {violationInfo.label}
                                 </span>
                               </div>
                               <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
-                                {item.examTitle || 'Bài thi'}
+                                {item.examTitle || 'Bộ câu hỏi'}
                                 {item.description ? ` · ${item.description}` : ''}
                               </p>
                             </div>

@@ -65,8 +65,8 @@ export const ExamTopBar: React.FC<ExamTopBarProps> = ({
               )}
               title={
                 isProctoringActive
-                  ? 'Đề thi được bảo vệ với tính năng giám sát trực tuyến từ giáo viên'
-                  : 'Đề thi không kích hoạt chế độ giám sát'
+                  ? 'Phiên làm bài được bảo vệ với tính năng giám sát trực tuyến'
+                  : 'Bộ câu hỏi không kích hoạt chế độ giám sát'
               }
             >
               <span
@@ -94,8 +94,8 @@ export const ExamTopBar: React.FC<ExamTopBarProps> = ({
           <div className="flex items-center gap-1 text-[10px] sm:text-xs text-zinc-400 truncate mt-0.5">
             <User className="w-3 h-3 shrink-0 text-zinc-500" />
             <span className="truncate">
-              <span className="hidden sm:inline">Thí sinh: </span>
-              <strong className="text-zinc-300 font-medium">{candidateName || 'Khách dự thi'}</strong>
+              <span className="hidden sm:inline">Người làm bài: </span>
+              <strong className="text-zinc-300 font-medium">{candidateName || 'Khách tham gia'}</strong>
             </span>
           </div>
         </div>

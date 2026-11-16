@@ -66,9 +66,9 @@ function ExamEntryContent() {
 
     const cleanCode = accessCode.trim().toUpperCase();
     if (!cleanCode) {
-      errs.accessCode = 'Vui lòng nhập mã phòng thi';
+      errs.accessCode = 'Vui lòng nhập mã tham gia';
     } else if (cleanCode.length < 4) {
-      errs.accessCode = 'Mã phòng thi không hợp lệ (tối thiểu 4 ký tự)';
+      errs.accessCode = 'Mã tham gia không hợp lệ (tối thiểu 4 ký tự)';
     }
 
     if (!isAuthenticated) {
@@ -153,7 +153,7 @@ function ExamEntryContent() {
           <div>
             {isAuthenticated && user ? (
               <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                <span className="hidden sm:inline">Thí sinh:</span>
+                <span className="hidden sm:inline">Người làm bài:</span>
                 <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[140px]">
                   {user.fullName || user.username}
                 </span>
@@ -183,10 +183,10 @@ function ExamEntryContent() {
               <KeyRound className="w-6 h-6" />
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
-              Vào phòng thi trực tuyến
+              Tham gia làm bài trực tuyến
             </h1>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              Nhập mã phòng thi được cung cấp bởi giảng viên
+              Nhập mã tham gia được cung cấp bởi người tạo đề
             </p>
           </div>
 
@@ -195,7 +195,7 @@ function ExamEntryContent() {
             {/* Access Code Input */}
             <div>
               <Input
-                label="Mã phòng thi (Access Code) *"
+                label="Mã tham gia (Access Code) *"
                 type="text"
                 value={accessCode}
                 onChange={(e) => {
@@ -231,12 +231,12 @@ function ExamEntryContent() {
               <div className="space-y-3.5 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                 <div className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
                   <ShieldCheck className="w-4 h-4 shrink-0" />
-                  <span>Thí sinh tự do (Không cần đăng nhập)</span>
+                  <span>Người tham gia tự do (Không cần đăng nhập)</span>
                 </div>
 
                 <div>
                   <Input
-                    label="Họ và tên thí sinh *"
+                    label="Họ và tên người làm bài *"
                     type="text"
                     value={guestName}
                     onChange={(e) => {
@@ -284,7 +284,7 @@ function ExamEntryContent() {
                 className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-11 shadow-sm text-sm"
                 rightIcon={<ArrowRight className="w-4 h-4" />}
               >
-                Bắt đầu làm bài thi
+                Bắt đầu làm bài
               </Button>
             </div>
           </form>

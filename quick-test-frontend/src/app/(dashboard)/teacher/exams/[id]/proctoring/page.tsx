@@ -325,7 +325,7 @@ export default function TeacherLiveProctoringPage() {
             const violationEvent: CandidateViolationEvent = {
               attemptId: raw.attemptId || event.attemptId || '',
               examId: raw.examId || examId,
-              candidateName: raw.candidateName || 'Thí sinh',
+              candidateName: raw.candidateName || 'Người làm bài',
               candidateIdentifier: raw.candidateIdentifier,
               violationType: raw.violationType || 'TAB_SWITCH',
               violationCount: raw.violationCount || 1,
@@ -361,7 +361,7 @@ export default function TeacherLiveProctoringPage() {
             const violationEvent: CandidateViolationEvent = {
               attemptId: raw.attemptId || event.attemptId || '',
               examId: raw.examId || examId,
-              candidateName: raw.candidateName || 'Thí sinh',
+              candidateName: raw.candidateName || 'Người làm bài',
               candidateIdentifier: raw.candidateIdentifier,
               violationType: raw.violationType || 'TAB_SWITCH',
               violationCount: raw.violationCount || 1,
@@ -389,7 +389,7 @@ export default function TeacherLiveProctoringPage() {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(true);
-    toast.success('Đã sao chép mã phòng thi!');
+    toast.success('Đã sao chép mã tham gia!');
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
@@ -465,7 +465,7 @@ export default function TeacherLiveProctoringPage() {
               <button
                 type="button"
                 className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
-                title="Quay lại danh sách đề thi"
+                title="Quay lại danh sách bộ câu hỏi"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -474,7 +474,7 @@ export default function TeacherLiveProctoringPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
-                  {loadingExam ? 'Đang tải đề thi...' : exam?.title || 'Phòng giám sát thi'}
+                  {loadingExam ? 'Đang tải bộ câu hỏi...' : exam?.title || 'Phòng giám sát làm bài'}
                 </h1>
                 {exam?.status && (
                   <Badge variant={formatExamStatus(exam.status).variant} size="sm">
@@ -486,7 +486,7 @@ export default function TeacherLiveProctoringPage() {
                     type="button"
                     onClick={() => handleCopyCode(exam.accessCode)}
                     className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[11px] font-mono text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-                    title="Sao chép mã phòng thi"
+                    title="Sao chép mã tham gia"
                   >
                     <span className="font-semibold text-indigo-600 dark:text-indigo-400">{exam.accessCode}</span>
                     {copiedCode ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-zinc-400" />}
@@ -637,7 +637,7 @@ export default function TeacherLiveProctoringPage() {
           )}
         >
           <BarChart3 className="w-3.5 h-3.5" />
-          <span>Danh sách bài thi</span>
+          <span>Danh sách bài làm</span>
           <span
             className={cn(
               'px-1.5 py-0.5 rounded-full text-[10px] font-bold font-mono',
@@ -680,7 +680,7 @@ export default function TeacherLiveProctoringPage() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(0);
                 }}
-                placeholder="Tìm kiếm theo tên hoặc mã thí sinh..."
+                placeholder="Tìm kiếm theo tên hoặc mã người làm bài..."
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
             </div>
@@ -689,7 +689,7 @@ export default function TeacherLiveProctoringPage() {
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 w-full md:w-auto">
               {[
                 { id: 'ALL', label: 'Tất cả' },
-                { id: 'IN_PROGRESS', label: 'Đang thi' },
+                { id: 'IN_PROGRESS', label: 'Đang làm' },
                 { id: 'VIOLATION', label: 'Vi phạm' },
                 { id: 'ONLINE', label: 'Trực tuyến' },
                 { id: 'SUBMITTED', label: 'Đã nộp' },
@@ -775,7 +775,7 @@ export default function TeacherLiveProctoringPage() {
             <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
               <ShieldAlert className="w-10 h-10 text-zinc-400 mx-auto mb-3" />
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Không có thí sinh nào phù hợp với bộ lọc hiện tại
+                Không có người làm bài nào phù hợp với bộ lọc hiện tại
               </h3>
               <Button
                 variant="outline"
@@ -828,7 +828,7 @@ export default function TeacherLiveProctoringPage() {
                   <span className="font-bold text-indigo-600 dark:text-indigo-400">
                     {totalCandidates.toLocaleString('vi-VN')}
                   </span>{' '}
-                  thí sinh
+                  người làm bài
                 </div>
 
                 <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">

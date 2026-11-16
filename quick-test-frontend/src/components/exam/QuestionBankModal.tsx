@@ -206,7 +206,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
           </div>
         </div>
       }
-      description="Chọn và sao chép các câu hỏi từ các đề thi khác của bạn vào đề thi hiện tại. Toàn bộ hình ảnh và phương án sẽ được nhân bản độc lập."
+      description="Chọn và sao chép các câu hỏi từ các bộ câu hỏi khác của bạn vào bộ câu hỏi hiện tại. Toàn bộ hình ảnh và phương án sẽ được nhân bản độc lập."
       footer={
         <div className="flex items-center justify-between w-full">
           <div className="text-xs text-zinc-500">
@@ -230,7 +230,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
               onClick={handleImport}
               leftIcon={<ArrowDownToLine className="w-4 h-4" />}
             >
-              Nhập {selectedIds.size > 0 ? `${selectedIds.size} câu hỏi` : ''} vào đề thi
+              Nhập {selectedIds.size > 0 ? `${selectedIds.size} câu hỏi` : ''} vào bộ câu hỏi
             </Button>
           </div>
         </div>
@@ -247,7 +247,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo nội dung câu hỏi hoặc tên đề thi gốc..."
+              placeholder="Tìm theo nội dung câu hỏi hoặc tên bộ câu hỏi gốc..."
               className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-zinc-400 text-zinc-800 dark:text-zinc-200"
             />
             {searchTerm && (
@@ -322,7 +322,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
             <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
               {searchTerm
                 ? 'Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc loại câu hỏi.'
-                : 'Bạn chưa có câu hỏi nào từ các đề thi khác trong hệ thống.'}
+                : 'Bạn chưa có câu hỏi nào từ các bộ câu hỏi khác trong hệ thống.'}
             </p>
           </div>
         ) : (

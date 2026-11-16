@@ -40,25 +40,26 @@ export default function HomePage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative overflow-hidden py-10 sm:py-20 lg:py-24">
-          {/* Subtle Ambient Radial Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[520px] h-[280px] bg-indigo-500/10 dark:bg-indigo-500/15 blur-3xl rounded-full pointer-events-none" />
+          {/* Subtle Ambient Radial Glows (Ethereal Glass Depth) */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-500/10 dark:bg-indigo-500/20 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[420px] h-[180px] bg-purple-500/10 dark:bg-pink-500/10 blur-3xl rounded-full pointer-events-none" />
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 text-[11px] sm:text-xs font-semibold mb-5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-5">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Nền tảng kiểm tra và đánh giá học tập thông minh</span>
+              <span>Nền tảng câu hỏi & trắc nghiệm trực tuyến</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-[1.15] mb-4 sm:mb-6">
-              Tổ chức kỳ thi trực tuyến{' '}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-[1.2] mb-4 sm:mb-6 [text-wrap:balance]">
+              Tạo câu hỏi dễ dàng.{' '}
               <br className="hidden sm:inline" />
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Công bằng, tiện lợi và an tâm
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-300 dark:to-pink-400 bg-clip-text text-transparent">
+                Tham gia làm bài tức thì.
               </span>
             </h1>
 
-            <p className="max-w-2xl mx-auto text-sm sm:text-base lg:text-lg text-zinc-600 dark:text-zinc-400 mb-8 sm:mb-10 leading-relaxed">
-              Giúp thầy cô tiết kiệm thời gian ra đề và chấm bài kiểm tra. Giúp học sinh tập trung làm bài, minh bạch và thuận tiện trên mọi thiết bị.
+            <p className="max-w-2xl mx-auto text-sm sm:text-base lg:text-lg text-zinc-600 dark:text-zinc-400 mb-8 sm:mb-10 leading-relaxed [text-wrap:balance]">
+              Không gian trắc nghiệm tiện lợi cho việc tự ôn tập, thử tài đố vui hay kiểm tra kiến thức. Nhập mã để bắt đầu ngay, hoặc khám phá các bộ câu hỏi mở bên dưới.
             </p>
 
             {/* Interactive Access Code Input Bar & Role Portals */}
@@ -77,10 +78,10 @@ export default function HomePage() {
                 Tính năng nổi bật
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                Giải pháp toàn diện cho mọi kỳ thi
+                Giải pháp toàn diện cho học tập, ôn luyện và kiểm tra
               </h2>
               <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Đồng hành cùng nhà trường, thầy cô và học sinh trong việc tổ chức kiểm tra và theo dõi kết quả học tập chính xác.
+                Đồng hành cùng người dạy, người học và bất kỳ ai muốn thử thách kiến thức một cách chính xác, tiện lợi.
               </p>
             </div>
 
@@ -93,10 +94,10 @@ export default function HomePage() {
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    Phòng thi nghiêm túc, đảm bảo tính công bằng
+                    Không gian làm bài tập trung, đảm bảo tính công bằng
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Hệ thống tự động nhắc nhở khi học sinh vô tình rời màn hình bài làm hoặc có dấu hiệu mất tập trung, đồng thời gửi thông tin ngay tới thầy cô giám sát để hỗ trợ kịp thời.
+                    Hệ thống tự động nhắc nhở khi người làm bài rời màn hình hoặc mất tập trung, đồng thời hỗ trợ người tạo bộ câu hỏi theo dõi tiến trình trực tiếp.
                   </p>
                 </div>
 
@@ -104,13 +105,13 @@ export default function HomePage() {
                 <div className="flex flex-wrap items-center gap-2 pt-2">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-2xs">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    Giữ môi trường thi trung thực
+                    Giữ môi trường làm bài trung thực
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 shadow-2xs">
                     Nhắc nhở khi rời màn hình
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 shadow-2xs">
-                    Báo cáo trực tiếp tới giám thị
+                    Báo cáo trực tiếp tới người giám sát
                   </span>
                 </div>
               </div>
@@ -122,10 +123,10 @@ export default function HomePage() {
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    Tạo đề nhanh & Hỗ trợ chấm bài tự động
+                    Tạo bộ câu hỏi nhanh & Hỗ trợ chấm điểm tự động
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Thầy cô có thể tải lên tài liệu bài giảng sẵn có để hệ thống gợi ý câu hỏi kiểm tra, kèm đáp án mẫu và hướng dẫn chấm chi tiết để tiết kiệm thời gian.
+                    Bạn có thể tải lên tài liệu sẵn có để AI gợi ý bộ câu hỏi kiểm tra hoặc đố vui, kèm đáp án và hướng dẫn chi tiết để tiết kiệm thời gian.
                   </p>
                 </div>
 
@@ -150,7 +151,7 @@ export default function HomePage() {
                     Tự động lưu bài, không lo mất dữ liệu
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Mỗi phương án chọn được lưu lại ngay tức thì. Nếu không may bị mất mạng hoặc tắt nhầm trang, học sinh vẫn có thể tiếp tục làm bài bình thường mà không bị mất kết quả.
+                    Mỗi phương án chọn được lưu lại ngay tức thì. Nếu không may bị mất mạng hoặc tắt nhầm trang, bạn vẫn có thể tiếp tục làm bài bình thường mà không bị mất kết quả.
                   </p>
                 </div>
 
@@ -160,7 +161,7 @@ export default function HomePage() {
                     Lưu đáp án từng giây
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 shadow-2xs">
-                    Tiếp tục thi khi có mạng lại
+                    Tiếp tục làm bài khi có mạng lại
                   </span>
                 </div>
               </div>
@@ -172,10 +173,10 @@ export default function HomePage() {
                     <BarChart3 className="w-5 h-5" />
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    Báo cáo kết quả & Xuất bảng điểm lớp học
+                    Báo cáo kết quả & Xuất bảng điểm chi tiết
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Dễ dàng theo dõi điểm trung bình của cả lớp, nắm bắt những câu hỏi nhiều học sinh làm sai để kịp thời củng cố kiến thức, và tải về bảng điểm chi tiết để lưu sổ điểm.
+                    Dễ dàng theo dõi điểm trung bình, nắm bắt những câu hỏi nhiều người làm sai để kịp thời củng cố kiến thức, và tải về bảng điểm chi tiết.
                   </p>
                 </div>
 
@@ -201,7 +202,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <span className="font-bold text-zinc-800 dark:text-zinc-200">QuickTest</span>
             <span>•</span>
-            <span>Nền tảng kiểm tra & đánh giá năng lực học tập</span>
+            <span>Nền tảng tạo bộ câu hỏi, ôn tập & đánh giá kiến thức</span>
           </div>
           <div>
             © {new Date().getFullYear()} QuickTest. Bảo lưu mọi quyền.

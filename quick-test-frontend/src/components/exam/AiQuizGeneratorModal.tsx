@@ -152,7 +152,7 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
             toast.success(`AI đã soạn thành công ${questions.length} câu hỏi!`);
           } else if (snapshot.status === 'FAILED') {
             stopPolling();
-            toast.error(snapshot.error || snapshot.message || 'Soạn đề thi thất bại.');
+            toast.error(snapshot.error || snapshot.message || 'Soạn bộ câu hỏi thất bại.');
           } else if (snapshot.status === 'CANCELLED') {
             stopPolling();
             toast.error('Tiến trình đã bị hủy.');
@@ -338,7 +338,7 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
   const handleCommitToExam = async () => {
     const selectedQuestions = reviewQuestions.filter((_, i) => selectedQuestionIds.has(i));
     if (selectedQuestions.length === 0) {
-      toast.error('Vui lòng chọn ít nhất 1 câu hỏi để thêm vào đề thi!');
+      toast.error('Vui lòng chọn ít nhất 1 câu hỏi để thêm vào bộ câu hỏi!');
       return;
     }
 
@@ -380,7 +380,7 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
           </div>
           <div>
             <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              Soạn đề thi thông minh
+              Soạn bộ câu hỏi thông minh
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">
               Tự động phân tích tài liệu bài giảng (PDF, Word, TXT) và tạo bộ câu hỏi hoàn chỉnh
@@ -447,14 +447,14 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
             >
               3
             </span>
-            <span>Kiểm duyệt và thêm vào đề</span>
+            <span>Kiểm duyệt và thêm vào bộ câu hỏi</span>
           </div>
         </div>
 
         {/* Global queue fairness badge */}
         <div className="hidden md:flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-800/80 px-2.5 py-1 rounded-lg border border-zinc-200/80 dark:border-zinc-700/80">
           <Clock className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Mỗi tài khoản chỉ được tạo 1 đề thi AI tại một thời điểm</span>
+          <span>Mỗi tài khoản chỉ được tạo 1 bộ câu hỏi AI tại một thời điểm</span>
         </div>
       </div>
 
@@ -743,7 +743,7 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
               </div>
               <div>
                 <h4 className="text-base font-bold text-red-600 dark:text-red-400 mb-1">
-                  Soạn đề thi không thành công
+                  Soạn bộ câu hỏi không thành công
                 </h4>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400">
                   {jobSnapshot.error || jobSnapshot.message || 'Đã xảy ra lỗi trong quá trình phân tích hoặc gọi AI.'}
@@ -1068,8 +1068,8 @@ export const AiQuizGeneratorModal: React.FC<AiQuizGeneratorModalProps> = ({
                 }
               >
                 {isCommitting
-                  ? 'Đang thêm vào đề thi...'
-                  : `Thêm ${selectedQuestionIds.size} câu hỏi vào đề thi`}
+                  ? 'Đang thêm vào bộ câu hỏi...'
+                  : `Thêm ${selectedQuestionIds.size} câu hỏi vào bộ câu hỏi`}
               </Button>
             </div>
           </div>

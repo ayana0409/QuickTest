@@ -133,7 +133,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         <div className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
           <CheckSquare className="w-4 h-4 text-purple-400 shrink-0" />
           <span>
-            Thí sinh được chọn một hoặc nhiều phương án đúng.
+            Bạn có thể chọn một hoặc nhiều phương án đúng.
           </span>
         </div>
       )}

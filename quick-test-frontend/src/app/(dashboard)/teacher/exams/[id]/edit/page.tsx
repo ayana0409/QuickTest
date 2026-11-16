@@ -177,7 +177,7 @@ export default function EditExamPage() {
     if (!exam?.accessCode) return;
     navigator.clipboard.writeText(exam.accessCode);
     setIsCopied(true);
-    toast.success(`Đã sao chép mã đề: ${exam.accessCode}`);
+    toast.success(`Đã sao chép mã tham gia: ${exam.accessCode}`);
     setTimeout(() => setIsCopied(false), 2500);
   };
 
@@ -185,7 +185,7 @@ export default function EditExamPage() {
   const handlePublish = async () => {
     if (!exam) return;
     if (!exam.questions || exam.questions.length === 0) {
-      toast.error('Đề thi cần có ít nhất 1 câu hỏi trước khi xuất bản.');
+      toast.error('Bộ câu hỏi cần có ít nhất 1 câu hỏi trước khi xuất bản.');
       return;
     }
 
@@ -347,7 +347,7 @@ export default function EditExamPage() {
     return (
       <div className="max-w-6xl mx-auto py-16 space-y-4 text-center">
         <div className="w-10 h-10 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-sm text-zinc-500">Đang tải chi tiết đề thi...</p>
+        <p className="text-sm text-zinc-500">Đang tải chi tiết bộ câu hỏi...</p>
       </div>
     );
   }
@@ -357,10 +357,10 @@ export default function EditExamPage() {
       <div className="max-w-xl mx-auto py-16 text-center space-y-4">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
         <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-          Không tìm thấy đề thi
+          Không tìm thấy bộ câu hỏi
         </h2>
         <p className="text-sm text-zinc-500">
-          Đề thi không tồn tại hoặc bạn không có quyền truy cập quản trị đề thi này.
+          Bộ câu hỏi không tồn tại hoặc bạn không có quyền truy cập.
         </p>
         <Link href="/teacher/exams">
           <Button variant="outline">Quay lại danh sách</Button>
@@ -384,7 +384,7 @@ export default function EditExamPage() {
               className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quản lý đề thi</span>
+              <span>Quản lý bộ câu hỏi</span>
             </Link>
             <span>/</span>
             <span className="font-medium text-zinc-700 dark:text-zinc-300 truncate max-w-[200px]">
@@ -409,7 +409,7 @@ export default function EditExamPage() {
               type="button"
               onClick={handleCopyAccessCode}
               className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px] font-mono text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 transition-colors cursor-pointer"
-              title="Sao chép mã phòng thi"
+              title="Sao chép mã tham gia"
             >
               <span className="font-semibold text-indigo-600 dark:text-indigo-400">{exam.accessCode}</span>
               {isCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-zinc-400" />}
@@ -444,7 +444,7 @@ export default function EditExamPage() {
               <button
                 type="button"
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                title="Mở phòng giám sát thí sinh trực tiếp"
+                title="Mở phòng giám sát trực tiếp"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Phòng giám sát</span>
@@ -471,7 +471,7 @@ export default function EditExamPage() {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Mở lại đề</span>
+              <span>Mở lại phòng</span>
             </button>
           )}
 
@@ -480,7 +480,7 @@ export default function EditExamPage() {
             type="button"
             onClick={handleOpenDuplicateModal}
             className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 flex items-center justify-center transition-colors cursor-pointer"
-            title="Nhân bản đề thi này"
+            title="Nhân bản bộ câu hỏi này"
           >
             <Copy className="w-3.5 h-3.5" />
           </button>
@@ -492,7 +492,7 @@ export default function EditExamPage() {
               disabled={isClosing}
               onClick={handleClose}
               className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-amber-100 text-zinc-600 hover:text-amber-700 dark:bg-zinc-800 dark:hover:bg-amber-950/40 dark:text-zinc-300 dark:hover:text-amber-400 flex items-center justify-center transition-colors cursor-pointer"
-              title="Đóng đề thi"
+              title="Đóng phòng làm bài"
             >
               <Lock className="w-3.5 h-3.5" />
             </button>
@@ -556,8 +556,8 @@ export default function EditExamPage() {
             <Info className="w-3.5 h-3.5 shrink-0" />
             <span>
               {isClosed
-                ? 'Đề thi đã đóng. Bấm Mở lại đề thi để học sinh tiếp tục thi.'
-                : 'Đề thi đã xuất bản, danh sách câu hỏi đã được khóa an toàn.'}
+                ? 'Phòng làm bài đã đóng. Bấm Mở lại để tiếp tục nhận bài làm.'
+                : 'Bộ câu hỏi đã xuất bản, danh sách câu hỏi đã được khóa an toàn.'}
             </span>
           </div>
         )}
@@ -578,9 +578,9 @@ export default function EditExamPage() {
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Cập nhật cài đặt đề thi</CardTitle>
+              <CardTitle>Cập nhật cài đặt bộ câu hỏi</CardTitle>
               <CardDescription>
-                Thay đổi thông tin và các thiết lập an toàn cho kỳ thi
+                Thay đổi thông tin và các thiết lập làm bài
               </CardDescription>
             </div>
           </CardHeader>
@@ -590,11 +590,11 @@ export default function EditExamPage() {
                 {/* Title */}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                    Tên đề thi *
+                    Tên bộ câu hỏi *
                   </label>
                   <input
                     type="text"
-                    {...register('title', { required: 'Tên đề thi là bắt buộc' })}
+                    {...register('title', { required: 'Tên bộ câu hỏi là bắt buộc' })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                   {errors.title && (
@@ -605,7 +605,7 @@ export default function EditExamPage() {
                 {/* Description */}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                    Mô tả & Hướng dẫn thí sinh
+                    Mô tả & Hướng dẫn làm bài
                   </label>
                   <textarea
                     rows={4}
@@ -712,7 +712,7 @@ export default function EditExamPage() {
                         Bật giám sát trực tuyến
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Tự động phát hiện vi phạm trong kỳ thi.
+                        Tự động phát hiện vi phạm trong quá trình làm bài.
                       </p>
                     </div>
                   </label>
@@ -735,7 +735,7 @@ export default function EditExamPage() {
                         Giám sát qua Camera
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Yêu cầu thí sinh bật camera khi làm bài. Tự động ghi lại hình ảnh nếu phát hiện không có người hoặc có người lạ.
+                        Yêu cầu người làm bài bật camera khi thực hiện. Tự động ghi lại hình ảnh nếu phát hiện không có người hoặc có người lạ.
                         {!isProctoringSettingEnabled && (
                           <span className="block text-amber-600 dark:text-amber-400 font-medium mt-0.5">
                             (Cần bật tính năng Giám sát trực tuyến ở trên trước)
@@ -762,7 +762,7 @@ export default function EditExamPage() {
                           className="w-28 px-3.5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-semibold text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         />
                         <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                          lần cảnh báo. Nếu thí sinh vượt quá số lần này, hệ thống sẽ tự động đình chỉ bài thi.
+                          lần cảnh báo. Nếu vượt quá số lần này, hệ thống sẽ tự động đình chỉ bài làm.
                         </span>
                       </div>
                     </div>
@@ -777,10 +777,10 @@ export default function EditExamPage() {
                     <div>
                       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                         <Eye className="w-4 h-4 text-emerald-500" />
-                        Công bố điểm và đáp án cho thí sinh
+                        Công bố điểm và đáp án sau khi nộp bài
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Cho phép thí sinh xem lại điểm từng câu và đáp án đúng sau khi nộp bài. Tắt tùy chọn này nếu muốn bảo mật đề thi và chống lộ đáp án cho người khác.
+                        Cho phép người làm bài xem lại điểm từng câu và đáp án đúng sau khi nộp bài. Tắt tùy chọn này nếu muốn bảo mật bộ câu hỏi và chống lộ đáp án.
                       </p>
                     </div>
                   </label>
@@ -794,10 +794,10 @@ export default function EditExamPage() {
                     <div>
                       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                         <Lock className="w-4 h-4 text-amber-500" />
-                        Đề thi riêng tư
+                        Bộ câu hỏi riêng tư
                       </p>
                       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Khi bật, chỉ thí sinh có mã phòng mới có thể vào thi. Khi tắt, đề thi sẽ có thể xuất hiện tại mục Khám phá công khai cho tất cả thí sinh luyện tập.
+                        Khi bật, chỉ người có mã tham gia mới có thể vào làm bài. Khi tắt, bộ câu hỏi sẽ có thể xuất hiện tại mục Khám phá công khai cho tất cả mọi người cùng thử sức.
                       </p>
                     </div>
                   </label>
@@ -828,7 +828,7 @@ export default function EditExamPage() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    Xóa đề thi bản nháp
+                    Xóa bộ câu hỏi bản nháp
                   </h3>
                   <p className="text-[11px] text-zinc-400">
                     Hành động này không thể hoàn tác
@@ -845,17 +845,17 @@ export default function EditExamPage() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-800 text-xs space-y-1">
-              <span className="text-[11px] text-zinc-400 block">Đề thi sẽ bị xóa vĩnh viễn:</span>
+              <span className="text-[11px] text-zinc-400 block">Bộ câu hỏi sẽ bị xóa vĩnh viễn:</span>
               <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {exam.title}
               </p>
               <p className="text-[11px] text-zinc-500 font-mono">
-                Mã đề: {exam.accessCode} • {exam.totalQuestions} câu hỏi • {exam.durationMinutes} phút
+                Mã tham gia: {exam.accessCode} • {exam.totalQuestions} câu hỏi • {exam.durationMinutes} phút
               </p>
             </div>
 
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Chỉ những đề thi ở trạng thái <strong>Bản nháp</strong> mới có thể xóa. Toàn bộ câu hỏi và cài đặt liên quan sẽ bị xóa vĩnh viễn khỏi hệ thống.
+              Chỉ những bộ câu hỏi ở trạng thái <strong>Bản nháp</strong> mới có thể xóa. Toàn bộ câu hỏi và cài đặt liên quan sẽ bị xóa vĩnh viễn khỏi hệ thống.
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
@@ -891,10 +891,10 @@ export default function EditExamPage() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    Mở lại đợt thi mới
+                    Mở lại đợt làm bài mới
                   </h3>
                   <p className="text-[11px] text-zinc-400">
-                    Mã đề thi: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{exam.accessCode}</strong>
+                    Mã tham gia: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{exam.accessCode}</strong>
                   </p>
                 </div>
               </div>
@@ -912,7 +912,7 @@ export default function EditExamPage() {
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                  Thời gian mở đề (Bắt đầu)
+                  Thời gian mở phòng (Bắt đầu)
                 </label>
                 <input
                   type="datetime-local"
@@ -925,7 +925,7 @@ export default function EditExamPage() {
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                  Thời gian đóng đề mới (Hạn chót thi) *
+                  Thời gian đóng phòng mới (Hạn chót) *
                 </label>
                 <input
                   type="datetime-local"
@@ -934,7 +934,7 @@ export default function EditExamPage() {
                   className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                  Lưu ý: Thời gian kết thúc phải ở tương lai để hệ thống không tự động đóng bài thi.
+                  Lưu ý: Thời gian kết thúc phải ở tương lai để hệ thống không tự động đóng phòng làm bài.
                 </p>
               </div>
 
@@ -987,10 +987,10 @@ export default function EditExamPage() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    Nhân bản đề thi
+                    Nhân bản bộ câu hỏi
                   </h3>
                   <p className="text-[11px] text-zinc-400">
-                    Tạo đề nháp mới từ đề thi hiện tại
+                    Tạo bản nháp mới từ bộ câu hỏi hiện tại
                   </p>
                 </div>
               </div>
@@ -1007,13 +1007,13 @@ export default function EditExamPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-                  Tên đề thi bản sao *
+                  Tên bộ câu hỏi bản sao *
                 </label>
                 <input
                   type="text"
                   value={duplicateTitle}
                   onChange={(e) => setDuplicateTitle(e.target.value)}
-                  placeholder="Nhập tên đề thi mới..."
+                  placeholder="Nhập tên bộ câu hỏi mới..."
                   className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   disabled={isDuplicating}
                 />
@@ -1022,10 +1022,10 @@ export default function EditExamPage() {
               <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-xs text-indigo-700 dark:text-indigo-300 space-y-1.5">
                 <p className="font-semibold flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5" />
-                  Cơ chế nhân bản đề thi:
+                  Cơ chế nhân bản bộ câu hỏi:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-[11px] opacity-90">
-                  <li>Mã phòng thi mới ngẫu nhiên, trạng thái <strong>Bản nháp</strong>.</li>
+                  <li>Mã tham gia mới ngẫu nhiên, trạng thái <strong>Bản nháp</strong>.</li>
                   <li>Sao chép toàn bộ câu hỏi trắc nghiệm, tự luận và các đáp án.</li>
                   <li>Kế thừa đầy đủ các cài đặt thời gian và cấu hình giám sát AI.</li>
                 </ul>

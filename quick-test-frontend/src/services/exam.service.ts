@@ -82,7 +82,7 @@ export const examService = {
    */
   async createExam(payload: ExamCreateRequest): Promise<ExamDetailResponse> {
     const response = await apiClient.post<ApiResponse<ExamDetailResponse>>('/teacher/exams', payload, {
-      successMessage: 'Khởi tạo đề thi mới thành công!',
+      successMessage: 'Khởi tạo bộ câu hỏi mới thành công!',
     });
     return response.data.data;
   },
@@ -92,7 +92,7 @@ export const examService = {
    */
   async updateExam(id: string, payload: ExamUpdateRequest): Promise<ExamDetailResponse> {
     const response = await apiClient.put<ApiResponse<ExamDetailResponse>>(`/teacher/exams/${id}`, payload, {
-      successMessage: 'Cập nhật thông tin đề thi thành công!',
+      successMessage: 'Cập nhật thông tin bộ câu hỏi thành công!',
     });
     return response.data.data;
   },
@@ -105,7 +105,7 @@ export const examService = {
       `/teacher/exams/${id}/publish`,
       undefined,
       {
-        successMessage: 'Xuất bản đề thi thành công! Thí sinh có thể bắt đầu làm bài.',
+        successMessage: 'Xuất bản bộ câu hỏi thành công! Người tham gia có thể bắt đầu làm bài.',
       }
     );
     return response.data.data;
@@ -119,7 +119,7 @@ export const examService = {
       `/teacher/exams/${id}/close`,
       undefined,
       {
-        successMessage: 'Đã đóng đề thi thành công.',
+        successMessage: 'Đã đóng bộ câu hỏi thành công.',
       }
     );
     return response.data.data;
@@ -133,7 +133,7 @@ export const examService = {
       `/teacher/exams/${id}/republish`,
       payload || {},
       {
-        successMessage: 'Mở lại đề thi thành công! Thí sinh có thể tiếp tục tham gia.',
+        successMessage: 'Mở lại bộ câu hỏi thành công! Người tham gia có thể tiếp tục làm bài.',
       }
     );
     return response.data.data;
@@ -144,7 +144,7 @@ export const examService = {
    */
   async deleteExam(id: string): Promise<void> {
     await apiClient.delete<ApiResponse<void>>(`/teacher/exams/${id}`, {
-      successMessage: 'Đã xóa đề thi thành công.',
+      successMessage: 'Đã xóa bộ câu hỏi thành công.',
     });
   },
 
@@ -156,7 +156,7 @@ export const examService = {
       `/teacher/exams/${examId}/questions`,
       payload,
       {
-        successMessage: 'Thêm câu hỏi mới vào đề thi thành công!',
+        successMessage: 'Thêm câu hỏi mới vào bộ câu hỏi thành công!',
       }
     );
     return response.data.data;
@@ -259,7 +259,7 @@ export const examService = {
    */
   async deleteQuestion(questionId: string): Promise<void> {
     await apiClient.delete<ApiResponse<void>>(`/teacher/questions/${questionId}`, {
-      successMessage: 'Đã gỡ bỏ câu hỏi khỏi đề thi.',
+      successMessage: 'Đã gỡ bỏ câu hỏi khỏi bộ câu hỏi.',
     });
   },
 
@@ -337,7 +337,7 @@ export const examService = {
       `/teacher/exams/${examId}/questions/import`,
       { questionIds } as QuestionImportRequest,
       {
-        successMessage: `Đã nhập thành công ${questionIds.length} câu hỏi vào đề thi!`,
+        successMessage: `Đã nhập thành công ${questionIds.length} câu hỏi vào bộ câu hỏi!`,
       }
     );
     return response.data.data;

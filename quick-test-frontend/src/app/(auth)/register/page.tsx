@@ -171,7 +171,7 @@ export default function RegisterPage() {
             Tạo tài khoản mới
           </h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-            Tạo tài khoản ngay để tạo bài kiểm tra của riêng bạn
+            Tạo tài khoản ngay để tạo bộ câu hỏi của riêng bạn
           </p>
         </div>
 
@@ -248,7 +248,7 @@ export default function RegisterPage() {
                     : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
                     }`}
                 >
-                  Thí sinh / Học sinh
+                  Người học / Tham gia làm bài
                 </button>
                 <button
                   type="button"
@@ -258,7 +258,7 @@ export default function RegisterPage() {
                     : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
                     }`}
                 >
-                  Giáo viên / Giám thị
+                  Giáo viên / Người tạo đề
                 </button>
               </div>
             </div>

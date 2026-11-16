@@ -258,7 +258,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
               window.history.replaceState(null, '', `/exam/${paper.attemptId}`);
             }
           } else {
-            throw new Error('Không thể khởi tạo bài thi với mã này.');
+            throw new Error('Không thể khởi tạo bài làm với mã này.');
           }
         } else {
           // Valid UUID attemptId
@@ -280,7 +280,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
             console.log('[ExamRunner] Restored answers from Redis / Cache:', merged);
             loadSavedAnswers(merged);
           } else {
-            throw new Error('Không tìm thấy dữ liệu đề thi cho phiên làm bài này.');
+            throw new Error('Không tìm thấy dữ liệu câu hỏi cho phiên làm bài này.');
           }
         }
       } catch (err: unknown) {
@@ -291,15 +291,15 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         const fallbackPaper: ExamPaper = {
           attemptId,
           examId: 'sample-exam-id',
-          examTitle: 'Đề thi Kiểm thử: Kiến trúc Vi dịch vụ & Bảo mật Spring Boot',
-          examDescription: 'Bài kiểm tra chính thức phòng thi thực chiến Quick Test.',
+          examTitle: 'Bộ câu hỏi Thử nghiệm: Kiến trúc Vi dịch vụ & Bảo mật Spring Boot',
+          examDescription: 'Nội dung kiểm tra thực hành Quick Test.',
           durationMinutes: 45,
           totalQuestions: 5,
           startTime: new Date().toISOString(),
           expireAt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
           serverTime: new Date().toISOString(),
           remainingSeconds: 45 * 60,
-          candidateName: 'Thí sinh Thử nghiệm',
+          candidateName: 'Người làm bài Thử nghiệm',
           candidateIdentifier: 'QT-2026-88',
           questions: [
             {
@@ -587,7 +587,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     async (reasonMessage?: string) => {
       if (isSubmissionStartedRef.current || isSubmitting || isDisqualified) return;
       toast.error(
-        reasonMessage || 'Đề thi đã đóng! Hệ thống đang tự động thu bài...',
+        reasonMessage || 'Phiên làm bài đã kết thúc! Hệ thống đang tự động nộp bài...',
         { id: 'exam-closed-toast', duration: 4000, icon: '🛑' }
       );
       await submitAndNavigate();
@@ -642,7 +642,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
               errorMsg.toLowerCase().includes('đã đóng') ||
               errorMsg.toLowerCase().includes('kết thúc'))
           ) {
-            handleExamClosed('Đề thi đã đóng! Hệ thống đang tự động thu bài...');
+            handleExamClosed('Phiên làm bài đã kết thúc! Hệ thống đang tự động nộp bài...');
           } else if (
             typeof errorMsg === 'string' &&
             (errorMsg.toLowerCase().includes('disqualified') ||
@@ -774,7 +774,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
     if (alert.disqualified) {
       setWarningModalOpen(false);
     } else if (alert.violationType !== 'MULTI_SCREEN_DETECTED') {
-      setWarningMessage(alert.message || 'Cảnh báo vi phạm quy chế phòng thi.');
+      setWarningMessage(alert.message || 'Cảnh báo gián đoạn quá trình làm bài.');
       setWarningModalOpen(true);
     }
   };
@@ -798,10 +798,10 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
           </div>
           <div>
             <h2 className="text-lg font-bold text-[#E6EDF3] tracking-tight">
-              Đang chuẩn bị đề thi
+              Đang chuẩn bị nội dung làm bài
             </h2>
             <p className="text-xs text-zinc-400 mt-1 max-w-sm">
-              Hệ thống đang kết nối phòng thi và tải lại các câu trả lời đã lưu của bạn...
+              Hệ thống đang kết nối phòng làm bài và tải lại các câu trả lời đã lưu của bạn...
             </p>
           </div>
         </div>
@@ -1002,7 +1002,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
               </h2>
 
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6 font-normal">
-                Quy chế thi bắt buộc phải làm bài ở chế độ Toàn màn hình để bảo đảm sự tập trung và tuân thủ quy chế phòng thi. Vui lòng quay lại toàn màn hình để tiếp tục làm bài.
+                Yêu cầu làm bài ở chế độ Toàn màn hình để bảo đảm sự tập trung cao nhất. Vui lòng quay lại toàn màn hình để tiếp tục làm bài.
               </p>
 
               <button
@@ -1029,7 +1029,7 @@ export default function ExamRunnerPage({ params }: ExamRunnerPageProps) {
         {/* Disqualified Overlay (Total Blockade) */}
         <ExamDisqualifiedOverlay
           isOpen={isDisqualified}
-          reason="Bạn đã vi phạm quy chế thi quá số lần quy định hoặc giám thị đã yêu cầu dừng bài thi."
+          reason="Bạn đã gián đoạn làm bài quá số lần quy định hoặc người quản trị đã yêu cầu dừng phiên làm bài."
           onExit={async () => {
             await exitFullscreenSafely();
             router.push('/');

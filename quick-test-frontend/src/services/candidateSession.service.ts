@@ -41,7 +41,7 @@ export const candidateSessionService = {
     const response = await apiClient.post<ApiResponse<ExamPaper>>(
       '/session/start',
       finalPayload,
-      { successMessage: 'Tham gia phòng thi thành công!' }
+      { successMessage: 'Vào làm bài thành công!' }
     );
     return response.data.data;
   },
@@ -101,7 +101,7 @@ export const candidateSessionService = {
       `/session/${attemptId}/submit`,
       payload || { attemptId },
       {
-        successMessage: 'Nộp bài thi thành công!',
+        successMessage: 'Nộp bài thành công!',
       }
     );
     return response.data.data;

@@ -141,7 +141,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100">
-                    {statusDetail.candidateName || 'Thí sinh tự do'}
+                    {statusDetail.candidateName || 'Người tham gia tự do'}
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                     {statusDetail.candidateIdentifier || 'Chưa có mã định danh'}

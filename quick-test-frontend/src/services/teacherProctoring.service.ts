@@ -94,8 +94,8 @@ export const teacherProctoringService = {
       `/teacher/proctoring/attempts/${attemptId}/disqualify`,
       payload || {},
       {
-        successMessage: 'Đã đình chỉ tư cách thi của thí sinh thành công!',
-        errorMessage: 'Không thể đình chỉ thí sinh, vui lòng thử lại.',
+        successMessage: 'Đã đình chỉ lượt làm bài của người tham gia thành công!',
+        errorMessage: 'Không thể đình chỉ người làm bài, vui lòng thử lại.',
       }
     );
 

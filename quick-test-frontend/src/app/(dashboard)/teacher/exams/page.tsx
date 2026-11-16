@@ -170,7 +170,7 @@ export default function TeacherExamsPage() {
   // Publish exam directly
   const handlePublishExam = async (exam: ExamSummaryResponse) => {
     if (exam.totalQuestions === 0) {
-      toast.error('Đề thi chưa có câu hỏi nào. Vui lòng vào Soạn thảo để thêm câu hỏi trước.');
+      toast.error('Bộ câu hỏi chưa có câu hỏi nào. Vui lòng vào Soạn thảo để thêm câu hỏi trước.');
       router.push(`/teacher/exams/${exam.id}/edit`);
       return;
     }
@@ -300,7 +300,7 @@ export default function TeacherExamsPage() {
           const payload = JSON.parse(message.body);
           if (payload.type === 'EXAM_CLONED') {
             const toastKey = payload.examId ? `exam-cloned-${payload.examId}` : 'exam-cloned';
-            toast.success(payload.message || 'Đề thi đã được nhân bản hoàn tất!', {
+            toast.success(payload.message || 'Bộ câu hỏi đã được nhân bản hoàn tất!', {
               id: toastKey,
             });
             fetchExamsRef.current(currentPageRef.current);
@@ -345,10 +345,10 @@ export default function TeacherExamsPage() {
         <div>
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
             <GraduationCap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            Quản lý đề thi
+            Quản lý bộ câu hỏi
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Khởi tạo, xuất bản và theo dõi giám sát kết quả thi
+            Khởi tạo, xuất bản và theo dõi giám sát làm bài
           </p>
         </div>
 
@@ -367,7 +367,7 @@ export default function TeacherExamsPage() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Tạo đề mới</span>
+              <span>Tạo bộ câu hỏi</span>
             </button>
           </Link>
         </div>
@@ -388,7 +388,7 @@ export default function TeacherExamsPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Tổng đề thi
+              Tổng bộ câu hỏi
             </span>
             <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
               <BookOpen className="w-3.5 h-3.5" />
@@ -398,7 +398,7 @@ export default function TeacherExamsPage() {
             {statusCounts?.total ?? (statusFilter === 'ALL' ? (pageMeta?.totalElements ?? '—') : '—')}
           </div>
           <span className="text-[10px] text-zinc-400 truncate">
-            Tất cả đề đã tạo
+            Tất cả bộ câu hỏi đã tạo
           </span>
         </button>
 
@@ -427,7 +427,7 @@ export default function TeacherExamsPage() {
             {statusCounts?.published ?? (statusFilter === 'PUBLISHED' ? (pageMeta?.totalElements ?? '—') : '—')}
           </div>
           <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 truncate">
-            Thí sinh có thể thi
+            Đang mở nhận bài làm
           </span>
         </button>
 
@@ -497,7 +497,7 @@ export default function TeacherExamsPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleSearchKeyDown}
-            placeholder="Tìm theo tiêu đề hoặc mã đề thi..."
+            placeholder="Tìm theo tiêu đề hoặc mã bộ câu hỏi..."
             className="w-full pl-9 pr-9 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-zinc-400"
           />
           {searchTerm && (
@@ -558,7 +558,7 @@ export default function TeacherExamsPage() {
         <div className="p-8 text-center rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/30 dark:bg-rose-950/20 space-y-3">
           <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
           <h3 className="font-semibold text-rose-900 dark:text-rose-300 text-base">
-            Không thể tải danh sách đề thi
+            Không thể tải danh sách bộ câu hỏi
           </h3>
           <p className="text-xs text-rose-700 dark:text-rose-400 max-w-md mx-auto">
             {loadError}
@@ -604,13 +604,13 @@ export default function TeacherExamsPage() {
           </div>
           <h3 className="font-bold text-base sm:text-lg text-zinc-900 dark:text-zinc-100 mb-1">
             {debouncedSearch || statusFilter !== 'ALL'
-              ? 'Không có đề thi phù hợp với bộ lọc'
-              : 'Chưa có đề thi nào'}
+              ? 'Không có bộ câu hỏi phù hợp với bộ lọc'
+              : 'Chưa có bộ câu hỏi nào'}
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto mb-5">
             {debouncedSearch || statusFilter !== 'ALL'
               ? 'Thử thay đổi từ khóa tìm kiếm hoặc bấm tab "Tất cả" để xem toàn bộ.'
-              : 'Bắt đầu khởi tạo kỳ thi đầu tiên để gửi mã thi cho học sinh của bạn.'}
+              : 'Bắt đầu tạo bộ câu hỏi đầu tiên để chia sẻ mã tham gia.'}
           </p>
           <Link href="/teacher/exams/create">
             <button
@@ -618,7 +618,7 @@ export default function TeacherExamsPage() {
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Tạo đề thi mới ngay</span>
+              <span>Tạo bộ câu hỏi mới</span>
             </button>
           </Link>
         </div>
@@ -669,7 +669,7 @@ export default function TeacherExamsPage() {
                       type="button"
                       onClick={() => handleCopyCode(exam.accessCode)}
                       className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px] font-mono text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 transition-colors cursor-pointer"
-                      title="Bấm để sao chép mã phòng thi"
+                      title="Bấm để sao chép mã tham gia"
                     >
                       <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                         {exam.accessCode}
@@ -715,7 +715,7 @@ export default function TeacherExamsPage() {
                       <button
                         type="button"
                         className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
-                        title="Mở phòng giám sát thí sinh trực tiếp"
+                        title="Mở phòng giám sát trực tiếp"
                       >
                         <ShieldAlert className="w-3.5 h-3.5" />
                         <span>Giám sát</span>
@@ -728,7 +728,7 @@ export default function TeacherExamsPage() {
                       <button
                         type="button"
                         className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                        title="Xem danh sách bài thi và kết quả"
+                        title="Xem danh sách bài làm và kết quả"
                       >
                         <BarChart3 className="w-3.5 h-3.5" />
                         <span>Xem kết quả</span>
@@ -742,7 +742,7 @@ export default function TeacherExamsPage() {
                       disabled={isActionBusy}
                       onClick={() => handlePublishExam(exam)}
                       className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-60"
-                      title="Xuất bản để thí sinh bắt đầu làm bài"
+                      title="Xuất bản để bắt đầu nhận bài làm"
                     >
                       <Globe className="w-3.5 h-3.5" />
                       <span>Xuất bản</span>
@@ -754,7 +754,7 @@ export default function TeacherExamsPage() {
                     <button
                       type="button"
                       className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Chỉnh sửa đề thi"
+                      title="Chỉnh sửa bộ câu hỏi"
                     >
                       <FileEdit className="w-3.5 h-3.5" />
                     </button>
@@ -765,7 +765,7 @@ export default function TeacherExamsPage() {
                     type="button"
                     onClick={() => handleOpenDuplicateModal(exam)}
                     className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 flex items-center justify-center transition-colors cursor-pointer"
-                    title="Nhân bản đề thi này"
+                    title="Nhân bản bộ câu hỏi này"
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>
@@ -777,7 +777,7 @@ export default function TeacherExamsPage() {
                       disabled={isActionBusy}
                       onClick={() => handleCloseExam(exam)}
                       className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-amber-100 text-zinc-600 hover:text-amber-700 dark:bg-zinc-800 dark:hover:bg-amber-950/40 dark:text-zinc-300 dark:hover:text-amber-400 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Đóng kỳ thi"
+                      title="Đóng phòng làm bài"
                     >
                       <Lock className="w-3.5 h-3.5" />
                     </button>
@@ -789,7 +789,7 @@ export default function TeacherExamsPage() {
                       type="button"
                       onClick={() => handleOpenRepublishModal(exam)}
                       className="w-8 h-8 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 dark:text-emerald-400 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Mở lại đề thi cho đợt thi mới"
+                      title="Mở lại bộ câu hỏi cho đợt làm bài mới"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
@@ -801,7 +801,7 @@ export default function TeacherExamsPage() {
                       type="button"
                       onClick={() => setDeleteTarget(exam)}
                       className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-400 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Xóa đề nháp"
+                      title="Xóa bản nháp"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -816,7 +816,7 @@ export default function TeacherExamsPage() {
           {pageMeta && pageMeta.totalPages > 1 && (
             <div className="flex items-center justify-between pt-3 px-2">
               <span className="text-xs text-zinc-500 font-mono">
-                Trang {pageMeta.page + 1} / {pageMeta.totalPages} ({pageMeta.totalElements} đề thi)
+                Trang {pageMeta.page + 1} / {pageMeta.totalPages} ({pageMeta.totalElements} bộ câu hỏi)
               </span>
               <div className="flex items-center gap-1.5">
                 <button
@@ -854,7 +854,7 @@ export default function TeacherExamsPage() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    Xóa đề thi bản nháp
+                    Xóa bộ câu hỏi bản nháp
                   </h3>
                   <p className="text-[11px] text-zinc-400">
                     Hành động này không thể hoàn tác
@@ -871,12 +871,12 @@ export default function TeacherExamsPage() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-800 text-xs space-y-1">
-              <span className="text-[11px] text-zinc-400 block">Đề thi sẽ bị gỡ bỏ:</span>
+              <span className="text-[11px] text-zinc-400 block">Bộ câu hỏi sẽ bị gỡ bỏ:</span>
               <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {deleteTarget.title}
               </p>
               <p className="text-[11px] text-zinc-500 font-mono">
-                Mã đề: {deleteTarget.accessCode} • {deleteTarget.totalQuestions} câu hỏi
+                Mã tham gia: {deleteTarget.accessCode} • {deleteTarget.totalQuestions} câu hỏi
               </p>
             </div>
 
@@ -912,10 +912,10 @@ export default function TeacherExamsPage() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    Mở lại đợt thi mới
+                    Mở lại đợt làm bài mới
                   </h3>
                   <p className="text-[11px] text-zinc-400">
-                    Mã đề thi: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{republishTarget.accessCode}</strong>
+                    Mã tham gia: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{republishTarget.accessCode}</strong>
                   </p>
                 </div>
               </div>
@@ -929,7 +929,7 @@ export default function TeacherExamsPage() {
             </div>
 
             <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-800 text-xs">
-              <span className="text-[11px] text-zinc-400 block mb-0.5">Tên đề thi:</span>
+              <span className="text-[11px] text-zinc-400 block mb-0.5">Tên bộ câu hỏi:</span>
               <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {republishTarget.title}
               </p>
@@ -940,7 +940,7 @@ export default function TeacherExamsPage() {
                 <div>
                   <label className="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-emerald-500" />
-                    Bắt đầu mở đề
+                    Bắt đầu mở phòng
                   </label>
                   <input
                     type="datetime-local"
@@ -953,7 +953,7 @@ export default function TeacherExamsPage() {
                 <div>
                   <label className="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-rose-500" />
-                    Hạn chót thi (Đóng đề) *
+                    Hạn chót làm bài (Đóng phòng) *
                   </label>
                   <input
                     type="datetime-local"
@@ -1012,10 +1012,10 @@ export default function TeacherExamsPage() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    Nhân bản đề thi
+                    Nhân bản bộ câu hỏi
                   </h3>
                   <p className="text-[11px] text-zinc-400">
-                    Tạo đề nháp mới sao chép toàn bộ câu hỏi và đáp án
+                    Tạo bản nháp mới sao chép toàn bộ câu hỏi và đáp án
                   </p>
                 </div>
               </div>
@@ -1031,13 +1031,13 @@ export default function TeacherExamsPage() {
             <div className="space-y-3">
               <div>
                 <label className="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1">
-                  Tên đề thi bản sao *
+                  Tên bộ câu hỏi bản sao *
                 </label>
                 <input
                   type="text"
                   value={duplicateTitle}
                   onChange={(e) => setDuplicateTitle(e.target.value)}
-                  placeholder="Nhập tên đề thi mới..."
+                  placeholder="Nhập tên bộ câu hỏi mới..."
                   className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   disabled={isDuplicating}
                 />

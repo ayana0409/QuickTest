@@ -40,7 +40,7 @@ const roleNavItems: Record<string, NavItem[]> = {
     { label: 'Cấu hình AI', href: '/admin/ai', icon: Cpu },
     { label: 'Quản lý người dùng', href: '/admin/users', icon: Users },
     { label: 'Kiểm duyệt nội dung', href: '/admin/moderation', icon: ShieldAlert },
-    { label: 'Giám sát kỳ thi', href: '/admin/exams', icon: Shield },
+    { label: 'Giám sát phòng làm bài', href: '/admin/exams', icon: Shield },
     { label: 'Nhật ký hệ thống', href: '/admin/logs', icon: FileCheck },
     { label: 'Ảnh giám sát', href: '/admin/media', icon: Camera },
     { label: 'Tình trạng hệ thống', href: '/admin/health', icon: Activity },
@@ -48,12 +48,12 @@ const roleNavItems: Record<string, NavItem[]> = {
   ],
   TEACHER: [
     { label: 'Tổng quan', href: '/teacher', icon: LayoutDashboard },
-    { label: 'Quản lý đề thi', href: '/teacher/exams', icon: BookOpen },
-    { label: 'Chấm bài tự luận', href: '/teacher/grading', icon: FileCheck },
+    { label: 'Quản lý bộ câu hỏi', href: '/teacher/exams', icon: BookOpen },
+    { label: 'Chấm điểm & Đánh giá', href: '/teacher/grading', icon: FileCheck },
     { label: 'Tác vụ tự động', href: '/teacher/ai-tasks', icon: Sparkles },
   ],
   STUDENT: [
-    { label: 'Kỳ thi của tôi', href: '/student', icon: GraduationCap },
+    { label: 'Bộ câu hỏi của tôi', href: '/student', icon: GraduationCap },
     { label: 'Lịch sử làm bài', href: '/student/history', icon: Clock },
     { label: 'Kết quả & Chứng chỉ', href: '/student/results', icon: Award },
   ],
@@ -208,7 +208,7 @@ export function Sidebar({
               >
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                  <span>Khu vực Giáo viên</span>
+                  <span>Khu vực Người tạo đề</span>
                 </div>
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 ${
@@ -226,7 +226,7 @@ export function Sidebar({
                       ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400'
                       : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                   }`}
-                  title="Khu vực Giáo viên"
+                  title="Khu vực Người tạo đề"
                 >
                   <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </button>
@@ -287,7 +287,7 @@ export function Sidebar({
               >
                 <div className="flex items-center gap-2">
                   <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Khu vực Thí sinh</span>
+                  <span>Khu vực Người học</span>
                 </div>
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 ${
@@ -305,7 +305,7 @@ export function Sidebar({
                       ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                       : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                   }`}
-                  title="Khu vực Thí sinh (Làm bài thi)"
+                  title="Khu vực Người học (Làm bài)"
                 >
                   <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </button>

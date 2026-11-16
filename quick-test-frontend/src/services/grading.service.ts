@@ -143,7 +143,7 @@ export const gradingService = {
       `/teacher/grading/answers/${candidateAnswerId}/ai`,
       {},
       {
-        successMessage: 'Đã hoàn tất chấm AI cho thí sinh!',
+        successMessage: 'Đã hoàn tất chấm AI cho câu trả lời!',
       }
     );
     return response.data.data;
